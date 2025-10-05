@@ -1,0 +1,46 @@
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+  <changeSet id="003" author="yowyob-system">
+    <comment>Insertion des journaux et comptes OHADA par défaut</comment>
+
+    <insert tableName="journal_comptable">
+      <column name="tenant_id" value="00000000-0000-0000-0000-000000000000"/>
+      <column name="code_journal" value="VTE"/>
+      <column name="libelle" value="Journal des ventes"/>
+    </insert>
+
+    <insert tableName="journal_comptable">
+      <column name="tenant_id" value="00000000-0000-0000-0000-000000000000"/>
+      <column name="code_journal" value="ACH"/>
+      <column name="libelle" value="Journal des achats"/>
+    </insert>
+
+    <insert tableName="journal_comptable">
+      <column name="tenant_id" value="00000000-0000-0000-0000-000000000000"/>
+      <column name="code_journal" value="TRE"/>
+      <column name="libelle" value="Journal de trésorerie"/>
+    </insert>
+
+    <insert tableName="plan_comptable">
+      <column name="tenant_id" value="00000000-0000-0000-0000-000000000000"/>
+      <column name="no_compte" value="101000"/>
+      <column name="libelle" value="Capital social"/>
+    </insert>
+
+    <insert tableName="plan_comptable">
+      <column name="tenant_id" value="00000000-0000-0000-0000-000000000000"/>
+      <column name="no_compte" value="701000"/>
+      <column name="libelle" value="Ventes de marchandises"/>
+    </insert>
+
+    <insert tableName="plan_comptable">
+      <column name="tenant_id" value="00000000-0000-0000-0000-000000000000"/>
+      <column name="no_compte" value="445700"/>
+      <column name="libelle" value="TVA collectée"/>
+    </insert>
+  </changeSet>
+</databaseChangeLog>

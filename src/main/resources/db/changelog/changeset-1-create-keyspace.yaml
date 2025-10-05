@@ -1,9 +1,0 @@
-databaseChangeLog:
-  - changeSet:
-      id: 1
-      author: yowyob
-      changes:
-        - cassandra:
-            cql: |
-              CREATE KEYSPACE IF NOT EXISTS yowyob_erp
-              WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 3};

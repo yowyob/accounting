@@ -1,42 +1,39 @@
 services:
   # ScyllaDB : base de données NoSQL compatible Cassandra pour la persistance des données
-  scylla:
-    image: scylladb/scylla:latest
-    container_name: scylla
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_DB: yowyob_erp
+      POSTGRES_USER: yowyob_admin
+      POSTGRES_PASSWORD: yowyob_secret
     ports:
-      - "9042:9042"
-    command: ["--smp", "2", "--memory", "2G", "--overprovisioned", "1"]
+      - "5432:5432"
     volumes:
-      - scylla-data:/var/lib/scylla
+      - postgres-data:/var/lib/postgresql/data
     networks:
       - my-network
     healthcheck:
-      test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces' > /dev/null 2>&1"]
-      interval: 30s
-      timeout: 10s
-      retries: 10
+      test: ["CMD-SHELL", "pg_isready -U yowyob_admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # scylla-init : service pour initialiser ScyllaDB avec le script CQL
-  scylla-init:
-    image: scylladb/scylla:latest
-    container_name: scylla-init
-    volumes:
-      - ./src/main/resources/db/init.cql:/src/main/resources/db/init.cql
-    entrypoint: ["bash", "-c"]
-    command: >
-      "
-        echo 'Waiting for ScyllaDB to be ready...'
-        until cqlsh scylla 9042 -e 'describe keyspaces' >/dev/null 2>&1; do
-          sleep 5
-        done
-        echo 'ScyllaDB is ready. Executing init.cql...'
-        cqlsh scylla 9042 -f /src/main/resources/db/init.cql
-      "
-    networks:
-      - my-network
+  liquibase:
+    image: liquibase/liquibase:latest
     depends_on:
-      scylla:
+      postgres:
         condition: service_healthy
+    volumes:
+      - ./db/changelog:/liquibase/changelog
+    command: [
+      "--url=jdbc:postgresql://postgres:5432/yowyob_erp",
+      "--changeLogFile=changelog-master.xml",
+      "--username=yowyob_admin",
+      "--password=yowyob_secret",
+      "update"
+    ]
+
 
   # Elasticsearch : moteur de recherche pour l'indexation et la recherche de données
   elasticsearch:
@@ -152,10 +149,10 @@ services:
       - spring.redis.password=azaleodel
       - spring.kafka.bootstrap-servers=kafka:9092
     depends_on:
-      scylla:
+      postgres:
         condition: service_healthy
-      scylla-init:
-        condition: service_completed_successfully
+      liquibase:
+        condition: service_healthy
       elasticsearch:
         condition: service_started
       kafka:
@@ -167,7 +164,7 @@ services:
 
 # Définition des volumes nommés pour la persistance des données.
 volumes:
-  scylla-data:
+  postgres-data:
   es-data:
   redis-data:
 

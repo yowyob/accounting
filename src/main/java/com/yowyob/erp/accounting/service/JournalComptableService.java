@@ -78,7 +78,7 @@ public class JournalComptableService {
         return mapToDto(savedJournalComptable);
     }
 
-    public Optional<JournalComptableDto> getJournalComptable(UUID journalComptableId) {
+    public JournalComptableDto getJournalComptable(UUID journalComptableId) {
         logger.info("Récupération du journal comptable avec l'ID : {}", journalComptableId);
         validerAccesTenantId();
         UUID tenantId = TenantContext.getCurrentTenant();

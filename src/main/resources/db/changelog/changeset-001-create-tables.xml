@@ -1,0 +1,94 @@
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+  <changeSet id="001" author="yowyob-system">
+    <comment>Création des tables principales du module comptabilité (OHADA)</comment>
+
+    <createTable tableName="plan_comptable">
+      <column name="plan_comptable_id" type="SERIAL">
+        <constraints primaryKey="true" />
+      </column>
+      <column name="tenant_id" type="UUID"/>
+      <column name="no_compte" type="VARCHAR(20)">
+        <constraints unique="true" nullable="false"/>
+      </column>
+      <column name="libelle" type="VARCHAR(255)" />
+      <column name="notes" type="TEXT"/>
+    </createTable>
+
+    <createTable tableName="journal_comptable">
+      <column name="journal_comptable_id" type="SERIAL" >
+        <constraints primaryKey="true" />
+      </column>
+      <column name="tenant_id" type="UUID" />
+      <column name="agence_id" type="UUID" />
+      <column name="code_journal" type="VARCHAR(20)" />
+      <column name="libelle" type="VARCHAR(100)" />
+      <column name="date_creation" type="timestamptz" defaultValueComputed="CURRENT_TIMESTAMP"/>
+      <column name="notes" type="TEXT" />
+    </createTable>
+
+    <createTable tableName="periode_comptable">
+      <column name="periode_id" type="SERIAL">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="tenant_id" type="UUID"/>
+      <column name="code" type="VARCHAR(50)" />
+      <column name="date_debut" type="DATE" />
+      <column name="date_fin" type="DATE" />
+      <column name="cloturee" type="BOOLEAN" defaultValueBoolean="false"/>
+      <column name="date_cloture" type="timestamptz" />
+    </createTable>
+
+    <createTable tableName="ecriture_comptable">
+      <column name="ecriture_id" type="SERIAL">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="tenant_id" type="UUID"/>
+      <column name="journal_comptable_id" type="INT"/>
+      <column name="date_ecriture" type="timestamptz" defaultValueComputed="CURRENT_TIMESTAMP"/>
+      <column name="statut" type="VARCHAR(20)" defaultValue="BROUILLARD"/>
+    </createTable>
+
+    <createTable tableName="detail_ecriture">
+      <column name="detail_ecriture_id" type="SERIAL">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="ecriture_id" type="INT"/>
+      <column name="plan_comptable_id" type="INT"/>
+      <column name="libelle" type="VARCHAR(255)"/>
+      <column name="sens" type="VARCHAR(10)"/>
+      <column name="montant" type="NUMERIC(18,2)"/>
+      <column name="valider" type="BOOLEAN" defaultValueBoolean="false"/>
+      <column name="date_validation" type="timestamptz"/>
+      <column name="utilisateur_validation" type="VARCHAR(100)"/>
+    </createTable>
+
+    <createTable tableName="journal_audit">
+      <column name="journal_audit_id" type="SERIAL">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="ecriture_id" type="INT"/>
+      <column name="action" type="VARCHAR(50)"/>
+      <column name="utilisateur" type="VARCHAR(100)"/>
+      <column name="date_action" type="timestamptz" defaultValueComputed="CURRENT_TIMESTAMP"/>
+      <column name="details" type="TEXT"/>
+    </createTable>
+
+    <createTable tableName="declaration_fiscale">
+      <column name="declaration_id" type="SERIAL">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="tenant_id" type="UUID"/>
+      <column name="type_declaration" type="VARCHAR(50)" />
+      <column name="periode" type="VARCHAR(20)" />
+      <column name="montant" type="NUMERIC(18,2)" />
+      <column name="date_generation" type="timestamptz" />
+      <column name="statut" type="VARCHAR(50)" />
+    </createTable>
+
+  </changeSet>
+</databaseChangeLog>

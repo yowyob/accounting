@@ -187,7 +187,8 @@ CREATE INDEX IF NOT EXISTS ON operation_comptable(operation_comptable_id);
 CREATE INDEX IF NOT EXISTS ON operation_comptable(actif);
 CREATE INDEX IF NOT EXISTS ON operation_comptable(journal_comptable_id);    
 CREATE INDEX IF NOT EXISTS ON operation_comptable(compte_principal);    
-
+CREATE INDEX IF NOT EXISTS ON operation_comptable(type_operation); 
+CREATE INDEX IF NOT EXISTS ON operation_comptable(mode_reglement); 
 
 -- Table pour les périodes comptables
 CREATE TABLE IF NOT EXISTS periode_comptable (

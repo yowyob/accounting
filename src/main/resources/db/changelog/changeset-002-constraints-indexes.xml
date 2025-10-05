@@ -1,0 +1,50 @@
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+  <changeSet id="002" author="yowyob-system">
+    <comment>Ajout des contraintes, clés étrangères et index pour optimisation</comment>
+
+    <addForeignKeyConstraint 
+      baseTableName="ecriture_comptable"
+      baseColumnNames="journal_comptable_id"
+      referencedTableName="journal_comptable"
+      referencedColumnNames="journal_comptable_id"
+      constraintName="fk_ecriture_journal"/>
+
+    <addForeignKeyConstraint 
+      baseTableName="detail_ecriture"
+      baseColumnNames="ecriture_id"
+      referencedTableName="ecriture_comptable"
+      referencedColumnNames="ecriture_id"
+      constraintName="fk_detail_ecriture"/>
+
+    <addForeignKeyConstraint 
+      baseTableName="detail_ecriture"
+      baseColumnNames="plan_comptable_id"
+      referencedTableName="plan_comptable"
+      referencedColumnNames="plan_comptable_id"
+      constraintName="fk_detail_plan"/>
+
+    <addForeignKeyConstraint 
+      baseTableName="journal_audit"
+      baseColumnNames="ecriture_id"
+      referencedTableName="ecriture_comptable"
+      referencedColumnNames="ecriture_id"
+      constraintName="fk_audit_ecriture"/>
+
+    <createIndex tableName="plan_comptable" indexName="idx_plan_no_compte">
+      <column name="no_compte"/>
+    </createIndex>
+
+    <createIndex tableName="journal_comptable" indexName="idx_journal_code">
+      <column name="code_journal"/>
+    </createIndex>
+
+    <createIndex tableName="ecriture_comptable" indexName="idx_ecriture_tenant">
+      <column name="tenant_id"/>
+    </createIndex>
+  </changeSet>
+</databaseChangeLog>
