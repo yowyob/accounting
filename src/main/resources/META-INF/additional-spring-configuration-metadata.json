@@ -1,0 +1,17 @@
+{"properties": [
+  {
+    "name": "========\n\nmanagement.endpoints.web.exposu",
+    "type": "java.lang.String",
+    "description": "A description for '========\n\nmanagement.endpoints.web.exposu'"
+  },
+  {
+    "name": "\nspring.application.nam",
+    "type": "java.lang.String",
+    "description": "A description for '\nspring.application.nam'"
+  },
+  {
+    "name": "=\nspring.datasource.u",
+    "type": "java.lang.String",
+    "description": "A description for '=\nspring.datasource.u'"
+  }
+]}
