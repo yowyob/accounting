@@ -1,103 +1,155 @@
 package com.yowyob.erp.accounting.entity;
 
-import com.yowyob.erp.accounting.entityKey.EcritureComptableKey;
 import com.yowyob.erp.common.entity.Auditable;
-import jakarta.validation.constraints.*;
-import lombok.Data;
-import org.springframework.data.cassandra.core.mapping.Table;
-import org.springframework.data.cassandra.core.mapping.Column;
-import org.springframework.data.cassandra.core.mapping.PrimaryKey;
-
 import com.yowyob.erp.common.enums.SourceType;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import org.springframework.data.redis.core.RedisHash;
-
-//@RedisHash("ecriture_comptable")
-@Table("ecriture_comptable")
+/**
+ * Ecriture comptable : représente une opération comptable
+ */
+@Entity
+@Table(name = "ecriture_comptable")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class EcritureComptable implements Auditable {
 
-    @PrimaryKey
-    private EcritureComptableKey key;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "ecriture_id")
+    private Long id;
 
-    @NotBlank(message = "Le numéro d'écriture ne peut pas être vide")
-    @Size(max = 100, message = "Le numéro d'écriture ne doit pas dépasser 100 caractères")
-    @Column("numero_ecriture")
+    @NotNull
+    @Column(name = "tenant_id", nullable = false)
+    private UUID tenantId;
+
+    @Column(name = "numero_ecriture", length = 100, unique = true)
     private String numeroEcriture;
 
-    @NotBlank(message = "Le libellé ne peut pas être vide")
-    @Size(max = 255, message = "Le libellé ne doit pas dépasser 255 caractères")
+    @Column(nullable = false, length = 255)
     private String libelle;
 
-    @NotNull(message = "La date d'écriture ne peut pas être nulle")
-    @Column("date_ecriture")
+    @NotNull
+    @Column(name = "date_ecriture", nullable = false)
     private LocalDate dateEcriture;
 
-    @NotNull(message = "L'identifiant du journal comptable ne peut pas être nul")
-    @Column("journal_comptable_id")
-    private UUID journalComptableId;
+    @Column(name = "journal_comptable_id")
+    private Long journalComptableId;
 
-    @NotNull(message = "L'identifiant de la période comptable ne peut pas être nul")
-    @Column("periode_comptable_id")
-    private UUID periodeComptableId;
+    @Column(name = "periode_comptable_id")
+    private Long periodeComptableId;
 
-    @NotNull(message = "Le montant total DEBIT ne peut pas être nul")
-    @PositiveOrZero(message = "Le montant total doit être positif ou zéro")
-    @Column("montant_total_debit")
-    private Double montantTotalDebit;
+    @Column(name = "montant_total_debit")
+    private Double montantTotalDebit = 0.0;
 
-    @NotNull(message = "Le montant total Credit ne peut pas être nul")
-    @PositiveOrZero(message = "Le montant total doit être positif ou zéro")
-    @Column("montant_total_credit")
-    private Double montantTotalCredit;
+    @Column(name = "montant_total_credit")
+    private Double montantTotalCredit = 0.0;
 
-    @NotNull(message = "Le statut validée ne peut pas être nul")
+    @Column(nullable = false)
     private Boolean validee = false;
 
-    @Column("date_validation")
+    @Column(name = "date_validation")
     private LocalDateTime dateValidation;
 
-    @Size(max = 255, message = "L'utilisateur de validation ne doit pas dépasser 255 caractères")
-    @Column("utilisateur_validation")
+    @Column(name = "utilisateur_validation")
     private String utilisateurValidation;
 
-    @Size(max = 255, message = "La référence externe ne doit pas dépasser 255 caractères")
-    @Column("reference_externe")
+    @Column(name = "reference_externe")
     private String referenceExterne;
 
-    @Size(max = 1000, message = "Les notes ne doivent pas dépasser 1000 caractères")
+    @Column(length = 1000)
     private String notes;
 
-    @NotNull(message = "Le type de source ne peut pas être nul")
-    @Column("source_type")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source_type")
     private SourceType sourceType;
 
-    @Column("source_id")
+    @Column(name = "source_id")
     private UUID sourceId;
 
-    @Column("created_at")
-    private LocalDateTime createdAt;
-    @Column("updated_at")
-    private LocalDateTime updatedAt;
-    @Column("created_by")
+   /**
+     * Date de création
+     */
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    /**
+     * Date de dernière mise à jour
+     */
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
+
+    /**
+     * Utilisateur créateur
+     */
+    @Size(max = 255)
+    @Column(name = "created_by", length = 255)
     private String createdBy;
-    @Column("updated_by")
+
+    /**
+     * Utilisateur ayant modifié la ressource
+     */
+    @Size(max = 255)
+    @Column(name = "updated_by", length = 255)
     private String updatedBy;
 
+    // =========================================================
+    // Implémentation de l'interface Auditable
+    // =========================================================
     @Override
     public UUID getTenantId() {
-        return key != null ? key.getTenantId() : null;
+        return tenantId;
     }
 
     @Override
     public void setTenantId(UUID tenantId) {
-        if (key == null) {
-            key = new EcritureComptableKey();
-        }
-        key.setTenantId(tenantId);
+        this.tenantId = tenantId;
+    }
+
+    @Override
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    @Override
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    @Override
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    @Override
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    @Override
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    @Override
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    @Override
+    public String getUpdatedBy() {
+        return updatedBy;
+    }
+
+    @Override
+    public void setUpdatedBy(String updatedBy) {
+        this.updatedBy = updatedBy;
     }
 }

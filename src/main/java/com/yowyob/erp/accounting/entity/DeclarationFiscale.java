@@ -1,87 +1,142 @@
 package com.yowyob.erp.accounting.entity;
 
-import com.yowyob.erp.accounting.entityKey.DeclarationFiscaleKey;
 import com.yowyob.erp.common.entity.Auditable;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.Data;
-import org.springframework.data.cassandra.core.mapping.PrimaryKey;
-import org.springframework.data.cassandra.core.mapping.Table;
-import org.springframework.data.cassandra.core.mapping.Column;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-//import org.springframework.data.redis.core.RedisHash;
-
-//@RedisHash("declaration_fiscale")
-@Table("declaration_fiscale")
+/**
+ * Déclaration fiscale : TVA, IS, etc.
+ */
+@Entity
+@Table(name = "declaration_fiscale")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class DeclarationFiscale implements Auditable {
 
-    @PrimaryKey
-    private DeclarationFiscaleKey key;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "declaration_id")
+    private Long id;
 
-    @NotBlank(message = "Le type de déclaration ne peut pas être vide")
-    @Size(max = 50, message = "Le type de déclaration ne doit pas dépasser 50 caractères")
-    @Column("type_declaration")
+    @NotNull
+    @Column(name = "tenant_id", nullable = false)
+    private UUID tenantId;
+
+    @NotBlank
+    @Column(name = "type_declaration", length = 50)
     private String typeDeclaration;
 
-    @NotNull(message = "La période de début ne peut pas être nulle")
-    @Column("periode_debut")
+    @NotNull
+    @Column(name = "periode_debut")
     private LocalDate periodeDebut;
 
-    @Column
-    @NotNull(message = "La période de fin ne peut pas être nulle")
+    @NotNull
+    @Column(name = "periode_fin")
     private LocalDate periodeFin;
 
-    @Column("montant_total")
-    @NotNull(message = "Le montant total ne peut pas être nul")
-    @PositiveOrZero(message = "Le montant total doit être positif ou zéro")
-    private Double montantTotal;
+    @PositiveOrZero
+    @Column(name = "montant_total")
+    private Double montantTotal = 0.0;
 
-    @NotNull(message = "La date de génération ne peut pas être nulle")
-   @Column("date_generation")
+    @Column(name = "date_generation")
     private LocalDate dateGeneration;
 
-    @NotBlank(message = "Le statut ne peut pas être vide")
-    @Pattern(regexp = "DRAFT|SUBMITTED|VALIDATED", message = "Le statut doit être DRAFT, SUBMITTED ou VALIDATED")
+    @Pattern(regexp = "DRAFT|SUBMITTED|VALIDATED")
+    @Column(length = 50)
     private String statut;
 
-    @Size(max = 100, message = "Le numéro de déclaration ne doit pas dépasser 100 caractères")
-    @Column("numero_declaration")
+    @Column(name = "numero_declaration", length = 100)
     private String numeroDeclaration;
 
-    @Column("donnees_declaration")
+    @Column(name = "donnees_declaration", columnDefinition = "TEXT")
     private String donneesDeclaration;
 
-    @Size(max = 255, message = "Les notes ne doivent pas dépasser 255 caractères")
+    @Column(length = 255)
     private String notes;
 
-    @Column("created_at")
-    private LocalDateTime createdAt;
+/**
+     * Date de création
+     */
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column("updated_at")
-    private LocalDateTime updatedAt;
+    /**
+     * Date de dernière mise à jour
+     */
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @Size(max = 255, message = "Créé par ne doit pas dépasser 255 caractères")
-    @Column("created_by")
+    /**
+     * Utilisateur créateur
+     */
+    @Size(max = 255)
+    @Column(name = "created_by", length = 255)
     private String createdBy;
 
-    @Size(max = 255, message = "Mis à jour par ne doit pas dépasser 255 caractères")
-    @Column("updated_by")
+    /**
+     * Utilisateur ayant modifié la ressource
+     */
+    @Size(max = 255)
+    @Column(name = "updated_by", length = 255)
     private String updatedBy;
 
+    // =========================================================
+    // Implémentation de l'interface Auditable
+    // =========================================================
     @Override
     public UUID getTenantId() {
-        return key.getTenantId();
+        return tenantId;
     }
 
     @Override
     public void setTenantId(UUID tenantId) {
-        if (key == null) {
-            key = new DeclarationFiscaleKey();
-        }
-        key.setTenantId(tenantId);
+        this.tenantId = tenantId;
+    }
+
+    @Override
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    @Override
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    @Override
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    @Override
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    @Override
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    @Override
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    @Override
+    public String getUpdatedBy() {
+        return updatedBy;
+    }
+
+    @Override
+    public void setUpdatedBy(String updatedBy) {
+        this.updatedBy = updatedBy;
     }
 }

@@ -1,76 +1,76 @@
 package com.yowyob.erp.accounting.entity;
 
-import com.yowyob.erp.accounting.entityKey.ContrepartieKey;
 import com.yowyob.erp.common.entity.Auditable;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.Data;
-import org.springframework.data.cassandra.core.mapping.PrimaryKey;
-import org.springframework.data.cassandra.core.mapping.Table;
-import org.springframework.data.cassandra.core.mapping.Column;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-//import org.springframework.data.redis.core.RedisHash;
-
-//@RedisHash("contrepartie")
-@Table("contrepartie")
+/**
+ * Contrepartie d'une opération comptable (Phase 2 du paramétrage)
+ */
+@Entity
+@Table(name = "contrepartie")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Contrepartie implements Auditable {
 
-    @PrimaryKey
-    private ContrepartieKey key;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "contrepartie_id")
+    private Long id;
 
-    @NotBlank(message = "Le compte ne peut pas être vide")
-    @Size(max = 20, message = "Le compte ne doit pas dépasser 20 caractères")
+    @NotNull
+    @Column(name = "tenant_id", nullable = false)
+    private UUID tenantId;
+
+    @Column(name = "operation_comptable_id")
+    private Long operationComptableId;
+
+    @Column(length = 20)
     private String compte;
 
-     @Column("operation_comptable_id")
-    private UUID operationComptableId;
-
-    @NotNull(message = "Est compte tiers ne peut pas être null")
+    @Column(name = "est_compte_tiers")
     private Boolean estCompteTiers = false;
 
-    @NotBlank(message = "Le sens ne peut pas être vide")
-    @Pattern(regexp = "DEBIT|CREDIT", message = "Le sens doit être DEBIT ou CREDIT")
+    @Pattern(regexp = "DEBIT|CREDIT")
+    @Column(length = 10)
     private String sens;
 
-    @NotBlank(message = "Le type de montant ne peut pas être vide")
-    @Pattern(regexp = "HT|TTC|TVA|PAU", message = "Le type de montant doit être HT, TTC, TVA ou PAU")
-    @Column("type_montant")
+    @Pattern(regexp = "HT|TTC|TVA|PAU")
+    @Column(name = "type_montant", length = 10)
     private String typeMontant;
 
-    @NotNull(message = "L'identifiant du journal comptable ne peut pas être nul")
-    @Column("journal_comptable_id")
-    private UUID journalComptableId;
+    @Column(name = "journal_comptable_id")
+    private Long journalComptableId;
 
-    @Size(max = 255, message = "Les notes ne doivent pas dépasser 255 caractères")
+ 
+    @Column(length = 255)
     private String notes;
 
-    @Column("created_at")
-    private LocalDateTime createdAt;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column("updated_at")
-    private LocalDateTime updatedAt;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @Size(max = 255, message = "Créé par ne doit pas dépasser 255 caractères")
-    @Column("created_by")
+             /** Utilisateur créateur */
+    @Size(max = 255)
+    @Column(name = "created_by", length = 255)
     private String createdBy;
 
-    @Size(max = 255, message = "Mis à jour par ne doit pas dépasser 255 caractères")
-    @Column("updated_by")
+    /** Utilisateur ayant modifié la ressource */
+    @Size(max = 255)
+    @Column(name = "updated_by", length = 255)
     private String updatedBy;
 
     @Override
-    public UUID getTenantId() {
-        return key.getTenantId();
-    }
+    public UUID getTenantId() { return tenantId; }
 
     @Override
-    public void setTenantId(UUID tenantId) {
-        if (key == null) {
-            key = new ContrepartieKey();
-        }
-        key.setTenantId(tenantId);
-    }
+    public void setTenantId(UUID tenantId) { this.tenantId = tenantId; }
 }

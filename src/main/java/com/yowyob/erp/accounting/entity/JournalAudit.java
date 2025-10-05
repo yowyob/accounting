@@ -1,77 +1,134 @@
 package com.yowyob.erp.accounting.entity;
 
-import com.yowyob.erp.accounting.entityKey.JournalAuditKey;
 import com.yowyob.erp.common.entity.Auditable;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.Data;
-import org.springframework.data.cassandra.core.mapping.PrimaryKey;
-import org.springframework.data.cassandra.core.mapping.Table;
-import org.springframework.data.cassandra.core.mapping.Column;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-//import org.springframework.data.redis.core.RedisHash;
-
-//@RedisHash("journal_audit")
-@Table("journal_audit")
+/**
+ * Journal d’audit : trace les actions de création, validation et modification
+ */
+@Entity
+@Table(name = "journal_audit")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class JournalAudit implements Auditable {
 
-    @PrimaryKey
-    private JournalAuditKey key;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "journal_audit_id")
+    private Long id;
 
-    @Column("ecriture_comptable_id")
-    private UUID ecritureComptableId;
+    @NotNull
+    @Column(name = "tenant_id", nullable = false)
+    private UUID tenantId;
 
-    @NotBlank(message = "L'action ne peut pas être vide")
-    @Pattern(regexp = "CREATION|VALIDATION|MODIFICATION", message = "L'action doit être CREATION, VALIDATION ou MODIFICATION")
+    @Column(name = "ecriture_id")
+    private Long ecritureComptableId;
+
+    @Pattern(regexp = "CREATION|VALIDATION|MODIFICATION")
+    @Column(length = 50)
     private String action;
 
-    @NotNull(message = "La date d'action ne peut pas être nulle")
-    @Column("date_action")
-    private LocalDateTime dateAction;
+    @Column(name = "date_action")
+    private LocalDateTime dateAction = LocalDateTime.now();
 
-    @NotBlank(message = "L'utilisateur ne peut pas être vide")
-    @Size(max = 255, message = "L'utilisateur ne doit pas dépasser 255 caractères")
+    @Column(length = 255)
     private String utilisateur;
 
+    @Column(columnDefinition = "TEXT")
     private String details;
 
-    @Size(max = 255, message = "L'adresse IP ne doit pas dépasser 255 caractères")
-    @Column("adresse_ip")
-    private String adresseIP;
+    @Column(name = "adresse_ip")
+    private String adresseIp;
 
-    @Column("donnees_avant")
+    @Column(name = "donnees_avant", columnDefinition = "TEXT")
     private String donneesAvant;
 
-    @Column("donnees_apres")
+    @Column(name = "donnees_apres", columnDefinition = "TEXT")
     private String donneesApres;
 
-    @Column("created_at")
-    private LocalDateTime createdAt;
+    /**
+     * Date de création
+     */
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column("updated_at")
-    private LocalDateTime updatedAt;
+    /**
+     * Date de dernière mise à jour
+     */
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @Size(max = 255, message = "Créé par ne doit pas dépasser 255 caractères")
-    @Column("created_by")
+    /**
+     * Utilisateur créateur
+     */
+    @Size(max = 255)
+    @Column(name = "created_by", length = 255)
     private String createdBy;
 
-    @Size(max = 255, message = "Mis à jour par ne doit pas dépasser 255 caractères")
-    @Column("updated_by")
+    /**
+     * Utilisateur ayant modifié la ressource
+     */
+    @Size(max = 255)
+    @Column(name = "updated_by", length = 255)
     private String updatedBy;
 
+    // =========================================================
+    // Implémentation de l'interface Auditable
+    // =========================================================
     @Override
     public UUID getTenantId() {
-        return key.getTenantId();
+        return tenantId;
     }
 
     @Override
     public void setTenantId(UUID tenantId) {
-        if (key == null) {
-            key = new JournalAuditKey();
-        }
-        key.setTenantId(tenantId);
+        this.tenantId = tenantId;
+    }
+
+    @Override
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    @Override
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    @Override
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    @Override
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    @Override
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    @Override
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    @Override
+    public String getUpdatedBy() {
+        return updatedBy;
+    }
+
+    @Override
+    public void setUpdatedBy(String updatedBy) {
+        this.updatedBy = updatedBy;
     }
 }

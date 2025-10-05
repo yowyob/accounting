@@ -1,4 +1,4 @@
-package com.yowyob.erp.config;
+package com.yowyob.erp.config.swagger;
 
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;

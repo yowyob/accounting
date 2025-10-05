@@ -1,71 +1,70 @@
 package com.yowyob.erp.accounting.entity;
 
-import com.yowyob.erp.accounting.entityKey.PlanComptableKey;
 import com.yowyob.erp.common.entity.Auditable;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.Data;
-import org.springframework.data.cassandra.core.mapping.PrimaryKey;
-import org.springframework.data.cassandra.core.mapping.Table;
-import org.springframework.data.cassandra.core.mapping.Column;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import org.springframework.data.redis.core.RedisHash;
-
-//@RedisHash("plan_comptable")
-@Table("plan_comptable")
+/**
+ * Plan Comptable Général OHADA.
+ * Liste des comptes utilisés par une entreprise (tenant).
+ */
+@Entity
+@Table(name = "plan_comptable")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class PlanComptable implements Auditable {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "plan_comptable_id")
+    private Long id;
 
-    @PrimaryKey
-    private PlanComptableKey key;
+    @NotNull
+    @Column(name = "tenant_id", nullable = false)
+    private UUID tenantId;
 
-    @Column("code_classe")
+    @NotNull
+    @Column(name = "classe")
     private Integer classe;
 
-    @NotBlank(message = "Le numéro de compte ne peut pas être vide")
-    @Size(max = 10, message = "Le numéro de compte ne doit pas dépasser 10 caractères")
-    @Column("no_compte")
+    @NotBlank
+    @Size(max = 20)
+    @Column(name = "no_compte", nullable = false, unique = true)
     private String noCompte;
 
-    @NotBlank(message = "Le libellé ne peut pas être vide")
-    @Size(max = 255, message = "Le libellé ne doit pas dépasser 255 caractères")
+    @NotBlank
+    @Size(max = 255)
+    @Column(name = "libelle", nullable = false)
     private String libelle;
 
-    @Size(max = 255, message = "Les notes ne doivent pas dépasser 255 caractères")
+    @Size(max = 255)
     private String notes;
 
-    @NotNull(message = "Le statut actif ne peut pas être nul")
+    @NotNull
+    @Column(name = "actif", nullable = false)
     private Boolean actif = true;
 
-    @Column("created_at")
-    private LocalDateTime createdAt;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column("updated_at")
-    private LocalDateTime updatedAt;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @Size(max = 255, message = "Créé par ne doit pas dépasser 255 caractères")
-    @Column("created_by")
+    @Column(name = "created_by")
     private String createdBy;
 
-    @Size(max = 255, message = "Mis à jour par ne doit pas dépasser 255 caractères")
-    @Column("updated_by")
+    @Column(name = "updated_by")
     private String updatedBy;
 
- 
-    
     @Override
-    public UUID getTenantId() {
-        return key.getTenantId();
-    }
+    public UUID getTenantId() { return tenantId; }
 
     @Override
-    public void setTenantId(UUID tenantId) {
-        if (key == null) {
-            key = new PlanComptableKey();
-        }
-        key.setTenantId(tenantId);
-    }
+    public void setTenantId(UUID tenantId) { this.tenantId = tenantId; }
 }

@@ -1,99 +1,92 @@
 package com.yowyob.erp.accounting.entity;
 
-import com.yowyob.erp.accounting.entityKey.TransactionKey;
 import com.yowyob.erp.common.entity.Auditable;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.Data;
-import org.springframework.data.cassandra.core.mapping.PrimaryKey;
-import org.springframework.data.cassandra.core.mapping.Table;
-import org.springframework.data.cassandra.core.mapping.Column;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
-//import org.springframework.data.redis.core.RedisHash;
 
-//@RedisHash("transaction")
-@Table("transaction")
+/**
+ * Transaction comptable : paiement, encaissement ou opération de caisse.
+ */
+@Entity
+@Table(name = "transaction")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Transaction implements Auditable {
 
-    @PrimaryKey
-    private TransactionKey key;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "transaction_id")
+    private Long id;
 
-    @Size(max = 100, message = "Le numéro de reçu ne doit pas dépasser 100 caractères")
-    @Column("numero_recu")
+    @NotNull
+    @Column(name = "tenant_id", nullable = false)
+    private UUID tenantId;
+
+    @Column(name = "numero_recu", length = 100)
     private String numeroRecu;
 
-    @Column("operation_comptable_id")
-    private UUID operationComptableId;
+    @Column(name = "operation_comptable_id")
+    private Long operationComptableId;
 
-    @NotNull(message = "Le montant de la transaction ne peut pas être nul")
-    @PositiveOrZero(message = "Le montant de la transaction doit être positif ou zéro")
-    @Column("montant_transaction")
+    @PositiveOrZero
+    @NotNull
+    @Column(name = "montant_transaction", nullable = false)
     private Double montantTransaction;
 
-    @Size(max = 255, message = "Le montant en lettre ne doit pas dépasser 255 caractères")
-    @Column("montant_lettre")
+    @Size(max = 255)
+    @Column(name = "montant_lettre")
     private String montantLettre;
 
-    @NotNull(message = "Le statut montant TTC ne peut pas être nul")
-    @Column("est_montant_ttc")
+    @NotNull
+    @Column(name = "est_montant_ttc", nullable = false)
     private Boolean estMontantTTC = true;
 
-    @NotNull(message = "La date de transaction ne peut pas être nulle")
-    @Column("date_transaction")
+    @NotNull
+    @Column(name = "date_transaction", nullable = false)
     private LocalDateTime dateTransaction;
 
-    @NotNull(message = "Le statut validé ne peut pas être nul")
-    @Column("est_validee")
+    @Column(name = "est_validee", nullable = false)
     private Boolean estValidee = false;
 
-    @Column("date_validation")
+    @Column(name = "date_validation")
     private LocalDateTime dateValidation;
 
-    @Size(max = 255, message = "La référence objet ne doit pas dépasser 255 caractères")
-    @Column("reference_objet")
+    @Column(name = "reference_objet", length = 255)
     private String referenceObjet;
 
-    @Size(max = 255, message = "Le caissier ne doit pas dépasser 255 caractères")
-    @Column("caissier")
+    @Column(name = "caissier", length = 255)
     private String caissier;
 
-    @NotNull(message = "Le statut comptabilisé ne peut pas être nul")
-    @Column("est_comptabilisee")
+    @Column(name = "est_comptabilisee", nullable = false)
     private Boolean estComptabilisee = false;
 
-    @NotNull(message = "L'identifiant de l'écriture comptable ne peut pas être nul")
-    @Column("ecriture_comptable_id")
-    private UUID ecritureComptableId;
+    @Column(name = "ecriture_comptable_id")
+    private Long ecritureComptableId;
 
-    @Size(max = 255, message = "Les notes ne doivent pas dépasser 255 caractères")
+    @Column(length = 255)
     private String notes;
 
-    @Column("created_at")
-    private LocalDateTime createdAt;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column("updated_at")
-    private LocalDateTime updatedAt;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @Size(max = 255, message = "Créé par ne doit pas dépasser 255 caractères")
-    @Column("created_by")
+    @Column(name = "created_by")
     private String createdBy;
 
-    @Size(max = 255, message = "Mis à jour par ne doit pas dépasser 255 caractères")
-    @Column("updated_by")
+    @Column(name = "updated_by")
     private String updatedBy;
 
     @Override
-    public UUID getTenantId() {
-        return key.getTenantId();
-    }
+    public UUID getTenantId() { return tenantId; }
 
     @Override
-    public void setTenantId(UUID tenantId) {
-        if (key == null) {
-            key = new TransactionKey();
-        }
-        key.setTenantId(tenantId);
-    }
+    public void setTenantId(UUID tenantId) { this.tenantId = tenantId; }
 }

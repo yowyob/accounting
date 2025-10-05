@@ -1,3 +1,7 @@
+# ==============================================================
+# 🧱 GITIGNORE - YOWYOB ERP BACKEND
+# ==============================================================
+
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
@@ -34,3 +38,8 @@ build/
 
 ### Maven ###
 .mvn/
+
+
+# Secrets
+.env
+*.env

@@ -1,88 +1,89 @@
 package com.yowyob.erp.accounting.entity;
 
-import com.yowyob.erp.accounting.entityKey.TenantKey;
 import com.yowyob.erp.common.entity.Auditable;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.Data;
-import org.springframework.data.cassandra.core.mapping.PrimaryKey;
-import org.springframework.data.cassandra.core.mapping.Table;
-import org.springframework.data.cassandra.core.mapping.Column;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Table("tenants")
+/**
+ * Entité représentant un client ou une entreprise utilisant le système ERP.
+ * Multi-tenant isolation.
+ */
+@Entity
+@Table(name = "tenants")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Tenant implements Auditable {
 
-    @PrimaryKey
-    private TenantKey key;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "tenant_internal_id")
+    private Long id;
 
-    @NotBlank(message = "Le nom ne peut pas être vide")
-    @Size(max = 255, message = "Le nom ne doit pas dépasser 255 caractères")
+    @NotNull
+    @Column(name = "tenant_id", unique = true, nullable = false)
+    private UUID tenantId;
+
+    @NotBlank
+    @Size(max = 255)
     private String name;
 
-    @NotBlank(message = "Le nom légal ne peut pas être vide")
-    @Size(max = 255, message = "Le nom légal ne doit pas dépasser 255 caractères")
-    @Column("legal_name")
+    @NotBlank
+    @Size(max = 255)
+    @Column(name = "legal_name")
     private String legalName;
 
-    @Size(max = 100, message = "Le numéro d'enregistrement ne doit pas dépasser 100 caractères")
-    @Column("registration_number")
+    @Size(max = 100)
+    @Column(name = "registration_number")
     private String registrationNumber;
 
-    @Size(max = 100, message = "L'identifiant fiscal ne doit pas dépasser 100 caractères")
-    @Column("tax_id")
+    @Size(max = 100)
+    @Column(name = "tax_id")
     private String taxId;
 
-    @Size(max = 255, message = "L'adresse ne doit pas dépasser 255 caractères")
+    @Size(max = 255)
     private String address;
 
-    @Pattern(regexp = "\\+?[0-9\\-\\s]{10,20}", message = "Le numéro de téléphone est invalide")
+    @Pattern(regexp = "\\+?[0-9\\-\\s]{10,20}")
     private String phone;
 
-    @Email(message = "L'email doit être valide")
-    @Size(max = 255, message = "L'email ne doit pas dépasser 255 caractères")
+    @Email
+    @Size(max = 255)
     private String email;
 
-    @NotBlank(message = "La devise ne peut pas être vide")
-    @Size(max = 3, message = "La devise doit être un code ISO de 3 caractères")
+    @NotBlank
+    @Size(max = 3)
     private String currency;
 
-    @NotNull(message = "Le statut actif ne peut pas être nul")
-    @Column("is_active")
-    private Boolean isActive;
+    @NotNull
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
 
-    @NotBlank(message = "Le code comptable ne peut pas être vide")
-    @Size(max = 100, message = "Le code comptable ne doit pas dépasser 100 caractères")
-    @Column("accounting_code")
+    @NotBlank
+    @Size(max = 100)
+    @Column(name = "accounting_code")
     private String accountingCode;
 
-    @Column("created_at")
-    private LocalDateTime createdAt;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column("updated_at")
-    private LocalDateTime updatedAt;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @Size(max = 255, message = "Créé par ne doit pas dépasser 255 caractères")
-    @Column("created_by")
+    @Column(name = "created_by")
     private String createdBy;
 
-    @Size(max = 255, message = "Mis à jour par ne doit pas dépasser 255 caractères")
-    @Column("updated_by")
+    @Column(name = "updated_by")
     private String updatedBy;
 
     @Override
-    public UUID getTenantId() {
-        return key.getTenantId();
-    }
+    public UUID getTenantId() { return tenantId; }
 
     @Override
-    public void setTenantId(UUID tenantId) {
-        if (key == null) {
-            key = new TenantKey();
-        }
-        key.setTenantId(tenantId);
-    }
+    public void setTenantId(UUID tenantId) { this.tenantId = tenantId; }
 }
-

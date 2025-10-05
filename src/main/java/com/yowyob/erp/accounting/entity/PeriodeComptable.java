@@ -1,72 +1,73 @@
 package com.yowyob.erp.accounting.entity;
 
-import com.yowyob.erp.accounting.entityKey.PeriodeComptableKey;
 import com.yowyob.erp.common.entity.Auditable;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.Data;
-import org.springframework.data.cassandra.core.mapping.PrimaryKey;
-import org.springframework.data.cassandra.core.mapping.Table;
-import org.springframework.data.cassandra.core.mapping.Column;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import org.springframework.data.redis.core.RedisHash;
-
-//@RedisHash("periode_comptable")
-@Table("periode_comptable")
+/**
+ * Représente une période comptable (mois, trimestre ou année).
+ * Chaque période est liée à un tenant (entreprise).
+ */
+@Entity
+@Table(name = "periode_comptable")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class PeriodeComptable implements Auditable {
 
-    @PrimaryKey
-    private PeriodeComptableKey key;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "periode_id")
+    private Long id;
 
-    @NotBlank(message = "Le code ne peut pas être vide")
-    @Size(max = 50, message = "Le code ne doit pas dépasser 50 caractères")
+    @NotNull
+    @Column(name = "tenant_id", nullable = false)
+    private UUID tenantId;
+
+    @NotBlank
+    @Size(max = 50)
+    @Column(name = "code", nullable = false, unique = true, length = 50)
     private String code;
 
-    @NotNull(message = "La date de début ne peut pas être nulle")
-    @Column("date_debut")
+    @NotNull
+    @Column(name = "date_debut", nullable = false)
     private LocalDate dateDebut;
 
-    @NotNull(message = "La date de fin ne peut pas être nulle")
-    @Column("date_fin")
+    @NotNull
+    @Column(name = "date_fin", nullable = false)
     private LocalDate dateFin;
 
-    @NotNull(message = "Le statut clôturé ne peut pas être nul")
+    @NotNull
+    @Column(name = "cloturee", nullable = false)
     private Boolean cloturee = false;
 
-    @Column("date_cloture")
+    @Column(name = "date_cloture")
     private LocalDate dateCloture;
 
-    @Size(max = 255, message = "Les notes ne doivent pas dépasser 255 caractères")
+    @Column(length = 255)
     private String notes;
 
-    @Column("created_at")
-    private LocalDateTime createdAt;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column("updated_at")
-    private LocalDateTime updatedAt;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @Size(max = 255, message = "Créé par ne doit pas dépasser 255 caractères")
-    @Column("created_by")
+    @Column(name = "created_by")
     private String createdBy;
 
-    @Size(max = 255, message = "Mis à jour par ne doit pas dépasser 255 caractères")
-    @Column("updated_by")
+    @Column(name = "updated_by")
     private String updatedBy;
 
     @Override
-    public UUID getTenantId() {
-        return key.getTenantId();
-    }
+    public UUID getTenantId() { return tenantId; }
 
     @Override
-    public void setTenantId(UUID tenantId) {
-        if (key == null) {
-            key = new PeriodeComptableKey();
-        }
-        key.setTenantId(tenantId);
-    }
+    public void setTenantId(UUID tenantId) { this.tenantId = tenantId; }
 }

@@ -1,90 +1,78 @@
 package com.yowyob.erp.accounting.entity;
 
+import com.yowyob.erp.common.entity.Auditable;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
+import lombok.*;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import org.springframework.data.cassandra.core.mapping.PrimaryKey;
-import org.springframework.data.cassandra.core.mapping.Table;
-import org.springframework.data.cassandra.core.mapping.Column;
-
-import com.yowyob.erp.accounting.entityKey.DetailEcritureKey;
-import com.yowyob.erp.common.entity.Auditable;
-
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.PositiveOrZero;
-import jakarta.validation.constraints.Size;
-import lombok.Data;
-
-
-//import org.springframework.data.redis.core.RedisHash;
-
-//@RedisHash("detail_ecriture")
-@Table("detail_ecriture")
+/**
+ * Détail d’une écriture comptable (ligne débit ou crédit)
+ */
+@Entity
+@Table(name = "detail_ecriture")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class DetailEcriture implements Auditable {
 
-    @PrimaryKey
-    private DetailEcritureKey key;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "detail_ecriture_id")
+    private Long id;
 
-    @Column("ecriture_id")
-    private UUID ecritureComptableId;
+    @NotNull
+    @Column(name = "tenant_id", nullable = false)
+    private UUID tenantId;
 
-    @NotNull(message = "L'identifiant du compte comptable ne peut pas être nul")
-    @Column("compte_comptable_id")
-    private UUID compteComptableId;
+    @Column(name = "ecriture_id")
+    private Long ecritureComptableId;
 
-    /*
-    @NotBlank(message = "Le numéro de compte ne peut pas être vide")
-    private String noCompte;
-    */
-    @NotBlank(message = "Le libellé ne peut pas être vide")
-    @Size(max = 255, message = "Le libellé ne doit pas dépasser 255 caractères")
+    @Column(name = "plan_comptable_id")
+    private Long planComptableId;
+
+    @Column(length = 255)
     private String libelle;
 
-    @NotBlank(message = "Le sens ne peut pas être vide")
-    @Pattern(regexp = "DEBIT|CREDIT", message = "Le sens doit être DEBIT ou CREDIT")
+    @Pattern(regexp = "DEBIT|CREDIT")
+    @Column(length = 10)
     private String sens;
 
-    @PositiveOrZero(message = "Le montant débit doit être positif ou zéro")
-    @Column("montant_debit")
+    @Column(name = "montant_debit")
     private Double montantDebit = 0.0;
 
-    @PositiveOrZero(message = "Le montant crédit doit être positif ou zéro")
-    @Column("montant_credit")
+    @Column(name = "montant_credit")
     private Double montantCredit = 0.0;
 
-    @Size(max = 255, message = "Les notes ne doivent pas dépasser 255 caractères")
+    @Column(length = 255)
     private String notes;
 
-    @Column("date_ecriture")
+    @Column(name = "date_ecriture")
     private LocalDateTime dateEcriture;
 
-    @Column("created_at")           
-    private LocalDateTime createdAt;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column("updated_at")
-    private LocalDateTime updatedAt;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @Size(max = 255, message = "Créé par ne doit pas dépasser 255 caractères")
-    @Column("created_by")
+        /** Utilisateur créateur */
+    @Size(max = 255)
+    @Column(name = "created_by", length = 255)
     private String createdBy;
 
-    @Size(max = 255, message = "Mis à jour par ne doit pas dépasser 255 caractères")
-    @Column("updated_by")
+    /** Utilisateur ayant modifié la ressource */
+    @Size(max = 255)
+    @Column(name = "updated_by", length = 255)
     private String updatedBy;
 
     @Override
-    public UUID getTenantId() {
-        return key.getTenantId();
-    }
+    public UUID getTenantId() { return tenantId; }
 
     @Override
-    public void setTenantId(UUID tenantId) {
-        if (key == null) {
-            key = new DetailEcritureKey();
-        }
-        key.setTenantId(tenantId);
-    }
+    public void setTenantId(UUID tenantId) { this.tenantId = tenantId; }
+
 }

@@ -1,94 +1,144 @@
 package com.yowyob.erp.accounting.entity;
 
-import com.yowyob.erp.accounting.entityKey.OperationComptableKey;
 import com.yowyob.erp.common.entity.Auditable;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.Data;
-import org.springframework.data.cassandra.core.mapping.PrimaryKey;
-import org.springframework.data.cassandra.core.mapping.Table;
-import org.springframework.data.cassandra.core.mapping.Column;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-
-import org.springframework.data.redis.core.RedisHash;
-
-//@RedisHash("operation_comptable")
-@Table("operation_comptable")
+/**
+ * Opération comptable paramétrable (Phase 1 du paramétrage OHADA)
+ */
+@Entity
+@Table(name = "operation_comptable")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class OperationComptable implements Auditable {
 
-    @PrimaryKey
-    private OperationComptableKey key;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "operation_id")
+    private Long id;
 
-    @NotBlank(message = "Le type d'opération ne peut pas être vide")
-    @Size(max = 50, message = "Le type d'opération ne doit pas dépasser 50 caractères")
-    @Column("type_operation")
+    @NotNull
+    @Column(name = "tenant_id", nullable = false)
+    private UUID tenantId;
+
+    @NotBlank
+    @Column(name = "type_operation", length = 50)
     private String typeOperation;
 
-    @NotBlank(message = "Le mode de règlement ne peut pas être vide")
-    @Size(max = 50, message = "Le mode de règlement ne doit pas dépasser 50 caractères")
-    @Column("mode_reglement")
+    @NotBlank
+    @Column(name = "mode_reglement", length = 50)
     private String modeReglement;
 
-    @NotBlank(message = "Le compte principal ne peut pas être vide")
-    @Size(max = 20, message = "Le compte principal ne doit pas dépasser 20 caractères")
-    @Column("compte_principal")
+    @NotBlank
+    @Column(name = "compte_principal", length = 20)
     private String comptePrincipal;
 
-    @NotNull(message = "Le statut compte statique ne peut pas être nul")
-    @Column("est_compte_statique")  
+    @Column(name = "est_compte_statique")
     private Boolean estCompteStatique = false;
 
-    @NotBlank(message = "Le sens principal ne peut pas être vide")
-    @Pattern(regexp = "DEBIT|CREDIT", message = "Le sens principal doit être DEBIT ou CREDIT")
-    @Column("sens_principal")
+    @Pattern(regexp = "DEBIT|CREDIT")
+    @Column(name = "sens_principal", length = 10)
     private String sensPrincipal;
 
-    @NotNull(message = "L'identifiant du journal comptable ne peut pas être nul")
-    @Column("journal_comptable_id")
-    private UUID journalComptableId;
+    @Column(name = "journal_comptable_id")
+    private Long journalComptableId;
 
-    @NotBlank(message = "Le type de montant ne peut pas être vide")
-    @Pattern(regexp = "HT|TTC|TVA|PAU", message = "Le type de montant doit être HT, TTC, TVA ou PAU")
-    @Column("type_montant")
+    @Pattern(regexp = "HT|TTC|TVA|PAU")
+    @Column(name = "type_montant", length = 10)
     private String typeMontant;
 
-    @PositiveOrZero(message = "Le plafond client doit être positif ou zéro")
-    @Column("plafond_client")
-    private Double plafondClient;
+    @Column(name = "plafond_client")
+    private Double plafondClient = 0.0;
 
-    @NotNull(message = "Le statut actif ne peut pas être nul")
+    @Column(nullable = false)
     private Boolean actif = true;
 
-    @Size(max = 255, message = "Les notes ne doivent pas dépasser 255 caractères")
+    @Column(length = 255)
     private String notes;
 
-    @Column("created_at")
-    private LocalDateTime createdAt;
+    /**
+     * Date de création
+     */
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column("updated_at")
-    private LocalDateTime updatedAt;
+    /**
+     * Date de dernière mise à jour
+     */
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @Size(max = 255, message = "Créé par ne doit pas dépasser 255 caractères")
-    @Column("created_by")
+    /**
+     * Utilisateur créateur
+     */
+    @Size(max = 255)
+    @Column(name = "created_by", length = 255)
     private String createdBy;
 
-    @Size(max = 255, message = "Mis à jour par ne doit pas dépasser 255 caractères")
-    @Column("updated_by")
+    /**
+     * Utilisateur ayant modifié la ressource
+     */
+    @Size(max = 255)
+    @Column(name = "updated_by", length = 255)
     private String updatedBy;
 
+    // =========================================================
+    // Implémentation de l'interface Auditable
+    // =========================================================
     @Override
     public UUID getTenantId() {
-        return key.getTenantId();
+        return tenantId;
     }
 
     @Override
     public void setTenantId(UUID tenantId) {
-        if (key == null) {
-            key = new OperationComptableKey();
-        }
-        key.setTenantId(tenantId);
+        this.tenantId = tenantId;
+    }
+
+    @Override
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    @Override
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    @Override
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    @Override
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    @Override
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    @Override
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    @Override
+    public String getUpdatedBy() {
+        return updatedBy;
+    }
+
+    @Override
+    public void setUpdatedBy(String updatedBy) {
+        this.updatedBy = updatedBy;
     }
 }
