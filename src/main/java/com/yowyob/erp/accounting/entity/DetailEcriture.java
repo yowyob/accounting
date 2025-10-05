@@ -32,7 +32,7 @@ public class DetailEcriture implements Auditable {
     private Long ecritureComptableId;
 
     @Column(name = "plan_comptable_id")
-    private Long planComptableId;
+    private Long compteComptableId;
 
     @Column(length = 255)
     private String libelle;

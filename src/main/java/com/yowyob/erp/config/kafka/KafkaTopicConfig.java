@@ -1,8 +1,6 @@
 package com.yowyob.erp.config.kafka;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,10 +11,17 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.KafkaAdmin;
-import lombok.extern.slf4j.Slf4j;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Configuration Kafka pour la messaging
+ * Configuration Kafka – Gestion automatique des topics ERP comptable.
+ * 
+ * Gère :
+ *  - Flux comptables (écritures, détails, journaux)
+ *  - Événements métiers (factures, transactions, notifications)
+ *  - Audit & intégration
  */
 @Configuration
 @EnableKafka
@@ -28,15 +33,18 @@ public class KafkaTopicConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
-    // Configuration Admin pour créer les topics
     @Bean
     public KafkaAdmin kafkaAdmin() {
         Map<String, Object> configs = new HashMap<>();
         configs.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        log.info("✅ Kafka Admin configuré avec serveur: {}", bootstrapServers);
         return new KafkaAdmin(configs);
     }
 
-    // Création des topics
+    /* ==============================================================
+     *  🧾 DOMAINES COMPTABLES (OHADA)
+     * ============================================================== */
+
     @Bean
     public NewTopic accountingEntriesTopic() {
         return TopicBuilder.name("accounting.entries")
@@ -46,12 +54,60 @@ public class KafkaTopicConfig {
     }
 
     @Bean
+    public NewTopic detailEcritureCreatedTopic() {
+        return TopicBuilder.name("detail.ecriture.created")
+                .partitions(2)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic detailEcritureUpdatedTopic() {
+        return TopicBuilder.name("detail.ecriture.updated")
+                .partitions(2)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic detailEcritureDeletedTopic() {
+        return TopicBuilder.name("detail.ecriture.deleted")
+                .partitions(2)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic journalAuditCreatedTopic() {
+        return TopicBuilder.name("journal.audit.created")
+                .partitions(2)
+                .replicas(1)
+                .build();
+    }
+
+    /* ==============================================================
+     *  💳 DOMAINES FINANCIERS / FACTURATION
+     * ============================================================== */
+
+    @Bean
     public NewTopic invoiceEventsTopic() {
         return TopicBuilder.name("invoice.events")
                 .partitions(3)
                 .replicas(1)
                 .build();
     }
+
+    @Bean
+    public NewTopic transactionEventsTopic() {
+        return TopicBuilder.name("transaction.events")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    /* ==============================================================
+     *  🔔 NOTIFICATIONS & JOURNAL D’AUDIT
+     * ============================================================== */
 
     @Bean
     public NewTopic notificationsTopic() {

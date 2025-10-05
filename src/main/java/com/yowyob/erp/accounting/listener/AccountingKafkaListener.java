@@ -1,8 +1,6 @@
-// Listener Kafka pour traiter les événements
 package com.yowyob.erp.accounting.listener;
 
 import com.yowyob.erp.common.dto.KafkaMessage;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
@@ -11,85 +9,124 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 
+/**
+ * Listener Kafka pour la gestion des événements du domaine comptable ERP.
+ * Gère : Facturation, Comptabilité, Transactions et Audit.
+ */
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class AccountingKafkaListener {
 
-    /**
-     * Écoute les événements de facturation pour génération automatique d'écritures
-     */
-    @KafkaListener(topics = "invoice.events", groupId = "${spring.kafka.consumer.group-id}")
-    public void handleInvoiceEvents(@Payload KafkaMessage message,
-                                   @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
-                                   @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
-                                   Acknowledgment acknowledgment) {
-        try {
-            log.info("Réception d'un événement de facture: {} pour le tenant: {}", 
-                    message.getEventType(), message.getTenantId());
+    /* ===========================================================
+     *  🧾 FACTURATION
+     * =========================================================== */
+    @KafkaListener(topics = "${app.kafka.topics.invoice-events}", groupId = "${spring.kafka.consumer.group-id}")
+    public void handleInvoiceEvents(
+            @Payload KafkaMessage message,
+            @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
+            @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
+            Acknowledgment acknowledgment) {
 
-            // Traitement selon le type d'événement
+        try {
+            log.info("📄 [INVOICE] Event reçu sur topic={} partition={} | type={} | tenant={}",
+                    topic, partition, message.getEventType(), message.getTenantId());
+
             switch (message.getEventType()) {
                 case "INVOICE_CREATED" -> handleInvoiceCreated(message);
                 case "INVOICE_PAID" -> handleInvoicePaid(message);
-                default -> log.warn("Type d'événement non traité: {}", message.getEventType());
+                default -> log.warn("⚠️ Type d'événement facture non géré : {}", message.getEventType());
             }
 
             acknowledgment.acknowledge();
-            log.debug("Événement traité avec succès pour la partition: {}", partition);
 
         } catch (Exception e) {
-            log.error("Erreur lors du traitement de l'événement facture", e);
-            // Ne pas acknowledgment pour retraitement
+            log.error("❌ Erreur lors du traitement de l'événement facture : {}", e.getMessage(), e);
         }
     }
 
-    /**
-     * Écoute les événements comptables pour mise à jour des caches
-     */
-    @KafkaListener(topics = "accounting.entries", groupId = "${spring.kafka.consumer.group-id}")
-    public void handleAccountingEvents(@Payload KafkaMessage message,
-                                     Acknowledgment acknowledgment) {
+    /* ===========================================================
+     *  📘 COMPTABILITÉ (Écritures)
+     * =========================================================== */
+    @KafkaListener(topics = "${app.kafka.topics.accounting-entries}", groupId = "${spring.kafka.consumer.group-id}")
+    public void handleAccountingEvents(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
         try {
-            log.info("Réception d'un événement comptable: {} pour le tenant: {}", 
-                    message.getEventType(), message.getTenantId());
+            log.info("📘 [COMPTA] Event reçu | type={} | tenant={}", message.getEventType(), message.getTenantId());
 
-            // Traitement selon le type d'événement
             switch (message.getEventType()) {
-                case "ACCOUNTING_ENTRY_CREATED":
-                    handleAccountingEntryCreated(message);
-                    break;
-                case "ACCOUNTING_ENTRY_VALIDATED":
-                    handleAccountingEntryValidated(message);
-                    break;
-                default:
-                    log.warn("Type d'événement comptable non traité: {}", message.getEventType());
+                case "ACCOUNTING_ENTRY_CREATED" -> handleAccountingEntryCreated(message);
+                case "ACCOUNTING_ENTRY_VALIDATED" -> handleAccountingEntryValidated(message);
+                default -> log.warn("⚠️ Type d'événement comptable non géré : {}", message.getEventType());
             }
 
             acknowledgment.acknowledge();
 
         } catch (Exception e) {
-            log.error("Erreur lors du traitement de l'événement comptable", e);
+            log.error("❌ Erreur lors du traitement d’un événement comptable", e);
         }
     }
 
+    /* ===========================================================
+     *  💳 TRANSACTIONS
+     * =========================================================== */
+    @KafkaListener(topics = "transaction.events", groupId = "${spring.kafka.consumer.group-id}")
+    public void handleTransactionEvents(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
+        try {
+            log.info("💳 [TRANSACTION] Event reçu | type={} | tenant={}", message.getEventType(), message.getTenantId());
+            switch (message.getEventType()) {
+                case "TRANSACTION_CREATED" -> handleTransactionCreated(message);
+                case "TRANSACTION_VALIDATED" -> handleTransactionValidated(message);
+                default -> log.warn("⚠️ Type d'événement transaction non géré : {}", message.getEventType());
+            }
+            acknowledgment.acknowledge();
+        } catch (Exception e) {
+            log.error("❌ Erreur lors du traitement d’un événement transaction", e);
+        }
+    }
+
+    /* ===========================================================
+     *  🔍 AUDIT
+     * =========================================================== */
+    @KafkaListener(topics = "${app.kafka.topics.audit-logs}", groupId = "${spring.kafka.consumer.group-id}")
+    public void handleAuditLogs(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
+        try {
+            log.info("🧩 [AUDIT] Nouveau log reçu | action={} | tenant={}", message.getEventType(), message.getTenantId());
+            // TODO: Enregistrer dans Elasticsearch ou MonitoringService
+            acknowledgment.acknowledge();
+        } catch (Exception e) {
+            log.error("Erreur traitement audit log", e);
+        }
+    }
+
+    /* ===========================================================
+     *  🔧 MÉTHODES PRIVÉES DE TRAITEMENT
+     * =========================================================== */
     private void handleInvoiceCreated(KafkaMessage message) {
-        // TODO: Générer automatiquement l'écriture comptable
-        log.info("Traitement de la création de facture: {}", message.getPayload());
+        log.info("🧾 Génération écriture comptable pour facture créée : {}", message.getPayload());
+        // TODO: créer écriture (EcritureComptable + DetailEcriture)
     }
 
     private void handleInvoicePaid(KafkaMessage message) {
-        // TODO: Générer l'écriture de règlement
-        log.info("Traitement du paiement de facture: {}", message.getPayload());
+        log.info("💰 Génération écriture de règlement pour facture payée : {}", message.getPayload());
+        // TODO: créer écriture et mise à jour soldes
     }
 
     private void handleAccountingEntryCreated(KafkaMessage message) {
-        // TODO: Mettre à jour les index Elasticsearch
-        log.info("Indexation de l'écriture comptable créée");
+        log.info("📊 Indexation d'une écriture comptable créée : {}", message.getPayload());
+        // TODO: Indexation Elasticsearch ou mise en cache
     }
 
     private void handleAccountingEntryValidated(KafkaMessage message) {
-        // TODO: Mettre à jour les soldes en cache
-        log.info("Mise à jour des soldes suite à validation");
+        log.info("✅ Mise à jour des soldes suite validation : {}", message.getPayload());
+        // TODO: recalculer soldes Redis / PostgreSQL
+    }
+
+    private void handleTransactionCreated(KafkaMessage message) {
+        log.info("💸 Nouvelle transaction détectée : {}", message.getPayload());
+        // TODO: synchroniser avec module Trésorerie
+    }
+
+    private void handleTransactionValidated(KafkaMessage message) {
+        log.info("🧾 Transaction validée : {}", message.getPayload());
+        // TODO: enregistrer écriture dans le Journal TR
     }
 }

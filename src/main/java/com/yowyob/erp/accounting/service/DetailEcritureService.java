@@ -4,9 +4,6 @@ import com.yowyob.erp.config.tenant.TenantContext;
 import com.yowyob.erp.accounting.entity.DetailEcriture;
 import com.yowyob.erp.accounting.entity.JournalAudit;
 import com.yowyob.erp.accounting.entity.PlanComptable;
-import com.yowyob.erp.accounting.entityKey.DetailEcritureKey;
-import com.yowyob.erp.accounting.entityKey.JournalAuditKey;
-import com.yowyob.erp.accounting.entityKey.PlanComptableKey;
 import com.yowyob.erp.accounting.repository.DetailEcritureRepository;
 import com.yowyob.erp.accounting.repository.JournalAuditRepository;
 import com.yowyob.erp.accounting.repository.PlanComptableRepository;
@@ -19,21 +16,30 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
+/**
+ * Service gérant la création, la mise à jour et la suppression des
+ * détails d'écriture comptable. Compatible PostgreSQL + JPA.
+ */
 @Service
 public class DetailEcritureService {
 
     private static final Logger logger = LoggerFactory.getLogger(DetailEcritureService.class);
+
     private final DetailEcritureRepository detailRepository;
     private final PlanComptableRepository planComptableRepository;
     private final JournalAuditRepository journalAuditRepository;
     private final Validator validator;
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public DetailEcritureService(DetailEcritureRepository detailRepository, PlanComptableRepository planComptableRepository, JournalAuditRepository journalAuditRepository, Validator validator, KafkaTemplate<String, Object> kafkaTemplate) {
+    public DetailEcritureService(
+            DetailEcritureRepository detailRepository,
+            PlanComptableRepository planComptableRepository,
+            JournalAuditRepository journalAuditRepository,
+            Validator validator,
+            KafkaTemplate<String, Object> kafkaTemplate
+    ) {
         this.detailRepository = detailRepository;
         this.planComptableRepository = planComptableRepository;
         this.journalAuditRepository = journalAuditRepository;
@@ -41,149 +47,160 @@ public class DetailEcritureService {
         this.kafkaTemplate = kafkaTemplate;
     }
 
+    /* -------------------------------------------------------------------------- */
+    /*                              CRÉATION D'UNE LIGNE D'ÉCRITURE                        */
+    /* -------------------------------------------------------------------------- */
     @Transactional
     public DetailEcriture createDetailEcriture(DetailEcriture detail) {
-        logger.info("Création d'un détail d'écriture");
-        validerDetailEcriture(detail);
         UUID tenantId = TenantContext.getCurrentTenant();
-        String currentUser = TenantContext.getCurrentUser();
+        String currentUser = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
 
-        DetailEcritureKey key = new DetailEcritureKey();
-        key.setTenantId(tenantId);
-        key.setEcritureComptableId(detail.getKey().getEcritureComptableId());
-        key.setId(UUID.randomUUID());
-        detail.setKey(key);
+        validerDetailEcriture(detail);
+
+        detail.setTenantId(tenantId);
         detail.setDateEcriture(LocalDateTime.now());
         detail.setCreatedAt(LocalDateTime.now());
         detail.setUpdatedAt(LocalDateTime.now());
-        detail.setCreatedBy(currentUser != null ? currentUser : "system");
-        detail.setUpdatedBy(currentUser != null ? currentUser : "system");
+        detail.setCreatedBy(currentUser);
+        detail.setUpdatedBy(currentUser);
 
-        if ("DEBIT".equals(detail.getSens())) {
-            detail.setMontantCredit(0.0);
-        } else if ("CREDIT".equals(detail.getSens())) {
-            detail.setMontantDebit(0.0);
-        }
+        // Sens → met à zéro le champ opposé
+        if ("DEBIT".equalsIgnoreCase(detail.getSens())) detail.setMontantCredit(0.0);
+        if ("CREDIT".equalsIgnoreCase(detail.getSens())) detail.setMontantDebit(0.0);
 
-        DetailEcriture savedDetail = detailRepository.save(detail);
-        logAudit(tenantId, detail.getKey().getEcritureComptableId(), currentUser, "CREATE", "Created detail: " + savedDetail.getKey().getId());
-        kafkaTemplate.send("detail.ecriture.created", tenantId.toString(), savedDetail);
-        logger.info("Détail d'écriture créé avec succès : {}", savedDetail.getKey().getId());
-        return savedDetail;
+        DetailEcriture saved = detailRepository.save(detail);
+        logAudit(tenantId, saved.getEcritureComptableId(), currentUser, "CREATE",
+                "Création d’un détail d’écriture " + saved.getId());
+        kafkaTemplate.send("detail.ecriture.created", tenantId.toString(), saved);
+
+        logger.info("✅ Détail d’écriture créé avec succès : {}", saved.getId());
+        return saved;
     }
 
-    public Optional<DetailEcriture> getDetailEcriture(UUID detailId, UUID ecritureComptableId) {
-        logger.info("Récupération du détail d'écriture avec l'ID : {}", detailId);
+    /* -------------------------------------------------------------------------- */
+    /*                                  LECTURE                                   */
+    /* -------------------------------------------------------------------------- */
+    public Optional<DetailEcriture> getDetailEcriture(Long id, UUID tenantId) {
         validerAccesTenantId();
-        DetailEcritureKey key = new DetailEcritureKey();
-        key.setTenantId(TenantContext.getCurrentTenant());
-        key.setEcritureComptableId(ecritureComptableId);
-        key.setId(detailId);
-        return detailRepository.findById(key);
+        return detailRepository.findById(id)
+                .filter(d -> d.getTenantId().equals(tenantId));
     }
 
-    public List<DetailEcriture> getAllDetailsEcriture() {
-        logger.info("Récupération de tous les détails d'écriture pour le tenant");
+    public List<DetailEcriture> getAllDetailsEcriture(UUID tenantId) {
         validerAccesTenantId();
-        return detailRepository.findByKeyTenantId(TenantContext.getCurrentTenant());
+        return detailRepository.findByTenantId(tenantId);
     }
 
-    public List<DetailEcriture> findByKeyTenantIdAndKeyEcritureComptableId(UUID tenantId, UUID ecritureComptableId) {
-        logger.info("Récupération des détails d'écriture pour tenant: {}, ecritureComptableId: {}", tenantId, ecritureComptableId);
+    public List<DetailEcriture> getDetailsByEcriture(UUID tenantId, Long ecritureComptableId) {
         validerAccesTenantId();
-        return detailRepository.findByKeyTenantIdAndKeyEcritureComptableId(tenantId, ecritureComptableId);
+        return detailRepository.findByTenantIdAndEcritureComptableId(tenantId, ecritureComptableId);
     }
 
+    /* -------------------------------------------------------------------------- */
+    /*                                 MISE À JOUR                                */
+    /* -------------------------------------------------------------------------- */
     @Transactional
-    public DetailEcriture updateDetailEcriture(UUID detailId, UUID ecritureComptableId, DetailEcriture updatedDetail) {
-        logger.info("Mise à jour du détail d'écriture avec l'ID : {}", detailId);
-        validerAccesTenantId();
+    public DetailEcriture updateDetailEcriture(Long id, DetailEcriture updatedDetail) {
         UUID tenantId = TenantContext.getCurrentTenant();
-        String currentUser = TenantContext.getCurrentUser();
-        DetailEcritureKey key = new DetailEcritureKey();
-        key.setTenantId(tenantId);
-        key.setEcritureComptableId(ecritureComptableId);
-        key.setId(detailId);
-        if (!detailRepository.existsById(key)) {
-            throw new IllegalArgumentException("L'ID du détail d'écriture n'existe pas : " + detailId);
-        }
-        updatedDetail.setKey(key);
-        validerDetailEcriture(updatedDetail);
-        updatedDetail.setUpdatedAt(LocalDateTime.now());
-        updatedDetail.setUpdatedBy(currentUser != null ? currentUser : "system");
-
-        if ("DEBIT".equals(updatedDetail.getSens())) {
-            updatedDetail.setMontantCredit(0.0);
-        } else if ("CREDIT".equals(updatedDetail.getSens())) {
-            updatedDetail.setMontantDebit(0.0);
-        }
-
-        DetailEcriture savedDetail = detailRepository.save(updatedDetail);
-        logAudit(tenantId, ecritureComptableId, currentUser, "UPDATE", "Updated detail: " + detailId);
-        kafkaTemplate.send("detail.ecriture.updated", tenantId.toString(), savedDetail);
-        logger.info("Détail d'écriture mis à jour avec succès : {}", detailId);
-        return savedDetail;
-    }
-
-    @Transactional
-    public void deleteDetailEcriture(UUID tenantId, UUID ecritureComptableId, UUID detailId) {
-        logger.info("Suppression du détail d'écriture avec l'ID : {}", detailId);
+        String currentUser = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
         validerAccesTenantId();
-        String currentUser = TenantContext.getCurrentUser();
-        DetailEcritureKey key = new DetailEcritureKey();
-        key.setTenantId(tenantId);
-        key.setEcritureComptableId(ecritureComptableId);
-        key.setId(detailId);
-        if (!detailRepository.existsById(key)) {
-            throw new IllegalArgumentException("L'ID du détail d'écriture n'existe pas : " + detailId);
-        }
-        detailRepository.deleteById(key);
-        logAudit(tenantId, ecritureComptableId, currentUser, "DELETE", "Deleted detail: " + detailId);
-        kafkaTemplate.send("detail.ecriture.deleted", tenantId.toString(), detailId);
-        logger.info("Détail d'écriture supprimé avec succès : {}", detailId);
+
+        DetailEcriture existing = detailRepository.findById(id)
+                .filter(d -> d.getTenantId().equals(tenantId))
+                .orElseThrow(() -> new IllegalArgumentException("Détail d’écriture introuvable : " + id));
+
+        validerDetailEcriture(updatedDetail);
+
+        existing.setLibelle(updatedDetail.getLibelle());
+        existing.setSens(updatedDetail.getSens());
+        existing.setMontantDebit(updatedDetail.getMontantDebit());
+        existing.setMontantCredit(updatedDetail.getMontantCredit());
+        existing.setNotes(updatedDetail.getNotes());
+        existing.setUpdatedAt(LocalDateTime.now());
+        existing.setUpdatedBy(currentUser);
+
+        if ("DEBIT".equalsIgnoreCase(existing.getSens())) existing.setMontantCredit(0.0);
+        if ("CREDIT".equalsIgnoreCase(existing.getSens())) existing.setMontantDebit(0.0);
+
+        DetailEcriture saved = detailRepository.save(existing);
+        logAudit(tenantId, saved.getEcritureComptableId(), currentUser, "UPDATE",
+                "Mise à jour du détail d’écriture " + saved.getId());
+        kafkaTemplate.send("detail.ecriture.updated", tenantId.toString(), saved);
+
+        logger.info("✏️ Détail d’écriture mis à jour : {}", saved.getId());
+        return saved;
     }
 
+    /* -------------------------------------------------------------------------- */
+    /*                                 SUPPRESSION                                */
+    /* -------------------------------------------------------------------------- */
+    @Transactional
+    public void deleteDetailEcriture(Long id, UUID tenantId) {
+        validerAccesTenantId();
+        String currentUser = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
+
+        DetailEcriture detail = detailRepository.findById(id)
+                .filter(d -> d.getTenantId().equals(tenantId))
+                .orElseThrow(() -> new IllegalArgumentException("Détail d’écriture introuvable : " + id));
+
+        detailRepository.delete(detail);
+        logAudit(tenantId, detail.getEcritureComptableId(), currentUser, "DELETE",
+                "Suppression du détail d’écriture " + id);
+        kafkaTemplate.send("detail.ecriture.deleted", tenantId.toString(), id);
+
+        logger.info("🗑️ Détail d’écriture supprimé : {}", id);
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                                 VALIDATION                                 */
+    /* -------------------------------------------------------------------------- */
     private void validerDetailEcriture(DetailEcriture detail) {
         var violations = validator.validate(detail);
-        if (!violations.isEmpty()) {
-            throw new ConstraintViolationException(violations);
-        }
+        if (!violations.isEmpty()) throw new ConstraintViolationException(violations);
+
         UUID tenantId = TenantContext.getCurrentTenant();
-        PlanComptableKey planKey = new PlanComptableKey();
-        planKey.setTenantId(tenantId);
-        planKey.setId(detail.getCompteComptableId());
-        PlanComptable plan = planComptableRepository.findByKey(planKey)
-                .orElseThrow(() -> new IllegalArgumentException("Plan comptable ID invalide : " + detail.getCompteComptableId()));
-        if (!plan.getActif()) {
+        PlanComptable plan = planComptableRepository
+                .findById(detail.getCompteComptableId())
+                .filter(p -> p.getTenantId().equals(tenantId))
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Compte comptable introuvable : " + detail.getCompteComptableId()));
+
+        if (!Boolean.TRUE.equals(plan.getActif()))
             throw new IllegalArgumentException("Compte inactif : " + plan.getNoCompte());
-        }
-        if ("DEBIT".equals(detail.getSens()) && detail.getMontantDebit() <= 0) {
-            throw new IllegalArgumentException("Montant débit doit être positif pour sens DEBIT");
-        }
-        if ("CREDIT".equals(detail.getSens()) && detail.getMontantCredit() <= 0) {
-            throw new IllegalArgumentException("Montant crédit doit être positif pour sens CREDIT");
-        }
+
+        if ("DEBIT".equalsIgnoreCase(detail.getSens()) && detail.getMontantDebit() <= 0)
+            throw new IllegalArgumentException("Montant débit doit être positif");
+
+        if ("CREDIT".equalsIgnoreCase(detail.getSens()) && detail.getMontantCredit() <= 0)
+            throw new IllegalArgumentException("Montant crédit doit être positif");
     }
 
-    private void validerAccesTenantId() {
-        UUID currentTenantId = TenantContext.getCurrentTenant();
-        if (currentTenantId == null) {
-            throw new SecurityException("Accès refusé : ID du tenant non correspondant");
-        }
-    }
+    /* -------------------------------------------------------------------------- */
+    /*                                   AUDIT                                    */
+    /* -------------------------------------------------------------------------- */
+    private void logAudit(UUID tenantId, Long ecritureComptableId, String utilisateur, String action, String details) {
+        JournalAudit audit = JournalAudit.builder()
+                .tenantId(tenantId)
+                .ecritureComptableId(ecritureComptableId)
+                .utilisateur(utilisateur)
+                .action(action)
+                .details(details)
+                .dateAction(LocalDateTime.now())
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .createdBy(utilisateur)
+                .updatedBy(utilisateur)
+                .build();
 
-    private void logAudit(UUID tenantId, UUID ecritureComptableId, String utilisateur, String action, String details) {
-        JournalAudit audit = new JournalAudit();
-        JournalAuditKey auditKey = new JournalAuditKey();
-        auditKey.setTenantId(tenantId);
-        auditKey.setId(UUID.randomUUID());
-        audit.setKey(auditKey);
-        audit.setEcritureComptableId(ecritureComptableId);
-        audit.setUtilisateur(utilisateur != null ? utilisateur : "system");
-        audit.setAction(action);
-        audit.setDetails(details);
-        audit.setDateAction(LocalDateTime.now());
         journalAuditRepository.save(audit);
         kafkaTemplate.send("journal.audit.created", tenantId.toString(), audit);
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                                   SECURITE                                 */
+    /* -------------------------------------------------------------------------- */
+    private void validerAccesTenantId() {
+        if (TenantContext.getCurrentTenant() == null)
+            throw new SecurityException("Accès refusé : ID du tenant non défini");
     }
 }

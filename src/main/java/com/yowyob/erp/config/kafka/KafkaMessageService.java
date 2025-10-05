@@ -13,6 +13,10 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Service centralisé pour la publication d’événements Kafka dans l’ERP.
+ * Chaque module (compta, facturation, audit, etc.) l’utilise pour notifier ses actions.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -25,6 +29,9 @@ public class KafkaMessageService {
 
     @Value("${app.kafka.topics.invoice-events}")
     private String invoiceEventsTopic;
+
+    @Value("${app.kafka.topics.transaction-events:transaction.events}")
+    private String transactionEventsTopic;
 
     @Value("${app.kafka.topics.notifications}")
     private String notificationsTopic;
@@ -41,68 +48,67 @@ public class KafkaMessageService {
     @Value("${app.kafka.topics.tenant-deleted}")
     private String tenantDeletedTopic;
 
+    /* ===========================================================
+     *  🔧 MÉTHODES GÉNÉRIQUES
+     * =========================================================== */
+
     @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000))
-    public void sendAccountingEntry(Object payload, String tenantId, String eventType) {
+    public void sendMessage(String topic, String key, Object payload, String eventType, String tenantId) {
         KafkaMessage message = KafkaMessage.builder()
-                .payload(payload)
                 .tenantId(tenantId)
                 .eventType(eventType)
-                .timestamp(LocalDateTime.now())
-                .build();
-
-        sendMessage(accountingEntriesTopic, tenantId, message);
-    }
-
-    @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000))
-    public void sendInvoiceEvent(Object payload, String tenantId, String eventType) {
-        KafkaMessage message = KafkaMessage.builder()
                 .payload(payload)
-                .tenantId(tenantId)
-                .eventType(eventType)
                 .timestamp(LocalDateTime.now())
                 .build();
 
-        sendMessage(invoiceEventsTopic, tenantId, message);
-    }
-
-    @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000))
-    public void sendNotification(Object payload, String tenantId, String eventType) {
-        KafkaMessage message = KafkaMessage.builder()
-                .payload(payload)
-                .tenantId(tenantId)
-                .eventType(eventType)
-                .timestamp(LocalDateTime.now())
-                .build();
-
-        sendMessage(notificationsTopic, tenantId, message);
-    }
-
-    @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000))
-    public void sendAuditLog(Object payload, String tenantId, String action) {
-        KafkaMessage message = KafkaMessage.builder()
-                .payload(payload)
-                .tenantId(tenantId)
-                .eventType(action)
-                .timestamp(LocalDateTime.now())
-                .build();
-
-        sendMessage(auditLogsTopic, tenantId, message);
-    }
-
-    @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000))
-    public void sendMessage(String topic, String key, Object message) {
         try {
             CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(topic, key, message);
             future.whenComplete((result, exception) -> {
                 if (exception == null) {
-                    log.debug("Message envoyé avec succès vers le topic [{}] avec offset=[{}]", topic, result.getRecordMetadata().offset());
+                    log.debug("✅ Message envoyé → Topic [{}] | Offset [{}]", topic, result.getRecordMetadata().offset());
                 } else {
-                    log.error("Échec de l'envoi du message vers le topic [{}] : {}", topic, exception.getMessage());
+                    log.error("❌ Échec de l’envoi Kafka → Topic [{}] : {}", topic, exception.getMessage());
                 }
             });
         } catch (Exception e) {
-            log.error("Erreur lors de l'envoi du message vers le topic [{}]", topic, e);
-            throw e; // Relance pour le retry
+            log.error("Erreur d’envoi Kafka → Topic [{}]", topic, e);
+            throw e;
         }
+    }
+
+    /* ===========================================================
+     *  🧾 DOMAINES MÉTIERS
+     * =========================================================== */
+
+    public void sendAccountingEvent(Object payload, String tenantId, String type) {
+        sendMessage(accountingEntriesTopic, tenantId, payload, type, tenantId);
+    }
+
+    public void sendInvoiceEvent(Object payload, String tenantId, String type) {
+        sendMessage(invoiceEventsTopic, tenantId, payload, type, tenantId);
+    }
+
+    public void sendTransactionEvent(Object payload, String tenantId, String type) {
+        sendMessage(transactionEventsTopic, tenantId, payload, type, tenantId);
+    }
+
+    public void sendAuditLog(Object payload, String tenantId, String action) {
+        sendMessage(auditLogsTopic, tenantId, payload, action, tenantId);
+    }
+
+    public void sendNotification(Object payload, String tenantId, String type) {
+        sendMessage(notificationsTopic, tenantId, payload, type, tenantId);
+    }
+
+    public void sendTenantCreated(Object payload, String tenantId) {
+        sendMessage(tenantCreatedTopic, tenantId, payload, "TENANT_CREATED", tenantId);
+    }
+
+    public void sendTenantUpdated(Object payload, String tenantId) {
+        sendMessage(tenantUpdatedTopic, tenantId, payload, "TENANT_UPDATED", tenantId);
+    }
+
+    public void sendTenantDeleted(Object payload, String tenantId) {
+        sendMessage(tenantDeletedTopic, tenantId, payload, "TENANT_DELETED", tenantId);
     }
 }
