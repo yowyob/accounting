@@ -1,33 +1,44 @@
 package com.yowyob.erp.accounting.repository;
 
 import com.yowyob.erp.accounting.entity.Compte;
-import com.yowyob.erp.accounting.entityKey.CompteKey;
-
-import org.springframework.data.cassandra.repository.CassandraRepository;
-import org.springframework.data.cassandra.repository.Query;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-
+/**
+ * Repository JPA pour la gestion des comptes comptables OHADA.
+ * 
+ * Implémente les opérations de recherche multi-tenant, 
+ * ainsi que les filtres par numéro de compte et classe.
+ * 
+ * Conforme à la Charte de Développement Yowyob :
+ * - requêtes claires
+ * - noms explicites
+ * - isolation par tenant_id
+ */
 @Repository
-public interface CompteRepository extends CassandraRepository<Compte, CompteKey> {
+public interface CompteRepository extends JpaRepository<Compte, Long> {
 
-    Optional<Compte> findByKey(CompteKey key);
-    List<Compte> findAllByKeyTenantId(UUID tenantId);
-    
-    void deleteById(CompteKey key);
+    /** Recherche un compte par tenant et numéro de compte */
+    Optional<Compte> findByTenantIdAndNoCompte(UUID tenantId, String noCompte);
 
-    boolean existsByKeyTenantIdAndNoCompte(UUID tenantId, String noCompte);
+    /** Liste des comptes actifs d’un tenant */
+    List<Compte> findByTenantIdAndActifTrue(UUID tenantId);
 
-    Optional<Compte> findByKeyTenantIdAndNoCompte(UUID tenantId, String noCompte);
+    /** Liste des comptes d’un tenant par classe OHADA */
+    List<Compte> findByTenantIdAndClasse(UUID tenantId, Integer classe);
 
-    List<Compte> findByKeyTenantIdAndActifTrue(UUID tenantId);
+    /** Vérifie si un compte existe pour un tenant et un numéro donné */
+    boolean existsByTenantIdAndNoCompte(UUID tenantId, String noCompte);
 
-    @Query("SELECT * FROM plan_comptable WHERE tenant_id = ?0 AND no_compte LIKE ?1%")
-    List<Compte> findByKeyTenantIdAndNoComptePrefix(UUID tenantId, String prefix);
+    /** Recherche des comptes dont le numéro commence par un préfixe donné */
+    @Query("SELECT c FROM Compte c WHERE c.tenantId = :tenantId AND c.noCompte LIKE CONCAT(:prefix, '%')")
+    List<Compte> findByTenantIdAndNoCompteStartingWith(UUID tenantId, String prefix);
 
-    List<Compte> findByKeyTenantIdAndClasse(UUID tenantId, Integer classe);
+    /** Tous les comptes d’un tenant (y compris inactifs) */
+    List<Compte> findAllByTenantId(UUID tenantId);
 }

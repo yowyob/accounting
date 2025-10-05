@@ -2,74 +2,94 @@ package com.yowyob.erp.accounting.serviceInitialization;
 
 import com.yowyob.erp.accounting.entity.JournalComptable;
 import com.yowyob.erp.accounting.entity.OperationComptable;
-import com.yowyob.erp.accounting.entityKey.OperationComptableKey;
 import com.yowyob.erp.accounting.repository.JournalComptableRepository;
 import com.yowyob.erp.accounting.repository.OperationComptableRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
-
-import org.springframework.beans.factory.annotation.Value;
-
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-//@Service
+/**
+ * Initialise quelques opérations comptables de base :
+ * - Achat (Journal AN)
+ * - Vente (Journal VE)
+ * - Paiement (Journal TR)
+ */
+@Service
 public class OperationComptableInitializationService implements CommandLineRunner {
 
     private final OperationComptableRepository operationComptableRepository;
     private final JournalComptableRepository journalComptableRepository;
-        private final UUID tenantId ;
+    private final UUID tenantId;
 
-    public OperationComptableInitializationService(OperationComptableRepository operationComptableRepository,
-     JournalComptableRepository journalComptableRepository,
-      @Value("${app.tenant.default-tenant:550e8400-e29b-41d4-a716-446655440000}")
-     String tenantIdStr) {
+    public OperationComptableInitializationService(
+            OperationComptableRepository operationComptableRepository,
+            JournalComptableRepository journalComptableRepository,
+            @Value("${app.tenant.default-tenant:550e8400-e29b-41d4-a716-446655440000}")
+            String tenantIdStr) {
         this.operationComptableRepository = operationComptableRepository;
         this.journalComptableRepository = journalComptableRepository;
-
-         this.tenantId = UUID.fromString(tenantIdStr);
+        this.tenantId = UUID.fromString(tenantIdStr);
     }
 
     @Override
     public void run(String... args) {
-        //UUID tenantId = UUID.randomUUID(); // Replace with actual tenant ID
-        JournalComptable journalAN = journalComptableRepository.findByKeyTenantIdAndCodeJournal(tenantId, "AN")
-                .orElseThrow(() -> new IllegalStateException("Journal AN not found"));
-        JournalComptable journalVE = journalComptableRepository.findByKeyTenantIdAndCodeJournal(tenantId, "VE")
-                .orElseThrow(() -> new IllegalStateException("Journal VE not found"));
-        JournalComptable journalTR = journalComptableRepository.findByKeyTenantIdAndCodeJournal(tenantId, "TR")
-                .orElseThrow(() -> new IllegalStateException("Journal TR not found"));
+        JournalComptable journalAN = journalComptableRepository
+                .findByTenantIdAndCodeJournal(tenantId, "AN")
+                .orElseThrow(() -> new IllegalStateException("Journal AN non trouvé"));
 
-        createOperationIfNotExists(tenantId, "ACHAT", "ESPECE", "401000", false, "DEBIT", journalAN.getKey().getId(), "HT", 1000000.0);
-        createOperationIfNotExists(tenantId, "VENTE", "ESPECE", "701000", false, "CREDIT", journalVE.getKey().getId(), "TTC", 1000000.0);
-        createOperationIfNotExists(tenantId, "PAIEMENT", "VIREMENT", "512000", false, "CREDIT", journalTR.getKey().getId(), "TTC", 5000000.0);
+        JournalComptable journalVE = journalComptableRepository
+                .findByTenantIdAndCodeJournal(tenantId, "VE")
+                .orElseThrow(() -> new IllegalStateException("Journal VE non trouvé"));
+
+        JournalComptable journalTR = journalComptableRepository
+                .findByTenantIdAndCodeJournal(tenantId, "TR")
+                .orElseThrow(() -> new IllegalStateException("Journal TR non trouvé"));
+
+        createOperationIfNotExists("ACHAT", "ESPECE", "401000", false, "DEBIT",
+                journalAN.getId(), "HT", 1_000_000.0);
+
+        createOperationIfNotExists("VENTE", "ESPECE", "701000", false, "CREDIT",
+                journalVE.getId(), "TTC", 1_000_000.0);
+
+        createOperationIfNotExists("PAIEMENT", "VIREMENT", "512000", false, "CREDIT",
+                journalTR.getId(), "TTC", 5_000_000.0);
     }
 
     private void createOperationIfNotExists(
-                       UUID tenantId, String typeOperation, 
-                       String modeReglement, String comptePrincipal,
-                        boolean estCompteStatique, String sensPrincipal,
-                         UUID journalComptableId, String typeMontant, double plafondClient) {
-        if (!operationComptableRepository.findByKeyTenantIdAndTypeOperationAndModeReglement(tenantId, typeOperation, modeReglement).isPresent()) {
-            OperationComptable operation = new OperationComptable();
-            OperationComptableKey key = new OperationComptableKey();
-            key.setTenantId(tenantId);
-            key.setId(UUID.randomUUID());
-            operation.setKey(key);
-            operation.setTypeOperation(typeOperation);
-            operation.setModeReglement(modeReglement);
-            operation.setComptePrincipal(comptePrincipal);
-            operation.setEstCompteStatique(estCompteStatique);
-            operation.setSensPrincipal(sensPrincipal);
-            operation.setJournalComptableId(journalComptableId);
-            operation.setTypeMontant(typeMontant);
-            operation.setPlafondClient(plafondClient);
-            operation.setActif(true);
-            operation.setCreatedAt(LocalDateTime.now());
-            operation.setUpdatedAt(LocalDateTime.now());
-            operation.setCreatedBy("system");
-            operation.setUpdatedBy("system");
+            String typeOperation,
+            String modeReglement,
+            String comptePrincipal,
+            boolean estCompteStatique,
+            String sensPrincipal,
+            Long journalComptableId,
+            String typeMontant,
+            double plafondClient) {
+
+        boolean exists = operationComptableRepository
+                .findByTenantIdAndTypeOperationAndModeReglement(tenantId, typeOperation, modeReglement)
+                .isPresent();
+
+        if (!exists) {
+            OperationComptable operation = OperationComptable.builder()
+                    .tenantId(tenantId)
+                    .typeOperation(typeOperation)
+                    .modeReglement(modeReglement)
+                    .comptePrincipal(comptePrincipal)
+                    .estCompteStatique(estCompteStatique)
+                    .sensPrincipal(sensPrincipal)
+                    .journalComptableId(journalComptableId)
+                    .typeMontant(typeMontant)
+                    .plafondClient(plafondClient)
+                    .actif(true)
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .createdBy("system")
+                    .updatedBy("system")
+                    .build();
+
             operationComptableRepository.save(operation);
         }
     }

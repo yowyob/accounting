@@ -1,23 +1,24 @@
 package com.yowyob.erp.accounting.repository;
 
 import com.yowyob.erp.accounting.entity.Contrepartie;
-import com.yowyob.erp.accounting.entityKey.ContrepartieKey;
-
-import org.springframework.data.cassandra.repository.CassandraRepository;
-import org.springframework.data.cassandra.repository.Query;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
 
-
 @Repository
-public interface ContrepartieRepository extends CassandraRepository<Contrepartie, ContrepartieKey> {
+public interface ContrepartieRepository extends JpaRepository<Contrepartie, Long> {
 
-    List<Contrepartie> findByKeyTenantIdAndKeyOperationComptableId(UUID tenantId, UUID operationComptableId);
+    List<Contrepartie> findByTenantIdAndOperationComptableId(UUID tenantId, Long operationComptableId);
 
-    List<Contrepartie> findByKeyTenantIdAndCompte(UUID tenantId, String compte);
+    List<Contrepartie> findByTenantIdAndCompte(UUID tenantId, String compte);
 
-    @Query("DELETE FROM contrepartie WHERE tenant_id = :tenantId AND operation_comptable_id = :operationComptableId")
-    void deleteByKeyTenantIdAndKeyOperationComptableId(UUID tenantId, UUID operationComptableId);
+    @Transactional
+    @Modifying
+    @Query("DELETE FROM Contrepartie c WHERE c.tenantId = :tenantId AND c.operationComptableId = :operationComptableId")
+    void deleteByTenantIdAndOperationComptableId(UUID tenantId, Long operationComptableId);
 }

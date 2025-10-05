@@ -1,30 +1,38 @@
 package com.yowyob.erp.accounting.repository;
 
 import com.yowyob.erp.accounting.entity.EcritureComptable;
-import com.yowyob.erp.accounting.entityKey.EcritureComptableKey;
-
-import org.springframework.data.cassandra.repository.CassandraRepository;
-import org.springframework.data.cassandra.repository.Query;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface EcritureComptableRepository extends CassandraRepository<EcritureComptable, EcritureComptableKey> {
-    List<EcritureComptable> findByKeyTenantId(UUID tenantId);
-    Optional<EcritureComptable> findByKeyTenantIdAndKeyId(UUID tenantId, UUID id);
-    List<EcritureComptable> findByKeyTenantIdAndValideeFalse(UUID tenantId);
+public interface EcritureComptableRepository extends JpaRepository<EcritureComptable, Long> {
 
-    @Query("SELECT * FROM ecriture_comptable_by_date WHERE tenant_id = :tenantId AND date_ecriture >= :startDate AND date_ecriture <= :endDate")
-    List<EcritureComptable> findByKeyTenantIdAndDateEcritureRange(UUID tenantId, LocalDateTime startDate, LocalDateTime endDate);
+    List<EcritureComptable> findByTenantId(UUID tenantId);
 
-    @Query("SELECT * FROM ecriture_comptable_by_date WHERE tenant_id = :tenantId AND journal_comptable_id = :journalId AND date_ecriture >= :startDate AND date_ecriture <= :endDate")
-    List<EcritureComptable> findByKeyTenantIdAndJournalComptableIdAndDateEcritureRange(UUID tenantId, UUID journalId, LocalDateTime startDate, LocalDateTime endDate);
+    Optional<EcritureComptable> findByTenantIdAndId(UUID tenantId, Long id);
 
-    // New method to fetch all EcritureComptable entries for a specific journalComptableId
-    //@Query("SELECT * FROM ecriture_comptable_by_date WHERE tenant_id = :tenantId AND journal_comptable_id = :journalId")
-    List<EcritureComptable> findByKeyTenantIdAndJournalComptableId(UUID tenantId, UUID journalId);
+    List<EcritureComptable> findByTenantIdAndValideeFalse(UUID tenantId);
+
+    @Query("""
+           SELECT e FROM EcritureComptable e 
+           WHERE e.tenantId = :tenantId 
+           AND e.dateEcriture BETWEEN :startDate AND :endDate
+           """)
+    List<EcritureComptable> findByTenantIdAndDateEcritureRange(UUID tenantId, LocalDate startDate, LocalDate endDate);
+
+    @Query("""
+           SELECT e FROM EcritureComptable e 
+           WHERE e.tenantId = :tenantId 
+           AND e.journalComptableId = :journalId 
+           AND e.dateEcriture BETWEEN :startDate AND :endDate
+           """)
+    List<EcritureComptable> findByTenantIdAndJournalComptableIdAndDateRange(UUID tenantId, Long journalId, LocalDate startDate, LocalDate endDate);
+
+    List<EcritureComptable> findByTenantIdAndJournalComptableId(UUID tenantId, Long journalId);
 }

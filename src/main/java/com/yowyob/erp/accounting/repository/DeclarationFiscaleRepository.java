@@ -1,10 +1,8 @@
 package com.yowyob.erp.accounting.repository;
 
 import com.yowyob.erp.accounting.entity.DeclarationFiscale;
-import com.yowyob.erp.accounting.entityKey.DeclarationFiscaleKey;
-
-import org.springframework.data.cassandra.repository.CassandraRepository;
-import org.springframework.data.cassandra.repository.Query;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -12,21 +10,24 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-
 @Repository
-public interface DeclarationFiscaleRepository extends CassandraRepository<DeclarationFiscale, DeclarationFiscaleKey> {
+public interface DeclarationFiscaleRepository extends JpaRepository<DeclarationFiscale, Long> {
 
-    List<DeclarationFiscale> findByKeyTenantIdOrderByDateGenerationDesc(UUID tenantId);
+    List<DeclarationFiscale> findByTenantIdOrderByDateGenerationDesc(UUID tenantId);
 
-    List<DeclarationFiscale> findByKeyTenantIdAndTypeDeclaration(UUID tenantId, String typeDeclaration);
+    List<DeclarationFiscale> findByTenantIdAndTypeDeclaration(UUID tenantId, String typeDeclaration);
 
-    List<DeclarationFiscale> findByKeyTenantIdAndStatut(UUID tenantId, String statut);
+    List<DeclarationFiscale> findByTenantIdAndStatut(UUID tenantId, String statut);
 
-    Optional<DeclarationFiscale> findByKeyTenantIdAndNumeroDeclaration(UUID tenantId, String numeroDeclaration);
+    Optional<DeclarationFiscale> findByTenantIdAndNumeroDeclaration(UUID tenantId, String numeroDeclaration);
 
-    @Query("SELECT * FROM declaration_fiscale WHERE tenant_id = :tenantId AND periode_debut >= :startDate AND periode_fin <= :endDate ALLOW FILTERING")
+    @Query("""
+           SELECT d FROM DeclarationFiscale d 
+           WHERE d.tenantId = :tenantId 
+           AND d.periodeDebut >= :startDate 
+           AND d.periodeFin <= :endDate
+           """)
     List<DeclarationFiscale> findByTenantIdAndPeriodRange(UUID tenantId, LocalDate startDate, LocalDate endDate);
 
-    @Query("SELECT COUNT(*) > 0 FROM declaration_fiscale WHERE tenant_id = :tenantId AND numero_declaration = :numeroDeclaration")
     boolean existsByTenantIdAndNumeroDeclaration(UUID tenantId, String numeroDeclaration);
 }
