@@ -1,5 +1,5 @@
 // Configuration pour désactiver Elasticsearch en mode test
-package com.yowyob.erp.config.elasticsearch;
+package com.yowyob.erp.config.profile;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
