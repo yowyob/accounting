@@ -1,5 +1,4 @@
 services:
-  # ScyllaDB : base de données NoSQL compatible Cassandra pour la persistance des données
   postgres:
     image: postgres:16
     container_name: postgres
@@ -8,13 +7,13 @@ services:
       POSTGRES_USER: yowyob_admin
       POSTGRES_PASSWORD: yowyob_secret
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
       - my-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U yowyob_admin"]
+      test: ["CMD-SHELL", "pg_isready -U yowyob_admin -d yowyob_erp"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -24,16 +23,23 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    working_dir: /liquibase/db/changelog
     volumes:
-      - ./db/changelog:/liquibase/changelog
+      # Monte le répertoire contenant vos fichiers de migration Liquibase
+      - ./src/main/resources/db/changelog:/liquibase/db/changelog
+      # Monte le répertoire contenant le driver JDBC PostgreSQL
+      - ./src/main/resources/drivers:/liquibase/lib
     command: [
       "--url=jdbc:postgresql://postgres:5432/yowyob_erp",
       "--changeLogFile=changelog-master.xml",
       "--username=yowyob_admin",
       "--password=yowyob_secret",
+      # Assurez-vous que le nom du driver correspond au fichier dans le dossier 'drivers'
+      "--classpath=/liquibase/lib/postgresql-42.7.3.jar", 
       "update"
     ]
-
+    networks: 
+      - my-network
 
   # Elasticsearch : moteur de recherche pour l'indexation et la recherche de données
   elasticsearch:
@@ -103,7 +109,7 @@ services:
     image: redis:latest
     container_name: redis
     ports:
-      - "6380:6379"  # Correction : mappe 6380 (hôte) vers 6379 (conteneur)
+      - "6380:6379"
     command: redis-server --bind 0.0.0.0 --requirepass azaleodel --port 6379
     volumes:
       - redis-data:/data
@@ -132,7 +138,7 @@ services:
       kafka:
         condition: service_started
 
-  # Votre application Spring Boot (yowyob-erp-backend)
+  # application Spring Boot (yowyob-erp-backend)
   yowyob-erp-backend:
     build:
       context: .
@@ -143,18 +149,21 @@ services:
       - .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - spring.cassandra.contact-points=scylla
-      - spring.cassandra.port=9042
-      - spring.cassandra.local-datacenter=datacenter1
-      - spring.redis.host=redis
-      - spring.redis.port=6380
-      - spring.redis.password=azaleodel
+      - spring.datasource.url=jdbc:postgresql://postgres:5432/yowyob_erp
+      - spring.datasource.username=yowyob_admin
+      - spring.datasource.password=yowyob_secret
+      - spring.datasource.driver-class-name=org.postgresql.Driver
+      - spring.data.redis.host=redis
+      - spring.data.redis.port=6379 
+      - spring.data.redis.password=azaleodel
       - spring.kafka.bootstrap-servers=kafka:9092
+      - spring.liquibase.enabled=false
+      #- spring.config.location=classpath:/application.properties
     depends_on:
       postgres:
         condition: service_healthy
       liquibase:
-        condition: service_healthy
+        condition: service_completed_successfully
       elasticsearch:
         condition: service_started
       kafka:

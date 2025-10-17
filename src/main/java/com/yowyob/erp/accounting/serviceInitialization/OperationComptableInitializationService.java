@@ -2,6 +2,7 @@ package com.yowyob.erp.accounting.serviceInitialization;
 
 import com.yowyob.erp.accounting.entity.JournalComptable;
 import com.yowyob.erp.accounting.entity.OperationComptable;
+import com.yowyob.erp.accounting.entity.Tenant;
 import com.yowyob.erp.accounting.repository.JournalComptableRepository;
 import com.yowyob.erp.accounting.repository.OperationComptableRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.math.BigDecimal;
 
 /**
  * Initialise quelques opérations comptables de base :
@@ -37,25 +39,25 @@ public class OperationComptableInitializationService implements CommandLineRunne
     @Override
     public void run(String... args) {
         JournalComptable journalAN = journalComptableRepository
-                .findByTenantIdAndCodeJournal(tenantId, "AN")
+                .findByTenant_IdAndCodeJournal(tenantId, "AN")
                 .orElseThrow(() -> new IllegalStateException("Journal AN non trouvé"));
 
         JournalComptable journalVE = journalComptableRepository
-                .findByTenantIdAndCodeJournal(tenantId, "VE")
+                .findByTenant_IdAndCodeJournal(tenantId, "VE")
                 .orElseThrow(() -> new IllegalStateException("Journal VE non trouvé"));
 
         JournalComptable journalTR = journalComptableRepository
-                .findByTenantIdAndCodeJournal(tenantId, "TR")
+                .findByTenant_IdAndCodeJournal(tenantId, "TR")
                 .orElseThrow(() -> new IllegalStateException("Journal TR non trouvé"));
 
         createOperationIfNotExists("ACHAT", "ESPECE", "401000", false, "DEBIT",
-                journalAN.getId(), "HT", 1_000_000.0);
+                journalAN.getId(), "HT", BigDecimal.valueOf(1_000_000.0));
 
         createOperationIfNotExists("VENTE", "ESPECE", "701000", false, "CREDIT",
-                journalVE.getId(), "TTC", 1_000_000.0);
+                journalVE.getId(), "TTC", BigDecimal.valueOf(1_000_000.0));
 
         createOperationIfNotExists("PAIEMENT", "VIREMENT", "512000", false, "CREDIT",
-                journalTR.getId(), "TTC", 5_000_000.0);
+                journalTR.getId(), "TTC", BigDecimal.valueOf(5_000_000.0));
     }
 
     private void createOperationIfNotExists(
@@ -64,23 +66,24 @@ public class OperationComptableInitializationService implements CommandLineRunne
             String comptePrincipal,
             boolean estCompteStatique,
             String sensPrincipal,
-            Long journalComptableId,
+            UUID journalComptableId,
             String typeMontant,
-            double plafondClient) {
+            BigDecimal plafondClient) {
 
         boolean exists = operationComptableRepository
-                .findByTenantIdAndTypeOperationAndModeReglement(tenantId, typeOperation, modeReglement)
+                .findByTenant_IdAndTypeOperationAndModeReglement(tenantId, typeOperation, modeReglement)
                 .isPresent();
 
         if (!exists) {
             OperationComptable operation = OperationComptable.builder()
-                    .tenantId(tenantId)
+                    .tenant(new Tenant(tenantId))
                     .typeOperation(typeOperation)
                     .modeReglement(modeReglement)
                     .comptePrincipal(comptePrincipal)
                     .estCompteStatique(estCompteStatique)
                     .sensPrincipal(sensPrincipal)
-                    .journalComptableId(journalComptableId)
+                    .journalComptable(journalComptableRepository.findById(journalComptableId)
+                        .orElseThrow())
                     .typeMontant(typeMontant)
                     .plafondClient(plafondClient)
                     .actif(true)

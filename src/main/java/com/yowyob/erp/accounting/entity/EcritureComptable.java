@@ -1,155 +1,87 @@
 package com.yowyob.erp.accounting.entity;
 
-import com.yowyob.erp.common.entity.Auditable;
-import com.yowyob.erp.common.enums.SourceType;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Size;
 import lombok.*;
-
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
-/**
- * Ecriture comptable : représente une opération comptable
- */
 @Entity
-@Table(name = "ecriture_comptable")
-@Data
+@Table(name = "ecritures_comptables")
+@Getter
+@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class EcritureComptable implements Auditable {
+public class EcritureComptable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ecriture_id")
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
-    @NotNull
-    @Column(name = "tenant_id", nullable = false)
-    private UUID tenantId;
+    @ManyToOne
+    @JoinColumn(name = "tenant_id", nullable = false)
+    private Tenant tenant;
 
-    @Column(name = "numero_ecriture", length = 100, unique = true)
+    @ManyToOne
+    @JoinColumn(name = "journal_id", nullable = false)
+    private JournalComptable journal;
+
+    @ManyToOne
+    @JoinColumn(name = "periode_id")
+    private PeriodeComptable periode;
+
+    @Column(nullable = false, unique = true, length = 100)
     private String numeroEcriture;
 
     @Column(nullable = false, length = 255)
     private String libelle;
 
-    @NotNull
-    @Column(name = "date_ecriture", nullable = false)
-    private LocalDate dateEcriture;
-
-    @Column(name = "journal_comptable_id")
-    private Long journalComptableId;
-
-    @Column(name = "periode_comptable_id")
-    private Long periodeComptableId;
-
-    @Column(name = "montant_total_debit")
-    private Double montantTotalDebit = 0.0;
-
-    @Column(name = "montant_total_credit")
-    private Double montantTotalCredit = 0.0;
-
-    @Column(nullable = false)
-    private Boolean validee = false;
-
-    @Column(name = "date_validation")
-    private LocalDateTime dateValidation;
-
-    @Column(name = "utilisateur_validation")
-    private String utilisateurValidation;
-
-    @Column(name = "reference_externe")
     private String referenceExterne;
-
-    @Column(length = 1000)
+    
     private String notes;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "source_type")
-    private SourceType sourceType;
+    private LocalDate dateEcriture;
 
-    @Column(name = "source_id")
-    private UUID sourceId;
+    private BigDecimal montantTotalDebit;
+    private BigDecimal montantTotalCredit;
 
-   /**
-     * Date de création
-     */
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    
+    @Builder.Default
+    private Boolean validee = false;
+    private LocalDateTime dateValidation;
 
-    /**
-     * Date de dernière mise à jour
-     */
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    @OneToMany(mappedBy = "ecriture", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DetailEcriture> details;
 
-    /**
-     * Utilisateur créateur
-     */
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+        /** Utilisateur créateur */
     @Size(max = 255)
     @Column(name = "created_by", length = 255)
     private String createdBy;
 
-    /**
-     * Utilisateur ayant modifié la ressource
-     */
+    /** Utilisateur ayant modifié la ressource */
     @Size(max = 255)
     @Column(name = "updated_by", length = 255)
     private String updatedBy;
 
-    // =========================================================
-    // Implémentation de l'interface Auditable
-    // =========================================================
-    @Override
-    public UUID getTenantId() {
-        return tenantId;
+    /**Utilisateur ayant validé l'ecriture */
+    @Size(max = 255)
+    @Column(name = "validated_by", length = 255)
+    private String validatedBy;
+    @PrePersist
+    public void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
-    @Override
-    public void setTenantId(UUID tenantId) {
-        this.tenantId = tenantId;
-    }
-
-    @Override
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    @Override
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    @Override
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    @Override
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    @Override
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    @Override
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    @Override
-    public String getUpdatedBy() {
-        return updatedBy;
-    }
-
-    @Override
-    public void setUpdatedBy(String updatedBy) {
-        this.updatedBy = updatedBy;
+    @PreUpdate
+    public void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }

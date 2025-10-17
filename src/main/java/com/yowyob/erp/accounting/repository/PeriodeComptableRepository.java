@@ -11,26 +11,28 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface PeriodeComptableRepository extends JpaRepository<PeriodeComptable, Long> {
+public interface PeriodeComptableRepository extends JpaRepository<PeriodeComptable, UUID> {
 
-    List<PeriodeComptable> findByTenantIdOrderByDateDebutDesc(UUID tenantId);
+  Optional<PeriodeComptable> findByTenant_IdAndId( UUID tenantId,UUID id);
+  
+    List<PeriodeComptable> findByTenant_IdOrderByDateDebutDesc(UUID tenantId);
 
-    Optional<PeriodeComptable> findByTenantIdAndCode(UUID tenantId, String code);
+    Optional<PeriodeComptable> findByTenant_IdAndCode(UUID tenantId, String code);
 
     @Query("""
            SELECT p FROM PeriodeComptable p 
-           WHERE p.tenantId = :tenantId 
+           WHERE p.tenant.id = :tenantId 
            AND :date BETWEEN p.dateDebut AND p.dateFin
            """)
-    Optional<PeriodeComptable> findByTenantIdAndDateInRange(UUID tenantId, LocalDate date);
+    Optional<PeriodeComptable> findByTenant_IdAndDateInRange(UUID tenantId, LocalDate date);
 
-    List<PeriodeComptable> findByTenantIdAndClotureeFalse(UUID tenantId);
+    List<PeriodeComptable> findByTenant_IdAndClotureeFalse(UUID tenantId);
 
     @Query("""
            SELECT p FROM PeriodeComptable p 
-           WHERE p.tenantId = :tenantId 
+           WHERE p.tenant.id = :tenantId 
            AND p.dateDebut >= :startDate 
            AND p.dateFin <= :endDate
            """)
-    List<PeriodeComptable> findByTenantIdAndPeriodRange(UUID tenantId, LocalDate startDate, LocalDate endDate);
+    List<PeriodeComptable> findByTenant_IdAndPeriodRange(UUID tenantId, LocalDate startDate, LocalDate endDate);
 }

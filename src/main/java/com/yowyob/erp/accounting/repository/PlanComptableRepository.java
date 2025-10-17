@@ -10,18 +10,19 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface PlanComptableRepository extends JpaRepository<PlanComptable, Long> {
+public interface PlanComptableRepository extends JpaRepository<PlanComptable, UUID> {
 
-    List<PlanComptable> findByTenantId(UUID tenantId);
+    Optional<PlanComptable> findByTenant_IdAndId(UUID tenantId , UUID id);
+    List<PlanComptable> findByTenant_Id(UUID tenantId);
 
     boolean existsByTenantIdAndNoCompte(UUID tenantId, String noCompte);
 
-    Optional<PlanComptable> findByTenantIdAndNoCompte(UUID tenantId, String noCompte);
+    Optional<PlanComptable> findByTenant_IdAndNoCompte(UUID tenantId, String noCompte);
 
-    List<PlanComptable> findByTenantIdAndActifTrue(UUID tenantId);
+    List<PlanComptable> findByTenant_IdAndActifTrue(UUID tenantId);
 
-    @Query("SELECT p FROM PlanComptable p WHERE p.tenantId = :tenantId AND p.noCompte LIKE CONCAT(:prefix, '%')")
-    List<PlanComptable> findByTenantIdAndNoCompteStartingWith(UUID tenantId, String prefix);
+    @Query("SELECT p FROM PlanComptable p WHERE p.tenant.id = :tenantId AND p.noCompte LIKE CONCAT(:prefix, '%')")
+    List<PlanComptable> findByTenant_IdAndNoCompteStartingWith(UUID tenantId, String prefix);
 
-    List<PlanComptable> findByTenantIdAndClasse(UUID tenantId, Integer classe);
+    List<PlanComptable> findByTenant_IdAndClasse(UUID tenantId, Integer classe);
 }

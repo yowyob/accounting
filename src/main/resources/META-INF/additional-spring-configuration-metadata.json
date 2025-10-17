@@ -58,5 +58,10 @@
     "name": "n\nspring.datasource.passwo",
     "type": "java.lang.String",
     "description": "A description for 'n\nspring.datasource.passwo'"
+  },
+  {
+    "name": "e=8\nspring.data.redis.lettuce.pool.max-",
+    "type": "java.lang.String",
+    "description": "A description for 'e=8\nspring.data.redis.lettuce.pool.max-'"
   }
 ]}

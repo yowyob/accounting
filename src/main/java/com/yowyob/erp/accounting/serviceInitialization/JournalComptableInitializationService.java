@@ -1,6 +1,7 @@
 package com.yowyob.erp.accounting.serviceInitialization;
 
 import com.yowyob.erp.accounting.entity.JournalComptable;
+import com.yowyob.erp.accounting.entity.Tenant;
 import com.yowyob.erp.accounting.repository.JournalComptableRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -39,9 +40,10 @@ public class JournalComptableInitializationService implements CommandLineRunner 
     }
 
     private void createJournalIfNotExists(String codeJournal, String libelle, String typeJournal) {
-        if (!journalComptableRepository.existsByTenantIdAndCodeJournal(tenantId, codeJournal)) {
+        if (!journalComptableRepository.existsByTenant_IdAndCodeJournal(tenantId, codeJournal)) {
+            
             JournalComptable journal = JournalComptable.builder()
-                    .tenantId(tenantId)
+                    .tenant(new Tenant(tenantId))
                     .codeJournal(codeJournal)
                     .libelle(libelle)
                     .typeJournal(typeJournal)

@@ -7,10 +7,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
-
-import java.math.BigDecimal;
 
 @Data
 @Builder
@@ -20,23 +19,24 @@ public class CompteDto {
 
     private UUID id;
 
-    @NotBlank(message = "Le numéro de compte est obligatoire")
-    @Pattern(regexp = "^[1-8][0-9]{4,7}$", message = "Format de numéro de compte OHADA invalide")
-    private String noCompte;
+    @NotBlank(message = "Account number is required")
+    @Pattern(regexp = "^[1-8][0-9]{4,7}$", message = "Invalid OHADA account number format")
+    private String noCompte; 
 
-    @NotBlank(message = "Le libellé est obligatoire")
+    @NotBlank(message = "Label is required")
     private String libelle;
 
     private String notes;
 
-    private BigDecimal soldes;
+    private BigDecimal solde;
     private Integer classe;
     private String typeCompte;
 
     @Builder.Default
     private Boolean actif = true;
 
-    private LocalDateTime createdAt;
+    private UUID tenantId;
 
+    private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

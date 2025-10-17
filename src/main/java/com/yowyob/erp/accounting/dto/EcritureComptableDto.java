@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.math.BigDecimal;
 
 @Data
 @Builder
@@ -40,16 +41,16 @@ public class EcritureComptableDto {
     private String periodeComptableCode;
 
     @NotNull(message = "Le montant total Debit est obligatoire")
-    private Double montantTotalDebit;
+    private BigDecimal montantTotalDebit;
 
      @NotNull(message = "Le montant total Credit est obligatoire")
-    private Double montantTotalCredit;
+    private BigDecimal montantTotalCredit;
     
     private Boolean validee;
 
     private LocalDateTime dateValidation;
 
-    private String utilisateurValidation;
+    private String validatedBy;
 
     private String referenceExterne;
 

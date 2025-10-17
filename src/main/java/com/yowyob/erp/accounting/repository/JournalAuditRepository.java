@@ -9,15 +9,15 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface JournalAuditRepository extends JpaRepository<JournalAudit, Long> {
+public interface JournalAuditRepository extends JpaRepository<JournalAudit, UUID> {
 
-    List<JournalAudit> findByTenantIdOrderByDateActionDesc(UUID tenantId);
+    List<JournalAudit> findByTenant_IdOrderByDateActionDesc(UUID tenantId);
 
-    List<JournalAudit> findByTenantIdAndUtilisateur(UUID tenantId, String utilisateur);
+    List<JournalAudit> findByTenant_IdAndUtilisateur(UUID tenantId, String utilisateur);
 
-    List<JournalAudit> findByTenantIdAndAction(UUID tenantId, String action);
+    List<JournalAudit> findByTenant_IdAndAction(UUID tenantId, String action);
 
-    List<JournalAudit> findByTenantIdAndDateActionBetween(UUID tenantId, LocalDateTime startDate, LocalDateTime endDate);
+    List<JournalAudit> findByTenant_IdAndDateActionBetween(UUID tenantId, LocalDateTime startDate, LocalDateTime endDate);
 
-    List<JournalAudit> findByTenantIdAndEcritureComptableId(UUID tenantId, Long ecritureComptableId);
+    List<JournalAudit> findByTenant_IdAndEcritureComptableId(UUID tenantId, UUID ecritureComptableId);
 }

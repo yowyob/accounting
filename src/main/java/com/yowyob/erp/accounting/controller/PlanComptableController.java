@@ -1,174 +1,148 @@
 package com.yowyob.erp.accounting.controller;
 
-import java.util.List;
-import java.util.UUID;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.yowyob.erp.accounting.dto.PlanComptableDto;
-import com.yowyob.erp.accounting.entity.PlanComptable;
 import com.yowyob.erp.accounting.service.PlanComptableService;
 import com.yowyob.erp.common.dto.ApiResponseWrapper;
-
+import com.yowyob.erp.common.exception.BusinessException;
+import com.yowyob.erp.common.exception.ResourceNotFoundException;
+import com.yowyob.erp.config.tenant.TenantContext;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/accounting/plan-comptable")
 @RequiredArgsConstructor
-@Tag(name = "Plan Comptable", description = "API pour la gestion du plan comptable")
-//@SecurityRequirement(name = "BasicAuth")
+@Tag(name = "Plan Comptable", description = "Gestion complète du plan comptable : création, mise à jour, désactivation et recherche.")
+@SecurityRequirement(name = "BasicAuth")
+@Slf4j
 public class PlanComptableController {
 
     private final PlanComptableService planComptableService;
 
-    @Operation(summary = "Créer un compte comptable", description = "Crée un nouveau compte comptable pour le tenant courant")
+    // ✅ CRÉATION
+    @Operation(summary = "Créer un compte comptable", description = "Crée un nouveau compte comptable pour le tenant courant.")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "PlanComptable comptable créé"),
-            @ApiResponse(responseCode = "400", description = "Données invalides ou compte existant"),
-            @ApiResponse(responseCode = "401", description = "Non autorisé"),
-            @ApiResponse(responseCode = "403", description = "Accès interdit")
+            @ApiResponse(responseCode = "201", description = "Compte créé avec succès",
+                    content = @Content(schema = @Schema(implementation = PlanComptableDto.class))),
+            @ApiResponse(responseCode = "400", description = "Erreur de validation ou compte existant")
     })
     @PostMapping
-   // @PreAuthorize("hasRole('ADMIN') or hasRole('ACCOUNTANT')")
-    public ResponseEntity<ApiResponseWrapper<PlanComptableDto>> createPlanComptable(
-            @Valid @RequestBody PlanComptableDto dto) {
-                //Valide et persiste le nouveau plan comptable
-        try{
+    public ResponseEntity<ApiResponseWrapper<PlanComptableDto>> createPlanComptable(@Valid @RequestBody PlanComptableDto dto) {
+        try {
+            UUID tenantId = TenantContext.getCurrentTenant();
+            log.info("🧾 Création d’un compte comptable {} pour tenant {}", dto.getNoCompte(), tenantId);
             PlanComptableDto created = planComptableService.createAccount(dto);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponseWrapper.success(created, "PlanComptable comptable créé avec succès"));
+                    .body(ApiResponseWrapper.success(created, "Compte comptable créé avec succès"));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponseWrapper.error("Erreur lors de la création du compte comptable: "   ));
+            log.error("❌ Erreur création compte : {}", e.getMessage());
+            throw new BusinessException("Erreur lors de la création du compte : " + e.getMessage());
         }
     }
 
-    @Operation(summary = "Récupérer un compte comptable par ID", description = "Récupère un compte comptable par son identifiant UUID")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Compte comptable trouvé"),
-            @ApiResponse(responseCode = "404", description = "Compte comptable non trouvé"),
-            @ApiResponse(responseCode = "401", description = "Non autorisé"),
-            @ApiResponse(responseCode = "403", description = "Accès interdit")
-    })
+    // ✅ RÉCUPÉRATION PAR ID
+    @Operation(summary = "Récupérer un compte comptable par ID")
     @GetMapping("/{id}")
-   // @PreAuthorize("hasRole('ADMIN') or hasRole('ACCOUNTANT') or hasRole('USER')")
     public ResponseEntity<ApiResponseWrapper<PlanComptableDto>> getAccountById(@PathVariable UUID id) {
-        PlanComptableDto dto = planComptableService.getAccountById(id);
-        return ResponseEntity.ok(ApiResponseWrapper.success(dto));
+        UUID tenantId = TenantContext.getCurrentTenant();
+        log.info("🔍 Consultation du compte ID={} pour tenant {}", id, tenantId);
+        try {
+            PlanComptableDto dto = planComptableService.getAccountById(id);
+            return ResponseEntity.ok(ApiResponseWrapper.success(dto, "Compte trouvé avec succès"));
+        } catch (ResourceNotFoundException e) {
+            throw new ResourceNotFoundException("PlanComptable", id.toString());
+        }
     }
 
-
-    @Operation(summary = "Lister tous les comptes comptables ", description = "Récupère tous les comptes comptables  du tenant courant")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Liste des comptes comptables"),
-            @ApiResponse(responseCode = "401", description = "Non autorisé"),
-            @ApiResponse(responseCode = "403", description = "Accès interdit")
-    })
+    // ✅ LISTE TOTALE
+    @Operation(summary = "Lister tous les comptes comptables")
     @GetMapping
-    //@PreAuthorize("hasRole('ADMIN') or hasRole('ACCOUNTANT') or hasRole('USER')")
     public ResponseEntity<ApiResponseWrapper<List<PlanComptableDto>>> getAllPlanComptables() {
+        UUID tenantId = TenantContext.getCurrentTenant();
+        log.info("📋 Récupération de tous les comptes comptables pour tenant {}", tenantId);
         List<PlanComptableDto> accounts = planComptableService.getAllAccounts();
-        return ResponseEntity.ok(ApiResponseWrapper.success(accounts));
+        return ResponseEntity.ok(ApiResponseWrapper.success(accounts, "Liste des comptes récupérée avec succès"));
     }
 
-    
-    @Operation(summary = "Lister tous les comptes comptables actifs", description = "Récupère tous les comptes comptables actifs du tenant courant")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Liste des comptes comptables actif"),
-            @ApiResponse(responseCode = "401", description = "Non autorisé"),
-            @ApiResponse(responseCode = "403", description = "Accès interdit")
-    })
-    @GetMapping("/actif")
-    //@PreAuthorize("hasRole('ADMIN') or hasRole('ACCOUNTANT') or hasRole('USER')")
+    // ✅ COMPTES ACTIFS
+    @Operation(summary = "Lister tous les comptes comptables actifs")
+    @GetMapping("/actifs")
     public ResponseEntity<ApiResponseWrapper<List<PlanComptableDto>>> getActifPlanComptables() {
+        UUID tenantId = TenantContext.getCurrentTenant();
+        log.info("⚙️ Récupération des comptes actifs pour tenant {}", tenantId);
         List<PlanComptableDto> accounts = planComptableService.getAllActiveAccounts();
-        return ResponseEntity.ok(ApiResponseWrapper.success(accounts));
+        return ResponseEntity.ok(ApiResponseWrapper.success(accounts, "Liste des comptes actifs récupérée"));
     }
 
-
-    @Operation(summary = "Lister les comptes par préfixe", description = "Récupère les comptes comptables commençant par un préfixe donné")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Liste des comptes comptables"),
-            @ApiResponse(responseCode = "400", description = "Préfixe invalide"),
-            @ApiResponse(responseCode = "401", description = "Non autorisé"),
-            @ApiResponse(responseCode = "403", description = "Accès interdit")
-    })
+    // ✅ RECHERCHE PAR PRÉFIXE
+    @Operation(summary = "Lister les comptes par préfixe")
     @GetMapping("/prefix/{prefix}")
-   // @PreAuthorize("hasRole('ADMIN') or hasRole('ACCOUNTANT') or hasRole('USER')")
     public ResponseEntity<ApiResponseWrapper<List<PlanComptableDto>>> getPlanComptablesByPrefix(@PathVariable String prefix) {
         if (prefix == null || prefix.trim().isEmpty()) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponseWrapper.error("Le préfixe ne peut pas être vide"));
+            return ResponseEntity.badRequest().body(ApiResponseWrapper.error("Le préfixe ne peut pas être vide"));
         }
+        UUID tenantId = TenantContext.getCurrentTenant();
+        log.info("🔎 Recherche des comptes commençant par '{}' pour tenant {}", prefix, tenantId);
         List<PlanComptableDto> accounts = planComptableService.getAccountsByPrefix(prefix);
-        return ResponseEntity.ok(ApiResponseWrapper.success(accounts));
+        return ResponseEntity.ok(ApiResponseWrapper.success(accounts, "Comptes récupérés avec succès"));
     }
 
-    
-    
-    @Operation(summary = "Lister les comptes par classe", description = "Récupère les comptes comptables pour une classe donnée")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Liste des comptes comptables"),
-            @ApiResponse(responseCode = "400", description = "Classe invalide"),
-            @ApiResponse(responseCode = "401", description = "Non autorisé"),
-            @ApiResponse(responseCode = "403", description = "Accès interdit")
-    })
+    // ✅ RECHERCHE PAR CLASSE
+    @Operation(summary = "Lister les comptes par classe")
     @GetMapping("/classe/{classe}")
-   // @PreAuthorize("hasRole('ADMIN') or hasRole('ACCOUNTANT') or hasRole('USER')")
     public ResponseEntity<ApiResponseWrapper<List<PlanComptableDto>>> getPlanComptablesByClasse(@PathVariable Integer classe) {
         if (classe < 1 || classe > 7) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponseWrapper.error("La classe doit être entre 1 et 7"));
+            return ResponseEntity.badRequest().body(ApiResponseWrapper.error("La classe doit être comprise entre 1 et 7"));
         }
-        List<PlanComptableDto> accounts = planComptableService.getPlanComptablesByClasse(classe);
-        return ResponseEntity.ok(ApiResponseWrapper.success(accounts));
+        UUID tenantId = TenantContext.getCurrentTenant();
+        log.info("📚 Récupération des comptes de la classe {} pour tenant {}", classe, tenantId);
+        List<PlanComptableDto> accounts = planComptableService.getAccountsByClass(classe);
+        return ResponseEntity.ok(ApiResponseWrapper.success(accounts, "Comptes de la classe " + classe + " récupérés"));
     }
 
-
-    @Operation(summary = "Mettre à jour un compte comptable", description = "Met à jour un compte comptable existant")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "PlanComptable comptable mis à jour"),
-            @ApiResponse(responseCode = "400", description = "Données invalides"),
-            @ApiResponse(responseCode = "404", description = "PlanComptable comptable non trouvé"),
-            @ApiResponse(responseCode = "401", description = "Non autorisé"),
-            @ApiResponse(responseCode = "403", description = "Accès interdit")
-    })
+    // ✅ MISE À JOUR
+    @Operation(summary = "Mettre à jour un compte comptable")
     @PutMapping("/{id}")
-   // @PreAuthorize("hasRole('ADMIN') or hasRole('ACCOUNTANT')")
     public ResponseEntity<ApiResponseWrapper<PlanComptableDto>> updatePlanComptable(
             @PathVariable UUID id,
             @Valid @RequestBody PlanComptableDto dto) {
-        PlanComptableDto updated = planComptableService.updateAccount(id, dto);
-        return ResponseEntity.ok(ApiResponseWrapper.success(updated, "PlanComptable comptable mis à jour"));
+        try {
+            UUID tenantId = TenantContext.getCurrentTenant();
+            log.info("✏️ Mise à jour du compte ID={} pour tenant {}", id, tenantId);
+            PlanComptableDto updated = planComptableService.updateAccount(id, dto);
+            return ResponseEntity.ok(ApiResponseWrapper.success(updated, "Compte comptable mis à jour avec succès"));
+        } catch (Exception e) {
+            log.error("Erreur mise à jour compte {} : {}", id, e.getMessage());
+            throw new BusinessException("Erreur mise à jour du compte : " + e.getMessage());
+        }
     }
 
-    @Operation(summary = "Désactiver un compte comptable", description = "Désactive un compte comptable par son identifiant UUID")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "PlanComptable comptable désactivé"),
-            @ApiResponse(responseCode = "404", description = "PlanComptable comptable non trouvé"),
-            @ApiResponse(responseCode = "401", description = "Non autorisé"),
-            @ApiResponse(responseCode = "403", description = "Accès interdit")
-    })
+    // ✅ DÉSACTIVATION
+    @Operation(summary = "Désactiver un compte comptable", description = "Désactive un compte comptable au lieu de le supprimer.")
     @DeleteMapping("/{id}")
-   // @PreAuthorize("hasRole('ADMIN') or hasRole('ACCOUNTANT')")
-    public ResponseEntity<ApiResponseWrapper<Void>> deactivatePlanComptable(@PathVariable UUID id) {
-        planComptableService.deactivateAccount(id);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT)
-                .body(ApiResponseWrapper.success(null, "PlanComptable comptable désactivé"));
+    public ResponseEntity<ApiResponseWrapper<String>> deactivatePlanComptable(@PathVariable UUID id) {
+        try {
+            UUID tenantId = TenantContext.getCurrentTenant();
+            log.info("🗑️ Désactivation du compte comptable ID={} pour tenant {}", id, tenantId);
+            planComptableService.deactivateAccount(id);
+            return ResponseEntity.ok(ApiResponseWrapper.success("Compte comptable désactivé avec succès"));
+        } catch (Exception e) {
+            log.error("Erreur désactivation compte {} : {}", id, e.getMessage());
+            throw new ResourceNotFoundException("PlanComptable", id.toString());
+        }
     }
 }

@@ -9,13 +9,13 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface OperationComptableRepository extends JpaRepository<OperationComptable, Long> {
+public interface OperationComptableRepository extends JpaRepository<OperationComptable, UUID> {
 
-    List<OperationComptable> findByTenantId(UUID tenantId);
+    List<OperationComptable> findByTenant_Id(UUID tenantId);
 
-    Optional<OperationComptable> findByTenantIdAndId(UUID tenantId, Long id);
+    Optional<OperationComptable> findByTenant_IdAndId(UUID tenantId, UUID id);
 
-    Optional<OperationComptable> findByTenantIdAndTypeOperationAndModeReglement(UUID tenantId, String typeOperation, String modeReglement);
+    Optional<OperationComptable> findByTenant_IdAndTypeOperationAndModeReglement(UUID tenantId, String typeOperation, String modeReglement);
 
-    List<OperationComptable> findByTenantIdAndComptePrincipal(UUID tenantId, String comptePrincipal);
+    List<OperationComptable> findByTenant_IdAndComptePrincipal(UUID tenantId, String comptePrincipal);
 }

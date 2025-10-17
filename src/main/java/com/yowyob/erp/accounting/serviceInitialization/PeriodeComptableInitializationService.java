@@ -37,7 +37,7 @@ public class PeriodeComptableInitializationService implements CommandLineRunner 
                     .cloturee(false)
                     .build();
             try {
-                periodeComptableService.createPeriodeComptable(dto);
+                periodeComptableService.createPeriode(dto);
             } catch (IllegalArgumentException e) {
                 // Skip if period already exists
             }

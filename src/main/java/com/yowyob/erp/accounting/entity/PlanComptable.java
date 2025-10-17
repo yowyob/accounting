@@ -1,70 +1,64 @@
 package com.yowyob.erp.accounting.entity;
 
-import com.yowyob.erp.common.entity.Auditable;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Size;
 import lombok.*;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * Plan Comptable Général OHADA.
- * Liste des comptes utilisés par une entreprise (tenant).
- */
 @Entity
-@Table(name = "plan_comptable")
-@Data
+@Table(name = "plans_comptables")
+@Getter
+@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class PlanComptable implements Auditable {
+public class PlanComptable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "plan_comptable_id")
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
-    @NotNull
-    @Column(name = "tenant_id", nullable = false)
-    private UUID tenantId;
+    @ManyToOne
+    @JoinColumn(name = "tenant_id", nullable = false)
+    private Tenant tenant;
 
-    @NotNull
-    @Column(name = "classe")
+    @Column(nullable = false)
     private Integer classe;
 
-    @NotBlank
-    @Size(max = 20)
-    @Column(name = "no_compte", nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 20)
     private String noCompte;
 
-    @NotBlank
-    @Size(max = 255)
-    @Column(name = "libelle", nullable = false)
+    @Column(nullable = false, length = 255)
     private String libelle;
 
-    @Size(max = 255)
+    @Column(length = 255)
     private String notes;
 
-    @NotNull
-    @Column(name = "actif", nullable = false)
+    @Builder.Default
     private Boolean actif = true;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt = LocalDateTime.now();
-
-    @Column(name = "created_by")
+    /** Utilisateur créateur */
+    @Size(max = 255)
+    @Column(name = "created_by", length = 255)
     private String createdBy;
 
-    @Column(name = "updated_by")
+    /** Utilisateur ayant modifié la ressource */
+    @Size(max = 255)
+    @Column(name = "updated_by", length = 255)
     private String updatedBy;
 
-    @Override
-    public UUID getTenantId() { return tenantId; }
+    @PrePersist
+    public void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
 
-    @Override
-    public void setTenantId(UUID tenantId) { this.tenantId = tenantId; }
+    @PreUpdate
+    public void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

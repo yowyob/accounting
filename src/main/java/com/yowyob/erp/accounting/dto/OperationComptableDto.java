@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.math.BigDecimal;
 
 @Data
 @Builder
@@ -47,7 +48,7 @@ public class OperationComptableDto {
     private String typeMontant;
 
     @PositiveOrZero(message = "Le plafond client doit être positif ou zéro")
-    private Double plafondClient;
+    private  BigDecimal plafondClient;
 
     @NotNull(message = "Le statut actif ne peut pas être nul")
     private Boolean actif;

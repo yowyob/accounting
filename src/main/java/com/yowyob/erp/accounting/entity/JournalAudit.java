@@ -1,6 +1,5 @@
 package com.yowyob.erp.accounting.entity;
 
-import com.yowyob.erp.common.entity.Auditable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -10,6 +9,10 @@ import java.util.UUID;
 
 /**
  * Journal d’audit : trace les actions de création, validation et modification
+ * Audit intégré directement dans l'entité sans utiliser d'interface.
+ * 
+ * Author: Leonel Delmat AZANGUE
+ * Date: 12/10/2025
  */
 @Entity
 @Table(name = "journal_audit")
@@ -17,26 +20,27 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class JournalAudit implements Auditable {
+public class JournalAudit {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "journal_audit_id")
-    private Long id;
+    private UUID id;
 
     @NotNull
-    @Column(name = "tenant_id", nullable = false)
-    private UUID tenantId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id", nullable = false)
+    private Tenant tenant;
 
     @Column(name = "ecriture_id")
-    private Long ecritureComptableId;
+    private UUID ecritureComptableId;
 
-    @Pattern(regexp = "CREATION|VALIDATION|MODIFICATION")
-    @Column(length = 50)
+    @Pattern(regexp = "CREATION|VALIDATION|MODIFICATION", message = "Action must be CREATION, VALIDATION, or MODIFICATION")
+    @Column(length = 50, nullable = false)
     private String action;
 
-    @Column(name = "date_action")
-    private LocalDateTime dateAction = LocalDateTime.now();
+    @Column(name = "date_action", nullable = false)
+    private LocalDateTime dateAction;
 
     @Column(length = 255)
     private String utilisateur;
@@ -44,7 +48,7 @@ public class JournalAudit implements Auditable {
     @Column(columnDefinition = "TEXT")
     private String details;
 
-    @Column(name = "adresse_ip")
+    @Column(name = "adresse_ip", length = 50)
     private String adresseIp;
 
     @Column(name = "donnees_avant", columnDefinition = "TEXT")
@@ -53,82 +57,36 @@ public class JournalAudit implements Auditable {
     @Column(name = "donnees_apres", columnDefinition = "TEXT")
     private String donneesApres;
 
-    /**
-     * Date de création
-     */
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    /** Date de création */
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
-    /**
-     * Date de dernière mise à jour
-     */
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    /** Date de dernière mise à jour */
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
 
-    /**
-     * Utilisateur créateur
-     */
+    /** Utilisateur créateur */
     @Size(max = 255)
     @Column(name = "created_by", length = 255)
     private String createdBy;
 
-    /**
-     * Utilisateur ayant modifié la ressource
-     */
+    /** Utilisateur ayant modifié la ressource */
     @Size(max = 255)
     @Column(name = "updated_by", length = 255)
     private String updatedBy;
 
-    // =========================================================
-    // Implémentation de l'interface Auditable
-    // =========================================================
-    @Override
-    public UUID getTenantId() {
-        return tenantId;
+    @PrePersist
+    public void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+        if (this.dateAction == null) {
+            this.dateAction = now;
+        }
     }
 
-    @Override
-    public void setTenantId(UUID tenantId) {
-        this.tenantId = tenantId;
-    }
-
-    @Override
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    @Override
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    @Override
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    @Override
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    @Override
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    @Override
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    @Override
-    public String getUpdatedBy() {
-        return updatedBy;
-    }
-
-    @Override
-    public void setUpdatedBy(String updatedBy) {
-        this.updatedBy = updatedBy;
+    @PreUpdate
+    public void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }

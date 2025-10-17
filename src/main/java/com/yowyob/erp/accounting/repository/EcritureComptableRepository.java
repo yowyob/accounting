@@ -11,28 +11,43 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface EcritureComptableRepository extends JpaRepository<EcritureComptable, Long> {
+public interface EcritureComptableRepository extends JpaRepository<EcritureComptable, UUID> {
 
-    List<EcritureComptable> findByTenantId(UUID tenantId);
+    /* ============================================================================
+       🔹 Requêtes standards de base
+    ============================================================================ */
 
-    Optional<EcritureComptable> findByTenantIdAndId(UUID tenantId, Long id);
+    List<EcritureComptable> findByTenant_Id(UUID tenantId);
 
-    List<EcritureComptable> findByTenantIdAndValideeFalse(UUID tenantId);
+    Optional<EcritureComptable> findByTenant_IdAndId(UUID tenantId, UUID id);
+
+    List<EcritureComptable> findByTenant_IdAndValideeFalse(UUID tenantId);
+
+
+    /* ============================================================================
+       🔎 Recherche par période et journal
+    ============================================================================ */
+
+    // ✅ Recherche par plage de dates uniquement
+    List<EcritureComptable> findByTenant_IdAndDateEcritureBetween(UUID tenantId, LocalDate startDate, LocalDate endDate);
+
+    // ✅ Recherche par journal uniquement
+    List<EcritureComptable> findByTenant_IdAndJournal_Id(UUID tenantId, UUID journalId);
+
+    // ✅ Recherche combinée : journal + période
+    List<EcritureComptable> findByTenant_IdAndJournal_IdAndDateEcritureBetween(
+            UUID tenantId, UUID journalComptableId, LocalDate startDate, LocalDate endDate
+    );
+
+    /* ============================================================================
+       🧾 Requêtes personnalisées (optionnelles)
+    ============================================================================ */
 
     @Query("""
-           SELECT e FROM EcritureComptable e 
-           WHERE e.tenantId = :tenantId 
+           SELECT e FROM EcritureComptable e
+           WHERE e.tenant.id = :tenantId
            AND e.dateEcriture BETWEEN :startDate AND :endDate
+           AND e.validee = false
            """)
-    List<EcritureComptable> findByTenantIdAndDateEcritureRange(UUID tenantId, LocalDate startDate, LocalDate endDate);
-
-    @Query("""
-           SELECT e FROM EcritureComptable e 
-           WHERE e.tenantId = :tenantId 
-           AND e.journalComptableId = :journalId 
-           AND e.dateEcriture BETWEEN :startDate AND :endDate
-           """)
-    List<EcritureComptable> findByTenantIdAndJournalComptableIdAndDateRange(UUID tenantId, Long journalId, LocalDate startDate, LocalDate endDate);
-
-    List<EcritureComptable> findByTenantIdAndJournalComptableId(UUID tenantId, Long journalId);
+    List<EcritureComptable> findNonValidatedByDateRange(UUID tenantId, LocalDate startDate, LocalDate endDate);
 }

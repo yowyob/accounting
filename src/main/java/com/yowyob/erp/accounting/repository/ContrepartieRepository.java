@@ -11,14 +11,14 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface ContrepartieRepository extends JpaRepository<Contrepartie, Long> {
+public interface ContrepartieRepository extends JpaRepository<Contrepartie, UUID> {
 
-    List<Contrepartie> findByTenantIdAndOperationComptableId(UUID tenantId, Long operationComptableId);
+    List<Contrepartie> findByTenant_IdAndOperationComptable_Id(UUID tenantId, UUID operationComptableId);
 
-    List<Contrepartie> findByTenantIdAndCompte(UUID tenantId, String compte);
+    List<Contrepartie> findByTenant_IdAndCompte(String tenantId, String compte);
 
     @Transactional
     @Modifying
-    @Query("DELETE FROM Contrepartie c WHERE c.tenantId = :tenantId AND c.operationComptableId = :operationComptableId")
-    void deleteByTenantIdAndOperationComptableId(UUID tenantId, Long operationComptableId);
+    @Query("DELETE FROM Contrepartie c WHERE c.tenant.id = :tenantId AND c.operationComptable.id = :operationComptableId")
+    void deleteByTenantIdAndOperationComptableId(UUID tenantId, UUID operationComptableId);
 }

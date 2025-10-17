@@ -1,50 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog
   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
 
-  <changeSet id="002" author="yowyob-system">
-    <comment>Ajout des contraintes, clés étrangères et index pour optimisation</comment>
+ <changeSet id="002-add-foreign-keys-and-indexes" author="yowyob-system">
+     <comment>Ajout des clés étrangères et index pour la cohérence et l'optimisation.</comment>
 
-    <addForeignKeyConstraint 
-      baseTableName="ecriture_comptable"
-      baseColumnNames="journal_comptable_id"
-      referencedTableName="journal_comptable"
-      referencedColumnNames="journal_comptable_id"
-      constraintName="fk_ecriture_journal"/>
+        <addForeignKeyConstraint
+            baseTableName="plans_comptables"
+            baseColumnNames="tenant_id"
+            constraintName="fk_plans_comptables_tenant"
+            referencedTableName="tenants"
+            referencedColumnNames="id"/>
 
-    <addForeignKeyConstraint 
-      baseTableName="detail_ecriture"
-      baseColumnNames="ecriture_id"
-      referencedTableName="ecriture_comptable"
-      referencedColumnNames="ecriture_id"
-      constraintName="fk_detail_ecriture"/>
+        <addForeignKeyConstraint
+            baseTableName="comptes"
+            baseColumnNames="tenant_id"
+            constraintName="fk_comptes_tenant"
+            referencedTableName="tenants"
+            referencedColumnNames="id"/>
 
-    <addForeignKeyConstraint 
-      baseTableName="detail_ecriture"
-      baseColumnNames="plan_comptable_id"
-      referencedTableName="plan_comptable"
-      referencedColumnNames="plan_comptable_id"
-      constraintName="fk_detail_plan"/>
+        <addForeignKeyConstraint
+            baseTableName="journaux_comptables"
+            baseColumnNames="tenant_id"
+            constraintName="fk_journaux_comptables_tenant"
+            referencedTableName="tenants"
+            referencedColumnNames="id"/>
 
-    <addForeignKeyConstraint 
-      baseTableName="journal_audit"
-      baseColumnNames="ecriture_id"
-      referencedTableName="ecriture_comptable"
-      referencedColumnNames="ecriture_id"
-      constraintName="fk_audit_ecriture"/>
+        <addForeignKeyConstraint
+            baseTableName="periodes_comptables"
+            baseColumnNames="tenant_id"
+            constraintName="fk_periodes_comptables_tenant"
+            referencedTableName="tenants"
+            referencedColumnNames="id"/>
 
-    <createIndex tableName="plan_comptable" indexName="idx_plan_no_compte">
-      <column name="no_compte"/>
-    </createIndex>
+        <addForeignKeyConstraint
+            baseTableName="declaration_fiscale"
+            baseColumnNames="tenant_id"
+            constraintName="fk_declaration_fiscale_tenant"
+            referencedTableName="tenants"
+            referencedColumnNames="id"/>
 
-    <createIndex tableName="journal_comptable" indexName="idx_journal_code">
-      <column name="code_journal"/>
-    </createIndex>
+        <addForeignKeyConstraint
+            baseTableName="contreparties"
+            baseColumnNames="tenant_id"
+            constraintName="fk_contreparties_tenant"
+            referencedTableName="tenants"
+            referencedColumnNames="id"/>
 
-    <createIndex tableName="ecriture_comptable" indexName="idx_ecriture_tenant">
-      <column name="tenant_id"/>
-    </createIndex>
-  </changeSet>
+        <addForeignKeyConstraint
+            baseTableName="ecritures_comptables"
+            baseColumnNames="tenant_id"
+            constraintName="fk_ecritures_comptables_tenant"
+            referencedTableName="tenants"
+            referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint
+            baseTableName="details_ecritures"
+            baseColumnNames="tenant_id"
+            constraintName="fk_details_ecritures_tenant"
+            referencedTableName="tenants"
+            referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint
+            baseTableName="journal_audit"
+            baseColumnNames="tenant_id"
+            constraintName="fk_journal_audit_tenant"
+            referencedTableName="tenants"
+            referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint
+            baseTableName="operation_comptable"
+            baseColumnNames="tenant_id"
+            constraintName="fk_operation_comptable_tenant"
+            referencedTableName="tenants"
+            referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint
+            baseTableName="transaction"
+            baseColumnNames="tenant_id"
+            constraintName="fk_transaction_tenant"
+            referencedTableName="tenants"
+            referencedColumnNames="id"/>
+            <addForeignKeyConstraint
+       baseTableName="ecritures_comptables"
+       baseColumnNames="journal_id"
+       constraintName="fk_ecritures_journal"
+       referencedTableName="journaux_comptables"
+       referencedColumnNames="id"/>
+     <addForeignKeyConstraint
+       baseTableName="ecritures_comptables"
+       baseColumnNames="periode_id"
+              constraintName="fk_ecritures_periode"
+       referencedTableName="periodes_comptables"
+       referencedColumnNames="id"/>
+
+     <addForeignKeyConstraint
+       baseTableName="details_ecritures"
+       baseColumnNames="ecriture_id"
+       constraintName="fk_details_ecritures_ecriture"
+       referencedTableName="ecritures_comptables"
+       referencedColumnNames="id"/>
+     <addForeignKeyConstraint
+       baseTableName="details_ecritures"
+       baseColumnNames="compte_id"
+       constraintName="fk_details_ecritures_compte"
+       referencedTableName="plans_comptables"
+       referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint
+            baseTableName="journal_audit"
+            baseColumnNames="ecriture_id"
+            constraintName="fk_journal_audit_ecriture"
+            referencedTableName="ecritures_comptables"
+            referencedColumnNames="id"
+            onDelete="SET NULL"/>
+            
+        <addForeignKeyConstraint
+            baseTableName="operation_comptable"
+            baseColumnNames="journal_comptable_id"
+            constraintName="fk_operation_comptable_journal"
+            referencedTableName="journaux_comptables"
+            referencedColumnNames="id"
+            onDelete="SET NULL"/>
+            
+        <addForeignKeyConstraint
+            baseTableName="transaction"
+            baseColumnNames="operation_comptable_id"
+            constraintName="fk_transaction_operation"
+            referencedTableName="operation_comptable"
+            referencedColumnNames="operation_id"
+            onDelete="SET NULL"/>
+
+        <addForeignKeyConstraint
+            baseTableName="transaction"
+            baseColumnNames="ecriture_comptable_id"
+            constraintName="fk_transaction_ecriture"
+            referencedTableName="ecritures_comptables"
+            referencedColumnNames="id"
+            onDelete="SET NULL"/>
+        
+            <createIndex tableName="plans_comptables" indexName="idx_plans_no_compte">
+       <column name="tenant_id"/>
+       <column name="no_compte"/>
+     </createIndex>
+     <createIndex tableName="ecritures_comptables" indexName="idx_ecritures_tenant_date">
+       <column name="tenant_id"/>
+       <column name="date_ecriture"/>
+     </createIndex>
+     <createIndex tableName="details_ecritures" indexName="idx_details_compte">
+       <column name="compte_id"/>
+     </createIndex>
+        <createIndex tableName="journal_audit" indexName="idx_journal_audit_tenant_action">
+            <column name="tenant_id"/>
+            <column name="action"/>
+            <column name="date_action"/>
+        </createIndex>
+        <createIndex tableName="operation_comptable" indexName="idx_operation_tenant_type">
+            <column name="tenant_id"/>
+            <column name="type_operation"/>
+        </createIndex>
+        <createIndex tableName="transaction" indexName="idx_transaction_tenant_date">
+            <column name="tenant_id"/>
+            <column name="date_transaction"/>
+        </createIndex>
+        <createIndex tableName="transaction" indexName="idx_transaction_ecriture">
+            <column name="ecriture_comptable_id"/>
+        </createIndex>
+        <createIndex tableName="transaction" indexName="idx_transaction_numero_recu" unique="true">
+            <column name="tenant_id"/>
+            <column name="numero_recu"/>
+        </createIndex>
+
+    </changeSet>
 </databaseChangeLog>

@@ -21,24 +21,27 @@ import java.util.UUID;
  * - isolation par tenant_id
  */
 @Repository
-public interface CompteRepository extends JpaRepository<Compte, Long> {
+public interface CompteRepository extends JpaRepository<Compte, UUID> {
 
     /** Recherche un compte par tenant et numéro de compte */
-    Optional<Compte> findByTenantIdAndNoCompte(UUID tenantId, String noCompte);
+    Optional<Compte> findByTenant_IdAndNoCompte(UUID tenantId, String noCompte);
+
+    /** Recherche un compte par tenant et ID */
+    Optional<Compte> findByTenant_IdAndId(UUID tenantId, UUID id);
 
     /** Liste des comptes actifs d’un tenant */
-    List<Compte> findByTenantIdAndActifTrue(UUID tenantId);
+    List<Compte> findByTenant_IdAndActifTrue(UUID tenantId);
 
     /** Liste des comptes d’un tenant par classe OHADA */
-    List<Compte> findByTenantIdAndClasse(UUID tenantId, Integer classe);
+    List<Compte> findByTenant_IdAndClasse(UUID tenantId, Integer classe);
 
     /** Vérifie si un compte existe pour un tenant et un numéro donné */
-    boolean existsByTenantIdAndNoCompte(UUID tenantId, String noCompte);
+    boolean existsByTenant_IdAndNoCompte(UUID tenantId, String noCompte);
 
     /** Recherche des comptes dont le numéro commence par un préfixe donné */
-    @Query("SELECT c FROM Compte c WHERE c.tenantId = :tenantId AND c.noCompte LIKE CONCAT(:prefix, '%')")
+    @Query("SELECT c FROM Compte c WHERE c.tenant.id = :tenantId AND c.noCompte LIKE CONCAT(:prefix, '%')")
     List<Compte> findByTenantIdAndNoCompteStartingWith(UUID tenantId, String prefix);
 
     /** Tous les comptes d’un tenant (y compris inactifs) */
-    List<Compte> findAllByTenantId(UUID tenantId);
+    List<Compte> findAllByTenant_Id(UUID tenantId);
 }

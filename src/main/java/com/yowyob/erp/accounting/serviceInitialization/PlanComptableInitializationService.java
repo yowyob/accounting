@@ -1,6 +1,7 @@
 package com.yowyob.erp.accounting.serviceInitialization;
 
 import com.yowyob.erp.accounting.entity.PlanComptable;
+import com.yowyob.erp.accounting.entity.Tenant;
 import com.yowyob.erp.accounting.repository.PlanComptableRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -65,7 +66,7 @@ public class PlanComptableInitializationService implements CommandLineRunner {
         boolean exists = planComptableRepository.existsByTenantIdAndNoCompte(tenantId, noCompte);
         if (!exists) {
             PlanComptable plan = PlanComptable.builder()
-                    .tenantId(tenantId)
+                    .tenant(new Tenant(tenantId))
                     .noCompte(noCompte)
                     .libelle(libelle)
                     .classe(classe)

@@ -2,307 +2,303 @@ package com.yowyob.erp.accounting.service;
 
 import com.yowyob.erp.accounting.dto.ContrepartieDto;
 import com.yowyob.erp.accounting.dto.OperationComptableDto;
-import com.yowyob.erp.accounting.entity.Contrepartie;
-import com.yowyob.erp.accounting.entity.JournalAudit;
-import com.yowyob.erp.accounting.entity.JournalComptable;
-import com.yowyob.erp.accounting.entity.OperationComptable;
-import com.yowyob.erp.accounting.entity.PlanComptable;
-import com.yowyob.erp.accounting.entityKey.JournalAuditKey;
-import com.yowyob.erp.accounting.entityKey.OperationComptableKey;
-import com.yowyob.erp.accounting.repository.ContrepartieRepository;
-import com.yowyob.erp.accounting.repository.JournalAuditRepository;
-import com.yowyob.erp.accounting.repository.JournalComptableRepository;
-import com.yowyob.erp.accounting.repository.OperationComptableRepository;
-import com.yowyob.erp.accounting.repository.PlanComptableRepository;
+import com.yowyob.erp.accounting.entity.*;
+import com.yowyob.erp.accounting.repository.*;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
+import com.yowyob.erp.config.kafka.KafkaMessageService;
+import com.yowyob.erp.config.redis.RedisService;
 import com.yowyob.erp.config.tenant.TenantContext;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.kafka.core.KafkaTemplate;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Service for managing accounting operations.
+ * Handles CRUD operations with caching, auditing, and multi-tenant support.
+ *
+ * @author ALD
+ * @date 12/10/2025 02:27 PM WAT
+ */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class OperationComptableService {
 
-    private static final Logger logger = LoggerFactory.getLogger(OperationComptableService.class);
-    private final OperationComptableRepository operationComptableRepository;
-    private final ContrepartieRepository contrePartieRepository;
-    private final JournalComptableRepository journalComptableRepository;
-    private final PlanComptableRepository planComptableRepository;
-    private final JournalAuditRepository journalAuditRepository;
+    private final OperationComptableRepository operationRepository;
+    private final ContrepartieRepository contrepartieRepository;
+    private final JournalComptableRepository journalRepository;
+    private final PlanComptableRepository planRepository;
+    private final JournalAuditRepository auditRepository;
     private final Validator validator;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaMessageService kafkaMessageService;
+    private final RedisService redisService;
 
-    public OperationComptableService(OperationComptableRepository operationComptableRepository,
-                                    JournalComptableRepository journalComptableRepository,
-                                    PlanComptableRepository planComptableRepository,
-                                    JournalAuditRepository journalAuditRepository,
-                                    ContrepartieRepository contrePartieRepository,
-                                    Validator validator,
-                                    KafkaTemplate<String, Object> kafkaTemplate) {
-        this.operationComptableRepository = operationComptableRepository;
-        this.journalComptableRepository = journalComptableRepository;
-        this.planComptableRepository = planComptableRepository;
-        this.journalAuditRepository = journalAuditRepository;
-        this.contrePartieRepository = contrePartieRepository;
-        this.validator = validator;
-        this.kafkaTemplate = kafkaTemplate;
-    }
+    private static final String CACHE_OPERATIONS_ALL = "operations:all:";
+    private static final String CACHE_OPERATION = "operation:";
 
+    /* -------------------------------------------------------------------------
+     *  CREATE
+     * ---------------------------------------------------------------------- */
     @Transactional
-    public OperationComptableDto createOperationComptable(OperationComptableDto dto) {
-        logger.info("Création d'une opération comptable");
-        validateOperationComptableDto(dto);
+    public OperationComptableDto createOperation(OperationComptableDto dto) {
         UUID tenantId = TenantContext.getCurrentTenant();
-        String currentUser = TenantContext.getCurrentUser();
+        Tenant tenant = TenantContext.getCurrentTenantAsTenant();
+        String user = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
+        log.info("📝 Creating accounting operation [{} - {}] for tenant {}", dto.getTypeOperation(), dto.getModeReglement(), tenantId);
 
-        // Validate journalComptableId
-        journalComptableRepository.findByKeyTenantIdAndKeyId(tenantId, dto.getJournalComptableId())
+        validateOperationDto(dto);
+
+        // Validate journal and account
+        journalRepository.findByTenant_IdAndId(tenantId, dto.getJournalComptableId())
                 .filter(JournalComptable::getActif)
-                .orElseThrow(() -> new IllegalArgumentException("Journal comptable invalide ou inactif : " + dto.getJournalComptableId()));
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or inactive journal: " + dto.getJournalComptableId()));
 
-        // Validate comptePrincipal
-        planComptableRepository.findByKeyTenantIdAndNoCompte(tenantId, dto.getComptePrincipal())
+        planRepository.findByTenant_IdAndNoCompte(tenantId, dto.getComptePrincipal())
                 .filter(PlanComptable::getActif)
-                .orElseThrow(() -> new IllegalArgumentException("Compte principal invalide ou inactif : " + dto.getComptePrincipal()));
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or inactive principal account: " + dto.getComptePrincipal()));
 
-        // Check uniqueness of typeOperation and modeReglement
-        if (operationComptableRepository.findByKeyTenantIdAndTypeOperationAndModeReglement(tenantId, dto.getTypeOperation(), dto.getModeReglement()).isPresent()) {
-            throw new IllegalArgumentException("Opération avec type " + dto.getTypeOperation() + " et mode " + dto.getModeReglement() + " existe déjà");
+        // Check uniqueness of type + mode
+        if (operationRepository.findByTenant_IdAndTypeOperationAndModeReglement(tenantId, dto.getTypeOperation(), dto.getModeReglement()).isPresent()) {
+            throw new IllegalArgumentException("Existing operation: " + dto.getTypeOperation() + " / " + dto.getModeReglement());
         }
 
-        OperationComptable operation = mapToEntity(dto, tenantId);
-        OperationComptableKey key = new OperationComptableKey();
-        key.setTenantId(tenantId);
-        key.setId(UUID.randomUUID());
-        operation.setKey(key);
-        operation.setCreatedAt(LocalDateTime.now());
-        operation.setUpdatedAt(LocalDateTime.now());
-        operation.setCreatedBy(currentUser != null ? currentUser : "system");
-        operation.setUpdatedBy(currentUser != null ? currentUser : "system");
+        OperationComptable entity = mapToEntity(dto, tenant);
+        entity.setId(UUID.randomUUID());
+        entity.setCreatedAt(LocalDateTime.now());
+        entity.setUpdatedAt(LocalDateTime.now());
+        entity.setCreatedBy(user);
+        entity.setUpdatedBy(user);
 
-        OperationComptable savedOperation = operationComptableRepository.save(operation);
-        OperationComptableDto savedDto = mapToDto(savedOperation);
+        OperationComptable saved = operationRepository.save(entity);
 
-        // Enregistrement des contreparties
+        // Counterparties
         if (dto.getContreparties() != null && !dto.getContreparties().isEmpty()) {
-            List<Contrepartie> contreparties = dto.getContreparties().stream().map(cpDto -> {
-                Contrepartie cp = new Contrepartie();
-                cp.setTenantId(tenantId);
-                cp.setOperationComptableId(savedOperation.getKey().getId());
-                cp.setJournalComptableId(cpDto.getJournalComptableId());
-                cp.setEstCompteTiers(cpDto.getEstCompteTiers());
-                cp.setCompte(cpDto.getCompte());
-                cp.setSens(cpDto.getSens());
-                cp.setNotes(cpDto.getNotes());
-                cp.setCreatedAt(LocalDateTime.now());
-                cp.setCreatedBy(currentUser != null ? currentUser : "system");
-                return cp;
-            }).collect(Collectors.toList());
-            contrePartieRepository.saveAll(contreparties);
+            List<Contrepartie> contreparties = dto.getContreparties().stream().map(cpDto -> mapContrepartie(cpDto, tenant, saved.getId(), user)).toList();
+            contrepartieRepository.saveAll(contreparties);
         }
 
-        logAudit(tenantId, null, currentUser, "CREATE", "Created operation: " + savedDto.getTypeOperation() + ", " + savedDto.getModeReglement());
-        kafkaTemplate.send("operation.comptable.created", tenantId.toString(), savedDto);
-        logger.info("Opération comptable créée avec succès : {}", savedOperation.getKey().getId());
-        return savedDto;
+        kafkaMessageService.sendAuditLog(saved, tenantId.toString(), "OPERATION_CREATED");
+        logAudit(tenant, user, "CREATE", "Creation of operation: " + dto.getTypeOperation());
+        redisService.delete(CACHE_OPERATIONS_ALL + tenantId);
+
+        return mapToDto(saved);
     }
 
-    public Optional<OperationComptableDto> getOperationComptable(UUID operationId) {
-        logger.info("Récupération de l'opération comptable avec l'ID : {}", operationId);
-        validerAccesTenantId();
-        return operationComptableRepository.findByKeyTenantIdAndKeyId(TenantContext.getCurrentTenant(), operationId)
+    /* -------------------------------------------------------------------------
+     *  READ
+     * ---------------------------------------------------------------------- */
+    public List<OperationComptableDto> getAllOperations() {
+        UUID tenantId = TenantContext.getCurrentTenant();
+        String cacheKey = CACHE_OPERATIONS_ALL + tenantId;
+
+        List<OperationComptableDto> cached = redisService.get(cacheKey, List.class);
+        if (cached != null) return cached;
+
+        List<OperationComptableDto> operations = operationRepository.findByTenant_Id(tenantId)
+                .stream().map(this::mapToDto).toList();
+
+        redisService.save(cacheKey, operations, Duration.ofMinutes(10));
+        return operations;
+    }
+
+    public Optional<OperationComptableDto> getOperation(UUID id) {
+        UUID tenantId = TenantContext.getCurrentTenant();
+        String cacheKey = CACHE_OPERATION + tenantId + ":" + id;
+
+        OperationComptableDto cached = redisService.get(cacheKey, OperationComptableDto.class);
+        if (cached != null) return Optional.of(cached);
+
+        OperationComptable operation = operationRepository.findByTenant_IdAndId(tenantId, id)
+                .orElseThrow(() -> new ResourceNotFoundException("OperationComptable", id.toString()));
+
+        OperationComptableDto dto = mapToDto(operation);
+        redisService.save(cacheKey, dto, Duration.ofMinutes(10));
+        return Optional.of(dto);
+    }
+
+    public List<OperationComptableDto> getOperationsByCompte(String compte) {
+        UUID tenantId = TenantContext.getCurrentTenant();
+        return operationRepository.findByTenant_IdAndComptePrincipal(tenantId, compte)
+                .stream().map(this::mapToDto).toList();
+    }
+
+    public Optional<OperationComptableDto> getByTypeAndMode(String type, String mode) {
+        UUID tenantId = TenantContext.getCurrentTenant();
+        return operationRepository.findByTenant_IdAndTypeOperationAndModeReglement(tenantId, type, mode)
                 .map(this::mapToDto);
     }
 
-    public List<OperationComptableDto> getAllOperationsComptables() {
-        logger.info("Récupération de toutes les opérations comptables pour le tenant");
-        validerAccesTenantId();
-        return operationComptableRepository.findByKeyTenantId(TenantContext.getCurrentTenant())
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
-    }
-
-    public List<OperationComptableDto> getOperationsByNoCompte(String noCompte) {
-        logger.info("Récupération des opérations comptables par noCompte: {} pour le tenant", noCompte);
-        validerAccesTenantId();
-        UUID tenantId = TenantContext.getCurrentTenant();
-
-        // Validate that the comptePrincipal exists and is active
-        planComptableRepository.findByKeyTenantIdAndNoCompte(tenantId, noCompte)
-                .filter(PlanComptable::getActif)
-                .orElseThrow(() -> new IllegalArgumentException("Compte principal invalide ou inactif : " + noCompte));
-
-        return operationComptableRepository.findByKeyTenantIdAndComptePrincipal(tenantId, noCompte)
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
-    }
-
-    public Optional<OperationComptableDto> getOperationByTypeAndMode(String typeOperation, String modeReglement) {
-        logger.info("Récupération de l'opération comptable par type: {} et mode: {}", typeOperation, modeReglement);
-        validerAccesTenantId();
-        return operationComptableRepository.findByKeyTenantIdAndTypeOperationAndModeReglement(TenantContext.getCurrentTenant(), typeOperation, modeReglement)
-                .map(this::mapToDto);
-    }
-
+    /* -------------------------------------------------------------------------
+     *  UPDATE
+     * ---------------------------------------------------------------------- */
     @Transactional
-    public OperationComptableDto updateOperationComptable(UUID operationId, OperationComptableDto dto) {
-        logger.info("Mise à jour de l'opération comptable avec l'ID : {}", operationId);
-        validerAccesTenantId();
+    public OperationComptableDto updateOperation(UUID id, OperationComptableDto dto) {
         UUID tenantId = TenantContext.getCurrentTenant();
-        String currentUser = TenantContext.getCurrentUser();
+        Tenant tenant = TenantContext.getCurrentTenantAsTenant();
+        String user = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
 
-        if (!operationComptableRepository.existsById(new OperationComptableKey(tenantId, operationId))) {
-            throw new ResourceNotFoundException("Opération comptable", operationId.toString());
-        }
+        OperationComptable existing = operationRepository.findByTenant_IdAndId(tenantId, id)
+                .orElseThrow(() -> new ResourceNotFoundException("OperationComptable", id.toString()));
 
-        // Validate journalComptableId
-        journalComptableRepository.findByKeyTenantIdAndKeyId(tenantId, dto.getJournalComptableId())
-                .filter(JournalComptable::getActif)
-                .orElseThrow(() -> new IllegalArgumentException("Journal comptable invalide ou inactif : " + dto.getJournalComptableId()));
+        validateOperationDto(dto);
 
-        // Validate comptePrincipal
-        planComptableRepository.findByKeyTenantIdAndNoCompte(tenantId, dto.getComptePrincipal())
-                .filter(PlanComptable::getActif)
-                .orElseThrow(() -> new IllegalArgumentException("Compte principal invalide ou inactif : " + dto.getComptePrincipal()));
+        existing.setTypeOperation(dto.getTypeOperation());
+        existing.setModeReglement(dto.getModeReglement());
+        existing.setComptePrincipal(dto.getComptePrincipal());
+        existing.setSensPrincipal(dto.getSensPrincipal());
+        existing.setJournalComptable(journalRepository.findById(dto.getJournalComptableId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Journal", dto.getJournalComptableId().toString())));
+        existing.setTypeMontant(dto.getTypeMontant());
+        existing.setPlafondClient(dto.getPlafondClient());
+        existing.setEstCompteStatique(dto.getEstCompteStatique());
+        existing.setActif(dto.getActif());
+        existing.setUpdatedBy(user);
+        existing.setUpdatedAt(LocalDateTime.now());
 
-        OperationComptable operation = mapToEntity(dto, tenantId);
-        operation.setKey(new OperationComptableKey(tenantId, operationId));
-        validateOperationComptableDto(dto);
-        operation.setUpdatedAt(LocalDateTime.now());
-        operation.setUpdatedBy(currentUser != null ? currentUser : "system");
+        OperationComptable saved = operationRepository.save(existing);
 
-        OperationComptable savedOperation = operationComptableRepository.save(operation);
-        OperationComptableDto savedDto = mapToDto(savedOperation);
-
-        // Update or create contreparties
-        contrePartieRepository.deleteByKeyTenantIdAndKeyOperationComptableId(tenantId, operationId);
+        // Counterparties
+        contrepartieRepository.deleteByTenantIdAndOperationComptableId(tenantId, id);
         if (dto.getContreparties() != null && !dto.getContreparties().isEmpty()) {
-            List<Contrepartie> contreparties = dto.getContreparties().stream().map(cpDto -> {
-                Contrepartie cp = new Contrepartie();
-                cp.setTenantId(tenantId);
-                cp.setOperationComptableId(operationId);
-                cp.setCompte(cpDto.getCompte());
-                cp.setSens(cpDto.getSens());
-                cp.setNotes(cpDto.getNotes());
-                cp.setCreatedAt(LocalDateTime.now());
-                cp.setCreatedBy(currentUser != null ? currentUser : "system");
-                return cp;
-            }).collect(Collectors.toList());
-            contrePartieRepository.saveAll(contreparties);
+            List<Contrepartie> contreparties = dto.getContreparties().stream().map(cpDto -> mapContrepartie(cpDto, tenant, id, user)).toList();
+            contrepartieRepository.saveAll(contreparties);
         }
 
-        logAudit(tenantId, null, currentUser, "UPDATE", "Updated operation: " + savedDto.getTypeOperation() + ", " + savedDto.getModeReglement());
-        kafkaTemplate.send("operation.comptable.updated", tenantId.toString(), savedDto);
-        logger.info("Opération comptable mise à jour avec succès : {}", operationId);
-        return savedDto;
+        kafkaMessageService.sendAuditLog(saved, tenantId.toString(), "OPERATION_UPDATED");
+        logAudit(tenant, user, "UPDATE", "Update of operation: " + dto.getTypeOperation());
+        redisService.delete(CACHE_OPERATIONS_ALL + tenantId);
+        redisService.delete(CACHE_OPERATION + tenantId + ":" + id);
+
+        return mapToDto(saved);
     }
 
+    /* -------------------------------------------------------------------------
+     *  DELETE
+     * ---------------------------------------------------------------------- */
     @Transactional
-    public void deleteOperationComptable(UUID operationId) {
-        logger.info("Suppression de l'opération comptable avec l'ID : {}", operationId);
-        validerAccesTenantId();
+    public void deleteOperation(UUID id) {
         UUID tenantId = TenantContext.getCurrentTenant();
-        String currentUser = TenantContext.getCurrentUser();
-        OperationComptableKey key = new OperationComptableKey(tenantId, operationId);
+        Tenant tenant = TenantContext.getCurrentTenantAsTenant();
+        String user = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
 
-        OperationComptable operation = operationComptableRepository.findByKeyTenantIdAndKeyId(tenantId, operationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Opération comptable", operationId.toString()));
+        OperationComptable operation = operationRepository.findByTenant_IdAndId(tenantId, id)
+                .orElseThrow(() -> new ResourceNotFoundException("OperationComptable", id.toString()));
 
-        // Delete associated contreparties
-        contrePartieRepository.deleteByKeyTenantIdAndKeyOperationComptableId(tenantId, operationId);
-        operationComptableRepository.deleteById(key);
-        logAudit(tenantId, null, currentUser, "DELETE", "Deleted operation: " + operation.getTypeOperation() + ", " + operation.getModeReglement());
-        kafkaTemplate.send("operation.comptable.deleted", tenantId.toString(), operationId);
-        logger.info("Opération comptable supprimée avec succès : {}", operationId);
+        contrepartieRepository.deleteByTenantIdAndOperationComptableId(tenantId, id);
+        operationRepository.delete(operation);
+
+        kafkaMessageService.sendAuditLog(operation, tenantId.toString(), "OPERATION_DELETED");
+        logAudit(tenant, user, "DELETE", "Deletion of operation: " + operation.getTypeOperation());
+        redisService.delete(CACHE_OPERATIONS_ALL + tenantId);
+        redisService.delete(CACHE_OPERATION + tenantId + ":" + id);
     }
 
-    private void validateOperationComptableDto(OperationComptableDto dto) {
+    /* -------------------------------------------------------------------------
+     *  VALIDATION & HELPERS
+     * ---------------------------------------------------------------------- */
+    private void validateOperationDto(OperationComptableDto dto) {
         var violations = validator.validate(dto);
-        if (!violations.isEmpty()) {
-            throw new ConstraintViolationException(violations);
+        if (!violations.isEmpty()) throw new ConstraintViolationException(violations);
+        if (!("DEBIT".equals(dto.getSensPrincipal()) || "CREDIT".equals(dto.getSensPrincipal()))) {
+            throw new IllegalArgumentException("Sens principal must be DEBIT or CREDIT");
+        }
+        if (!("HT".equals(dto.getTypeMontant()) || "TTC".equals(dto.getTypeMontant()) || "TVA".equals(dto.getTypeMontant()) || "PAU".equals(dto.getTypeMontant()))) {
+            throw new IllegalArgumentException("Type montant must be HT, TTC, TVA, or PAU");
         }
     }
 
-    private OperationComptable mapToEntity(OperationComptableDto dto, UUID tenantId) {
-        OperationComptable operation = new OperationComptable();
-        operation.setTenantId(tenantId);
-        operation.setTypeOperation(dto.getTypeOperation());
-        operation.setModeReglement(dto.getModeReglement());
-        operation.setComptePrincipal(dto.getComptePrincipal());
-        operation.setEstCompteStatique(dto.getEstCompteStatique());
-        operation.setSensPrincipal(dto.getSensPrincipal());
-        operation.setJournalComptableId(dto.getJournalComptableId());
-        operation.setTypeMontant(dto.getTypeMontant());
-        operation.setPlafondClient(dto.getPlafondClient());
-        operation.setActif(dto.getActif());
-        operation.setNotes(dto.getNotes());
-        return operation;
+    private Contrepartie mapContrepartie(ContrepartieDto dto, Tenant tenant, UUID operationId, String user) {
+        Contrepartie cp = new Contrepartie();
+        cp.setTenant(tenant);
+        cp.setOperationComptable(operationRepository.findByTenant_IdAndId(tenant.getId(),operationId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Journal", operationId.toString())));
+        cp.setJournalComptable(journalRepository.findById(dto.getJournalComptableId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Journal", dto.getJournalComptableId().toString())));
+        cp.setCompte(dto.getCompte());
+        cp.setSens(dto.getSens());
+        cp.setEstCompteTiers(dto.getEstCompteTiers());
+        cp.setNotes(dto.getNotes());
+        cp.setCreatedAt(LocalDateTime.now());
+        cp.setCreatedBy(user);
+        return cp;
     }
 
-    private OperationComptableDto mapToDto(OperationComptable operation) {
-        return OperationComptableDto.builder()
-                .id(operation.getKey().getId())
-                .typeOperation(operation.getTypeOperation())
-                .modeReglement(operation.getModeReglement())
-                .comptePrincipal(operation.getComptePrincipal())
-                .estCompteStatique(operation.getEstCompteStatique())
-                .sensPrincipal(operation.getSensPrincipal())
-                .journalComptableId(operation.getJournalComptableId())
-                .typeMontant(operation.getTypeMontant())
-                .plafondClient(operation.getPlafondClient())
-                .actif(operation.getActif())
-                .notes(operation.getNotes())
-                .createdAt(operation.getCreatedAt())
-                .updatedAt(operation.getUpdatedAt())
-                .createdBy(operation.getCreatedBy())
-                .updatedBy(operation.getUpdatedBy())
-                .contreparties(contrePartieRepository.findByKeyTenantIdAndKeyOperationComptableId(
-                        operation.getTenantId(), operation.getKey().getId())
-                        .stream()
-                        .map(cp -> ContrepartieDto.builder()
-                                .compte(cp.getCompte())
-                                .sens(cp.getSens())
-                                .typeMontant(cp.getTypeMontant())
-                                .journalComptableId(cp.getJournalComptableId())
-                                .estCompteTiers(cp.getEstCompteTiers())
-                                .notes(cp.getNotes())
-                                .createdAt(cp.getCreatedAt())
-                                .build())
-                        .collect(Collectors.toList()))
-                .build();
-    }
-
-    private void validerAccesTenantId() {
-        UUID currentTenantId = TenantContext.getCurrentTenant();
-        if (currentTenantId == null) {
-            throw new SecurityException("Accès refusé : ID du tenant non correspondant");
-        }
-    }
-
-    private void logAudit(UUID tenantId, UUID ecritureComptableId, String utilisateur, String action, String details) {
+    private void logAudit(Tenant tenant, String utilisateur, String action, String details) {
         JournalAudit audit = new JournalAudit();
-        JournalAuditKey auditKey = new JournalAuditKey();
-        auditKey.setTenantId(tenantId);
-        auditKey.setId(UUID.randomUUID());
-        audit.setKey(auditKey);
-        audit.setEcritureComptableId(ecritureComptableId);
-        audit.setUtilisateur(utilisateur != null ? utilisateur : "system");
+        audit.setId(UUID.randomUUID());
+        audit.setTenant(tenant);
         audit.setAction(action);
+        audit.setUtilisateur(utilisateur);
         audit.setDetails(details);
         audit.setDateAction(LocalDateTime.now());
-        journalAuditRepository.save(audit);
-        kafkaTemplate.send("journal.audit.created", tenantId.toString(), audit);
+        auditRepository.save(audit);
+        kafkaMessageService.sendAuditLog(audit, tenant.getId().toString(), action);
+    }
+
+    private OperationComptable mapToEntity(OperationComptableDto dto, Tenant tenant) {
+        OperationComptable op = new OperationComptable();
+        op.setTenant(tenant);
+        op.setTypeOperation(dto.getTypeOperation());
+        op.setModeReglement(dto.getModeReglement());
+        op.setComptePrincipal(dto.getComptePrincipal());
+        op.setEstCompteStatique(dto.getEstCompteStatique());
+        op.setSensPrincipal(dto.getSensPrincipal());
+        op.setJournalComptable(journalRepository.findById(dto.getJournalComptableId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Journal", dto.getJournalComptableId().toString())));
+        op.setTypeMontant(dto.getTypeMontant());
+        op.setPlafondClient(dto.getPlafondClient() != null ? dto.getPlafondClient() : BigDecimal.ZERO);
+        op.setActif(dto.getActif());
+        op.setNotes(dto.getNotes());
+        return op;
+    }
+
+/**
+ * Maps an OperationComptable entity to its DTO representation.
+ *
+ * @param op the OperationComptable entity
+ * @return the corresponding OperationComptableDto
+ * @author ALD
+ * @date 12/10/2025 02:51 PM WAT
+ */
+private OperationComptableDto mapToDto(OperationComptable op) {
+    List<ContrepartieDto> contrepartieDtos = contrepartieRepository.findByTenant_IdAndOperationComptable_Id(op.getTenant().getId(), op.getId())
+            .stream()
+            .map((Contrepartie cp) -> ContrepartieDto.builder() 
+                    .compte(cp.getCompte())
+                    .sens(cp.getSens())
+                    .estCompteTiers(cp.getEstCompteTiers())
+                    .notes(cp.getNotes())
+                    .journalComptableId(cp.getJournalComptable().getId())
+                    .createdAt(cp.getCreatedAt())
+                    .build())
+            .collect(Collectors.toList());
+
+    return OperationComptableDto.builder()
+            .id(op.getId())
+            .typeOperation(op.getTypeOperation())
+            .modeReglement(op.getModeReglement())
+            .comptePrincipal(op.getComptePrincipal())
+            .estCompteStatique(op.getEstCompteStatique())
+            .sensPrincipal(op.getSensPrincipal())
+            .journalComptableId(op.getJournalComptable() != null ? op.getJournalComptable().getId() : null)
+            .typeMontant(op.getTypeMontant())
+            .plafondClient(op.getPlafondClient() != null ? op.getPlafondClient() : BigDecimal.ZERO)
+            .actif(op.getActif())
+            .notes(op.getNotes())
+            .createdAt(op.getCreatedAt())
+            .updatedAt(op.getUpdatedAt())
+            .createdBy(op.getCreatedBy())
+            .updatedBy(op.getUpdatedBy())
+            .contreparties(contrepartieDtos)
+            .build();
     }
 }

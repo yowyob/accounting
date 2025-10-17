@@ -1,6 +1,5 @@
 package com.yowyob.erp.accounting.entity;
 
-import com.yowyob.erp.common.entity.Auditable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -11,6 +10,10 @@ import java.util.UUID;
 
 /**
  * Déclaration fiscale : TVA, IS, etc.
+ * Audit intégré directement dans l'entité sans utiliser d'interface.
+ * 
+ * Author: Leonel Delmat AZANGUE
+ * Date: 12/10/2025
  */
 @Entity
 @Table(name = "declaration_fiscale")
@@ -18,37 +21,39 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DeclarationFiscale implements Auditable {
+public class DeclarationFiscale {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "declaration_id")
-    private Long id;
+    private UUID id;
 
     @NotNull
-    @Column(name = "tenant_id", nullable = false)
-    private UUID tenantId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id", nullable = false)
+    private Tenant tenant;
 
     @NotBlank
-    @Column(name = "type_declaration", length = 50)
+    @Column(name = "type_declaration", length = 50, nullable = false)
     private String typeDeclaration;
 
     @NotNull
-    @Column(name = "periode_debut")
+    @Column(name = "periode_debut", nullable = false)
     private LocalDate periodeDebut;
 
     @NotNull
-    @Column(name = "periode_fin")
+    @Column(name = "periode_fin", nullable = false)
     private LocalDate periodeFin;
 
     @PositiveOrZero
-    @Column(name = "montant_total")
+    @Builder.Default
+    @Column(name = "montant_total", nullable = false)
     private Double montantTotal = 0.0;
 
     @Column(name = "date_generation")
     private LocalDate dateGeneration;
 
-    @Pattern(regexp = "DRAFT|SUBMITTED|VALIDATED")
+    @Pattern(regexp = "DRAFT|SUBMITTED|VALIDATED", message = "Statut must be DRAFT, SUBMITTED, or VALIDATED")
     @Column(length = 50)
     private String statut;
 
@@ -61,82 +66,32 @@ public class DeclarationFiscale implements Auditable {
     @Column(length = 255)
     private String notes;
 
-/**
-     * Date de création
-     */
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    /** Dates d'audit */
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
-    /**
-     * Date de dernière mise à jour
-     */
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
 
-    /**
-     * Utilisateur créateur
-     */
+    /** Utilisateur créateur */
     @Size(max = 255)
     @Column(name = "created_by", length = 255)
     private String createdBy;
 
-    /**
-     * Utilisateur ayant modifié la ressource
-     */
+    /** Utilisateur ayant modifié la ressource */
     @Size(max = 255)
     @Column(name = "updated_by", length = 255)
     private String updatedBy;
 
-    // =========================================================
-    // Implémentation de l'interface Auditable
-    // =========================================================
-    @Override
-    public UUID getTenantId() {
-        return tenantId;
+    @PrePersist
+    public void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        this.createdAt = now;
+        this.updatedAt = now;
     }
 
-    @Override
-    public void setTenantId(UUID tenantId) {
-        this.tenantId = tenantId;
-    }
-
-    @Override
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    @Override
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    @Override
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    @Override
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    @Override
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    @Override
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    @Override
-    public String getUpdatedBy() {
-        return updatedBy;
-    }
-
-    @Override
-    public void setUpdatedBy(String updatedBy) {
-        this.updatedBy = updatedBy;
+    @PreUpdate
+    public void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }

@@ -1,46 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog
-  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
 
-  <changeSet id="003" author="yowyob-system">
-    <comment>Insertion des journaux et comptes OHADA par défaut</comment>
+    <property name="default_tenant_id" value="550e8400-e29b-41d4-a716-446655440000"/>
 
-    <insert tableName="journal_comptable">
-      <column name="tenant_id" value="00000000-0000-0000-0000-000000000000"/>
-      <column name="code_journal" value="VTE"/>
-      <column name="libelle" value="Journal des ventes"/>
-    </insert>
+    <changeSet id="003-insert-default-data" author="yowyob-system">
+        <comment>Insertion des journaux et comptes OHADA de base pour le tenant par défaut (000...).</comment>
+        
+         <insert tableName="tenants">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440000"/>
+            <column name="code" value="YOWYOB-ERP"/>
+            <column name="nom" value="YOWYOB-ERP"/>
+            <column name="email" value="yowyob@gmail.com"/>
+            <column name="telephone" value="+237657450314"/>
+        </insert>
+        <insert tableName="journaux_comptables">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440000"/>
+            <column name="tenant_id" value="${default_tenant_id}"/>
+            <column name="code_journal" value="VTE"/>
+            <column name="libelle" value="Journal des ventes"/>
+            <column name="type_journal" value="VENTE"/>
+        </insert>
+        <insert tableName="journaux_comptables">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440001"/>
+            <column name="tenant_id" value="${default_tenant_id}"/>
+            <column name="code_journal" value="ACH"/>
+            <column name="libelle" value="Journal des achats"/>
+            <column name="type_journal" value="ACHAT"/>
+        </insert>
+        <insert tableName="journaux_comptables">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440002"/>
+            <column name="tenant_id" value="${default_tenant_id}"/>
+            <column name="code_journal" value="TRE"/>
+            <column name="libelle" value="Journal de trésorerie"/>
+            <column name="type_journal" value="TRESORERIE"/>
+        </insert>
 
-    <insert tableName="journal_comptable">
-      <column name="tenant_id" value="00000000-0000-0000-0000-000000000000"/>
-      <column name="code_journal" value="ACH"/>
-      <column name="libelle" value="Journal des achats"/>
-    </insert>
-
-    <insert tableName="journal_comptable">
-      <column name="tenant_id" value="00000000-0000-0000-0000-000000000000"/>
-      <column name="code_journal" value="TRE"/>
-      <column name="libelle" value="Journal de trésorerie"/>
-    </insert>
-
-    <insert tableName="plan_comptable">
-      <column name="tenant_id" value="00000000-0000-0000-0000-000000000000"/>
-      <column name="no_compte" value="101000"/>
-      <column name="libelle" value="Capital social"/>
-    </insert>
-
-    <insert tableName="plan_comptable">
-      <column name="tenant_id" value="00000000-0000-0000-0000-000000000000"/>
-      <column name="no_compte" value="701000"/>
-      <column name="libelle" value="Ventes de marchandises"/>
-    </insert>
-
-    <insert tableName="plan_comptable">
-      <column name="tenant_id" value="00000000-0000-0000-0000-000000000000"/>
-      <column name="no_compte" value="445700"/>
-      <column name="libelle" value="TVA collectée"/>
-    </insert>
-  </changeSet>
+        <insert tableName="plans_comptables">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440003"/>
+            <column name="tenant_id" value="${default_tenant_id}"/>
+            <column name="classe" valueNumeric="1"/>
+            <column name="no_compte" value="101000"/>
+            <column name="libelle" value="Capital social"/>
+        </insert>
+        <insert tableName="plans_comptables">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440004"/>
+            <column name="tenant_id" value="${default_tenant_id}"/>
+            <column name="classe" valueNumeric="7"/>
+            <column name="no_compte" value="701000"/>
+            <column name="libelle" value="Ventes de marchandises"/>
+        </insert>
+        <insert tableName="plans_comptables">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440005"/>
+            <column name="tenant_id" value="${default_tenant_id}"/>
+            <column name="classe" valueNumeric="4"/>
+            <column name="no_compte" value="445700"/>
+            <column name="libelle" value="TVA collectée"/>
+        </insert>
+    </changeSet>
 </databaseChangeLog>

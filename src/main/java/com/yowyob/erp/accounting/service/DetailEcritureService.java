@@ -1,31 +1,37 @@
 package com.yowyob.erp.accounting.service;
 
+import com.yowyob.erp.accounting.entity.*;
+import com.yowyob.erp.accounting.repository.*;
+import com.yowyob.erp.common.entity.ComptableObject;
+import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.config.tenant.TenantContext;
-import com.yowyob.erp.accounting.entity.DetailEcriture;
-import com.yowyob.erp.accounting.entity.JournalAudit;
-import com.yowyob.erp.accounting.entity.PlanComptable;
-import com.yowyob.erp.accounting.repository.DetailEcritureRepository;
-import com.yowyob.erp.accounting.repository.JournalAuditRepository;
-import com.yowyob.erp.accounting.repository.PlanComptableRepository;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import com.yowyob.erp.common.enums.Sens;
 
 /**
- * Service gérant la création, la mise à jour et la suppression des
- * détails d'écriture comptable. Compatible PostgreSQL + JPA.
+ * Service for managing the creation, update, and deletion of accounting entry details.
+ * Compatible with PostgreSQL + Kafka + Multi-tenant.
+ *
+ * @author ALD
+ * @date 12/10/2025 06:22 AM WAT
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class DetailEcritureService {
 
-    private static final Logger logger = LoggerFactory.getLogger(DetailEcritureService.class);
+    private static final String COMPTE_TVA_STATIQUE = "445710";
+    private static final String COMPTE_CLIENT_DYNAMIQUE = "411000";
 
     private final DetailEcritureRepository detailRepository;
     private final PlanComptableRepository planComptableRepository;
@@ -33,83 +39,185 @@ public class DetailEcritureService {
     private final Validator validator;
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public DetailEcritureService(
-            DetailEcritureRepository detailRepository,
-            PlanComptableRepository planComptableRepository,
-            JournalAuditRepository journalAuditRepository,
-            Validator validator,
-            KafkaTemplate<String, Object> kafkaTemplate
-    ) {
-        this.detailRepository = detailRepository;
-        this.planComptableRepository = planComptableRepository;
-        this.journalAuditRepository = journalAuditRepository;
-        this.validator = validator;
-        this.kafkaTemplate = kafkaTemplate;
-    }
-
-    /* -------------------------------------------------------------------------- */
-    /*                              CRÉATION D'UNE LIGNE D'ÉCRITURE                        */
-    /* -------------------------------------------------------------------------- */
+    /* MANUAL CREATION */
     @Transactional
-    public DetailEcriture createDetailEcriture(DetailEcriture detail) {
-        UUID tenantId = TenantContext.getCurrentTenant();
+    public DetailEcriture createDetailEcriture(DetailEcriture detail, Tenant tenant, EcritureComptable ecriture) {
         String currentUser = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
 
-        validerDetailEcriture(detail);
-
-        detail.setTenantId(tenantId);
+        validateDetailEcriture(detail);
+        detail.setTenant(tenant);
+        detail.setEcriture(ecriture);
         detail.setDateEcriture(LocalDateTime.now());
         detail.setCreatedAt(LocalDateTime.now());
         detail.setUpdatedAt(LocalDateTime.now());
         detail.setCreatedBy(currentUser);
         detail.setUpdatedBy(currentUser);
 
-        // Sens → met à zéro le champ opposé
-        if ("DEBIT".equalsIgnoreCase(detail.getSens())) detail.setMontantCredit(0.0);
-        if ("CREDIT".equalsIgnoreCase(detail.getSens())) detail.setMontantDebit(0.0);
+        // Set opposite amount to zero based on sens
+        Sens sens = detail.getSens();
+        if (sens == Sens.DEBIT) {
+            detail.setMontantCredit(BigDecimal.ZERO);
+        } else if (sens == Sens.CREDIT) {
+            detail.setMontantDebit(BigDecimal.ZERO);
+        }
 
         DetailEcriture saved = detailRepository.save(detail);
-        logAudit(tenantId, saved.getEcritureComptableId(), currentUser, "CREATE",
-                "Création d’un détail d’écriture " + saved.getId());
-        kafkaTemplate.send("detail.ecriture.created", tenantId.toString(), saved);
+        logAudit(tenant, ecriture.getId(), currentUser, "CREATE",
+                "Creation of entry detail " + saved.getId());
+        kafkaTemplate.send("detail.ecriture.created", tenant.getId().toString(), saved);
 
-        logger.info("✅ Détail d’écriture créé avec succès : {}", saved.getId());
+        log.info("✅ Entry detail created successfully: {}", saved.getId());
         return saved;
     }
 
-    /* -------------------------------------------------------------------------- */
-    /*                                  LECTURE                                   */
-    /* -------------------------------------------------------------------------- */
-    public Optional<DetailEcriture> getDetailEcriture(Long id, UUID tenantId) {
-        validerAccesTenantId();
-        return detailRepository.findById(id)
-                .filter(d -> d.getTenantId().equals(tenantId));
-    }
-
-    public List<DetailEcriture> getAllDetailsEcriture(UUID tenantId) {
-        validerAccesTenantId();
-        return detailRepository.findByTenantId(tenantId);
-    }
-
-    public List<DetailEcriture> getDetailsByEcriture(UUID tenantId, Long ecritureComptableId) {
-        validerAccesTenantId();
-        return detailRepository.findByTenantIdAndEcritureComptableId(tenantId, ecritureComptableId);
-    }
-
-    /* -------------------------------------------------------------------------- */
-    /*                                 MISE À JOUR                                */
-    /* -------------------------------------------------------------------------- */
-    @Transactional
-    public DetailEcriture updateDetailEcriture(Long id, DetailEcriture updatedDetail) {
-        UUID tenantId = TenantContext.getCurrentTenant();
+    /* AUTOMATIC GENERATION FROM OPERATION + TRANSACTION */
+    public void generateDetailsFromOperation(EcritureComptable ecriture, OperationComptable operation, Transaction transaction) {
+        Tenant tenant = ecriture.getTenant();
         String currentUser = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
-        validerAccesTenantId();
+
+        PlanComptable principalAccount = planComptableRepository
+                .findByTenant_IdAndNoCompte(tenant.getId(), operation.getComptePrincipal())
+                .filter(PlanComptable::getActif)
+                .orElseThrow(() -> new ResourceNotFoundException("Main account", operation.getComptePrincipal()));
+
+        String counterAccountNo = operation.getEstCompteStatique() ? COMPTE_TVA_STATIQUE : COMPTE_CLIENT_DYNAMIQUE;
+        PlanComptable counterAccount = planComptableRepository
+                .findByTenant_IdAndNoCompte(tenant.getId(), counterAccountNo)
+                .filter(PlanComptable::getActif)
+                .orElseThrow(() -> new ResourceNotFoundException("Counter account", counterAccountNo));
+
+        LocalDateTime now = LocalDateTime.now();
+        String libelle = String.format("Transaction %s – Operation: %s",
+                transaction.getNumeroRecu(), operation.getTypeOperation());
+
+        // Debit line
+        DetailEcriture debit = DetailEcriture.builder()
+                .id(UUID.randomUUID())
+                .tenant(tenant)
+                .ecriture(ecriture)
+                .compte(principalAccount)
+                .libelle(libelle)
+                .sens(Sens.DEBIT)
+                .montantDebit(transaction.getMontantTransaction())
+                .montantCredit(BigDecimal.ZERO)
+                .dateEcriture(now)
+                .createdAt(now)
+                .updatedAt(now)
+                .createdBy(currentUser)
+                .updatedBy(currentUser)
+                .build();
+
+        // Credit line
+        DetailEcriture credit = DetailEcriture.builder()
+                .id(UUID.randomUUID())
+                .tenant(tenant)
+                .ecriture(ecriture)
+                .compte(counterAccount)
+                .libelle(libelle)
+                .sens(Sens.CREDIT)
+                .montantCredit(transaction.getMontantTransaction())
+                .montantDebit(BigDecimal.ZERO)
+                .dateEcriture(now)
+                .createdAt(now)
+                .updatedAt(now)
+                .createdBy(currentUser)
+                .updatedBy(currentUser)
+                .build();
+
+        createDetailEcriture(debit, tenant, ecriture);
+        createDetailEcriture(credit, tenant, ecriture);
+
+        log.info("💾 Details generated for entry [{}] : debit={}, credit={}",
+                ecriture.getId(), debit.getMontantDebit(), credit.getMontantCredit());
+    }
+
+    /* AUTOMATIC GENERATION FROM GENERIC ACCOUNTING OBJECT */
+    public void generateDetailsFromComptableObject(EcritureComptable ecriture, ComptableObject object) {
+        Tenant tenant = ecriture.getTenant();
+        String currentUser = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
+        LocalDateTime now = LocalDateTime.now();
+
+        PlanComptable debitAccount = planComptableRepository
+                .findByTenant_IdAndNoCompte(tenant.getId(), object.getDebitAccount())
+                .orElseThrow(() -> new ResourceNotFoundException("Debit account", object.getDebitAccount()));
+
+        PlanComptable creditAccount = planComptableRepository
+                .findByTenant_IdAndNoCompte(tenant.getId(), object.getCreditAccount())
+                .orElseThrow(() -> new ResourceNotFoundException("Credit account", object.getCreditAccount()));
+
+        BigDecimal montant = object.getMontant();
+        String libelle = object.getDescription() != null ? object.getDescription()
+                : "Auto entry " + object.getSourceType();
+
+        // Debit
+        DetailEcriture debit = DetailEcriture.builder()
+                .id(UUID.randomUUID())
+                .tenant(tenant)
+                .ecriture(ecriture)
+                .compte(debitAccount)
+                .libelle(libelle)
+                .sens(Sens.DEBIT)
+                .montantDebit(montant)
+                .montantCredit(BigDecimal.ZERO)
+                .dateEcriture(now)
+                .createdAt(now)
+                .updatedAt(now)
+                .createdBy(currentUser)
+                .updatedBy(currentUser)
+                .build();
+
+        // Credit
+        DetailEcriture credit = DetailEcriture.builder()
+                .id(UUID.randomUUID())
+                .tenant(tenant)
+                .ecriture(ecriture)
+                .compte(creditAccount)
+                .libelle(libelle)
+                .sens(Sens.CREDIT)
+                .montantCredit(montant)
+                .montantDebit(BigDecimal.ZERO)
+                .dateEcriture(now)
+                .createdAt(now)
+                .updatedAt(now)
+                .createdBy(currentUser)
+                .updatedBy(currentUser)
+                .build();
+
+        createDetailEcriture(debit, tenant, ecriture);
+        createDetailEcriture(credit, tenant, ecriture);
+
+        log.info("⚙️ Details generated from accounting object [{}] : {} → {} ({} F)",
+                object.getSourceType(), debitAccount.getNoCompte(), creditAccount.getNoCompte(), montant);
+    }
+
+    /* READING */
+    public Optional<DetailEcriture> getDetailEcriture(UUID id, Tenant tenant) {
+        validateTenantAccess();
+        return detailRepository.findById(id)
+                .filter(d -> d.getTenant().equals(tenant));
+    }
+
+    public List<DetailEcriture> getAllDetailsEcriture(Tenant tenant) {
+        validateTenantAccess();
+        return detailRepository.findByTenant_Id(tenant.getId());
+    }
+
+    public List<DetailEcriture> getDetailsByEcriture(Tenant tenant, EcritureComptable ecriture) {
+        validateTenantAccess();
+        return detailRepository.findByTenant_IdAndEcriture_Id(tenant.getId(), ecriture.getId());
+    }
+
+    /* UPDATE */
+    @Transactional
+    public DetailEcriture updateDetailEcriture(UUID id, DetailEcriture updatedDetail, Tenant tenant, EcritureComptable ecriture) {
+        String currentUser = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
+        validateTenantAccess();
 
         DetailEcriture existing = detailRepository.findById(id)
-                .filter(d -> d.getTenantId().equals(tenantId))
-                .orElseThrow(() -> new IllegalArgumentException("Détail d’écriture introuvable : " + id));
+                .filter(d -> d.getTenant().equals(tenant))
+                .orElseThrow(() -> new IllegalArgumentException("Entry detail not found: " + id));
 
-        validerDetailEcriture(updatedDetail);
+        validateDetailEcriture(updatedDetail);
 
         existing.setLibelle(updatedDetail.getLibelle());
         existing.setSens(updatedDetail.getSens());
@@ -119,68 +227,67 @@ public class DetailEcritureService {
         existing.setUpdatedAt(LocalDateTime.now());
         existing.setUpdatedBy(currentUser);
 
-        if ("DEBIT".equalsIgnoreCase(existing.getSens())) existing.setMontantCredit(0.0);
-        if ("CREDIT".equalsIgnoreCase(existing.getSens())) existing.setMontantDebit(0.0);
+        // Set opposite amount to zero based on sens
+        Sens sens = existing.getSens();
+        if (sens == Sens.DEBIT) {
+            existing.setMontantCredit(BigDecimal.ZERO);
+        } else if (sens == Sens.CREDIT) {
+            existing.setMontantDebit(BigDecimal.ZERO);
+        }
 
         DetailEcriture saved = detailRepository.save(existing);
-        logAudit(tenantId, saved.getEcritureComptableId(), currentUser, "UPDATE",
-                "Mise à jour du détail d’écriture " + saved.getId());
-        kafkaTemplate.send("detail.ecriture.updated", tenantId.toString(), saved);
+        logAudit(tenant, ecriture.getId(), currentUser, "UPDATE",
+                "Update of entry detail " + saved.getId());
+        kafkaTemplate.send("detail.ecriture.updated", tenant.getId().toString(), saved);
 
-        logger.info("✏️ Détail d’écriture mis à jour : {}", saved.getId());
+        log.info("✏️ Entry detail updated: {}", saved.getId());
         return saved;
     }
 
-    /* -------------------------------------------------------------------------- */
-    /*                                 SUPPRESSION                                */
-    /* -------------------------------------------------------------------------- */
+    /* DELETION */
     @Transactional
-    public void deleteDetailEcriture(Long id, UUID tenantId) {
-        validerAccesTenantId();
+    public void deleteDetailEcriture(UUID id, Tenant tenant, EcritureComptable ecriture) {
+        validateTenantAccess();
         String currentUser = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
 
         DetailEcriture detail = detailRepository.findById(id)
-                .filter(d -> d.getTenantId().equals(tenantId))
-                .orElseThrow(() -> new IllegalArgumentException("Détail d’écriture introuvable : " + id));
+                .filter(d -> d.getTenant().equals(tenant))
+                .orElseThrow(() -> new IllegalArgumentException("Entry detail not found: " + id));
 
         detailRepository.delete(detail);
-        logAudit(tenantId, detail.getEcritureComptableId(), currentUser, "DELETE",
-                "Suppression du détail d’écriture " + id);
-        kafkaTemplate.send("detail.ecriture.deleted", tenantId.toString(), id);
+        logAudit(tenant, ecriture.getId(), currentUser, "DELETE",
+                "Deletion of entry detail " + id);
+        kafkaTemplate.send("detail.ecriture.deleted", tenant.getId().toString(), id);
 
-        logger.info("🗑️ Détail d’écriture supprimé : {}", id);
+        log.info("🗑️ Entry detail deleted: {}", id);
     }
 
-    /* -------------------------------------------------------------------------- */
-    /*                                 VALIDATION                                 */
-    /* -------------------------------------------------------------------------- */
-    private void validerDetailEcriture(DetailEcriture detail) {
+    /* VALIDATION */
+    private void validateDetailEcriture(DetailEcriture detail) {
         var violations = validator.validate(detail);
         if (!violations.isEmpty()) throw new ConstraintViolationException(violations);
 
-        UUID tenantId = TenantContext.getCurrentTenant();
+        Tenant tenant = TenantContext.getCurrentTenantAsTenant();
         PlanComptable plan = planComptableRepository
-                .findById(detail.getCompteComptableId())
-                .filter(p -> p.getTenantId().equals(tenantId))
+                .findById(detail.getCompte().getId())
+                .filter(p -> p.getTenant().equals(tenant))
                 .orElseThrow(() ->
-                        new IllegalArgumentException("Compte comptable introuvable : " + detail.getCompteComptableId()));
+                        new IllegalArgumentException("Accounting account not found: " + detail.getCompte().getId()));
 
         if (!Boolean.TRUE.equals(plan.getActif()))
-            throw new IllegalArgumentException("Compte inactif : " + plan.getNoCompte());
+            throw new IllegalArgumentException("Inactive account: " + plan.getNoCompte());
 
-        if ("DEBIT".equalsIgnoreCase(detail.getSens()) && detail.getMontantDebit() <= 0)
-            throw new IllegalArgumentException("Montant débit doit être positif");
+        if (detail.getSens() == Sens.DEBIT && detail.getMontantDebit().compareTo(BigDecimal.ZERO) <= 0)
+            throw new IllegalArgumentException("Debit amount must be positive");
 
-        if ("CREDIT".equalsIgnoreCase(detail.getSens()) && detail.getMontantCredit() <= 0)
-            throw new IllegalArgumentException("Montant crédit doit être positif");
+        if (detail.getSens() == Sens.CREDIT && detail.getMontantCredit().compareTo(BigDecimal.ZERO) <= 0)
+            throw new IllegalArgumentException("Credit amount must be positive");
     }
 
-    /* -------------------------------------------------------------------------- */
-    /*                                   AUDIT                                    */
-    /* -------------------------------------------------------------------------- */
-    private void logAudit(UUID tenantId, Long ecritureComptableId, String utilisateur, String action, String details) {
+    /* AUDIT */
+    private void logAudit(Tenant tenant, UUID ecritureComptableId, String utilisateur, String action, String details) {
         JournalAudit audit = JournalAudit.builder()
-                .tenantId(tenantId)
+                .tenant(tenant)
                 .ecritureComptableId(ecritureComptableId)
                 .utilisateur(utilisateur)
                 .action(action)
@@ -193,14 +300,12 @@ public class DetailEcritureService {
                 .build();
 
         journalAuditRepository.save(audit);
-        kafkaTemplate.send("journal.audit.created", tenantId.toString(), audit);
+        kafkaTemplate.send("journal.audit.created", tenant.getId().toString(), audit);
     }
 
-    /* -------------------------------------------------------------------------- */
-    /*                                   SECURITE                                 */
-    /* -------------------------------------------------------------------------- */
-    private void validerAccesTenantId() {
+    /* SECURITY */
+    private void validateTenantAccess() {
         if (TenantContext.getCurrentTenant() == null)
-            throw new SecurityException("Accès refusé : ID du tenant non défini");
+            throw new SecurityException("Access denied: Tenant ID not defined");
     }
 }

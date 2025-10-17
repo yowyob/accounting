@@ -1,523 +1,335 @@
 package com.yowyob.erp.accounting.service;
 
-import com.yowyob.erp.accounting.dto.EcritureComptableDto;
-import com.yowyob.erp.accounting.dto.PeriodeComptableDto;
-import com.yowyob.erp.accounting.dto.DetailEcritureDto;
-import com.yowyob.erp.accounting.dto.JournalComptableDto;
+import com.yowyob.erp.accounting.dto.*;
 import com.yowyob.erp.accounting.entity.*;
-import com.yowyob.erp.accounting.entityKey.DetailEcritureKey;
-import com.yowyob.erp.accounting.entityKey.EcritureComptableKey;
-import com.yowyob.erp.accounting.entityKey.JournalAuditKey;
 import com.yowyob.erp.accounting.repository.*;
 import com.yowyob.erp.common.entity.ComptableObject;
 import com.yowyob.erp.common.exception.BusinessException;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
-import com.yowyob.erp.config.tenant.TenantContext;
 import com.yowyob.erp.config.kafka.KafkaMessageService;
-import jakarta.validation.ConstraintViolationException;
+import com.yowyob.erp.config.redis.RedisService;
+import com.yowyob.erp.config.tenant.TenantContext;
 import jakarta.validation.Validator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Service for managing accounting entries.
+ * Compatible with PostgreSQL + Redis + Kafka + Multi-tenant.
+ *
+ * @author ALD
+ * @date 12/10/2025 06:39 AM WAT
+ */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class EcritureComptableService {
 
-    private static final Logger logger = LoggerFactory.getLogger(EcritureComptableService.class);
-    private static final String CACHE_ALL_ECRITURES = "ecritures:all:";
-    private static final String CACHE_NON_VALIDATED_ECRITURES = "ecritures:nonvalidated:";
-    private static final String CACHE_SEARCH_ECRITURES = "ecritures:search:";
+    private static final String CACHE_ALL = "ecritures:all:";
+    private static final String CACHE_NON_VALIDATED = "ecritures:nonvalidated:";
+    private static final String CACHE_SEARCH = "ecritures:search:";
 
     private final EcritureComptableRepository ecritureRepository;
-    private final OperationComptableRepository operationComptableRepository;
+    private final OperationComptableRepository operationRepository;
+    private final DetailEcritureRepository detailRepository;
+    @SuppressWarnings("unused")
     private final TransactionRepository transactionRepository;
-    private final DetailEcritureService detailEcritureService;
-    private final PlanComptableRepository planComptableRepository;
-    private final JournalComptableService journalComptableService;
-    private final PeriodeComptableService periodeComptableService;
-    private final JournalAuditRepository journalAuditRepository;
+    private final JournalComptableRepository journalRepository;
+    private final DetailEcritureService detailService;
+    private final PlanComptableRepository planRepository;
+    private final PeriodeComptableRepository periodeRepository;
+    private final JournalComptableService journalService;
+    private final PeriodeComptableService periodeService;
+    private final JournalAuditRepository auditRepository;
     private final Validator validator;
     private final KafkaMessageService kafkaMessageService;
     private final KafkaOperations<String, Object> kafkaOperations;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisService redisService;
 
-    @Autowired
-    public EcritureComptableService(EcritureComptableRepository ecritureRepository,
-                                    OperationComptableRepository operationComptableRepository,
-                                    TransactionRepository transactionRepository,
-                                    DetailEcritureService detailEcritureService,
-                                    PlanComptableRepository planComptableRepository,
-                                    JournalComptableService journalComptableService,
-                                    PeriodeComptableService periodeComptableService,
-                                    JournalAuditRepository journalAuditRepository,
-                                    Validator validator,
-                                    KafkaMessageService kafkaMessageService,
-                                    KafkaOperations<String, Object> kafkaOperations,
-                                    RedisTemplate<String, Object> redisTemplate) {
-        this.ecritureRepository = ecritureRepository;
-        this.operationComptableRepository = operationComptableRepository;
-        this.transactionRepository = transactionRepository;
-        this.detailEcritureService = detailEcritureService;
-        this.planComptableRepository = planComptableRepository;
-        this.journalComptableService = journalComptableService;
-        this.periodeComptableService = periodeComptableService;
-        this.journalAuditRepository = journalAuditRepository;
-        this.validator = validator;
-        this.kafkaMessageService = kafkaMessageService;
-        this.kafkaOperations = kafkaOperations;
-        this.redisTemplate = redisTemplate;
-    }
-
+    /* ============================================================================
+       CREATION OF AN ACCOUNTING ENTRY
+    ============================================================================ */
     @Transactional
-    public EcritureComptableDto createEcriture(EcritureComptableDto ecritureDto) {
-
-        //Extraction de l'utilisateur et du Tenant
+    public EcritureComptableDto createEcriture(EcritureComptableDto dto) {
         UUID tenantId = TenantContext.getCurrentTenant();
-        String currentUser = TenantContext.getCurrentUser();
-        logger.info("Creating ecriture comptable for tenant: {}, numero: {}", tenantId, ecritureDto.getNumeroEcriture());
+        String currentUser = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
+        log.info("➡️ Creating accounting entry for tenant: {}", tenantId);
 
-        //Validation de l'ecriture comptable
-        validateEcritureDto(ecritureDto);
+        validator.validate(dto);
 
-        //Recuperation du journal comptable 
-        journalComptableService.getJournalComptable(ecritureDto.getJournalComptableId())
-                .filter(JournalComptableDto::getActif)
-                .orElseThrow(() -> new IllegalArgumentException("Journal comptable invalide ou inactif : " + ecritureDto.getJournalComptableId()));
-
-        //Recuperation de l'exercice
-        PeriodeComptableDto periode = periodeComptableService.getPeriodeComptable(ecritureDto.getPeriodeComptableId())
+        // Verify journal & period
+        journalService.getJournalComptable(dto.getJournalComptableId());
+        PeriodeComptableDto periode = periodeService.getPeriode(dto.getPeriodeComptableId())
                 .filter(p -> !p.getCloturee())
-                .orElseThrow(() -> new IllegalArgumentException("Période comptable invalide ou clôturée : " + ecritureDto.getPeriodeComptableId()));
+                .orElseThrow(() -> new BusinessException("Accounting period is closed"));
 
-        EcritureComptable ecriture = mapToEntity(ecritureDto, tenantId);
-        EcritureComptableKey key = new EcritureComptableKey();
-        key.setTenantId(tenantId);
-        key.setId(UUID.randomUUID());
-        ecriture.setNumeroEcriture("ECR-" +key.getId() + "-" + System.currentTimeMillis());
-        ecriture.setKey(key);
+        // Create entity
+        EcritureComptable ecriture = mapToEntity(dto, TenantContext.getCurrentTenantAsTenant());
+        ecriture.setId(UUID.randomUUID());
+        ecriture.setNumeroEcriture("ECR-" + ecriture.getId());
         ecriture.setCreatedAt(LocalDateTime.now());
         ecriture.setUpdatedAt(LocalDateTime.now());
-        ecriture.setCreatedBy(currentUser != null ? currentUser : "system");
-        ecriture.setUpdatedBy(currentUser != null ? currentUser : "system");
+        ecriture.setCreatedBy(currentUser);
+        ecriture.setUpdatedBy(currentUser);
+        ecriture.setValidee(false);
 
         EcritureComptable saved = ecritureRepository.save(ecriture);
-        // Validation des détails après sauvegarde
-        List<DetailEcriture> details = detailEcritureService.findByKeyTenantIdAndKeyEcritureComptableId(tenantId, key.getId());
+        log.info("✅ Entry {} created", saved.getNumeroEcriture());
+
+        // Validate balance
+        List<DetailEcriture> details = detailRepository.findByTenant_IdAndEcriture_Id(tenantId, saved.getId());
         validateBalance(details);
 
-        logAuditAndSendKafka(tenantId, key.getId(), currentUser, "CREATE", "Created ecriture: " + ecritureDto.getNumeroEcriture());
-        invalidateCaches(tenantId);
+        // Audit + Kafka + Cache
+        logAuditAndSendKafka(TenantContext.getCurrentTenantAsTenant(), saved.getId(), currentUser, "CREATE", "Entry created");
+        redisService.delete(CACHE_ALL + tenantId);
+
         return mapToDto(saved);
     }
 
+    /* ============================================================================
+       VALIDATION
+    ============================================================================ */
     @Transactional
     public EcritureComptableDto validateEcriture(UUID id, String user) {
         UUID tenantId = TenantContext.getCurrentTenant();
-        logger.info("Validating ecriture comptable for tenant: {}, id: {}", tenantId, id);
+        String currentUser = Optional.ofNullable(user).orElse("system");
 
-        EcritureComptable ecriture = ecritureRepository.findByKeyTenantIdAndKeyId(tenantId, id)
-                .orElseThrow(() -> new ResourceNotFoundException("Ecriture comptable", id.toString()));
+        EcritureComptable ecriture = ecritureRepository
+                .findByTenant_IdAndId(tenantId, id)
+                .orElseThrow(() -> new ResourceNotFoundException("Entry", id.toString()));
 
-        if (ecriture.getValidee()) {
-            throw new IllegalStateException("Ecriture comptable already validated");
-        }
+        if (Boolean.TRUE.equals(ecriture.getValidee()))
+            throw new BusinessException("Entry already validated");
 
-        PeriodeComptableDto periode = periodeComptableService.getPeriodeComptable(ecriture.getPeriodeComptableId())
-                .filter(p -> !p.getCloturee())
-                .orElseThrow(() -> new IllegalStateException("Période comptable clôturée : " + ecriture.getPeriodeComptableId()));
-
-        List<DetailEcriture> details = detailEcritureService.findByKeyTenantIdAndKeyEcritureComptableId(tenantId, id);
+        List<DetailEcriture> details = detailRepository.findByTenant_IdAndEcriture_Id(tenantId, id);
         validateBalance(details);
 
         ecriture.setValidee(true);
         ecriture.setDateValidation(LocalDateTime.now());
-        ecriture.setUtilisateurValidation(user);
+        ecriture.setValidatedBy(currentUser);
         ecriture.setUpdatedAt(LocalDateTime.now());
-        ecriture.setUpdatedBy(user != null ? user : "system");
+        ecriture.setUpdatedBy(currentUser);
 
         EcritureComptable validated = ecritureRepository.save(ecriture);
-        logAuditAndSendKafka(tenantId, id, user, "VALIDATE", "Validated ecriture: " + validated.getNumeroEcriture());
-        invalidateCaches(tenantId);
+        logAuditAndSendKafka(TenantContext.getCurrentTenantAsTenant(), id, currentUser, "VALIDATE", "Entry validated");
+        redisService.delete(CACHE_NON_VALIDATED + tenantId);
+
         return mapToDto(validated);
     }
 
-    public List<EcritureComptableDto> getAllEcritures() {
+    /* ============================================================================
+       SEARCHES & CACHE
+    ============================================================================ */
+    public List<EcritureComptableDto> getAll() {
         UUID tenantId = TenantContext.getCurrentTenant();
-        logger.info("Fetching all ecritures comptables for tenant: {}", tenantId);
+        String key = CACHE_ALL + tenantId;
+        List<EcritureComptableDto> cached = redisService.get(key, List.class);
+        if (cached != null) return cached;
 
-        String cacheKey = CACHE_ALL_ECRITURES + tenantId;
-        List<EcritureComptableDto> ecritures = null;
-
-        try {
-            ecritures = (List<EcritureComptableDto>) redisTemplate.opsForValue().get(cacheKey);
-        } catch (Exception e) {
-            logger.warn("Failed to retrieve ecritures from Redis for tenant {}: {}", tenantId, e.getMessage());
-        }
-
-        if (ecritures == null) {
-            ecritures = ecritureRepository.findByKeyTenantId(tenantId)
-                    .stream()
-                    .map(this::mapToDto)
-                    .collect(Collectors.toList());
-            try {
-                redisTemplate.opsForValue().set(cacheKey, ecritures, Duration.ofMinutes(10));
-            } catch (Exception e) {
-                logger.warn("Failed to cache ecritures in Redis for tenant {}: {}", tenantId, e.getMessage());
-            }
-        }
-        return ecritures != null ? ecritures : List.of();
+        List<EcritureComptableDto> list = ecritureRepository.findByTenant_Id(tenantId)
+                .stream().map(this::mapToDto).collect(Collectors.toList());
+        redisService.save(key, list, Duration.ofMinutes(10));
+        return list;
     }
 
-    public Optional<EcritureComptableDto> getEcritureById(UUID id) {
+    public List<EcritureComptableDto> getNonValidated() {
         UUID tenantId = TenantContext.getCurrentTenant();
-        logger.info("Fetching ecriture comptable by ID: {} for tenant: {}", id, tenantId);
+        String key = CACHE_NON_VALIDATED + tenantId;
+        List<EcritureComptableDto> cached = redisService.get(key, List.class);
+        if (cached != null) return cached;
 
-        return ecritureRepository.findByKeyTenantIdAndKeyId(tenantId, id)
-                .map(ecriture -> {
-                    EcritureComptableDto dto = mapToDto(ecriture);
-                    // Fetch and map associated DetailEcriture entries
-                    List<DetailEcritureDto> details = detailEcritureService.findByKeyTenantIdAndKeyEcritureComptableId(tenantId, id)
-                            .stream()
-                            .map(this::mapToDetailEcritureDto)
-                            .collect(Collectors.toList());
-                    dto.setDetailsEcriture(details);
-                    return dto;
-                });
-    }
-    public List<EcritureComptableDto> getNonValidatedEcritures() {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        logger.info("Fetching non-validated ecritures comptables for tenant: {}", tenantId);
-
-        String cacheKey = CACHE_NON_VALIDATED_ECRITURES + tenantId;
-        List<EcritureComptableDto> ecritures = null;
-
-        try {
-            ecritures = (List<EcritureComptableDto>) redisTemplate.opsForValue().get(cacheKey);
-        } catch (Exception e) {
-            logger.warn("Failed to retrieve non-validated ecritures from Redis for tenant {}: {}", tenantId, e.getMessage());
-        }
-
-        if (ecritures == null) {
-            ecritures = ecritureRepository.findByKeyTenantIdAndValideeFalse(tenantId)
-                    .stream()
-                    .map(this::mapToDto)
-                    .collect(Collectors.toList());
-            try {
-                redisTemplate.opsForValue().set(cacheKey, ecritures, Duration.ofMinutes(10));
-            } catch (Exception e) {
-                logger.warn("Failed to cache non-validated ecritures in Redis for tenant {}: {}", tenantId, e.getMessage());
-            }
-        }
-        return ecritures != null ? ecritures : List.of();
+        List<EcritureComptableDto> list = ecritureRepository.findByTenant_IdAndValideeFalse(tenantId)
+                .stream().map(this::mapToDto).collect(Collectors.toList());
+        redisService.save(key, list, Duration.ofMinutes(10));
+        return list;
     }
 
+    public Optional<EcritureComptableDto> getById(UUID id) {
+        UUID tenantId = TenantContext.getCurrentTenant();
+        return ecritureRepository.findByTenant_IdAndId(tenantId, id)
+                .map(this::mapToDto);
+    }
+
+    /* ============================================================================
+       🔍 SEARCH BY DATE RANGE AND JOURNAL
+    ============================================================================ */
+    public List<EcritureComptableDto> searchEcritures(LocalDateTime startDate, LocalDateTime endDate, UUID journalId) {
+        UUID tenantId = TenantContext.getCurrentTenant();
+        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+            throw new BusinessException("Start date must be before end date");
+        }
+        String cacheKey = CACHE_SEARCH + tenantId + ":" + (startDate != null ? startDate : "all")
+                + ":" + (endDate != null ? endDate : "all")
+                + ":" + (journalId != null ? journalId : "all");
+
+        List<EcritureComptableDto> cached = redisService.get(cacheKey, List.class);
+        if (cached != null) return cached;
+
+        List<EcritureComptable> results;
+
+        if (startDate != null && endDate != null && journalId != null) {
+            results = ecritureRepository.findByTenant_IdAndJournal_IdAndDateEcritureBetween(
+                    tenantId, journalId, startDate.toLocalDate(), endDate.toLocalDate());
+        } else if (startDate != null && endDate != null) {
+            results = ecritureRepository.findByTenant_IdAndDateEcritureBetween(
+                    tenantId, startDate.toLocalDate(), endDate.toLocalDate());
+        } else if (journalId != null) {
+            results = ecritureRepository.findByTenant_IdAndJournal_Id(tenantId, journalId);
+        } else {
+            results = ecritureRepository.findByTenant_Id(tenantId);
+        }
+
+        List<EcritureComptableDto> list = results.stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+
+        redisService.save(cacheKey, list, Duration.ofMinutes(5));
+        return list;
+    }
+
+    /* ============================================================================
+       ⚙️ GENERATION FROM ACCOUNTING OBJECT
+    ============================================================================ */
+    @Transactional
+    public EcritureComptableDto generateFromComptableObject(ComptableObject object) {
+        UUID tenantId = object.getTenantId();
+        Tenant tenant = TenantContext.getCurrentTenantAsTenant();
+        String currentUser = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
+
+        if (object.getMontant() == null || object.getMontant().doubleValue() <= 0)
+            throw new BusinessException("Invalid amount for entry generation");
+
+        // Verify journal and active period
+        journalService.getJournalComptable(object.getJournalComptableId());
+        PeriodeComptableDto currentPeriode = periodeService.getCurrentPeriode(tenantId);
+
+        EcritureComptable ecriture = EcritureComptable.builder()
+                .id(UUID.randomUUID())
+                .tenant(tenant)
+                .numeroEcriture("ECR-" + UUID.randomUUID().toString().substring(0, 8))
+                .libelle(object.getDescription() != null ? object.getDescription() : "Auto-generated entry")
+                .journal(journalRepository.findById(object.getJournalComptableId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Journal", object.getJournalComptableId().toString())))
+                .periode(periodeRepository.findById(object.getPeriodeComptableId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Period", currentPeriode.getId().toString())))
+                .montantTotalDebit(object.getMontant())
+                .montantTotalCredit(object.getMontant())
+                .validee(false)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .createdBy(currentUser)
+                .updatedBy(currentUser)
+                .build();
+
+        EcritureComptable saved = ecritureRepository.save(ecriture);
+        log.info("🧾 Entry generated automatically from object {}", object.getSourceType());
+ 
+        // Generate details (debit/credit)    +
+        detailService.generateDetailsFromComptableObject(saved, object);
+
+        validateBalance(detailRepository.findByTenant_IdAndEcriture_Id(tenantId, saved.getId()));
+
+        logAuditAndSendKafka(tenant, saved.getId(), currentUser, "AUTO_GENERATE", "Entry generated automatically");
+        redisService.delete(CACHE_ALL + tenantId);
+
+        return mapToDto(saved);
+    }
+
+    /* ============================================================================
+       DELETION
+    ============================================================================ */
     @Transactional
     public void deleteEcriture(UUID id) {
         UUID tenantId = TenantContext.getCurrentTenant();
-        Optional<EcritureComptable> ecritureOpt = ecritureRepository.findByKeyTenantIdAndKeyId(tenantId, id);
+        EcritureComptable ecriture = ecritureRepository.findByTenant_IdAndId(tenantId, id)
+                .orElseThrow(() -> new ResourceNotFoundException("Entry", id.toString()));
 
-        if (ecritureOpt.isEmpty()) {
-            throw new BusinessException("Écriture non trouvée avec ID : " + id);
-        }
-
-        EcritureComptable ecriture = ecritureOpt.get();
-        if (ecriture.getValidee()) {
-            throw new BusinessException("Impossible de supprimer une écriture déjà validée");
-        }
+        if (Boolean.TRUE.equals(ecriture.getValidee()))
+            throw new BusinessException("Cannot delete a validated entry");
 
         ecritureRepository.delete(ecriture);
-        logger.info("Écriture avec ID {} supprimée avec succès pour le tenant {}", id, tenantId);
-    }
-    
-    @Transactional
-    public EcritureComptableDto generateFromComptableObject(ComptableObject comptableObject) {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        String currentUser = TenantContext.getCurrentUser();
-        logger.info("Generating ecriture from comptable object for tenant: {}, type: {}, id: {}", 
-                tenantId, comptableObject.getClass().getSimpleName(), comptableObject.getId());
-
-        UUID periodeComptableId = getCurrentPeriodeComptableId(tenantId);
-        periodeComptableService.getPeriodeComptable(periodeComptableId)
-                .filter(p -> !p.getCloturee())
-                .orElseThrow(() -> new IllegalStateException("Période comptable clôturée : " + periodeComptableId));
-
-        EcritureComptable ecriture = new EcritureComptable();
-        EcritureComptableKey key = new EcritureComptableKey();
-        key.setTenantId(tenantId);
-        key.setId(UUID.randomUUID());
-        ecriture.setKey(key);
-        ecriture.setNumeroEcriture("ECR-" + comptableObject.getId() + "-" + System.currentTimeMillis());
-        ecriture.setLibelle(comptableObject.getLibelle());
-        ecriture.setDateEcriture(comptableObject.getDate());
-        ecriture.setJournalComptableId(comptableObject.getJournalComptableId());
-        ecriture.setPeriodeComptableId(periodeComptableId);
-        ecriture.setMontantTotalDebit(comptableObject.getMontant());
-        ecriture.setMontantTotalCredit(comptableObject.getMontant());
-        ecriture.setValidee(false);
-        ecriture.setSourceType(comptableObject.getSourceType());
-        ecriture.setSourceId(comptableObject.getId());
-        ecriture.setCreatedAt(LocalDateTime.now());
-        ecriture.setUpdatedAt(LocalDateTime.now());
-        ecriture.setCreatedBy(currentUser != null ? currentUser : "system");
-        ecriture.setUpdatedBy(currentUser != null ? currentUser : "system");
-
-        EcritureComptable saved = ecritureRepository.save(ecriture);
-        List<DetailEcriture> details = comptableObject.generateEcritureDetails(tenantId, saved.getKey().getId());
-        details.forEach(detailEcritureService::createDetailEcriture);
-        validateBalance(details);
-
-        logAuditAndSendKafka(tenantId, key.getId(), currentUser, "CREATE", 
-                "Generated ecriture from " + comptableObject.getClass().getSimpleName() + ": " + ecriture.getNumeroEcriture());
-        invalidateCaches(tenantId);
-        return mapToDto(saved);
+        redisService.delete(CACHE_ALL + tenantId);
+        log.info("🗑️ Entry {} deleted", id);
     }
 
-    public List<EcritureComptableDto> searchEcritures(LocalDateTime startDate, LocalDateTime endDate, UUID journalId) {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        logger.info("Searching ecritures comptables for tenant: {}, startDate: {}, endDate: {}, journalId: {}", tenantId, startDate, endDate, journalId);
-
-        if (journalId != null) {
-            journalComptableService.getJournalComptable(journalId)
-                    .filter(JournalComptableDto::getActif)
-                    .orElseThrow(() -> new IllegalArgumentException("Journal comptable invalide ou inactif : " + journalId));
-        }
-
-        String cacheKey = CACHE_SEARCH_ECRITURES + tenantId + ":" + (journalId != null ? journalId : "") + ":" + startDate + ":" + endDate;
-        List<EcritureComptableDto> ecritures = null;
-
-        try {
-            ecritures = (List<EcritureComptableDto>) redisTemplate.opsForValue().get(cacheKey);
-        } catch (Exception e) {
-            logger.warn("Failed to retrieve search ecritures from Redis for tenant {}: {}", tenantId, e.getMessage());
-        }
-
-        if (ecritures == null) {
-            List<EcritureComptable> results;
-            if (journalId != null) {
-                results = ecritureRepository.findByKeyTenantIdAndJournalComptableIdAndDateEcritureRange(tenantId, journalId, startDate, endDate);
-            } else {
-                results = ecritureRepository.findByKeyTenantIdAndDateEcritureRange(tenantId, startDate, endDate);
-            }
-            ecritures = results.stream().map(this::mapToDto).collect(Collectors.toList());
-            try {
-                redisTemplate.opsForValue().set(cacheKey, ecritures, Duration.ofMinutes(10));
-            } catch (Exception e) {
-                logger.warn("Failed to cache search ecritures in Redis for tenant {}: {}", tenantId, e.getMessage());
-            }
-        }
-        return ecritures;
-    }
-
-    @Transactional
-    public EcritureComptableDto generateAutomaticEntry(UUID transactionId, UUID operationId) {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        String currentUser = TenantContext.getCurrentUser();
-        logger.info("Generating automatic ecriture for tenant: {}, transactionId: {}, operationId: {}", tenantId, transactionId, operationId);
-
-        Transaction transaction = transactionRepository.findByKeyTenantIdAndKeyId(tenantId, transactionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Transaction", transactionId.toString()));
-        OperationComptable operation = operationComptableRepository.findByKeyTenantIdAndKeyId(tenantId, operationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Operation comptable", operationId.toString()));
-
-        journalComptableService.getJournalComptable(operation.getJournalComptableId())
-                .filter(JournalComptableDto::getActif)
-                .orElseThrow(() -> new IllegalArgumentException("Journal comptable invalide ou inactif : " + operation.getJournalComptableId()));
-
-        UUID periodeComptableId = getCurrentPeriodeComptableId(tenantId);
-        periodeComptableService.getPeriodeComptable(periodeComptableId)
-                .filter(p -> !p.getCloturee())
-                .orElseThrow(() -> new IllegalStateException("Période comptable clôturée : " + periodeComptableId));
-
-        EcritureComptable ecriture = new EcritureComptable();
-        EcritureComptableKey key = new EcritureComptableKey();
-        key.setTenantId(tenantId);
-        key.setId(UUID.randomUUID());
-        ecriture.setKey(key);
-        ecriture.setNumeroEcriture("ECR-" + transactionId + "-" + System.currentTimeMillis());
-        ecriture.setLibelle("Ecriture auto pour transaction: " + transaction.getNumeroRecu() + ", operation: " + operation.getTypeOperation());
-        ecriture.setDateEcriture(LocalDate.now());
-        ecriture.setJournalComptableId(operation.getJournalComptableId());
-        ecriture.setPeriodeComptableId(periodeComptableId);
-        ecriture.setMontantTotalDebit(transaction.getMontantTransaction());
-        //A partir du sens de la transaction
-       // ecriture.setMontantTotalDebit(transaction.getMontantTransaction());
-
-        ecriture.setValidee(false);
-        ecriture.setCreatedAt(LocalDateTime.now());
-        ecriture.setUpdatedAt(LocalDateTime.now());
-        ecriture.setCreatedBy(currentUser != null ? currentUser : "system");
-        ecriture.setUpdatedBy(currentUser != null ? currentUser : "system");
-
-        EcritureComptable saved = ecritureRepository.save(ecriture);
-        generateDetailsForEcriture(saved, operation, transaction);
-        List<DetailEcriture> details = detailEcritureService.findByKeyTenantIdAndKeyEcritureComptableId(tenantId, key.getId());
-        validateBalance(details);
-
-        logAuditAndSendKafka(tenantId, key.getId(), currentUser, "CREATE", "Generated automatic ecriture: " + ecriture.getNumeroEcriture());
-        invalidateCaches(tenantId);
-        return mapToDto(saved);
-    }
-
-    private void generateDetailsForEcriture(EcritureComptable ecriture, OperationComptable operation, Transaction transaction) {
-        UUID tenantId = ecriture.getKey().getTenantId();
-        UUID ecritureComptableId = ecriture.getKey().getId();
-        String currentUser = TenantContext.getCurrentUser();
-
-        PlanComptable principalAccount = planComptableRepository.findByKeyTenantIdAndNoCompte(tenantId, operation.getComptePrincipal())
-                .filter(PlanComptable::getActif)
-                .orElseThrow(() -> new ResourceNotFoundException("Compte", operation.getComptePrincipal()));
-        PlanComptable counterAccount = planComptableRepository.findByKeyTenantIdAndNoCompte(tenantId, operation.getEstCompteStatique() ? "445710" : "411000")
-                .filter(PlanComptable::getActif)
-                .orElseThrow(() -> new ResourceNotFoundException("Compte", operation.getEstCompteStatique() ? "445710" : "411000"));
-
-        DetailEcriture debitEntry = new DetailEcriture();
-        DetailEcritureKey debitKey = new DetailEcritureKey();
-        debitKey.setTenantId(tenantId);
-        debitKey.setEcritureComptableId(ecritureComptableId);
-        debitKey.setId(UUID.randomUUID());
-        debitEntry.setKey(debitKey);
-        debitEntry.setCompteComptableId(operation.getSensPrincipal().equals("DEBIT") ? principalAccount.getKey().getId() : counterAccount.getKey().getId());
-        debitEntry.setLibelle("Transaction " + transaction.getNumeroRecu() + ", operation: " + operation.getTypeOperation());
-        debitEntry.setSens("DEBIT");
-        debitEntry.setMontantDebit(transaction.getMontantTransaction());
-        debitEntry.setMontantCredit(0.0);
-        debitEntry.setDateEcriture(LocalDateTime.now());
-        debitEntry.setCreatedAt(LocalDateTime.now());
-        debitEntry.setUpdatedAt(LocalDateTime.now());
-        debitEntry.setCreatedBy(currentUser != null ? currentUser : "system");
-        debitEntry.setUpdatedBy(currentUser != null ? currentUser : "system");
-
-        DetailEcriture creditEntry = new DetailEcriture();
-        DetailEcritureKey creditKey = new DetailEcritureKey();
-        creditKey.setTenantId(tenantId);
-        creditKey.setEcritureComptableId(ecritureComptableId);
-        creditKey.setId(UUID.randomUUID());
-        creditEntry.setKey(creditKey);
-        creditEntry.setCompteComptableId(operation.getSensPrincipal().equals("CREDIT") ? principalAccount.getKey().getId() : counterAccount.getKey().getId());
-        creditEntry.setLibelle("Transaction " + transaction.getNumeroRecu() + ", operation: " + operation.getTypeOperation());
-        creditEntry.setSens("CREDIT");
-        creditEntry.setMontantCredit(transaction.getMontantTransaction());
-        creditEntry.setMontantDebit(0.0);
-        creditEntry.setDateEcriture(LocalDateTime.now());
-        creditEntry.setCreatedAt(LocalDateTime.now());
-        creditEntry.setUpdatedAt(LocalDateTime.now());
-        creditEntry.setCreatedBy(currentUser != null ? currentUser : "system");
-        creditEntry.setUpdatedBy(currentUser != null ? currentUser : "system");
-
-        detailEcritureService.createDetailEcriture(debitEntry);
-        detailEcritureService.createDetailEcriture(creditEntry);
-    }
-
-    private void validateEcritureDto(EcritureComptableDto dto) {
-        var violations = validator.validate(dto);
-        if (!violations.isEmpty()) {
-            throw new ConstraintViolationException(violations);
-        }
-    
-    }
-
-    private EcritureComptable mapToEntity(EcritureComptableDto dto, UUID tenantId) {
-        EcritureComptable ecriture = new EcritureComptable();
-        ecriture.setTenantId(tenantId);
-        ecriture.setNumeroEcriture(dto.getNumeroEcriture());
-        ecriture.setLibelle(dto.getLibelle());
-        ecriture.setDateEcriture(dto.getDateEcriture());
-        ecriture.setJournalComptableId(dto.getJournalComptableId());
-        ecriture.setPeriodeComptableId(dto.getPeriodeComptableId());
-        ecriture.setMontantTotalDebit(dto.getMontantTotalDebit());
-        ecriture.setMontantTotalCredit(dto.getMontantTotalCredit());
-        ecriture.setValidee(dto.getValidee());
-        ecriture.setDateValidation(dto.getDateValidation());
-        ecriture.setUtilisateurValidation(dto.getUtilisateurValidation());
-        ecriture.setReferenceExterne(dto.getReferenceExterne());
-        ecriture.setNotes(dto.getNotes());
-        return ecriture;
-    }
-
-    private EcritureComptableDto mapToDto(EcritureComptable ecriture) {
-        return EcritureComptableDto.builder()
-                .id(ecriture.getKey().getId())
-                .numeroEcriture(ecriture.getNumeroEcriture())
-                .libelle(ecriture.getLibelle())
-                .dateEcriture(ecriture.getDateEcriture())
-                .journalComptableId(ecriture.getJournalComptableId())
-                .periodeComptableId(ecriture.getPeriodeComptableId())
-                .montantTotalDebit(ecriture.getMontantTotalDebit())
-                .montantTotalCredit(ecriture.getMontantTotalCredit())
-                .validee(ecriture.getValidee())
-                .dateValidation(ecriture.getDateValidation())
-                .utilisateurValidation(ecriture.getUtilisateurValidation())
-                .referenceExterne(ecriture.getReferenceExterne())
-                .notes(ecriture.getNotes())
-                .createdAt(ecriture.getCreatedAt())
-                .updatedAt(ecriture.getUpdatedAt())
-                .build();
-    }
-    
-    private DetailEcritureDto mapToDetailEcritureDto(DetailEcriture detail) {
-        return DetailEcritureDto.builder()
-                .id(detail.getKey().getId())
-                .ecritureComptableId(detail.getKey().getEcritureComptableId())
-                .compteComptableId(detail.getCompteComptableId())
-                .libelle(detail.getLibelle())
-                .sens(detail.getSens())
-                .montantDebit(detail.getMontantDebit())
-                .montantCredit(detail.getMontantCredit())
-                .notes(detail.getNotes())
-                .dateEcriture(detail.getDateEcriture())
-                .build();
-    }
-
-    private void logAuditAndSendKafka(UUID tenantId, UUID ecritureComptableId, String utilisateur, String action, String details) {
-        kafkaOperations.executeInTransaction(operations -> {
-            JournalAudit audit = new JournalAudit();
-            JournalAuditKey auditKey = new JournalAuditKey();
-            auditKey.setTenantId(tenantId);
-            auditKey.setId(UUID.randomUUID());
-            audit.setKey(auditKey);
-            audit.setEcritureComptableId(ecritureComptableId);
-            audit.setUtilisateur(utilisateur != null ? utilisateur : "system");
-            audit.setAction(action);
-            audit.setDetails(details);
-            audit.setDateAction(LocalDateTime.now());
-            journalAuditRepository.save(audit);
-            kafkaMessageService.sendAuditLog(audit, tenantId.toString(), action);
+    /* ============================================================================
+       HELPERS
+    ============================================================================ */
+    private void logAuditAndSendKafka(Tenant tenant, UUID ecritureId, String user, String action, String details) {
+        kafkaOperations.executeInTransaction(ops -> {
+            JournalAudit audit = JournalAudit.builder()
+                    .id(UUID.randomUUID())
+                    .tenant(tenant)
+                    .ecritureComptableId(ecritureId)
+                    .utilisateur(user)
+                    .action(action)
+                    .details(details)
+                    .dateAction(LocalDateTime.now())
+                    .build();
+            auditRepository.save(audit);
+            kafkaMessageService.sendAuditLog(audit, tenant.getId().toString(), action);
             return null;
         });
     }
 
-    private void validateBalance(List<DetailEcriture> details) {
-        double totalDebit = details.stream().mapToDouble(DetailEcriture::getMontantDebit).sum();
-        double totalCredit = details.stream().mapToDouble(DetailEcriture::getMontantCredit).sum();
-        if (Math.abs(totalDebit - totalCredit) > 0.01) {
-            throw new IllegalStateException("Ecriture comptable unbalanced: debit=" + totalDebit + ", credit=" + totalCredit);
-        }
+   private void validateBalance(List<DetailEcriture> details) {
+    // Tolerance of 0.01 to handle rounding issues
+    BigDecimal debit = details.stream()
+            .map(DetailEcriture::getMontantDebit)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal credit = details.stream()
+            .map(DetailEcriture::getMontantCredit)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    if (debit.subtract(credit).abs().compareTo(BigDecimal.valueOf(0.01)) > 0) {
+        throw new BusinessException("Unbalanced entry: debit=" + debit + " credit=" + credit);
+    }
+}
+
+    private EcritureComptable mapToEntity(EcritureComptableDto dto, Tenant tenant) {
+        return EcritureComptable.builder()
+                .id(dto.getId())
+                .tenant(tenant)
+                .numeroEcriture(dto.getNumeroEcriture())
+                .libelle(dto.getLibelle())
+                .dateEcriture(dto.getDateEcriture())
+                .journal(journalRepository.findById(dto.getJournalComptableId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Journal", dto.getJournalComptableId().toString())))
+                .periode(periodeRepository.findById(dto.getPeriodeComptableId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Period", dto.getPeriodeComptableId().toString())))             
+               .montantTotalDebit(dto.getMontantTotalDebit())
+                .montantTotalCredit(dto.getMontantTotalCredit())
+                .validee(dto.getValidee())
+                .referenceExterne(dto.getReferenceExterne())
+                .notes(dto.getNotes())
+                .build();
     }
 
-    private void invalidateCaches(UUID tenantId) {
-        try {
-            redisTemplate.delete(CACHE_ALL_ECRITURES + tenantId);
-            redisTemplate.delete(CACHE_NON_VALIDATED_ECRITURES + tenantId);
-        } catch (Exception e) {
-            logger.warn("Failed to invalidate caches in Redis for tenant {}: {}", tenantId, e.getMessage());
-        }
-    }
-
-    private UUID getCurrentPeriodeComptableId(UUID tenantId) {
-        return periodeComptableService.getPeriodeByDate(LocalDate.now())
-                .map(PeriodeComptableDto::getId)
-                .orElseThrow(() -> new IllegalStateException("Aucune période comptable ouverte pour la date actuelle"));
+    private EcritureComptableDto mapToDto(EcritureComptable e) {
+        return EcritureComptableDto.builder()
+                .id(e.getId())
+                .numeroEcriture(e.getNumeroEcriture())
+                .libelle(e.getLibelle())
+                .dateEcriture(e.getDateEcriture())
+                .journalComptableId(e.getJournal().getId())
+                .periodeComptableId(e.getPeriode().getId())
+                .montantTotalDebit(e.getMontantTotalDebit())
+                .montantTotalCredit(e.getMontantTotalCredit())
+                .validee(e.getValidee())
+                .referenceExterne(e.getReferenceExterne())
+                .notes(e.getNotes())
+                .createdAt(e.getCreatedAt())
+                .updatedAt(e.getUpdatedAt())
+                .build();
     }
 }

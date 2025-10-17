@@ -2,27 +2,22 @@ package com.yowyob.erp.accounting.service;
 
 import com.yowyob.erp.accounting.dto.PlanComptableDto;
 import com.yowyob.erp.accounting.entity.PlanComptable;
-
-import com.yowyob.erp.accounting.entityKey.PlanComptableKey;
+import com.yowyob.erp.accounting.entity.Tenant;
 import com.yowyob.erp.accounting.repository.PlanComptableRepository;
-import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.common.exception.BusinessException;
+import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.common.service.ValidationService;
+import com.yowyob.erp.config.kafka.KafkaMessageService;
+import com.yowyob.erp.config.redis.RedisService;
 import com.yowyob.erp.config.tenant.TenantContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import java.lang.Character;
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,30 +25,41 @@ import java.util.stream.Collectors;
 @Slf4j
 public class PlanComptableService {
 
-    private final PlanComptableRepository planComptableRepository;
+    private final PlanComptableRepository repository;
     private final ValidationService validationService;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaMessageService kafkaMessageService;
+    private final RedisService redisService;
 
+    // --- Constantes cache Redis ---
+    private static final String CACHE_ALL = "plancomptable:all:";
+    private static final String CACHE_ACTIVE = "plancomptable:active:";
+    private static final String CACHE_SINGLE = "plancomptable:id:";
+    private static final String CACHE_PREFIX = "plancomptable:prefix:";
+    private static final String CACHE_CLASS = "plancomptable:class:";
 
+    /* ============================================================================
+     * CREATE ACCOUNT
+     * ========================================================================== */
     @Transactional
     public PlanComptableDto createAccount(PlanComptableDto dto) {
         UUID tenantId = TenantContext.getCurrentTenant();
-        String currentUser = TenantContext.getCurrentUser();
-        log.info("Creating account for tenant: {}, noCompte: {}", tenantId,dto.getNoCompte());
+        Tenant tenant = TenantContext.getCurrentTenantAsTenant();
 
-        // Validation du numéro de planComptable
+        String currentUser = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
+        log.info("🧾 Création du compte comptable {} pour le tenant {}", dto.getNoCompte(), tenantId);
+
+        // ✅ Validation du numéro de compte
         validationService.validateAccountNumber(dto.getNoCompte());
 
-        // Vérification de l'unicité
-        if (planComptableRepository.existsByKeyTenantIdAndNoCompte(tenantId,dto.getNoCompte())) {
-            throw new BusinessException("Un Compte Comptable avec ce numéro existe déjà: " +dto.getNoCompte());
+        // Vérification de l’unicité
+        if (repository.existsByTenantIdAndNoCompte(tenantId, dto.getNoCompte())) {
+            throw new BusinessException("Un compte avec ce numéro existe déjà : " + dto.getNoCompte());
         }
 
-       PlanComptable account = new PlanComptable();
-       PlanComptableKey key = new PlanComptableKey();
-        key.setTenantId(tenantId);
-        key.setId(UUID.randomUUID());
-        account.setKey(key);
+        // Création de l'entité
+        PlanComptable account = new PlanComptable();
+        account.setId(UUID.randomUUID());
+        account.setTenant(tenant);
         account.setNoCompte(dto.getNoCompte());
         account.setClasse(Character.getNumericValue(dto.getNoCompte().charAt(0)));
         account.setLibelle(dto.getLibelle());
@@ -61,108 +67,153 @@ public class PlanComptableService {
         account.setActif(true);
         account.setCreatedAt(LocalDateTime.now());
         account.setUpdatedAt(LocalDateTime.now());
-        account.setCreatedBy(currentUser != null ? currentUser : "system");
-        account.setUpdatedBy(currentUser != null ? currentUser : "system");
+        account.setCreatedBy(currentUser);
+        account.setUpdatedBy(currentUser);
 
-        PlanComptable saved = planComptableRepository.save(account);
-        kafkaTemplate.send("plan.comptable.created", tenantId.toString(), mapToDto(saved));
-        log.info("Compte Comptable créé: {} - {}", saved.getNoCompte(), saved.getLibelle());
-        return mapToDto(saved);
+        PlanComptable saved = repository.save(account);
+        PlanComptableDto result = mapToDto(saved);
+
+        kafkaMessageService.sendAuditLog(result, tenantId.toString(), "PLAN_COMPTABLE_CREATED");
+        redisService.delete(CACHE_ALL + tenantId);
+        log.info("✅ Compte comptable créé : {} - {}", saved.getNoCompte(), saved.getLibelle());
+
+        return result;
     }
 
-
-  public List<PlanComptableDto> getAllAccounts() {
+    /* ============================================================================
+     * READ
+     * ========================================================================== */
+    public List<PlanComptableDto> getAllAccounts() {
         UUID tenantId = TenantContext.getCurrentTenant();
-        return planComptableRepository.findAllByKeyTenantId(tenantId)
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+        String cacheKey = CACHE_ALL + tenantId;
+
+        List<PlanComptableDto> cached = redisService.get(cacheKey, List.class);
+        if (cached != null) return cached;
+
+        List<PlanComptableDto> comptes = repository.findByTenant_Id(tenantId)
+                .stream().map(this::mapToDto).collect(Collectors.toList());
+        redisService.save(cacheKey, comptes, Duration.ofMinutes(15));
+        return comptes;
     }
 
     public List<PlanComptableDto> getAllActiveAccounts() {
         UUID tenantId = TenantContext.getCurrentTenant();
-        return planComptableRepository.findByKeyTenantIdAndActifTrue(tenantId)
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+        String cacheKey = CACHE_ACTIVE + tenantId;
+
+        List<PlanComptableDto> cached = redisService.get(cacheKey, List.class);
+        if (cached != null) return cached;
+
+        List<PlanComptableDto> comptes = repository.findByTenant_IdAndActifTrue(tenantId)
+                .stream().map(this::mapToDto).collect(Collectors.toList());
+        redisService.save(cacheKey, comptes, Duration.ofMinutes(15));
+        return comptes;
     }
 
-    
     public PlanComptableDto getAccountById(UUID id) {
         UUID tenantId = TenantContext.getCurrentTenant();
-      
+        String cacheKey = CACHE_SINGLE + tenantId + ":" + id;
 
-        PlanComptable account = planComptableRepository.findByKeyTenantIdAndKeyId(tenantId,id)
+        PlanComptableDto cached = redisService.get(cacheKey, PlanComptableDto.class);
+        if (cached != null) return cached;
+
+        PlanComptable account = repository.findByTenant_IdAndId(tenantId, id)
                 .orElseThrow(() -> new ResourceNotFoundException("Compte Comptable", id.toString()));
-        return mapToDto(account);
+
+        PlanComptableDto dto = mapToDto(account);
+        redisService.save(cacheKey, dto, Duration.ofMinutes(15));
+        return dto;
     }
 
-    
-   public List<PlanComptableDto> getPlanComptablesByClasse(Integer classe) {
+    public List<PlanComptableDto> getAccountsByClass(Integer classe) {
         UUID tenantId = TenantContext.getCurrentTenant();
-        return planComptableRepository.findByKeyTenantIdAndClasse(tenantId, classe)
-                    .stream()   
-                     .map(this::mapToDto)
-                     .collect(Collectors.toList());
+        String cacheKey = CACHE_CLASS + tenantId + ":" + classe;
+
+        List<PlanComptableDto> cached = redisService.get(cacheKey, List.class);
+        if (cached != null) return cached;
+
+        List<PlanComptableDto> comptes = repository.findByTenant_IdAndClasse(tenantId, classe)
+                .stream().map(this::mapToDto).collect(Collectors.toList());
+        redisService.save(cacheKey, comptes, Duration.ofMinutes(20));
+        return comptes;
     }
-    
 
     public List<PlanComptableDto> getAccountsByPrefix(String prefix) {
         UUID tenantId = TenantContext.getCurrentTenant();
-        return planComptableRepository.findByKeyTenantIdAndNoComptePrefix(tenantId, prefix)
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+        String cacheKey = CACHE_PREFIX + tenantId + ":" + prefix;
+
+        List<PlanComptableDto> cached = redisService.get(cacheKey, List.class);
+        if (cached != null) return cached;
+
+        List<PlanComptableDto> comptes = repository.findByTenant_IdAndNoCompteStartingWith(tenantId, prefix)
+                .stream().map(this::mapToDto).collect(Collectors.toList());
+        redisService.save(cacheKey, comptes, Duration.ofMinutes(20));
+        return comptes;
     }
 
+    /* ============================================================================
+     * UPDATE
+     * ========================================================================== */
     @Transactional
     public PlanComptableDto updateAccount(UUID id, PlanComptableDto dto) {
         UUID tenantId = TenantContext.getCurrentTenant();
-        String currentUser = TenantContext.getCurrentUser();
-        
+        String currentUser = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
 
-        PlanComptable account = planComptableRepository.findByKeyTenantIdAndKeyId(tenantId,id)
-                .orElseThrow(() -> new ResourceNotFoundException("PlanComptable", id.toString()));
+        PlanComptable account = repository.findByTenant_IdAndId(tenantId, id)
+                .orElseThrow(() -> new ResourceNotFoundException("Compte Comptable", id.toString()));
 
         account.setLibelle(dto.getLibelle());
         account.setNotes(dto.getNotes());
         account.setUpdatedAt(LocalDateTime.now());
-        account.setUpdatedBy(currentUser != null ? currentUser : "system");
+        account.setUpdatedBy(currentUser);
 
-        PlanComptable saved = planComptableRepository.save(account);
-        kafkaTemplate.send("planComptable.updated", tenantId.toString(), mapToDto(saved));
-        return mapToDto(saved);
+        PlanComptable saved = repository.save(account);
+        PlanComptableDto result = mapToDto(saved);
+
+        kafkaMessageService.sendAuditLog(result, tenantId.toString(), "PLAN_COMPTABLE_UPDATED");
+        redisService.delete(CACHE_SINGLE + tenantId + ":" + id);
+        redisService.delete(CACHE_ALL + tenantId);
+        log.info("✏️ Compte mis à jour : {}", saved.getNoCompte());
+
+        return result;
     }
 
+    /* ============================================================================
+     * DEACTIVATE
+     * ========================================================================== */
     @Transactional
     public void deactivateAccount(UUID id) {
         UUID tenantId = TenantContext.getCurrentTenant();
-        String currentUser = TenantContext.getCurrentUser();
-      
+        String currentUser = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
 
-        PlanComptable account = planComptableRepository.findByKeyTenantIdAndKeyId(tenantId,id)
-                .orElseThrow(() -> new ResourceNotFoundException("PlanComptable", id.toString()));
+        PlanComptable account = repository.findByTenant_IdAndId(tenantId, id)
+                .orElseThrow(() -> new ResourceNotFoundException("Compte Comptable", id.toString()));
 
         account.setActif(false);
         account.setUpdatedAt(LocalDateTime.now());
-        account.setUpdatedBy(currentUser != null ? currentUser : "system");
-        planComptableRepository.save(account);
+        account.setUpdatedBy(currentUser);
+        repository.save(account);
 
-        kafkaTemplate.send("account.deactivated", tenantId.toString(), id);
-        log.info("PlanComptable désactivé: {}", account.getNoCompte());
+        kafkaMessageService.sendAuditLog(account, tenantId.toString(), "PLAN_COMPTABLE_DEACTIVATED");
+        redisService.delete(CACHE_SINGLE + tenantId + ":" + id);
+        redisService.delete(CACHE_ACTIVE + tenantId);
+        log.info("🛑 Compte désactivé : {}", account.getNoCompte());
     }
 
-    private PlanComptableDto mapToDto(PlanComptable account) {
+    /* ============================================================================
+     * MAPPING
+     * ========================================================================== */
+    private PlanComptableDto mapToDto(PlanComptable entity) {
         return PlanComptableDto.builder()
-                .id(account.getKey().getId())
-                .noCompte(account.getNoCompte())
-                .libelle(account.getLibelle())
-                .classe(account.getClasse())
-                .notes(account.getNotes())
-                .actif(account.getActif())
-                .createdAt(account.getCreatedAt())
-                .updatedAt(account.getUpdatedAt())
+                .id(entity.getId())
+                .noCompte(entity.getNoCompte())
+                .libelle(entity.getLibelle())
+                .classe(entity.getClasse())
+                .notes(entity.getNotes())
+                .actif(entity.getActif())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .createdBy(entity.getCreatedBy())
+                .updatedBy(entity.getUpdatedBy())
                 .build();
     }
-
 }

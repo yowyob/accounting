@@ -12,33 +12,35 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface TransactionRepository extends JpaRepository<Transaction, Long> {
+public interface TransactionRepository extends JpaRepository<Transaction, UUID> {
 
-    List<Transaction> findByTenantIdOrderByDateTransactionDesc(UUID tenantId);
+   Optional<Transaction> findByTenant_IdAndId(UUID tenantId, UUID id);
+   
+    List<Transaction> findByTenant_IdOrderByDateTransactionDesc(UUID tenantId);
 
-    Optional<Transaction> findByTenantIdAndNumeroRecu(UUID tenantId, String numeroRecu);
+    Optional<Transaction> findByTenant_IdAndNumeroRecu(UUID tenantId, String numeroRecu);
 
-    List<Transaction> findByTenantIdAndEstComptabiliseeFalse(UUID tenantId);
+    List<Transaction> findByTenant_IdAndEstComptabiliseeFalse(UUID tenantId);
 
-    List<Transaction> findByTenantIdAndEstValideeFalse(UUID tenantId);
+    List<Transaction> findByTenant_IdAndEstValideeFalse(UUID tenantId);
 
     @Query("""
            SELECT t FROM Transaction t 
-           WHERE t.tenantId = :tenantId 
+           WHERE t.tenant.id = :tenantId 
            AND t.dateTransaction BETWEEN :startDate AND :endDate
            """)
-    List<Transaction> findByTenantIdAndDateRange(@Param("tenantId") UUID tenantId,
+    List<Transaction> findByTenant_IdAndDateRange(@Param("tenantId") UUID tenantId,
                                                  @Param("startDate") LocalDateTime startDate,
                                                  @Param("endDate") LocalDateTime endDate);
 
     @Query("""
            SELECT COALESCE(SUM(t.montantTransaction), 0) 
            FROM Transaction t 
-           WHERE t.tenantId = :tenantId AND t.estValidee = true
+           WHERE t.tenant.id = :tenantId AND t.estValidee = true
            """)
     Double getTotalValidatedTransactions(@Param("tenantId") UUID tenantId);
 
-    List<Transaction> findByTenantIdAndCaissier(UUID tenantId, String caissier);
+    List<Transaction> findByTenant_IdAndCaissier(UUID tenantId, String caissier);
 
     boolean existsByTenantIdAndNumeroRecu(UUID tenantId, String numeroRecu);
 }
