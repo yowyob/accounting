@@ -1,0 +1,42 @@
+# =============================================================
+# ÉTAPE 1: BUILD (Compilation de l'application)
+# Utilise une image lourde contenant Maven et le JDK pour compiler le code.
+# =============================================================
+FROM maven:3.9.5-eclipse-temurin-21 AS build
+
+# Définir le répertoire de travail dans le conteneur de build
+WORKDIR /home/app
+
+# Copier le fichier de configuration Maven (pom.xml) en premier pour optimiser le cache Docker
+COPY pom.xml .
+
+# Copier le code source
+COPY src /home/app/src
+
+# Exécuter la commande Maven pour compiler et empaqueter l'application
+# -DskipTests permet de sauter les tests (on peut les exécuter dans une étape séparée)
+RUN mvn clean package -DskipTests
+
+# =============================================================
+# ÉTAPE 2: RUNTIME (Exécution de l'application)
+# Utilise une image légère contenant seulement le JRE pour un conteneur final plus petit et sécurisé.
+# =============================================================
+FROM eclipse-temurin:21-jre-alpine
+# ANCIEN : FROM openjdk:21-jre-slim (n'est plus trouvée/maintenue)
+
+# Définir le répertoire de travail dans le conteneur final
+WORKDIR /app
+
+# Exposer le port de l'application Spring Boot
+EXPOSE 8081
+
+# Copier le fichier JAR compilé depuis l'étape 'build'
+# erp-backend-0.0.2-SNAPSHOT.jar est le nom par défaut si vous ne l'avez pas modifié.
+COPY --from=build /home/app/target/erp-backend-0.0.2-SNAPSHOT.jar /app/app.jar
+
+# Copier les ressources statiques si nécessaire (elles devraient déjà être dans le JAR, mais au cas où)
+# COPY --from=build /home/app/src/main/resources /app/resources
+
+# Commande pour démarrer l'application JAR
+ENTRYPOINT ["java", "-jar", "app.jar"]
+

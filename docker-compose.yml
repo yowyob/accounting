@@ -15,8 +15,9 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U yowyob_admin -d yowyob_erp"]
       interval: 10s
-      timeout: 5s
+      timeout: 10s
       retries: 5
+      start_period: 45s
 
   liquibase:
     image: liquibase/liquibase:latest
@@ -158,7 +159,7 @@ services:
       - spring.data.redis.password=azaleodel
       - spring.kafka.bootstrap-servers=kafka:9092
       - spring.liquibase.enabled=false
-      #- spring.config.location=classpath:/application.properties
+      - spring.kafka.producer.transaction-id-prefix=yowyob-erp-tx-
     depends_on:
       postgres:
         condition: service_healthy

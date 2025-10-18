@@ -23,7 +23,7 @@ public interface DeclarationFiscaleRepository extends JpaRepository<DeclarationF
 
     @Query("""
            SELECT d FROM DeclarationFiscale d 
-           WHERE d.Tenant.id = :tenantId 
+           WHERE d.tenant.id = :tenantId 
            AND d.periodeDebut >= :startDate 
            AND d.periodeFin <= :endDate
            """)

@@ -15,7 +15,7 @@ public interface ContrepartieRepository extends JpaRepository<Contrepartie, UUID
 
     List<Contrepartie> findByTenant_IdAndOperationComptable_Id(UUID tenantId, UUID operationComptableId);
 
-    List<Contrepartie> findByTenant_IdAndCompte(String tenantId, String compte);
+    List<Contrepartie> findByTenant_IdAndCompte(UUID tenantId, String compte);
 
     @Transactional
     @Modifying

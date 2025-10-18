@@ -33,28 +33,32 @@ public class KafkaConsumerConfig {
     private String groupId;
 
     /**
-     * Configuration de base du Consumer.
+     * Configuration de base du Consumer (contient uniquement les configs Kafka de base,
+     * exclut les configurations de Deserializer spécifiques à Spring pour éviter le conflit).
      */
     @Bean
     public Map<String, Object> consumerConfigs() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
+        // NOTE IMPORTANTE : Nous avons retiré JsonDeserializer.class et JsonDeserializer.TRUSTED_PACKAGES
+        // car ils sont configurés directement via l'instance de Deserializer dans consumerFactory()
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.yowyob.erp.*");
         return props;
     }
 
     /**
-     * Factory générique de consommateurs Kafka.
+     * Factory générique de consommateurs Kafka, configurant l'instance de JsonDeserializer.
      */
     @Bean
     public ConsumerFactory<String, Object> consumerFactory() {
+        // Création et configuration explicite du Deserializer pour éviter le conflit avec les propriétés
         JsonDeserializer<Object> deserializer = new JsonDeserializer<>();
         deserializer.addTrustedPackages("com.yowyob.erp.*");
         deserializer.ignoreTypeHeaders();
+        
+        // La ConsumerFactory utilise désormais la Deserializer configurée directement
         return new DefaultKafkaConsumerFactory<>(consumerConfigs(), new StringDeserializer(), deserializer);
     }
 
@@ -68,6 +72,10 @@ public class KafkaConsumerConfig {
         factory.setConsumerFactory(consumerFactory());
         factory.setConcurrency(3); // 3 threads d’écoute
         factory.getContainerProperties().setPollTimeout(3000);
+        
+        // Pour les consommateurs avec AckMode.MANUAL_IMMEDIATE (si non défini, AckMode.BATCH est la valeur par défaut)
+        // factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
+        
         return factory;
     }
 }

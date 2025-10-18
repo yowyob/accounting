@@ -30,6 +30,10 @@ public class KafkaProducerConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
+    @Value("${spring.kafka.producer.transaction-id-prefix}") // 💡 AJOUT : Injection du préfixe d'ID de transaction
+    private String transactionIdPrefix;
+
+
     /**
      * Configuration de base du Producer.
      */
@@ -45,6 +49,10 @@ public class KafkaProducerConfig {
         props.put(ProducerConfig.LINGER_MS_CONFIG, 5);
         props.put(ProducerConfig.BATCH_SIZE_CONFIG, 16_384);
         props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33_554_432);
+        
+        // 💡 CORRECTION : Ajout du préfixe d'ID de transaction pour rendre la ProducerFactory transactionnelle
+        props.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transactionIdPrefix); 
+        
         return props;
     }
 
@@ -53,6 +61,7 @@ public class KafkaProducerConfig {
      */
     @Bean
     public ProducerFactory<String, Object> producerFactory() {
+        // La DefaultKafkaProducerFactory devient transactionnelle car TRANSACTIONAL_ID_CONFIG est inclus dans producerConfigs()
         return new DefaultKafkaProducerFactory<>(producerConfigs());
     }
 

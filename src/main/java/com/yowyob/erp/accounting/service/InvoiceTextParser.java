@@ -6,8 +6,10 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.UUID;
 import java.util.regex.Matcher;
+import org.springframework.stereotype.Service;
 import java.util.regex.Pattern;
 
+@Service
 /** Parse le texte d’une facture et en déduit les champs structurés. */
 class InvoiceTextParser {
 

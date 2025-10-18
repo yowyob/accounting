@@ -29,6 +29,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+              <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- ⚡ WEBFLUX (Optionnel pour réactivité) -->
@@ -147,6 +153,8 @@
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+
+      
 
         <!-- 🧪 TESTS UNITAIRES -->
         <dependency>

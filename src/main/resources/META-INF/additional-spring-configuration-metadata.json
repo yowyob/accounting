@@ -63,5 +63,15 @@
     "name": "e=8\nspring.data.redis.lettuce.pool.max-",
     "type": "java.lang.String",
     "description": "A description for 'e=8\nspring.data.redis.lettuce.pool.max-'"
+  },
+  {
+    "name": "are/tessdata\ninv",
+    "type": "java.lang.String",
+    "description": "A description for 'are/tessdata\ninv'"
+  },
+  {
+    "name": "are/tessdata\ninv",
+    "type": "java.lang.String",
+    "description": "A description for 'are/tessdata\ninv'"
   }
 ]}
