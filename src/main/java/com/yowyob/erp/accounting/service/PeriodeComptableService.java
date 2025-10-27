@@ -1,5 +1,16 @@
 package com.yowyob.erp.accounting.service;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.yowyob.erp.accounting.dto.PeriodeComptableDto;
 import com.yowyob.erp.accounting.entity.JournalAudit;
 import com.yowyob.erp.accounting.entity.PeriodeComptable;
@@ -15,15 +26,6 @@ import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -59,7 +61,6 @@ public class PeriodeComptableService {
         validateNoOverlap(tenantId, dto.getDateDebut(), dto.getDateFin(), null);
 
         PeriodeComptable entity = mapToEntity(dto);
-        entity.setId(UUID.randomUUID());
         entity.setCreatedAt(LocalDateTime.now());
         entity.setUpdatedAt(LocalDateTime.now());
         entity.setCreatedBy(user);
@@ -69,7 +70,7 @@ public class PeriodeComptableService {
         PeriodeComptableDto result = mapToDto(saved);
 
         kafkaMessageService.sendAuditLog(result, tenantId.toString(), "PERIODE_CREATED");
-        logAudit(tenantId, user, "CREATE", "Création période : " + dto.getCode());
+        logAudit(tenantId, user, "CREATION", "Création période : " + dto.getCode());
         redisService.delete(CACHE_ALL + tenantId);
 
         return result;
@@ -300,7 +301,6 @@ public class PeriodeComptableService {
         Tenant tenant = TenantContext.getCurrentTenantAsTenant();
 
         JournalAudit audit = new JournalAudit();
-        audit.setId(UUID.randomUUID());
         audit.setTenant(tenant);
         audit.setUtilisateur(user);
         audit.setAction(action);

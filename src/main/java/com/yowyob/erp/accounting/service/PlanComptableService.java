@@ -1,5 +1,15 @@
 package com.yowyob.erp.accounting.service;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.yowyob.erp.accounting.dto.PlanComptableDto;
 import com.yowyob.erp.accounting.entity.PlanComptable;
 import com.yowyob.erp.accounting.entity.Tenant;
@@ -10,15 +20,9 @@ import com.yowyob.erp.common.service.ValidationService;
 import com.yowyob.erp.config.kafka.KafkaMessageService;
 import com.yowyob.erp.config.redis.RedisService;
 import com.yowyob.erp.config.tenant.TenantContext;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -58,7 +62,6 @@ public class PlanComptableService {
 
         // Création de l'entité
         PlanComptable account = new PlanComptable();
-        account.setId(UUID.randomUUID());
         account.setTenant(tenant);
         account.setNoCompte(dto.getNoCompte());
         account.setClasse(Character.getNumericValue(dto.getNoCompte().charAt(0)));
@@ -73,7 +76,7 @@ public class PlanComptableService {
         PlanComptable saved = repository.save(account);
         PlanComptableDto result = mapToDto(saved);
 
-        kafkaMessageService.sendAuditLog(result, tenantId.toString(), "PLAN_COMPTABLE_CREATED");
+        kafkaMessageService.sendAuditLog(result, tenantId.toString(), "CREATION");
         redisService.delete(CACHE_ALL + tenantId);
         log.info("✅ Compte comptable créé : {} - {}", saved.getNoCompte(), saved.getLibelle());
 

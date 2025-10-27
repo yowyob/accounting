@@ -19,7 +19,7 @@ import java.math.BigDecimal;
  * - Vente (Journal VE)
  * - Paiement (Journal TR)
  */
-@Service
+//@Service
 public class OperationComptableInitializationService implements CommandLineRunner {
 
     private final OperationComptableRepository operationComptableRepository;

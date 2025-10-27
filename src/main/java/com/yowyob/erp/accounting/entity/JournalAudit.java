@@ -1,11 +1,26 @@
 package com.yowyob.erp.accounting.entity;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
-import lombok.*;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * Journal d’audit : trace les actions de création, validation et modification
@@ -35,7 +50,7 @@ public class JournalAudit {
     @Column(name = "ecriture_id")
     private UUID ecritureComptableId;
 
-    @Pattern(regexp = "CREATION|VALIDATION|MODIFICATION", message = "Action must be CREATION, VALIDATION, or MODIFICATION")
+    @Pattern(regexp = "CREATE|VALIDATE|UPDATE|DELETE|AUTO_GENERATE", message = "Action must be CREATE, VALIDATE,DELETE or UPDATE")
     @Column(length = 50, nullable = false)
     private String action;
 

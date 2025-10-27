@@ -20,7 +20,7 @@ import java.util.UUID;
  * Format :
  *    id,no_compte,libelle,classe
  */
-@Service
+//@Service
 public class PlanComptableInitializationService implements CommandLineRunner {
 
     private final PlanComptableRepository planComptableRepository;

@@ -75,7 +75,6 @@ public class EcritureComptableService {
 
         // Create entity
         EcritureComptable ecriture = mapToEntity(dto, TenantContext.getCurrentTenantAsTenant());
-        ecriture.setId(UUID.randomUUID());
         ecriture.setNumeroEcriture("ECR-" + ecriture.getId());
         ecriture.setCreatedAt(LocalDateTime.now());
         ecriture.setUpdatedAt(LocalDateTime.now());
@@ -269,7 +268,6 @@ public class EcritureComptableService {
     private void logAuditAndSendKafka(Tenant tenant, UUID ecritureId, String user, String action, String details) {
         kafkaOperations.executeInTransaction(ops -> {
             JournalAudit audit = JournalAudit.builder()
-                    .id(UUID.randomUUID())
                     .tenant(tenant)
                     .ecritureComptableId(ecritureId)
                     .utilisateur(user)

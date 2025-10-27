@@ -17,7 +17,7 @@ import java.util.UUID;
  * - TR (Trésorerie)
  * - OD (Opérations Diverses)
  */
-@Service
+//@Service
 public class JournalComptableInitializationService implements CommandLineRunner {
 
     private final JournalComptableRepository journalComptableRepository;

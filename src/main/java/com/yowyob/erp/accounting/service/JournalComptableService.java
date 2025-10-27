@@ -1,5 +1,15 @@
 package com.yowyob.erp.accounting.service;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.yowyob.erp.accounting.dto.EcritureComptableDto;
 import com.yowyob.erp.accounting.dto.JournalComptableDto;
 import com.yowyob.erp.accounting.entity.EcritureComptable;
@@ -14,17 +24,11 @@ import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.config.kafka.KafkaMessageService;
 import com.yowyob.erp.config.redis.RedisService;
 import com.yowyob.erp.config.tenant.TenantContext;
+
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Service for managing accounting journals.
@@ -65,7 +69,6 @@ public class JournalComptableService {
 
         Tenant tenant = TenantContext.getCurrentTenantAsTenant();
         JournalComptable entity = mapToEntity(dto, tenant);
-        entity.setId(UUID.randomUUID());
         entity.setCreatedAt(LocalDateTime.now());
         entity.setUpdatedAt(LocalDateTime.now());
         entity.setCreatedBy(user);
@@ -210,7 +213,6 @@ public class JournalComptableService {
      * ---------------------------------------------------------------------- */
     private void logAudit(Tenant tenant, String utilisateur, String action, String details) {
         JournalAudit audit = new JournalAudit();
-        audit.setId(UUID.randomUUID());
         audit.setTenant(tenant);
         audit.setAction(action);
         audit.setUtilisateur(utilisateur);

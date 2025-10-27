@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.UUID;
 
-@Service
+//@Service
 public class PeriodeComptableInitializationService implements CommandLineRunner {
 
     private final PeriodeComptableService periodeComptableService;

@@ -72,7 +72,6 @@ public class OperationComptableService {
         }
 
         OperationComptable entity = mapToEntity(dto, tenant);
-        entity.setId(UUID.randomUUID());
         entity.setCreatedAt(LocalDateTime.now());
         entity.setUpdatedAt(LocalDateTime.now());
         entity.setCreatedBy(user);
@@ -82,7 +81,11 @@ public class OperationComptableService {
 
         // Counterparties
         if (dto.getContreparties() != null && !dto.getContreparties().isEmpty()) {
-            List<Contrepartie> contreparties = dto.getContreparties().stream().map(cpDto -> mapContrepartie(cpDto, tenant, saved.getId(), user)).toList();
+            List<Contrepartie> contreparties = dto.getContreparties()
+                                                                                .stream()
+                                                                                .map(
+                                                                                    cpDto -> mapContrepartie(cpDto, tenant, saved.getId(), user))
+                                                                                    .toList();
             contrepartieRepository.saveAll(contreparties);
         }
 
@@ -220,11 +223,12 @@ public class OperationComptableService {
         Contrepartie cp = new Contrepartie();
         cp.setTenant(tenant);
         cp.setOperationComptable(operationRepository.findByTenant_IdAndId(tenant.getId(),operationId)
-                        .orElseThrow(() -> new ResourceNotFoundException("Journal", operationId.toString())));
+                        .orElseThrow(() -> new ResourceNotFoundException("Operation Comptable", operationId.toString())));
         cp.setJournalComptable(journalRepository.findById(dto.getJournalComptableId())
                         .orElseThrow(() -> new ResourceNotFoundException("Journal", dto.getJournalComptableId().toString())));
         cp.setCompte(dto.getCompte());
         cp.setSens(dto.getSens());
+        cp.setTypeMontant(dto.getTypeMontant());
         cp.setEstCompteTiers(dto.getEstCompteTiers());
         cp.setNotes(dto.getNotes());
         cp.setCreatedAt(LocalDateTime.now());
@@ -232,9 +236,9 @@ public class OperationComptableService {
         return cp;
     }
 
+    
     private void logAudit(Tenant tenant, String utilisateur, String action, String details) {
         JournalAudit audit = new JournalAudit();
-        audit.setId(UUID.randomUUID());
         audit.setTenant(tenant);
         audit.setAction(action);
         audit.setUtilisateur(utilisateur);
