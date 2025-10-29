@@ -1,17 +1,17 @@
 package com.yowyob.erp.accounting.serviceInitialization;
 
-import com.yowyob.erp.accounting.dto.PeriodeComptableDto;
-import com.yowyob.erp.accounting.service.PeriodeComptableService;
-import com.yowyob.erp.config.tenant.TenantContext;
+import java.time.LocalDate;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.util.UUID;
+import com.yowyob.erp.accounting.dto.PeriodeComptableDto;
+import com.yowyob.erp.accounting.service.PeriodeComptableService;
+import com.yowyob.erp.config.tenant.TenantContext;
 
-//@Service
+@Service
 public class PeriodeComptableInitializationService implements CommandLineRunner {
 
     private final PeriodeComptableService periodeComptableService;

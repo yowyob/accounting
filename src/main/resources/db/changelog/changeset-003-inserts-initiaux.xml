@@ -61,5 +61,15 @@
             <column name="no_compte" value="445700"/>
             <column name="libelle" value="TVA collectée"/>
         </insert>
+         <!-- <insert tableName="periodes_comptables">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440006"/>
+             <column name="tenant_id" value="${default_tenant_id}"/>
+            <column name="code" value="EX-001"/>
+            <column name="date_debut" value="2025-10-29T08:18:36.070Z"/>
+            <column name="date_fin" value="2025-10-30T08:18:36.070Z"/>
+            <column name="date_cloture" value="2025-11-29T08:18:36.070Z"/>
+            <column name="cloturee" value="true"></column>
+            <column name="notes" value="Creation periodes"/>
+        </insert> -->
     </changeSet>
 </databaseChangeLog>

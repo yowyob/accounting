@@ -1,24 +1,36 @@
 package com.yowyob.erp.accounting.listener;
 
-import com.yowyob.erp.common.dto.KafkaMessage;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.support.Acknowledgment;
+import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.kafka.annotation.KafkaListener; // 💡 Import de l'entité cible
+import org.springframework.kafka.support.Acknowledgment; // 💡 Import pour l'injection via constructeur
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.yowyob.erp.accounting.entity.JournalAudit;
+import com.yowyob.erp.common.dto.KafkaMessage;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Listener Kafka pour la gestion des événements du domaine comptable ERP.
  * Gère : Facturation, Comptabilité, Transactions et Audit.
  */
 @Component
+@RequiredArgsConstructor // 💡 Ajout pour l'injection par constructeur (ObjectMapper)
 @Slf4j
 public class AccountingKafkaListener {
 
+    // 💡 Déclaration et injection de l'ObjectMapper pour la désérialisation du payload interne
+    private final ObjectMapper objectMapper;
+
     /* ===========================================================
-     *  🧾 FACTURATION
+     * 🧾 FACTURATION
      * =========================================================== */
     @KafkaListener(topics = "${app.kafka.topics.invoice-events}", groupId = "${spring.kafka.consumer.group-id}")
     public void handleInvoiceEvents(
@@ -45,7 +57,7 @@ public class AccountingKafkaListener {
     }
 
     /* ===========================================================
-     *  📘 COMPTABILITÉ (Écritures)
+     * 📘 COMPTABILITÉ (Écritures)
      * =========================================================== */
     @KafkaListener(topics = "${app.kafka.topics.accounting-entries}", groupId = "${spring.kafka.consumer.group-id}")
     public void handleAccountingEvents(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
@@ -66,7 +78,7 @@ public class AccountingKafkaListener {
     }
 
     /* ===========================================================
-     *  💳 TRANSACTIONS
+     * 💳 TRANSACTIONS
      * =========================================================== */
     @KafkaListener(topics = "transaction.events", groupId = "${spring.kafka.consumer.group-id}")
     public void handleTransactionEvents(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
@@ -84,13 +96,33 @@ public class AccountingKafkaListener {
     }
 
     /* ===========================================================
-     *  🔍 AUDIT
+     * 🔍 AUDIT
      * =========================================================== */
     @KafkaListener(topics = "${app.kafka.topics.audit-logs}", groupId = "${spring.kafka.consumer.group-id}")
     public void handleAuditLogs(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
         try {
             log.info("🧩 [AUDIT] Nouveau log reçu | action={} | tenant={}", message.getEventType(), message.getTenantId());
-            // TODO: Enregistrer dans Elasticsearch ou MonitoringService
+
+            // 💡 LOGIQUE AJOUTÉE POUR LA DÉSÉRIALISATION DU PAYLOAD
+            Optional.ofNullable(message.getPayload())
+                    .ifPresent(rawPayload -> {
+                        try {
+                            if (rawPayload instanceof Map) {
+                                // 💡 Conversion du Map JSON en JournalAudit
+                                JournalAudit auditEntry = objectMapper.convertValue(rawPayload, JournalAudit.class);
+                                
+                                // TODO: Traitement de l'objet JournalAudit complété
+                                log.info("✅ Audit log converti : {} par {}", auditEntry.getAction(), auditEntry.getUtilisateur());
+                                
+                            } else {
+                                log.warn("⚠️ Payload d'audit non reconnu (attendu Map) : {}", rawPayload.getClass().getName());
+                            }
+                        } catch (IllegalArgumentException e) {
+                            log.error("❌ Échec de conversion du payload d'audit en JournalAudit", e);
+                            // NOTE : Ne pas ackowledge() si l'erreur n'est pas gérée par un ErrorHandler
+                        }
+                    });
+
             acknowledgment.acknowledge();
         } catch (Exception e) {
             log.error("Erreur traitement audit log", e);
@@ -98,7 +130,7 @@ public class AccountingKafkaListener {
     }
 
     /* ===========================================================
-     *  🔧 MÉTHODES PRIVÉES DE TRAITEMENT
+     * 🔧 MÉTHODES PRIVÉES DE TRAITEMENT
      * =========================================================== */
     private void handleInvoiceCreated(KafkaMessage message) {
         log.info("🧾 Génération écriture comptable pour facture créée : {}", message.getPayload());

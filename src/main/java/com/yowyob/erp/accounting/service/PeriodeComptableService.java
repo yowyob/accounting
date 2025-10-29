@@ -66,12 +66,22 @@ public class PeriodeComptableService {
         entity.setCreatedBy(user);
         entity.setUpdatedBy(user);
 
-        PeriodeComptable saved = periodeRepository.save(entity);
-        PeriodeComptableDto result = mapToDto(saved);
+        //PeriodeComptable saved = periodeRepository.save(entity);
+        PeriodeComptableDto result = null; //= mapToDto(saved);
 
-        kafkaMessageService.sendAuditLog(result, tenantId.toString(), "PERIODE_CREATED");
-        logAudit(tenantId, user, "CREATION", "Création période : " + dto.getCode());
-        redisService.delete(CACHE_ALL + tenantId);
+        PeriodeComptable savedPeriode;
+        try {
+            // 🛑 Tentative de sauvegarde de la période comptable
+            savedPeriode = periodeRepository.save(entity);
+             kafkaMessageService.sendAuditLog(result, tenantId.toString(), "PERIODE_CREATED");
+            logAudit(tenantId, user, "CREATE", "Création période : " + dto.getCode());
+            redisService.delete(CACHE_ALL + tenantId);
+        } catch (Exception e) {
+            // 🛑 LOG CRITIQUE : Capture l'exception exacte pour identifier la contrainte violée.
+            log.error("🛑  Erreur critique lors de la sauvegarde de PeriodeComptable (transaction échouée) : {}", e.getMessage(), e);
+            throw e;
+        }
+       
 
         return result;
     }
@@ -270,6 +280,14 @@ public class PeriodeComptableService {
 
     private PeriodeComptable mapToEntity(PeriodeComptableDto dto) {
         Tenant tenant = TenantContext.getCurrentTenantAsTenant();
+
+        // LOG CRITIQUE AJOUTÉ POUR LE DÉBOGAGE
+        if (tenant == null) {
+            log.error("TenantContext n'a pas pu fournir une entité Tenant valide.");
+            throw new IllegalStateException("TenantContext n'a pas pu fournir une entité Tenant valide.");
+        }
+        // Ce log.debug n'est visible que si le niveau de log est DEBUG
+         log.debug("Tenant ID récupéré du contexte : {}", tenant.getId()); 
         PeriodeComptable p = new PeriodeComptable();
         p.setTenant(tenant);
         p.setCode(dto.getCode());
