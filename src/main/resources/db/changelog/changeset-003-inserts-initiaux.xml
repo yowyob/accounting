@@ -18,7 +18,7 @@
             <column name="email" value="yowyob@gmail.com"/>
             <column name="telephone" value="+237657450314"/>
         </insert>
-        <insert tableName="journaux_comptables">
+        <!-- <insert tableName="journaux_comptables">
             <column name="id" value="550e8400-e29b-41d4-a716-446655440000"/>
             <column name="tenant_id" value="${default_tenant_id}"/>
             <column name="code_journal" value="VTE"/>
@@ -60,7 +60,7 @@
             <column name="classe" valueNumeric="4"/>
             <column name="no_compte" value="445700"/>
             <column name="libelle" value="TVA collectée"/>
-        </insert>
+        </insert> -->
          <!-- <insert tableName="periodes_comptables">
             <column name="id" value="550e8400-e29b-41d4-a716-446655440006"/>
              <column name="tenant_id" value="${default_tenant_id}"/>
