@@ -1,4 +1,7 @@
 services:
+  # ==========================
+  # PostgreSQL
+  # ==========================
   postgres:
     image: postgres:16
     container_name: postgres
@@ -17,32 +20,37 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 40s 
+      start_period: 40s
 
+
+  # ==========================
+  # Liquibase
+  # ==========================
   liquibase:
     image: liquibase/liquibase:latest
+    container_name: liquibase
     depends_on:
       postgres:
         condition: service_healthy
     working_dir: /liquibase/db/changelog
     volumes:
-      # Monte le répertoire contenant les fichiers de migration Liquibase
       - ./src/main/resources/db/changelog:/liquibase/db/changelog
-      # Monte le répertoire contenant le driver JDBC PostgreSQL
       - ./src/main/resources/drivers:/liquibase/lib
     command: [
       "--url=jdbc:postgresql://postgres:5432/yowyob_erp",
       "--changeLogFile=changelog-master.xml",
       "--username=yowyob_admin",
       "--password=yowyob_secret",
-      # Assurez-vous que le nom du driver correspond au fichier dans le dossier 'drivers'
-      "--classpath=/liquibase/lib/postgresql-42.7.3.jar", 
+      "--classpath=/liquibase/lib/postgresql-42.7.3.jar",
       "update"
     ]
-    networks: 
+    networks:
       - my-network
 
-  # Elasticsearch : moteur de recherche pour l'indexation et la recherche de données
+
+  # ==========================
+  # Elasticsearch
+  # ==========================
   elasticsearch:
     image: elasticsearch:8.11.1
     hostname: elasticsearch
@@ -64,35 +72,42 @@ services:
       - es-data:/usr/share/elasticsearch/data
     networks:
       - my-network
-    healthcheck: # FIX: Ajout du healthcheck pour vérifier la disponibilité de l'API
+    healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9200/_cat/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 30s # ES est lourd, nécessite un délai
+      start_period: 30s
 
-  # Zookeeper : coordinateur pour le cluster Kafka
+
+  # ==========================
+  # Zookeeper (Kafka dependency)
+  # ==========================
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
-    hostname: zookeeper
     container_name: zookeeper
-    ports:
-      - "2181:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-      ZOOKEEPER_SYNC_LIMIT: 2
+      KAFKA_HEAP_OPTS: "-Xmx1G -Xms1G"
+    mem_limit: 1500m
+    mem_reservation: 512m
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-log:/var/lib/zookeeper/log
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
     networks:
       - my-network
-    healthcheck:
-      # FIX: Rendre le check plus robuste et augmenter les tentatives/délai
-      test: ["CMD-SHELL", "echo 'ruok' | nc -w 1 localhost 2181 | grep imok || exit 1"] 
-      interval: 10s
-      timeout: 5s
-      retries: 10 # Augmenté
-      start_period: 15s # Augmenté
 
-  # Kafka : broker de messages, dépendant de Zookeeper
+
+
+  # ==========================
+  # Kafka
+  # ==========================
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     hostname: kafka
@@ -110,21 +125,24 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
-      KAFKA_DELETE_TOPIC_ENABLE: 'true'
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_DELETE_TOPIC_ENABLE: "true"
     networks:
       - my-network
     depends_on:
       zookeeper:
-        condition: service_started # FIX: Attend que Zookeeper soit démarré
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s 
+      start_period: 30s
 
-  # Redis : base de données en mémoire pour le cache
+
+  # ==========================
+  # Redis
+  # ==========================
   redis:
     image: redis:latest
     container_name: redis
@@ -142,7 +160,10 @@ services:
       retries: 5
       start_period: 30s
 
-  # Kafka UI : interface utilisateur pour l'administration de Kafka
+
+  # ==========================
+  # Kafka UI
+  # ==========================
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
@@ -156,9 +177,12 @@ services:
       - my-network
     depends_on:
       kafka:
-        condition: service_healthy # FIX: Attend que Kafka soit sain
+        condition: service_healthy
 
-  # application Spring Boot (yowyob-erp-backend)
+
+  # ==========================
+  # Spring Boot — Yowyob ERP
+  # ==========================
   yowyob-erp-backend:
     build:
       context: .
@@ -168,38 +192,46 @@ services:
     env_file:
       - .env
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - spring.datasource.url=jdbc:postgresql://postgres:5432/yowyob_erp
-      - spring.datasource.username=yowyob_admin
-      - spring.datasource.password=yowyob_secret
-      - spring.datasource.driver-class-name=org.postgresql.Driver
-      - spring.data.redis.host=redis
-      - spring.data.redis.port=6379 
-      - spring.data.redis.password=azaleodel
-      - spring.kafka.bootstrap-servers=kafka:9092
-      - spring.liquibase.enabled=false
-      - spring.kafka.producer.transaction-id-prefix=yowyob-erp-tx-
+      SPRING_PROFILES_ACTIVE: prod
+      spring.datasource.url: jdbc:postgresql://postgres:5432/yowyob_erp
+      spring.datasource.username: yowyob_admin
+      spring.datasource.password: yowyob_secret
+      spring.datasource.driver-class-name: org.postgresql.Driver
+      spring.data.redis.host: redis
+      spring.data.redis.port: 6379
+      spring.data.redis.password: azaleodel
+      spring.kafka.bootstrap-servers: kafka:9092
+      spring.liquibase.enabled: "false"
+      spring.kafka.producer.transaction-id-prefix: yowyob-erp-tx-
     depends_on:
       postgres:
         condition: service_healthy
       liquibase:
         condition: service_completed_successfully
       elasticsearch:
-        condition: service_healthy # FIX: Attend qu'ES soit sain
+        condition: service_healthy
       kafka:
-        condition: service_healthy # FIX: Attend que Kafka soit sain
+        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
       - my-network
 
-# Définition des volumes nommés pour la persistance des données.
+
+# ==========================
+# Volumes
+# ==========================
 volumes:
   postgres-data:
   es-data:
   redis-data:
+  zookeeper-data:
+  zookeeper-log:
 
-# Définition du réseau partagé par tous les services.
+# ==========================
+# Network
+# ==========================
 networks:
   my-network:
     driver: bridge
+

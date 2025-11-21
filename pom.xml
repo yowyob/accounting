@@ -25,7 +25,6 @@
 
     <dependencies>
 
-        <!-- 🌱 SPRING BOOT CORE -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -37,13 +36,11 @@
             </exclusions>
         </dependency>
 
-        <!-- ⚡ WEBFLUX (Optionnel pour réactivité) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
 
-        <!-- 🔐 SECURITY + OAUTH2 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
@@ -53,27 +50,23 @@
             <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
 
-        <!-- 🐘 POSTGRESQL -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <version>${postgresql.version}</version>
         </dependency>
 
-        <!-- 🧠 SPRING DATA JPA -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
-        <!-- 🧱 LIQUIBASE -->
         <dependency>
             <groupId>org.liquibase</groupId>
             <artifactId>liquibase-core</artifactId>
             <version>${liquibase.version}</version>
         </dependency>
 
-        <!-- ⚙️ REDIS (Cache) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
@@ -83,39 +76,33 @@
             <artifactId>lettuce-core</artifactId>
         </dependency>
 
-        <!-- 📡 KAFKA -->
         <dependency>
             <groupId>org.springframework.kafka</groupId>
             <artifactId>spring-kafka</artifactId>
         </dependency>
 
-        <!-- 🔎 ELASTICSEARCH (facultatif, moteur de recherche) -->
         <dependency>
             <groupId>co.elastic.clients</groupId>
             <artifactId>elasticsearch-java</artifactId>
             <version>8.7.1</version>
         </dependency>
 
-        <!-- ✅ VALIDATION (Jakarta Bean Validation) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
-        <!-- 🔄 WEBSOCKET -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
 
-        <!-- 📘 SWAGGER / OPENAPI -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>2.7.0</version>
         </dependency>
 
-        <!-- 🧾 GESTION DES PDF (iText 5 + XMLWorker pour HTML) -->
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>itextpdf</artifactId>
@@ -127,36 +114,35 @@
             <version>5.5.13.3</version>
         </dependency>
         
-        <!-- Extraction texte PDF -->
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
             <version>2.0.30</version>
         </dependency>
 
-        <!-- OCR si le PDF est scanné (images) ou si on upload une image -->
         <dependency>
             <groupId>net.sourceforge.tess4j</groupId>
             <artifactId>tess4j</artifactId>
             <version>5.10.0</version>
         </dependency>
 
-        <!-- 🧩 JACKSON -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
-        <!-- 🧰 LOMBOK -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
 
-      
+      <dependency>
+	    <groupId>io.github.cdimascio</groupId>
+	    <artifactId>dotenv-java</artifactId>
+	    <version>3.0.0</version>
+	</dependency>
 
-        <!-- 🧪 TESTS UNITAIRES -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -181,17 +167,14 @@
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
-                <!-- Include all files by default, no restrictions -->
-            </resource>
+                </resource>
         </resources>
         <plugins>
-            <!-- ⚙️ SPRING BOOT -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
 
-            <!-- ☕ COMPILATEUR JAVA -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -209,7 +192,6 @@
                 </configuration>
             </plugin>
 
-            <!-- 🧪 TESTS -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -220,6 +202,7 @@
                     </includes>
                 </configuration>
             </plugin>
+            
         </plugins>
     </build>
 </project>
