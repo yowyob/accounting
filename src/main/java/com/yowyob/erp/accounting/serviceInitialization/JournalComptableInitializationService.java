@@ -3,12 +3,15 @@ package com.yowyob.erp.accounting.serviceInitialization;
 import com.yowyob.erp.accounting.entity.JournalComptable;
 import com.yowyob.erp.accounting.entity.Tenant;
 import com.yowyob.erp.accounting.repository.JournalComptableRepository;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import org.springframework.core.annotation.Order;
 
 /**
  * Initialise les journaux comptables de base (OHADA)
@@ -18,6 +21,7 @@ import java.util.UUID;
  * - OD (Opérations Diverses)
  */
 @Service
+@Order(1)
 public class JournalComptableInitializationService implements CommandLineRunner {
 
     private final JournalComptableRepository journalComptableRepository;

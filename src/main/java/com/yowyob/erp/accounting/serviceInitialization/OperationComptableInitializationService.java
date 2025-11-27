@@ -5,6 +5,7 @@ import com.yowyob.erp.accounting.entity.OperationComptable;
 import com.yowyob.erp.accounting.entity.Tenant;
 import com.yowyob.erp.accounting.repository.JournalComptableRepository;
 import com.yowyob.erp.accounting.repository.OperationComptableRepository;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,8 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 import java.math.BigDecimal;
 
+import org.springframework.core.annotation.Order;
+
 /**
  * Initialise quelques opérations comptables de base :
  * - Achat (Journal AN)
@@ -20,6 +23,7 @@ import java.math.BigDecimal;
  * - Paiement (Journal TR)
  */
 @Service
+@Order(2)
 public class OperationComptableInitializationService implements CommandLineRunner {
 
     private final OperationComptableRepository operationComptableRepository;

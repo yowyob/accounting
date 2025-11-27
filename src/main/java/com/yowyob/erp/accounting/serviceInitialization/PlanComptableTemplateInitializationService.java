@@ -1,8 +1,7 @@
 package com.yowyob.erp.accounting.serviceInitialization;
 
-import com.yowyob.erp.accounting.entity.PlanComptable;
-import com.yowyob.erp.accounting.entity.Tenant;
-import com.yowyob.erp.accounting.repository.PlanComptableRepository;
+import com.yowyob.erp.accounting.repository.PlanComptableTemplateRepository;
+import com.yowyob.erp.accounting.entity.PlanComptableTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
@@ -14,23 +13,23 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Initialise le plan comptable à partir d’un fichier CSV.
+ * Initialise le template de  plan comptable à partir d’un fichier CSV.
  * 
  * Fichier attendu : /resources/comptes_comptables.csv
  * Format :
  *    id,no_compte,libelle,classe
  */
 @Service
-public class PlanComptableInitializationService implements CommandLineRunner {
+public class PlanComptableTemplateInitializationService implements CommandLineRunner {
 
-    private final PlanComptableRepository planComptableRepository;
+    private final PlanComptableTemplateRepository planComptableTemplateRepository;
     private final UUID tenantId;
 
-    public PlanComptableInitializationService(
-            PlanComptableRepository planComptableRepository,
+    public PlanComptableTemplateInitializationService(
+            PlanComptableTemplateRepository planComptableTemplateRepository,
             @Value("${app.tenant.default-tenant:550e8400-e29b-41d4-a716-446655440000}")
             String tenantIdStr) {
-        this.planComptableRepository = planComptableRepository;
+        this.planComptableTemplateRepository = planComptableTemplateRepository;
         this.tenantId = UUID.fromString(tenantIdStr);
     }
 
@@ -50,10 +49,10 @@ public class PlanComptableInitializationService implements CommandLineRunner {
 
                 String[] data = line.split(",");
                 if (data.length >= 4) {
-                    String noCompte = data[1].trim();
-                    String libelle = data[2].trim();
-                    Integer classe = Integer.parseInt(data[3].trim());
-                    createAccountIfNotExists(noCompte, libelle, classe);
+                    String numero = data[0].trim();
+                    String libelle = data[1].trim();
+                    Integer classe = Integer.parseInt(data[2].trim());
+                    createAccountIfNotExists(numero, libelle, classe);
                 }
             }
 
@@ -62,12 +61,11 @@ public class PlanComptableInitializationService implements CommandLineRunner {
         }
     }
 
-    private void createAccountIfNotExists(String noCompte, String libelle, Integer classe) {
-        boolean exists = planComptableRepository.existsByTenantIdAndNoCompte(tenantId, noCompte);
+    private void createAccountIfNotExists(String numero, String libelle, Integer classe) {
+        boolean exists = planComptableTemplateRepository.existsByNumero( numero);
         if (!exists) {
-            PlanComptable plan = PlanComptable.builder()
-                    .tenant(new Tenant(tenantId))
-                    .noCompte(noCompte)
+            PlanComptableTemplate plan = PlanComptableTemplate.builder()
+                    .numero(numero)
                     .libelle(libelle)
                     .classe(classe)
                     .notes("Compte initialisé automatiquement")
@@ -77,7 +75,7 @@ public class PlanComptableInitializationService implements CommandLineRunner {
                     .createdBy("system")
                     .updatedBy("system")
                     .build();
-            planComptableRepository.save(plan);
+            planComptableTemplateRepository.save(plan);
         }
     }
 }

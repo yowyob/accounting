@@ -1,5 +1,5 @@
 # Use a base image with a Java Runtime Environment
-FROM openjdk:21-jdk-slim
+FROM eclipse-temurin:21-jdk-alpine
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -15,4 +15,5 @@ EXPOSE 8081
 
 # Command to run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
+
 

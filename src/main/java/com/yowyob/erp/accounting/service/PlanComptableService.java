@@ -12,8 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.yowyob.erp.accounting.dto.PlanComptableDto;
 import com.yowyob.erp.accounting.entity.PlanComptable;
+import com.yowyob.erp.accounting.entity.PlanComptableTemplate;
 import com.yowyob.erp.accounting.entity.Tenant;
 import com.yowyob.erp.accounting.repository.PlanComptableRepository;
+import com.yowyob.erp.accounting.repository.PlanComptableTemplateRepository;
 import com.yowyob.erp.common.exception.BusinessException;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.common.service.ValidationService;
@@ -30,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 public class PlanComptableService {
 
     private final PlanComptableRepository repository;
+    private final PlanComptableTemplateRepository templateRepository;
     private final ValidationService validationService;
     private final KafkaMessageService kafkaMessageService;
     private final RedisService redisService;
@@ -44,6 +47,44 @@ public class PlanComptableService {
     /* ============================================================================
      * CREATE ACCOUNT
      * ========================================================================== */
+
+
+
+    @Transactional
+    public void initialiserPlanComptablePourTenant(UUID tenantId) {
+        // 1. On charge le modèle OHADA officiel (les 713 comptes)
+        List<PlanComptableTemplate> template = templateRepository.findAll();
+
+        //On doit recuperer le tenant par I
+        Tenant tenant = TenantContext.getCurrentTenantAsTenant();
+
+        String currentUser = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
+
+
+        // 2. On copie TOUT dans la table compte avec le tenant_id
+        template.forEach(dto -> {
+            PlanComptable account = new PlanComptable();
+
+                account.setTenant(tenant);
+                account.setNoCompte(dto.getNumero());
+                account.setClasse(dto.getClasse());
+                account.setLibelle(dto.getLibelle());
+                account.setNotes(dto.getNotes());
+                account.setActif(true);
+                account.setCreatedAt(LocalDateTime.now());
+                account.setUpdatedAt(LocalDateTime.now());
+                account.setCreatedBy(currentUser);
+                account.setUpdatedBy(currentUser);
+
+            repository.save(account);
+
+        });
+
+        // 3. Optionnel : on crée les comptes de base du tenant
+        // ex: 41110001 - Client par défaut, 40110001 - Fournisseur par défaut, etc.
+    }
+
+
     @Transactional
     public PlanComptableDto createAccount(PlanComptableDto dto) {
         UUID tenantId = TenantContext.getCurrentTenant();

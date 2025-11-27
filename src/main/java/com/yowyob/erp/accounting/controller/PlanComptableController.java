@@ -33,6 +33,19 @@ public class PlanComptableController {
 
     private final PlanComptableService planComptableService;
 
+    // ✅ INITIALISATION
+    @Operation(summary = "iNITIALISER LE PLAN COMPABLE ", description = "Crée unplan compte comptable pour le tenant courant.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Plan comptable initialisé avec succes",
+                    content = @Content(schema = @Schema(implementation = PlanComptableDto.class))),
+            @ApiResponse(responseCode = "400", description = "Erreur de validation ou compte existant")
+    })
+    @PostMapping("/admin/tenants/{tenantId}/plan-comptable/init-ohada-2025")
+    public ResponseEntity<String> initPlanComptable(@PathVariable UUID tenantId) {
+        planComptableService.initialiserPlanComptablePourTenant(tenantId);
+        return ResponseEntity.ok("Plan comptable OHADA 2025 initialisé pour le tenant " + tenantId);
+    }
+
     // ✅ CRÉATION
     @Operation(summary = "Créer un compte comptable", description = "Crée un nouveau compte comptable pour le tenant courant.")
     @ApiResponses({
