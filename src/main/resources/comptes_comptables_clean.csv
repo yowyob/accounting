@@ -1,0 +1,120 @@
+numero|libelle|classe|sens|lettrable|collectif|niveau|compte_mere|actif
+1|CAPITAUX PROPRES ET RESSOURCES ASSIMILÉES|1|C|false|false|0||true
+10|CAPITAL ET RÉSERVES|1|C|false|false|1|1|true
+101|Capital social ou personnel|1|C|false|false|2|10|true
+101000|Capital social|1|C|false|false|3|101|true
+102|Primes liées au capital|1|C|false|false|2|10|true
+102000|Primes d'émission| de fusion| d'apport|1|C|false|false|3|102|true
+108|Compte de l'exploitant|1|C|false|false|2|10|true
+108000|Compte de l'exploitant|1|C|false|false|3|108|true
+109|Actionnaires capital souscrit non appelé|1|C|false|false|2|10|true
+109000|Actionnaires capital souscrit non appelé|1|C|false|false|3|109|true
+11|Réserves|1|C|false|false|1|1|true
+12|Report à nouveau|1|D/C|false|false|1|1|true
+13|Résultat net de l'exercice|1|D/C|false|false|1|1|true
+14|Subventions d'investissement|1|C|false|false|1|1|true
+16|Emprunts et dettes assimilées|1|C|false|false|1|1|true
+17|Dettes liées à des participations|1|C|false|false|1|1|true
+18|Provisions pour risques et charges|1|C|false|false|1|1|true
+19|Écarts de conversion passif|1|D/C|false|false|1|1|true
+
+2|IMMOBILISATIONS|2|D|false|false|0||true
+20|Immobilisations incorporelles|2|D|false|false|1|2|true
+201|Frais de constitution|2|D|true|false|2|20|true
+201000|Frais de constitution|2|D|true|false|3|201|true
+202|Frais d'augmentation de capital|2|D|true|false|2|20|true
+202000|Frais d'augmentation de capital|2|D|true|false|3|202|true
+203|Frais de recherche et développement|2|D|true|false|2|20|true
+203000|Frais de recherche et développement|2|D|true|false|3|203|true
+205|Concessions| brevets| licences| marques|2|D|true|false|2|20|true
+205000|Concessions| brevets| licences| marques|2|D|true|false|3|205|true
+207|Fonds commercial|2|D|true|false|2|20|true
+207000|Fonds commercial|2|D|true|false|3|207|true
+208|Autres immobilisations incorporelles|2|D|true|false|2|20|true
+208000|Autres immobilisations incorporelles|2|D|true|false|3|208|true
+21|Immobilisations corporelles|2|D|false|false|1|2|true
+211|Terrains|2|D|true|false|2|21|true
+211000|Terrains|2|D|true|false|3|211|true
+213|Constructions|2|D|true|false|2|21|true
+213000|Constructions|2|D|true|false|3|213|true
+214|Installations techniques| matériel et outillage|2|D|true|false|2|21|true
+214000|Installations techniques| matériel et outillage|2|D|true|false|3|214|true
+215|Matériel industriel|2|D|true|false|2|21|true
+215000|Matériel industriel|2|D|true|false|3|215|true
+218|Autres immobilisations corporelles|2|D|true|false|2|21|true
+218000|Autres immobilisations corporelles|2|D|true|false|3|218|true
+23|Immobilisations en cours|2|D|false|false|1|2|true
+28|Amortissements des immobilisations|2|C|false|false|1|2|true
+29|Dépréciations des immobilisations|2|C|false|false|1|2|true
+
+3|STOCKS ET ENCOURS|3|D|false|false|0||true
+31|Marchandises|3|D|true|true|1|3|true
+311|Marchandises A|3|D|true|true|2|31|true
+311000|Marchandises A|3|D|true|true|3|311|true
+32|Matières premières|3|D|true|true|1|3|true
+321|Matières premières|3|D|true|true|2|32|true
+321000|Matières premières|3|D|true|true|3|321|true
+33|Fournitures consommables|3|D|true|true|1|3|true
+331|Fournitures consommables|3|D|true|true|2|33|true
+331000|Fournitures consommables|3|D|true|true|3|331|true
+35|Produits en cours|3|D|true|true|1|3|true
+37|Produits finis|3|D|true|true|1|3|true
+38|Emballages récupérables|3|D|true|true|1|3|true
+39|Dépréciations des stocks|3|C|false|false|1|3|true
+
+4|TIERS|4|D/C|false|false|0||true
+40|Fournisseurs et comptes rattachés|4|C|true|true|1|4|true
+401|Fournisseurs|4|C|true|true|2|40|true
+401000|Fournisseurs|4|C|true|true|3|401|true
+408|Fournisseurs - Factures non parvenues|4|C|false|false|2|40|true
+408000|Fournisseurs - Factures non parvenues|4|C|false|false|3|408|true
+41|Clients et comptes rattachés|4|D|true|true|1|4|true
+411|Clients|4|D|true|true|2|41|true
+411000|Clients|4|D|true|true|3|411|true
+418|Clients - Factures à établir|4|D|false|false|2|41|true
+418000|Clients - Factures à établir|4|D|false|false|3|418|true
+44|État et autres collectivités publiques|4|D/C|false|false|1|4|true
+441|TVA déductible|4|D|false|false|2|44|true
+445|TVA collectée|4|C|false|false|2|44|true
+446|TVA à décaisser|4|C|false|false|2|44|true
+45|Organismes sociaux|4|D/C|false|false|1|4|true
+46|Associés - Comptes courants|4|D/C|true|true|1|4|true
+49|Dépréciations des comptes de tiers|4|C|false|false|1|4|true
+
+5|FINANCIERS|5|D/C|false|false|0||true
+51|Banques| CCP| caisses|5|D|true|true|1|5|true
+512|Banques|5|D|true|true|2|51|true
+512000|Banques|5|D|true|true|3|512|true
+514|Caisses|5|D|true|true|2|51|true
+514000|Caisses|5|D|true|true|3|514|true
+53|Valeurs mobilières de placement|5|D|true|true|1|5|true
+58|Virements internes de fonds|5|D/C|false|false|1|5|true
+
+6|CHARGES|6|D|false|false|0||true
+60|Achats|6|D|true|false|1|6|true
+601|Achats de marchandises|6|D|true|false|2|60|true
+603|Variation de stocks marchandises|6|D/C|true|false|2|60|true
+607|Achats de matières premières|6|D|true|false|2|60|true
+61|Services extérieurs|6|D|true|false|1|6|true
+62|Autres services extérieurs|6|D|true|false|1|6|true
+63|Impôts et taxes|6|D|true|false|1|6|true
+64|Charges de personnel|6|D|true|false|1|6|true
+65|Autres charges|6|D|true|false|1|6|true
+66|Charges financières|6|D|true|false|1|6|true
+67|Charges exceptionnelles|6|D|true|false|1|6|true
+68|Dotations aux amortissements et provisions|6|D|true|false|1|6|true
+69|Impôt sur les bénéfices|6|D|true|false|1|6|true
+
+7|PRODUITS|7|C|false|false|0||true
+70|Ventes|7|C|true|false|1|7|true
+701|Ventes de produits finis|7|C|true|false|2|70|true
+703|Ventes de marchandises|7|C|true|false|2|70|true
+708|Rabais| remises| ristournes accordés|7|D|true|false|2|70|true
+71|Production stockée et immobilisée|7|C|true|false|1|7|true
+72|Production immobilisée|7|C|true|false|1|7|true
+74|Subventions d'exploitation|7|C|true|false|1|7|true
+75|Autres produits d'exploitation|7|C|true|false|1|7|true
+76|Produits financiers|7|C|true|false|1|7|true
+77|Produits exceptionnels|7|C|true|false|1|7|true
+78|Reprises sur amortissements et provisions|7|C|true|false|1|7|true
+79|Transferts de charges|7|C|true|false|1|7|true

@@ -41,7 +41,7 @@ public class EcritureComptableController {
     private final EcritureComptableService ecritureService;
 
     // ✅ CRÉATION D’UNE ÉCRITURE
-    @Operation(summary = "Créer une écriture comptable",
+    @Operation(summary = "Créer manuellement une écriture comptable",
             description = "Crée une nouvelle écriture comptable après validation de la période et du journal.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Écriture créée avec succès",

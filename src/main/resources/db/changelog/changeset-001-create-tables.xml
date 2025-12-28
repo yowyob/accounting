@@ -52,12 +52,9 @@
             <column name="updated_by" type="VARCHAR(255)"/>
         </createTable>
 
-         <createTable tableName="plans_comptables_templates">
+        <createTable tableName="plans_comptables_templates">
             <column name="id" type="UUID">
                 <constraints primaryKey="true" primaryKeyName="pk_plans_comptables_templates" nullable="false"/>
-            </column>
-            <column name="tenant_id" type="UUID">
-                <constraints nullable="false"/>
             </column>
             <column name="classe" type="INT">
                 <constraints nullable="false"/>
@@ -80,7 +77,7 @@
             <column name="updated_by" type="VARCHAR(255)"/>
         </createTable>
 
-         <createTable tableName="comptes">
+      <createTable tableName="comptes">
             <column name="id" type="UUID">
                 <constraints primaryKey="true" primaryKeyName="pk_comptes" nullable="false"/>
             </column>
@@ -112,9 +109,9 @@
             </column>
             <column name="created_by" type="VARCHAR(255)"/>
             <column name="updated_by" type="VARCHAR(255)"/>
-        </createTable>
+     </createTable>
 
-        <createTable tableName="journaux_comptables">
+    <createTable tableName="journaux_comptables">
             <column name="id" type="UUID">
                 <constraints primaryKey="true" primaryKeyName="pk_journaux_comptables" nullable="false" />
             </column>
@@ -140,9 +137,9 @@
             </column>
             <column name="created_by" type="VARCHAR(255)"/>
             <column name="updated_by" type="VARCHAR(255)"/>
-        </createTable>
+    </createTable>
 
-        <createTable tableName="periodes_comptables">
+    <createTable tableName="periodes_comptables">
             <column name="id" type="UUID">
                 <constraints primaryKey="true" primaryKeyName="pk_periodes_comptables" nullable="false"/>
             </column>
@@ -165,7 +162,7 @@
             <column name="updated_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="created_by" type="VARCHAR(255)"/>
             <column name="updated_by" type="VARCHAR(255)"/>
-        </createTable>
+    </createTable>
 
 	<createTable tableName="declaration_fiscale">
 	    <column name="declaration_id" type="UUID">
@@ -238,46 +235,46 @@
 	    <column name="updated_by" type="VARCHAR(255)"/>
 	</createTable>
 
-       <createTable tableName="ecritures_comptables">
-    <column name="id" type="UUID">
-        <constraints primaryKey="true" primaryKeyName="pk_ecritures_comptables" nullable="false"/>
-    </column>
-    <column name="tenant_id" type="UUID">
-        <constraints nullable="false"/>
-    </column>
-    <column name="journal_id" type="UUID">
-        <constraints nullable="false"/>
-    </column>
-    <column name="periode_id" type="UUID"/>
+    <createTable tableName="ecritures_comptables">
+        <column name="id" type="UUID">
+            <constraints primaryKey="true" primaryKeyName="pk_ecritures_comptables" nullable="false"/>
+        </column>
+        <column name="tenant_id" type="UUID">
+            <constraints nullable="false"/>
+        </column>
+        <column name="journal_id" type="UUID">
+            <constraints nullable="false"/>
+        </column>
+        <column name="periode_id" type="UUID"/>
 
-    <column name="numero_ecriture" type="VARCHAR(100)">
-        <constraints unique="true" nullable="false"/>
-    </column>
-    <column name="libelle" type="VARCHAR(255)">
-        <constraints nullable="false"/>
-    </column>
-    <column name="reference_externe" type="VARCHAR(255)"/>
-    <column name="notes" type="TEXT"/>
-    <column name="date_ecriture" type="DATE"/>
+        <column name="numero_ecriture" type="VARCHAR(100)">
+            <constraints unique="true" nullable="false"/>
+        </column>
+        <column name="libelle" type="VARCHAR(255)">
+            <constraints nullable="false"/>
+        </column>
+        <column name="reference_externe" type="VARCHAR(255)"/>
+        <column name="notes" type="TEXT"/>
+        <column name="date_ecriture" type="DATE"/>
 
-    <column name="montant_total_debit" type="NUMERIC(18, 2)"/>
-    <column name="montant_total_credit" type="NUMERIC(18, 2)"/>
+        <column name="montant_total_debit" type="NUMERIC(18, 2)"/>
+        <column name="montant_total_credit" type="NUMERIC(18, 2)"/>
 
-    <column name="validee" type="BOOLEAN" defaultValueBoolean="false"/>
-    <column name="date_validation" type="TIMESTAMP WITHOUT TIME ZONE"/>
+        <column name="validee" type="BOOLEAN" defaultValueBoolean="false"/>
+        <column name="date_validation" type="TIMESTAMP WITHOUT TIME ZONE"/>
 
-    <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
-        <constraints nullable="false"/>
-    </column>
-    <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
-        <constraints nullable="false"/>
-    </column>
-    <column name="created_by" type="VARCHAR(255)"/>
-    <column name="updated_by" type="VARCHAR(255)"/>
-    <column name="validated_by" type="VARCHAR(255)"/>
-</createTable>
+        <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+            <constraints nullable="false"/>
+        </column>
+        <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+            <constraints nullable="false"/>
+        </column>
+        <column name="created_by" type="VARCHAR(255)"/>
+        <column name="updated_by" type="VARCHAR(255)"/>
+        <column name="validated_by" type="VARCHAR(255)"/>
+    </createTable>
 
-        <createTable tableName="details_ecritures">
+    <createTable tableName="details_ecritures">
 	    <column name="id" type="UUID">
 		<constraints primaryKey="true" primaryKeyName="pk_details_ecritures" nullable="false"/>
 	    </column>
@@ -295,7 +292,10 @@
 	    </column>
 	    <column name="notes" type="TEXT"/>
 	    <column name="sens" type="VARCHAR(10)"/>
-
+	    <column name="lettree" type="BOOLEAN" defaultValueBoolean="false"/>
+	    <column name="date_lettrage" type="DATE"/>
+        <column name="pointee" type="BOOLEAN" defaultValueBoolean="false"/> 
+        <column name="reference_bancaire" type="VARCHAR(100)"/>
 	    <column name="montant_debit" type="NUMERIC(18, 2)">
 		<constraints nullable="false"/>
 	    </column>
@@ -419,5 +419,22 @@
         <column name="updated_by" type="VARCHAR(255)"/>
     </createTable>
 
+    <createTable tableName="releve_bancaire">
+        <column name="releve_bancaire_id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_releve_bancaire" nullable="false"/>
+        </column>
+        <column name="tenant_id" type="UUID">
+                <constraints nullable="false"/>
+        </column>
+        <column name="date_operation" type="TIMESTAMP WITH TIME ZONE"/>
+        <column name="date_valeur" type="TIMESTAMP WITH TIME ZONE"/>
+        <column name="libelle" type="VARCHAR(255)">
+            <constraints nullable="false"/>
+        </column>
+        <column name="reference" type="VARCHAR(255)"/>
+        <column name="montant" type="NUMERIC(18, 2)"/>
+        <column name="sens" type="VARCHAR(10)"/>
+        <column name="categorie" type="VARCHAR(10)"/>
+    </createTable>
     </changeSet>
 </databaseChangeLog>

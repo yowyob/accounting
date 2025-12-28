@@ -34,7 +34,7 @@ public class DetailEcritureService {
     private static final String COMPTE_CLIENT_DYNAMIQUE = "411000";
 
     private final DetailEcritureRepository detailRepository;
-    private final PlanComptableRepository planComptableRepository;
+    private final CompteRepository compteRepository;
     private final JournalAuditRepository journalAuditRepository;
     private final Validator validator;
     private final KafkaTemplate<String, Object> kafkaTemplate;
@@ -75,15 +75,15 @@ public class DetailEcritureService {
         Tenant tenant = ecriture.getTenant();
         String currentUser = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
 
-        PlanComptable principalAccount = planComptableRepository
+        Compte principalAccount = compteRepository
                 .findByTenant_IdAndNoCompte(tenant.getId(), operation.getComptePrincipal())
-                .filter(PlanComptable::getActif)
+                .filter(Compte::getActif)
                 .orElseThrow(() -> new ResourceNotFoundException("Main account", operation.getComptePrincipal()));
 
         String counterAccountNo = operation.getEstCompteStatique() ? COMPTE_TVA_STATIQUE : COMPTE_CLIENT_DYNAMIQUE;
-        PlanComptable counterAccount = planComptableRepository
+        Compte counterAccount = compteRepository
                 .findByTenant_IdAndNoCompte(tenant.getId(), counterAccountNo)
-                .filter(PlanComptable::getActif)
+                .filter(Compte::getActif)
                 .orElseThrow(() -> new ResourceNotFoundException("Counter account", counterAccountNo));
 
         LocalDateTime now = LocalDateTime.now();
@@ -137,11 +137,11 @@ public class DetailEcritureService {
         String currentUser = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
         LocalDateTime now = LocalDateTime.now();
 
-        PlanComptable debitAccount = planComptableRepository
+        Compte debitAccount = compteRepository
                 .findByTenant_IdAndNoCompte(tenant.getId(), object.getDebitAccount())
                 .orElseThrow(() -> new ResourceNotFoundException("Debit account", object.getDebitAccount()));
 
-        PlanComptable creditAccount = planComptableRepository
+        Compte creditAccount = compteRepository
                 .findByTenant_IdAndNoCompte(tenant.getId(), object.getCreditAccount())
                 .orElseThrow(() -> new ResourceNotFoundException("Credit account", object.getCreditAccount()));
 
@@ -268,7 +268,7 @@ public class DetailEcritureService {
         if (!violations.isEmpty()) throw new ConstraintViolationException(violations);
 
         Tenant tenant = TenantContext.getCurrentTenantAsTenant();
-        PlanComptable plan = planComptableRepository
+        Compte plan = compteRepository
                 .findById(detail.getCompte().getId())
                 .filter(p -> p.getTenant().equals(tenant))
                 .orElseThrow(() ->

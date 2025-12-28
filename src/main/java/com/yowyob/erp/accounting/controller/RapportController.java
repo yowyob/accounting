@@ -172,4 +172,6 @@ public class RapportController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(out.toByteArray());
     }
+
+
 }

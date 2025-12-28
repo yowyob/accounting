@@ -7,7 +7,6 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 import com.yowyob.erp.common.enums.Sens;
 import java.math.BigDecimal;
-
 @Entity
 @Table(name = "details_ecritures")
 @Getter
@@ -31,7 +30,7 @@ public class DetailEcriture {
 
     @ManyToOne
     @JoinColumn(name = "compte_id", nullable = false)
-    private PlanComptable compte;
+    private Compte compte;
 
     @Column(nullable = false, length = 255)
     private String libelle;
@@ -48,6 +47,21 @@ public class DetailEcriture {
 
     @Column(precision = 18, scale = 2)
     private BigDecimal montantCredit;
+
+    @Column(name = "lettree")
+    @Builder.Default
+    private Boolean lettree = false;
+
+    @Column(name = "date_lettrage")
+    private LocalDateTime dateLettrage;
+
+
+    @Column(name = "pointee")
+    @Builder.Default
+    private Boolean pointee = false;
+
+    @Column(name = "reference_bancaire", length = 100)
+    private String referenceBancaire;
 
     private LocalDateTime dateEcriture;
     private LocalDateTime createdAt;

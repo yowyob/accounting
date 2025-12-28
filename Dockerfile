@@ -1,19 +1,34 @@
-# Use a base image with a Java Runtime Environment
-FROM eclipse-temurin:21-jdk-alpine
-
-# Set the working directory inside the container
+# Étape 1 : Build avec Maven + JDK 21
+FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
 
-COPY src/main/resources /app/resources
+# 1. Copie du POM
+# Si pom.xml ne change pas, le cache pour les dépendances est conservé.
+COPY pom.xml .
 
-# Copy the application JAR file from the target directory to the container
-# Use the correct JAR file name produced by Maven
-COPY target/erp-backend-0.0.2-SNAPSHOT.jar /app/app.jar
+# 2. Téléchargement des dépendances
+# Cette étape est mise en cache tant que le pom.xml ne change pas.
+RUN mvn dependency:go-offline -B # Utilisation de -B (batch mode) pour éviter les interactions
 
-# Expose the port your application runs on
+# 3. Copie de TOUT le reste du code
+# Si votre code source change, seul ce qui suit sera reconstruit.
+# C'est l'étape la plus susceptible de changer, elle doit donc être tardive.
+COPY src ./src
+
+# 4. Le build final de l'application
+RUN mvn clean package -DskipTests
+
+# Étape 2 : Image finale uniquement avec le JDK
+FROM eclipse-temurin:21-jdk
+WORKDIR /app
+
+# Copier seulement le JAR final
+COPY --from=build /app/target/*.jar app.jar
+
+# Config
 EXPOSE 8081
+ENV SPRING_PROFILES_ACTIVE=prod
 
-# Command to run the application
+# Lancer l'application
 ENTRYPOINT ["java", "-jar", "app.jar"]
-
 

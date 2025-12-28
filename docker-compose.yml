@@ -51,7 +51,7 @@ services:
       test: ["CMD-SHELL", "curl -f http://localhost:9200/_cat/health || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 15
       start_period: 30s
     restart: unless-stopped
 
@@ -74,7 +74,7 @@ services:
       test: ["CMD", "nc", "-z", "localhost", "2181"]
       interval: 10s
       timeout: 10s
-      retries: 10
+      retries: 15
     networks:
       - my-network
     restart: unless-stopped

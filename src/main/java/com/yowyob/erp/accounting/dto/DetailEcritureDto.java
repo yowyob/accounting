@@ -41,6 +41,14 @@ public class DetailEcritureDto {
     @Builder.Default
     private Double montantCredit = 0.0;
 
+    @Builder.Default
+    private Boolean lettree = false;
+
+    private LocalDateTime dateLettrage;
+    @Builder.Default
+    private Boolean pointee = false;
+    private String referenceBancaire;
+
     private String notes;
 
     private LocalDateTime dateEcriture;
