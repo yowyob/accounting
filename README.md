@@ -1,6 +1,6 @@
 # YOWYOB ERP - Backend
 
-YOWYOB ERP est un système ERP multi-tenant conforme aux normes OHADA, développé avec Spring Boot. Il prend en charge les opérations CRUD pour les tenants, intègre Apache Kafka pour la gestion des événements, Redis pour le caching, Elasticsearch pour la recherche, et ScyllaDB pour une persistance des données à haute performance. Conçu pour une scalabilité, une isolation robuste des données par tenant, et une conformité comptable OHADA.
+YOWYOB ERP est un système ERP multi-tenant conforme aux normes OHADA, développé avec Spring Boot. Il prend en charge les opérations CRUD pour les tenants, intègre Apache Kafka pour la gestion des événements, Redis pour le caching, Elasticsearch pour la recherche, et PostgreSQL pour la persistance des données avec Liquibase pour la gestion des migrations. Conçu pour une scalabilité, une isolation robuste des données par tenant, et une conformité comptable OHADA.
 
 ## Table des matières
 - [YOWYOB ERP - Backend](#yowyob-erp---backend)
@@ -30,12 +30,13 @@ YOWYOB ERP est un système ERP multi-tenant conforme aux normes OHADA, développ
 - **Recherche avancée** : Elasticsearch pour l'indexation des écritures comptables, factures, et mouvements de stock avec recherche full-text.
 - **API REST** : Plus de 30 endpoints avec validation JSR-303, pagination, et documentation Swagger.
 - **Audit et traçabilité** : Journalisation complète des actions avec `JournalAudit`, incluant l'origine des écritures (transaction, facture, stock).
-- **Performance** : Optimisation avec ScyllaDB pour une persistance à haute performance et Redis pour le caching.
+- **Performance** : Optimisation avec PostgreSQL pour une persistance fiable et Redis pour le caching.
 
 ## Architecture
 Le backend suit une architecture multi-tenant optimisée pour la scalabilité :
 - **Framework** : Spring Boot 3.x avec Java 21 (mise à jour récente).
-- **Persistance** : Spring Data Cassandra avec ScyllaDB 5.4 pour une gestion performante des entités.
+- **Persistance** : PostgreSQL avec Spring Data JPA pour une gestion robuste des entités.
+- **Migration** : Liquibase pour la gestion des versions de schéma de base de données.
 - **Authentification** : JWT via une API externe avec validation des tokens et caching Redis.
 - **Événements** : Apache Kafka pour la communication asynchrone (ex. : création d'écritures comptables, mise à jour de stock).
 - **Cache** : Redis 7.x pour des accès rapides aux données fréquentes.
@@ -163,7 +164,8 @@ src/main/java/com/yowyob/erp
 ## Prérequis
 - **Java** : JDK 21 ou supérieur
 - **Maven** : 3.9.x ou supérieur
-- **ScyllaDB** : 5.4 ou supérieur
+- **PostgreSQL** : 15.x ou supérieur
+- **Liquibase** : Pour les migrations
 - **Redis** : 7.x ou supérieur
 - **Kafka** : Confluent Platform 7.5.x ou supérieur
 - **Elasticsearch** : 8.x ou supérieur
@@ -182,15 +184,12 @@ src/main/java/com/yowyob/erp
    mvn clean install
    ```
 
-3. **Configurer ScyllaDB** :
-   - Lancer ScyllaDB via Docker :
+3. **Configurer la base de données** :
+   - Lancer PostgreSQL via Docker :
      ```bash
-     docker run -d --name scylla -p 9042:9042 scylladb/scylla:5.4
+     docker run -d --name postgres-yowyob -e POSTGRES_DB=yowyob_erp -e POSTGRES_USER=yowyob_admin -e POSTGRES_PASSWORD=yowyob_secret -p 5433:5432 postgres:15
      ```
-   - Exécuter le fichier de schéma CQL :
-     ```bash
-     docker exec -i scylla cqlsh < src/main/resources/init.cql
-     ```
+   - Les migrations Liquibase s'exécutent automatiquement au démarrage de l'application.
 
 4. **Configurer Kafka, Redis, et Elasticsearch** :
    - Lancer les services via Docker Compose :
@@ -200,7 +199,7 @@ src/main/java/com/yowyob/erp
 
 ## Technologies
 - **Framework** : Spring Boot 3.x
-- **Base de données** : ScyllaDB 5.4 (Spring Data Cassandra)
+- **Base de données** : PostgreSQL (Spring Data JPA)
 - **Messaging** : Apache Kafka (confluentinc/cp-kafka:7.5.0)
 - **Caching** : Redis 7.x
 - **Recherche** : Elasticsearch 8.x
@@ -213,15 +212,14 @@ src/main/java/com/yowyob/erp
 Mettre à jour le fichier `src/main/resources/application.properties` avec les paramètres de votre environnement :
 
 ```properties
-# ScyllaDB
-spring.cassandra.contact-points=localhost
-spring.cassandra.port=9042
-spring.cassandra.keyspace-name=yowyob_erp
-spring.cassandra.username=cassandra
-spring.cassandra.password=cassandra
-spring.cassandra.local-datacenter=datacenter1
+# PostgreSQL
+spring.datasource.url=jdbc:postgresql://localhost:5433/yowyob_erp
+spring.datasource.username=yowyob_admin
+spring.datasource.password=yowyob_secret
+spring.datasource.driver-class-name=org.postgresql.Driver
 
-# Kafka
+# Liquibase
+spring.liquibase.change-log=classpath:db/changelog/changelog-master.xml
 spring.kafka.bootstrap-servers=localhost:9092
 spring.kafka.consumer.group-id=yowyob-erp-group
 spring.kafka.producer.key-serializer=org.apache.kafka.common.serialization.StringSerializer
@@ -271,7 +269,7 @@ springdoc.info.version=1.1.0
    - API : `http://localhost:8081`
    - Swagger : `http://localhost:8081/swagger-ui`
    - Kafka UI : `http://localhost:8080`
-   - ScyllaDB (CQLSH) : `docker exec -it scylla cqlsh`
+   - PostgreSQL : `docker exec -it postgres-yowyob psql -U yowyob_admin -d yowyob_erp`
 
 ## Documentation API
 - Accéder à l'interface Swagger à `http://localhost:8081/swagger-ui` pour une documentation détaillée.
@@ -288,7 +286,7 @@ springdoc.info.version=1.1.0
 ## Tests
 
 ### Tests unitaires et d'intégration
-- Le projet utilise JUnit 5 et Testcontainers pour tester avec ScyllaDB, Kafka, Redis, et Elasticsearch.
+- Le projet utilise JUnit 5 et Testcontainers pour tester avec PostgreSQL, Kafka, Redis, et Elasticsearch.
 - Exécuter les tests :
   ```bash
   mvn test
@@ -313,7 +311,7 @@ Assurez-vous que les dépendances suivantes sont dans votre `pom.xml` :
     </dependency>
     <dependency>
         <groupId>org.testcontainers</groupId>
-        <artifactId>cassandra</artifactId>
+        <artifactId>postgresql</artifactId>
         <version>1.19.3</version>
         <scope>test</scope>
     </dependency>
