@@ -1,5 +1,6 @@
 package com.yowyob.erp.common.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.yowyob.erp.common.enums.SourceType;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -9,47 +10,83 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * DTO générique permettant de recevoir dynamiquement un objet comptable
- * (Facture, Transaction ou Mouvement de Stock) via l’API REST.
+ * Generic DTO to dynamically receive an accounting object
+ * (Invoice, Transaction, or Stock Movement) via the REST API.
+ * Uses @JsonProperty for snake_case JSON mapping while maintaining camelCase
+ * Java fields.
+ * 
+ * @author ALD
+ * @date 30.09.25
  */
 @Data
 public class ComptableObjectRequest {
 
-    /* --------------------------------------------------------------------------
-     * Type d’objet comptable
-     * -------------------------------------------------------------------------- */
-    @NotNull(message = "Le type de l'objet comptable est requis (FACTURE, TRANSACTION, STOCK)")
+    /*
+     * --------------------------------------------------------------------------
+     * Accounting object type
+     * --------------------------------------------------------------------------
+     */
+    @NotNull(message = "Accounting object type is required (FACTURE, TRANSACTION, STOCK)")
     private SourceType type;
 
-    /* --------------------------------------------------------------------------
-     * Métadonnées communes
-     * -------------------------------------------------------------------------- */
+    /*
+     * --------------------------------------------------------------------------
+     * Common metadata
+     * --------------------------------------------------------------------------
+     */
     private UUID id;
+
+    @JsonProperty("tenant_id")
     private UUID tenantId;
+
     private LocalDate date;
     private String libelle;
+
+    @JsonProperty("journal_comptable_id")
     private UUID journalComptableId;
+
+    @JsonProperty("periode_comptable_id")
     private UUID periodeComptableId;
 
-    /* --------------------------------------------------------------------------
-     * Champs pour les TRANSACTIONS COMPTABLES
-     * -------------------------------------------------------------------------- */
+    /*
+     * --------------------------------------------------------------------------
+     * Fields for ACCOUNTING TRANSACTIONS
+     * --------------------------------------------------------------------------
+     */
     private BigDecimal montant;
-    private String comptePrincipal; // ex: "512000" (banque)
-    private String contrepartie;    // ex: "401000" (fournisseur)
 
-    /* --------------------------------------------------------------------------
-     * Champs pour les FACTURES COMPTABLES
-     * -------------------------------------------------------------------------- */
+    @JsonProperty("compte_principal")
+    private String comptePrincipal; // e.g., "512000" (bank)
+
+    private String contrepartie; // e.g., "401000" (supplier)
+
+    /*
+     * --------------------------------------------------------------------------
+     * Fields for ACCOUNTING INVOICES
+     * --------------------------------------------------------------------------
+     */
+    @JsonProperty("montant_ht")
     private BigDecimal montantHT;
-    private UUID clientId;
-    private Boolean isAchat; // true = achat, false = vente
 
-    /* --------------------------------------------------------------------------
-     * Champs pour les MOUVEMENTS DE STOCK
-     * -------------------------------------------------------------------------- */
+    @JsonProperty("client_id")
+    private UUID clientId;
+
+    @JsonProperty("is_achat")
+    private Boolean isAchat; // true = purchase, false = sale
+
+    /*
+     * --------------------------------------------------------------------------
+     * Fields for STOCK MOVEMENTS
+     * --------------------------------------------------------------------------
+     */
     private Integer quantite;
+
+    @JsonProperty("cout_unitaire")
     private BigDecimal coutUnitaire;
-    private Boolean isEntree; // true = entrée, false = sortie
+
+    @JsonProperty("is_entree")
+    private Boolean isEntree; // true = entry, false = exit
+
+    @JsonProperty("fournisseur_id")
     private UUID fournisseurId;
 }

@@ -3,86 +3,120 @@ package com.yowyob.erp.accounting.controller;
 import com.yowyob.erp.accounting.dto.CompteDto;
 import com.yowyob.erp.accounting.service.CompteService;
 import com.yowyob.erp.common.dto.ApiResponseWrapper;
+import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.config.tenant.TenantContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Controller for managing accounting accounts.
+ * Provides REST endpoints for CRUD operations on Compte entities.
+ * 
+ * @author ALD
+ * @date 30.09.25
+ */
 @RestController
 @RequestMapping("/api/comptes")
 @RequiredArgsConstructor
 @Slf4j
 public class CompteController {
 
-    private final CompteService compteService;
+    private final CompteService compte_service;
 
     /**
-     * Créer un nouveau compte comptable
+     * Creates a new accounting account.
+     * 
+     * @param dto the account data
+     * @return the created account wrapped in ApiResponseWrapper
      */
     @PostMapping
     public ApiResponseWrapper<CompteDto> createCompte(@RequestBody CompteDto dto) {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        log.info("📘 Requête de création d’un compte pour le tenant {}", tenantId);
-        CompteDto saved = compteService.createCompte(dto);
-        return ApiResponseWrapper.success(saved, "Compte créé avec succès");
+        UUID tenant_id = TenantContext.getCurrentTenant();
+        log.info("Request to create an account for tenant {}", tenant_id);
+        CompteDto saved = compte_service.createCompte(dto);
+        return ApiResponseWrapper.success(saved, "Account created successfully");
     }
 
     /**
-     * Récupérer tous les comptes pour le tenant courant
+     * Retrieves all accounts for the current tenant.
+     * 
+     * @return list of accounts wrapped in ApiResponseWrapper
      */
     @GetMapping
     public ApiResponseWrapper<List<CompteDto>> getAllComptes() {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        log.info("📄 Récupération de tous les comptes pour le tenant {}", tenantId);
-        List<CompteDto> comptes = compteService.findAllByTenant(tenantId);
-        return ApiResponseWrapper.success(comptes, "Liste des comptes récupérée avec succès");
+        UUID tenant_id = TenantContext.getCurrentTenant();
+        log.info("Retrieving all accounts for tenant {}", tenant_id);
+        List<CompteDto> comptes = compte_service.findAllByTenant(tenant_id);
+        return ApiResponseWrapper.success(comptes, "Accounts list retrieved successfully");
     }
 
     /**
-     * Récupérer un compte par son ID
+     * Retrieves an account by its ID.
+     * 
+     * @param id the account ID
+     * @return the account wrapped in ApiResponseWrapper
      */
     @GetMapping("/{id}")
     public ApiResponseWrapper<CompteDto> getCompteById(@PathVariable UUID id) {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        log.info("🔍 Récupération du compte ID={} pour le tenant {}", id, tenantId);
-        CompteDto compte = compteService.findById(tenantId, id)
-                .orElseThrow(() -> new RuntimeException("Compte non trouvé"));
-        return ApiResponseWrapper.success(compte, "Compte trouvé");
+        UUID tenant_id = TenantContext.getCurrentTenant();
+        log.info("Retrieving account ID={} for tenant {}", id, tenant_id);
+        CompteDto compte = compte_service.findById(tenant_id, id)
+                .orElseThrow(() -> new ResourceNotFoundException("Accounting account", id.toString()));
+        return ApiResponseWrapper.success(compte, "Account found");
     }
 
     /**
-     * Rechercher un compte par son numéro de compte
+     * Searches for accounts by account number.
+     * 
+     * @param no_compte the account number to search for
+     * @return list of matching accounts wrapped in ApiResponseWrapper
      */
     @GetMapping("/search")
-    public ApiResponseWrapper<List<CompteDto>> findByNoCompte(@RequestParam String noCompte) {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        log.info("🔎 Recherche des comptes avec noCompte={} pour le tenant {}", noCompte, tenantId);
-        List<CompteDto> comptes = compteService.findByNoCompte(tenantId, noCompte);
-        return ApiResponseWrapper.success(comptes, "Résultats de la recherche");
+    public ApiResponseWrapper<List<CompteDto>> findByNoCompte(@RequestParam String no_compte) {
+        UUID tenant_id = TenantContext.getCurrentTenant();
+        log.info("Searching accounts with no_compte={} for tenant {}", no_compte, tenant_id);
+        List<CompteDto> comptes = compte_service.findByNoCompte(tenant_id, no_compte);
+        return ApiResponseWrapper.success(comptes, "Search results");
     }
 
     /**
-     * Mettre à jour un compte existant
+     * Updates an existing account.
+     * 
+     * @param id  the account ID
+     * @param dto the new account data
+     * @return the updated account wrapped in ApiResponseWrapper
      */
     @PutMapping("/{id}")
     public ApiResponseWrapper<CompteDto> updateCompte(@PathVariable UUID id, @RequestBody CompteDto dto) {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        log.info("✏️ Mise à jour du compte ID={} pour le tenant {}", id, tenantId);
-        CompteDto updated = compteService.updateCompte(tenantId, id, dto);
-        return ApiResponseWrapper.success(updated, "Compte mis à jour avec succès");
+        UUID tenant_id = TenantContext.getCurrentTenant();
+        log.info("Updating account ID={} for tenant {}", id, tenant_id);
+        CompteDto updated = compte_service.updateCompte(tenant_id, id, dto);
+        return ApiResponseWrapper.success(updated, "Account updated successfully");
     }
 
     /**
-     * Supprimer un compte comptable
+     * Deletes an accounting account.
+     * 
+     * @param id the account ID to delete
+     * @return success message wrapped in ApiResponseWrapper
      */
     @DeleteMapping("/{id}")
     public ApiResponseWrapper<String> deleteCompte(@PathVariable UUID id) {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        log.info("🗑️ Suppression du compte ID={} pour le tenant {}", id, tenantId);
-        compteService.deleteById(tenantId, id);
-        return ApiResponseWrapper.success("Compte supprimé avec succès");
+        UUID tenant_id = TenantContext.getCurrentTenant();
+        log.info("Deleting account ID={} for tenant {}", id, tenant_id);
+        compte_service.deleteById(tenant_id, id);
+        return ApiResponseWrapper.success("Account deleted successfully");
     }
 }

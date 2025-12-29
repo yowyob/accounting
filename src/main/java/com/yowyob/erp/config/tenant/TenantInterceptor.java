@@ -18,14 +18,14 @@ public class TenantInterceptor implements HandlerInterceptor {
 
     @Value("${app.tenant.header-name:X-Tenant-ID}")
     private String tenantHeaderName;
-    
+
     @Value("${app.tenant.default-tenant:550e8400-e29b-41d4-a716-446655440000}")
     private String defaultTenant;
 
     @Override
-    public boolean preHandle(@NonNull HttpServletRequest request, 
-                           @NonNull HttpServletResponse response, 
-                           @NonNull Object handler) {
+    public boolean preHandle(@NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull Object handler) {
         UUID tenantId = extractTenantId(request);
         TenantContext.setCurrentTenant(tenantId);
         log.debug("Tenant défini: {}", tenantId);
@@ -33,9 +33,9 @@ public class TenantInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public void afterCompletion(@NonNull HttpServletRequest request, 
-                              @NonNull HttpServletResponse response, 
-                              @NonNull Object handler, Exception ex) {
+    public void afterCompletion(@NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull Object handler, Exception ex) {
         TenantContext.clear();
     }
 
@@ -53,7 +53,8 @@ public class TenantInterceptor implements HandlerInterceptor {
             tenantIdStr = request.getParameter("tenantId");
         }
 
-        String finalTenantId = tenantIdStr != null && !tenantIdStr.trim().isEmpty() ? tenantIdStr.trim() : defaultTenant;
+        String finalTenantId = tenantIdStr != null && !tenantIdStr.trim().isEmpty() ? tenantIdStr.trim()
+                : defaultTenant;
         try {
             return UUID.fromString(finalTenantId);
         } catch (IllegalArgumentException e) {
@@ -61,12 +62,12 @@ public class TenantInterceptor implements HandlerInterceptor {
             return UUID.fromString(defaultTenant);
         }
     }
-    
+
     private String extractFromJWT(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            // TODO: Décoder le JWT et extraire le tenantId
-            // Pour l'instant, retourner null
+            // TODO: Decode JWT and extract tenantId
+            // For now, return null
             return null;
         }
         return null;

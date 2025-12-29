@@ -82,6 +82,7 @@ public class ClotureMensuelleService {
         return (UUID) q.getSingleResult();
     }
 
+    @SuppressWarnings("unchecked")
     private List<Object[]> calculerSoldesClasses67(UUID tenantId, int mois, int annee) {
         String sql = """
             SELECT c.numero,

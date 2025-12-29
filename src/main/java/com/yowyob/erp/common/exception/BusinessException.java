@@ -1,7 +1,16 @@
-// Exception personnalisée pour les erreurs métier
 package com.yowyob.erp.common.exception;
 
+import lombok.Getter;
+
+/**
+ * Custom exception for business logic errors.
+ * 
+ * @author ALD
+ * @date 30.09.25
+ */
+@Getter
 public class BusinessException extends RuntimeException {
+    /** Error code identifying the type of business error */
     private final String errorCode;
 
     public BusinessException(String message) {
@@ -12,9 +21,5 @@ public class BusinessException extends RuntimeException {
     public BusinessException(String message, String errorCode) {
         super(message);
         this.errorCode = errorCode;
-    }
-
-    public String getErrorCode() {
-        return errorCode;
     }
 }

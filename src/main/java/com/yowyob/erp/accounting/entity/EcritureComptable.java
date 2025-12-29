@@ -3,12 +3,20 @@ package com.yowyob.erp.accounting.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Entity representing an accounting entry (Ecriture Comptable).
+ * Compliant with OHADA standards and Development Charter.
+ * 
+ * @author ALD
+ * @date 30.09.25
+ */
 @Entity
 @Table(name = "ecritures_comptables")
 @Getter
@@ -35,53 +43,50 @@ public class EcritureComptable {
     private PeriodeComptable periode;
 
     @Column(nullable = false, unique = true, length = 100)
-    private String numeroEcriture;
+    private String numero_ecriture;
 
     @Column(nullable = false, length = 255)
     private String libelle;
 
-    private String referenceExterne;
-    
+    private String reference_externe;
+
     private String notes;
 
-    private LocalDate dateEcriture;
+    private LocalDate date_ecriture;
 
-    private BigDecimal montantTotalDebit;
-    private BigDecimal montantTotalCredit;
+    private BigDecimal montant_total_debit;
+    private BigDecimal montant_total_credit;
 
-    
     @Builder.Default
     private Boolean validee = false;
-    private LocalDateTime dateValidation;
+    private LocalDateTime date_validation;
 
     @OneToMany(mappedBy = "ecriture", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DetailEcriture> details;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private LocalDateTime created_at;
+    private LocalDateTime updated_at;
 
-        /** Utilisateur créateur */
     @Size(max = 255)
     @Column(name = "created_by", length = 255)
-    private String createdBy;
+    private String created_by;
 
-    /** Utilisateur ayant modifié la ressource */
     @Size(max = 255)
     @Column(name = "updated_by", length = 255)
-    private String updatedBy;
+    private String updated_by;
 
-    /**Utilisateur ayant validé l'ecriture */
     @Size(max = 255)
     @Column(name = "validated_by", length = 255)
-    private String validatedBy;
+    private String validated_by;
+
     @PrePersist
     public void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.created_at = LocalDateTime.now();
+        this.updated_at = LocalDateTime.now();
     }
 
     @PreUpdate
     public void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        this.updated_at = LocalDateTime.now();
     }
 }

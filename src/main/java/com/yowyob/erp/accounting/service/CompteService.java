@@ -14,167 +14,227 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
  * Service for managing OHADA accounting accounts.
  * Compatible with PostgreSQL + Redis Cache.
+ * 
+ * @author ALD
+ * @date 30.09.25
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class CompteService {
 
-    private final CompteRepository compteRepository;
-    private final RedisTemplate<String, Object> redisTemplate;
-    private final TenantRepository tenantRepository;
+    private final CompteRepository compte_repository;
+    private final RedisTemplate<String, Object> redis_template;
+    private final TenantRepository tenant_repository;
 
     private static final String CACHE_PREFIX = "compte:solde:";
     private static final String CACHE_ALL_PREFIX = "compte:all:";
     private static final String CACHE_BY_NO_COMPTE_PREFIX = "compte:nocompte:";
 
-    /* CREATION */
+    /**
+     * Creates a new accounting account.
+     * 
+     * @param dto the account data
+     * @return the created account DTO
+     * @throws IllegalStateException if tenant ID is missing
+     */
     @Transactional
     public CompteDto createCompte(CompteDto dto) {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        if (tenantId == null) {
+        UUID tenant_id = TenantContext.getCurrentTenant();
+        if (tenant_id == null) {
             throw new IllegalStateException("Tenant ID is required");
         }
-        log.info("Creating account for tenant {} with number {}", tenantId, dto.getNoCompte());
+        log.info("Creating account for tenant {} with number {}", tenant_id, dto.getNo_compte());
 
         Compte compte = mapToEntity(dto);
-        compte.setTenant(tenantRepository.findById(tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Tenant", tenantId.toString())));
-        compte.setCreatedAt(LocalDateTime.now());
-        compte.setUpdatedAt(LocalDateTime.now());
-        compte.setCreatedBy("system");
-        compte.setUpdatedBy("system");
+        compte.setTenant(tenant_repository.findById(tenant_id)
+                .orElseThrow(() -> new ResourceNotFoundException("Tenant", tenant_id.toString())));
+        compte.setCreated_at(LocalDateTime.now());
+        compte.setUpdated_at(LocalDateTime.now());
+        compte.setCreated_by("system");
+        compte.setUpdated_by("system");
         compte.setSolde(BigDecimal.ZERO);
         compte.setActif(true);
 
-        Compte saved = compteRepository.save(compte);
+        Compte saved = compte_repository.save(compte);
 
         // Cache the balance
-        redisTemplate.opsForValue().set(CACHE_PREFIX + tenantId + ":" + saved.getId(), saved.getSolde());
-        invalidateCache(tenantId, saved.getNoCompte());
+        redis_template.opsForValue().set(CACHE_PREFIX + tenant_id + ":" + saved.getId(), saved.getSolde());
+        invalidateCache(tenant_id, saved.getNo_compte());
 
         return mapToDto(saved);
     }
 
-    /* READING */
-    public List<CompteDto> findAllByTenant(UUID tenantId) {
-        String cacheKey = CACHE_ALL_PREFIX + tenantId;
+    /**
+     * Finds all accounts for a tenant.
+     * 
+     * @param tenant_id the tenant ID
+     * @return list of account DTOs
+     */
+    public List<CompteDto> findAllByTenant(UUID tenant_id) {
+        String cache_key = CACHE_ALL_PREFIX + tenant_id;
         @SuppressWarnings("unchecked")
-        List<CompteDto> comptes = (List<CompteDto>) redisTemplate.opsForValue().get(cacheKey);
+        List<CompteDto> comptes = (List<CompteDto>) redis_template.opsForValue().get(cache_key);
 
         if (comptes == null) {
-            comptes = compteRepository.findAllByTenant_Id(tenantId)
+            comptes = compte_repository.findAllByTenant_Id(tenant_id)
                     .stream()
                     .map(this::mapToDto)
                     .collect(Collectors.toList());
-            redisTemplate.opsForValue().set(cacheKey, comptes);
+            redis_template.opsForValue().set(cache_key, comptes);
         }
         return comptes;
     }
 
-    public Optional<CompteDto> findById(UUID tenantId, UUID id) {
-        Compte compte = compteRepository.findByTenant_IdAndId(tenantId, id)
-                .orElseThrow(() -> new ResourceNotFoundException("Account", id.toString()));
-        String cacheKey = CACHE_PREFIX + tenantId + ":" + id;
+    /**
+     * Finds an account by ID and tenant ID.
+     * 
+     * @param tenant_id the tenant ID
+     * @param id        the account ID
+     * @return the account DTO
+     * @throws ResourceNotFoundException if account is not found
+     */
+    public Optional<CompteDto> findById(UUID tenant_id, UUID id) {
+        Compte compte = compte_repository.findByTenant_IdAndId(tenant_id, id)
+                .orElseThrow(() -> new ResourceNotFoundException("Accounting account", id.toString()));
+        String cache_key = CACHE_PREFIX + tenant_id + ":" + id;
 
-        @SuppressWarnings("unchecked")
-        BigDecimal cachedSolde = (BigDecimal) redisTemplate.opsForValue().get(cacheKey);
-        if (cachedSolde != null) {
-            compte.setSolde(cachedSolde);
+        BigDecimal cached_solde = (BigDecimal) redis_template.opsForValue().get(cache_key);
+        if (cached_solde != null) {
+            compte.setSolde(cached_solde);
         } else {
-            redisTemplate.opsForValue().set(cacheKey, compte.getSolde());
+            redis_template.opsForValue().set(cache_key, compte.getSolde());
         }
 
         return Optional.of(mapToDto(compte));
     }
 
-    public List<CompteDto> findByNoCompte(UUID tenantId, String noCompte) {
-        String cacheKey = CACHE_BY_NO_COMPTE_PREFIX + tenantId + ":" + noCompte;
+    /**
+     * Finds accounts by account number.
+     * 
+     * @param tenant_id the tenant ID
+     * @param no_compte the account number
+     * @return list of account DTOs
+     */
+    public List<CompteDto> findByNoCompte(UUID tenant_id, String no_compte) {
+        String cache_key = CACHE_BY_NO_COMPTE_PREFIX + tenant_id + ":" + no_compte;
         @SuppressWarnings("unchecked")
-        List<CompteDto> cached = (List<CompteDto>) redisTemplate.opsForValue().get(cacheKey);
+        List<CompteDto> cached = (List<CompteDto>) redis_template.opsForValue().get(cache_key);
 
         if (cached != null && !cached.isEmpty()) {
             return cached;
         }
 
-        List<CompteDto> comptes = compteRepository.findByTenant_IdAndNoCompte(tenantId, noCompte)
+        List<CompteDto> comptes = compte_repository.findByTenant_IdAndNo_compte(tenant_id, no_compte)
                 .stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
 
-        redisTemplate.opsForValue().set(cacheKey, comptes);
+        redis_template.opsForValue().set(cache_key, comptes);
         return comptes;
     }
 
-    /* UPDATE */
+    /**
+     * Updates an existing account.
+     * 
+     * @param tenant_id the tenant ID
+     * @param id        the account ID
+     * @param dto       the new account data
+     * @return the updated account DTO
+     * @throws ResourceNotFoundException if account is not found
+     */
     @Transactional
-    public CompteDto updateCompte(UUID tenantId, UUID id, CompteDto dto) {
-        Compte compte = compteRepository.findByTenant_IdAndId(tenantId, id)
-                .orElseThrow(() -> new ResourceNotFoundException("Account", id.toString()));
+    public CompteDto updateCompte(UUID tenant_id, UUID id, CompteDto dto) {
+        Compte compte = compte_repository.findByTenant_IdAndId(tenant_id, id)
+                .orElseThrow(() -> new ResourceNotFoundException("Accounting account", id.toString()));
 
         compte.setLibelle(dto.getLibelle());
         compte.setNotes(dto.getNotes());
-        compte.setUpdatedAt(LocalDateTime.now());
-        compte.setUpdatedBy("system");
+        compte.setUpdated_at(LocalDateTime.now());
+        compte.setUpdated_by("system");
 
-        Compte updated = compteRepository.save(compte);
+        Compte updated = compte_repository.save(compte);
 
-        redisTemplate.opsForValue().set(CACHE_PREFIX + tenantId + ":" + updated.getId(), updated.getSolde());
-        invalidateCache(tenantId, updated.getNoCompte());
+        redis_template.opsForValue().set(CACHE_PREFIX + tenant_id + ":" + updated.getId(), updated.getSolde());
+        invalidateCache(tenant_id, updated.getNo_compte());
 
         return mapToDto(updated);
     }
 
-    /* DELETION */
+    /**
+     * Deletes an account by ID.
+     * 
+     * @param tenant_id the tenant ID
+     * @param id        the account ID
+     * @throws ResourceNotFoundException if account is not found
+     */
     @Transactional
-    public void deleteById(UUID tenantId, UUID id) {
-        Compte compte = compteRepository.findByTenant_IdAndId(tenantId, id)
+    public void deleteById(UUID tenant_id, UUID id) {
+        Compte compte = compte_repository.findByTenant_IdAndId(tenant_id, id)
                 .orElseThrow(() -> new ResourceNotFoundException("Account", id.toString()));
 
-        compteRepository.delete(compte);
-        invalidateCache(tenantId, compte.getNoCompte());
-        log.info("Account deleted: {} for tenant {}", compte.getNoCompte(), tenantId);
+        compte_repository.delete(compte);
+        invalidateCache(tenant_id, compte.getNo_compte());
+        log.info("Account deleted: {} for tenant {}", compte.getNo_compte(), tenant_id);
     }
 
-    /* MAPPING */
+    /**
+     * Maps a CompteDto to a Compte entity.
+     * 
+     * @param dto the DTO to map
+     * @return the mapped entity
+     */
     private Compte mapToEntity(CompteDto dto) {
         Compte compte = new Compte();
-        compte.setNoCompte(dto.getNoCompte());
+        compte.setNo_compte(dto.getNo_compte());
         compte.setLibelle(dto.getLibelle());
         compte.setNotes(dto.getNotes());
-        compte.setTypeCompte(dto.getTypeCompte());
+        compte.setType_compte(dto.getType_compte());
         compte.setClasse(dto.getClasse());
         compte.setActif(dto.getActif() != null ? dto.getActif() : true);
         compte.setSolde(dto.getSolde() != null ? dto.getSolde() : BigDecimal.ZERO);
         return compte;
     }
 
+    /**
+     * Maps a Compte entity to a CompteDto.
+     * 
+     * @param compte the entity to map
+     * @return the mapped DTO
+     */
     private CompteDto mapToDto(Compte compte) {
         return CompteDto.builder()
                 .id(compte.getId())
-                .noCompte(compte.getNoCompte())
+                .no_compte(compte.getNo_compte())
                 .libelle(compte.getLibelle())
                 .notes(compte.getNotes())
-                .typeCompte(compte.getTypeCompte())
+                .type_compte(compte.getType_compte())
                 .classe(compte.getClasse())
                 .solde(compte.getSolde())
                 .actif(compte.getActif())
-                .tenantId(compte.getTenant() != null ? compte.getTenant().getId() : null) // Assume Tenant has getId()
-                .createdAt(compte.getCreatedAt())
-                .updatedAt(compte.getUpdatedAt())
+                .tenant_id(compte.getTenant() != null ? compte.getTenant().getId() : null)
+                .created_at(compte.getCreated_at())
+                .updated_at(compte.getUpdated_at())
                 .build();
     }
 
-    /* CACHE UTILS */
-    private void invalidateCache(UUID tenantId, String noCompte) {
-        redisTemplate.delete(CACHE_ALL_PREFIX + tenantId);
-        redisTemplate.delete(CACHE_BY_NO_COMPTE_PREFIX + tenantId + ":" + noCompte);
-        log.debug("Cache invalidated for tenant {} and account {}", tenantId, noCompte);
+    /**
+     * Invalidates cache for a tenant and account.
+     * 
+     * @param tenant_id the tenant ID
+     * @param no_compte the account number
+     */
+    private void invalidateCache(UUID tenant_id, String no_compte) {
+        redis_template.delete(CACHE_ALL_PREFIX + tenant_id);
+        redis_template.delete(CACHE_BY_NO_COMPTE_PREFIX + tenant_id + ":" + no_compte);
+        log.debug("Cache invalidated for tenant {} and account {}", tenant_id, no_compte);
     }
 }

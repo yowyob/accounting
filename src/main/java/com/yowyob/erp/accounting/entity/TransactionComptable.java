@@ -2,7 +2,7 @@ package com.yowyob.erp.accounting.entity;
 
 import com.yowyob.erp.common.entity.ComptableObject;
 import com.yowyob.erp.common.enums.SourceType;
-import com.yowyob.erp.common.enums.Sens; // Assumez que Sens est un enum partagé
+import com.yowyob.erp.common.enums.Sens;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -15,93 +15,97 @@ import java.util.UUID;
 /**
  * Represents an accounting transaction (payment, receipt, transfer, etc.)
  * and automatically generates a two-line entry:
- *   - Debit on the main account (e.g., Bank)
- *   - Credit on the counterpart account (e.g., Supplier, Client)
+ * - Debit on the main account (e.g., Bank)
+ * - Credit on the counterpart account (e.g., Supplier, Client)
+ * 
+ * Follows snake_case naming for methods as per specific instructions for
+ * ComptableObject.
  *
  * @author ALD
- * @date 12/10/2025
+ * @date 12.10.2025
  */
 @Data
 public class TransactionComptable implements ComptableObject {
 
     private UUID id;
-    private UUID tenantId;
+    private UUID tenant_id;
     private BigDecimal montant;
     private LocalDate date;
     private String libelle;
-    private UUID journalComptableId;
-    private UUID periodeComptableId;    
+    private UUID journal_comptable_id;
+    private UUID periode_comptable_id;
 
-    // Symbolic representation (noCompte) — more practical for generation
-    private String comptePrincipal; // e.g., "512000" Bank
-    private String contrepartie;    // e.g., "401000" Supplier
+    // Symbolic representation (no_compte) — more practical for generation
+    private String compte_principal; // e.g., "512000" Bank
+    private String contrepartie; // e.g., "401000" Supplier
 
-    public TransactionComptable(UUID id, BigDecimal montant, LocalDate date, String libelle,
-                                UUID journalComptableId,UUID periodeComptableId, String comptePrincipal, String contrepartie) {
+    public TransactionComptable(UUID id, UUID tenant_id, BigDecimal montant, LocalDate date, String libelle,
+            UUID journal_comptable_id, UUID periode_comptable_id, String compte_principal, String contrepartie) {
         this.id = id;
+        this.tenant_id = tenant_id;
         this.montant = montant;
         this.date = date;
         this.libelle = libelle;
-        this.journalComptableId = journalComptableId;
-        this.periodeComptableId = periodeComptableId;
-        this.comptePrincipal = comptePrincipal;
+        this.journal_comptable_id = journal_comptable_id;
+        this.periode_comptable_id = periode_comptable_id;
+        this.compte_principal = compte_principal;
         this.contrepartie = contrepartie;
     }
 
     /* Implementation of ComptableObject */
     @Override
-    public UUID getId() {
+    public UUID get_id() {
         return id;
     }
 
     @Override
-    public UUID getTenantId() {
-        return tenantId;
+    public UUID get_tenant_id() {
+        return tenant_id;
     }
 
     @Override
-    public BigDecimal getMontant() {
+    public BigDecimal get_montant() {
         return montant;
     }
 
     @Override
-    public LocalDate getDate() {
+    public LocalDate get_date() {
         return date;
     }
 
     @Override
-    public String getDescription() {
+    public String get_description() {
         return libelle != null ? libelle : "Accounting transaction";
     }
 
     @Override
-    public UUID getJournalComptableId() {
-        return journalComptableId;
+    public UUID get_journal_comptable_id() {
+        return journal_comptable_id;
     }
 
     @Override
-    public UUID getPeriodeComptableId() {
-        return periodeComptableId;
-    }
-    
-    @Override
-    public String getDebitAccount() {
-        return comptePrincipal; // e.g., Bank 512000
+    public UUID get_periode_comptable_id() {
+        return periode_comptable_id;
     }
 
     @Override
-    public String getCreditAccount() {
+    public String get_debit_account() {
+        return compte_principal; // e.g., Bank 512000
+    }
+
+    @Override
+    public String get_credit_account() {
         return contrepartie; // e.g., Supplier 401000
     }
 
     @Override
-    public SourceType getSourceType() {
+    public SourceType get_source_type() {
         return SourceType.TRANSACTION;
     }
 
     /* Automatically generate accounting entries (2 lines) */
     @Override
-    public List<DetailEcriture> generateEcritureDetails(Tenant tenant, EcritureComptable ecriture) {
+    public List<DetailEcriture> generate_ecriture_details(Tenant tenant, EcritureComptable ecriture) {
         List<DetailEcriture> details = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
 
@@ -110,16 +114,16 @@ public class TransactionComptable implements ComptableObject {
                 .id(UUID.randomUUID())
                 .tenant(tenant)
                 .ecriture(ecriture)
-                .compte(null) // Link to Compte object if needed, e.g., fetch from repo
+                .compte(null) // Link to Compte object if needed
                 .libelle("Debit: " + libelle)
                 .sens(Sens.DEBIT)
-                .montantDebit(montant) 
-                .montantCredit(BigDecimal.ZERO)
-                .dateEcriture(now)
-                .createdAt(now)
-                .updatedAt(now)
-                .createdBy("system")
-                .updatedBy("system")
+                .montant_debit(montant)
+                .montant_credit(BigDecimal.ZERO)
+                .date_ecriture(now)
+                .created_at(now)
+                .updated_at(now)
+                .created_by("system")
+                .updated_by("system")
                 .build());
 
         // Line 2: Credit (counterpart)
@@ -130,13 +134,13 @@ public class TransactionComptable implements ComptableObject {
                 .compte(null)
                 .libelle("Credit: " + libelle)
                 .sens(Sens.CREDIT)
-                .montantCredit(montant) 
-                .montantDebit(BigDecimal.ZERO)
-                .dateEcriture(now)
-                .createdAt(now)
-                .updatedAt(now)
-                .createdBy("system")
-                .updatedBy("system")
+                .montant_credit(montant)
+                .montant_debit(BigDecimal.ZERO)
+                .date_ecriture(now)
+                .created_at(now)
+                .updated_at(now)
+                .created_by("system")
+                .updated_by("system")
                 .build());
 
         return details;

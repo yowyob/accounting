@@ -1,5 +1,6 @@
 package com.yowyob.erp.accounting.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
@@ -11,6 +12,13 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Data Transfer Object for Accounting Account (Compte).
+ * Follows snake_case naming as per Development Charter.
+ * 
+ * @author ALD
+ * @date 30.09.25
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -21,7 +29,8 @@ public class CompteDto {
 
     @NotBlank(message = "Account number is required")
     @Pattern(regexp = "^[1-8][0-9]{4,7}$", message = "Invalid OHADA account number format")
-    private String noCompte; 
+    @JsonProperty("noCompte")
+    private String no_compte;
 
     @NotBlank(message = "Label is required")
     private String libelle;
@@ -30,13 +39,18 @@ public class CompteDto {
 
     private BigDecimal solde;
     private Integer classe;
-    private String typeCompte;
+    @JsonProperty("typeCompte")
+    private String type_compte;
 
     @Builder.Default
     private Boolean actif = true;
 
-    private UUID tenantId;
+    @JsonProperty("tenantId")
+    private UUID tenant_id;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    @JsonProperty("createdAt")
+    private LocalDateTime created_at;
+
+    @JsonProperty("updatedAt")
+    private LocalDateTime updated_at;
 }

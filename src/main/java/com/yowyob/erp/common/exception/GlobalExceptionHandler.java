@@ -1,4 +1,3 @@
-// Gestionnaire global d'exceptions
 package com.yowyob.erp.common.exception;
 
 import com.yowyob.erp.common.dto.ApiResponseWrapper;
@@ -13,31 +12,63 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Global exception handler for the application.
+ * Intercepts specific exceptions and returns standardized English error
+ * responses.
+ * 
+ * @author ALD
+ * @date 30.09.25
+ */
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
 
+    /**
+     * Handles BusinessException.
+     * 
+     * @param ex the business exception
+     * @return bad request response with error message
+     */
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponseWrapper<Object>> handleBusinessException(BusinessException ex) {
-        log.error("Erreur métier: {}", ex.getMessage());
+        log.error("Business error: {}", ex.getMessage());
         return ResponseEntity.badRequest()
                 .body(ApiResponseWrapper.error(ex.getMessage()));
     }
 
+    /**
+     * Handles ResourceNotFoundException.
+     * 
+     * @param ex the resource not found exception
+     * @return not found response with error message
+     */
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponseWrapper<Object>> handleResourceNotFoundException(ResourceNotFoundException ex) {
-        log.error("Ressource non trouvée: {}", ex.getMessage());
+        log.error("Resource not found: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponseWrapper.error(ex.getMessage()));
     }
 
+    /**
+     * Handles TenantException.
+     * 
+     * @param ex the tenant exception
+     * @return forbidden response with error message
+     */
     @ExceptionHandler(TenantException.class)
     public ResponseEntity<ApiResponseWrapper<Object>> handleTenantException(TenantException ex) {
-        log.error("Erreur de tenant: {}", ex.getMessage());
+        log.error("Tenant error: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ApiResponseWrapper.error(ex.getMessage()));
     }
 
+    /**
+     * Handles validation exceptions (MethodArgumentNotValidException).
+     * 
+     * @param ex the validation exception
+     * @return bad request response with detailed validation errors
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponseWrapper<Map<String, String>>> handleValidationExceptions(
             MethodArgumentNotValidException ex) {
@@ -47,16 +78,22 @@ public class GlobalExceptionHandler {
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
-        
-        log.error("Erreurs de validation: {}", errors);
-        return ResponseEntity.badRequest() 
-                 .body(ApiResponseWrapper.error(ex.getMessage()));
+
+        log.error("Validation errors: {}", errors);
+        return ResponseEntity.badRequest()
+                .body(ApiResponseWrapper.error("Validation failed", errors));
     }
 
+    /**
+     * Handles any other unexpected exceptions.
+     * 
+     * @param ex the exception
+     * @return internal server error response
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponseWrapper<Object>> handleGenericException(Exception ex) {
-        log.error("Erreur interne du serveur", ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR) //500
-                .body(ApiResponseWrapper.error("Erreur interne du serveur "));
+        log.error("Internal server error", ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponseWrapper.error("An unexpected error occurred on the server"));
     }
 }

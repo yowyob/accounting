@@ -1,11 +1,31 @@
 package com.yowyob.erp.accounting.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Entity representing an accounting account (Plan Comptable).
+ * Follows snake_case naming as per Development Charter.
+ * 
+ * @author ALD
+ * @date 30.09.25
+ */
 @Entity
 @Table(name = "plans_comptables")
 @Getter
@@ -27,7 +47,7 @@ public class PlanComptable {
     private Integer classe;
 
     @Column(nullable = false, unique = true, length = 20)
-    private String noCompte;
+    private String no_compte;
 
     @Column(nullable = false, length = 255)
     private String libelle;
@@ -38,27 +58,25 @@ public class PlanComptable {
     @Builder.Default
     private Boolean actif = true;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private LocalDateTime created_at;
+    private LocalDateTime updated_at;
 
-    /** Utilisateur créateur */
     @Size(max = 255)
     @Column(name = "created_by", length = 255)
-    private String createdBy;
+    private String created_by;
 
-    /** Utilisateur ayant modifié la ressource */
     @Size(max = 255)
     @Column(name = "updated_by", length = 255)
-    private String updatedBy;
+    private String updated_by;
 
     @PrePersist
     public void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.created_at = LocalDateTime.now();
+        this.updated_at = LocalDateTime.now();
     }
 
     @PreUpdate
     public void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        this.updated_at = LocalDateTime.now();
     }
 }

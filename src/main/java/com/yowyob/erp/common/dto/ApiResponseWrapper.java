@@ -12,14 +12,16 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 🌍 ApiResponseWrapper
- *
- * Structure normalisée de réponse API pour l'ensemble des modules Yowyob ERP.
+ * Standardized API response wrapper for all Yowyob ERP modules.
  * 
- * Avantages :
- * ✅ Format uniforme (succès/erreur)
- * ✅ Traçabilité complète (timestamp, traceId)
- * ✅ Utilisable dans tous les microservices REST & Kafka
+ * Benefits:
+ * - Uniform format (success/error)
+ * - Complete traceability (timestamp, traceId)
+ * - Usable across all REST microservices and Kafka
+ * 
+ * @param <T> the type of data contained in the response
+ * @author ALD
+ * @date 30.09.25
  */
 @Data
 @Builder
@@ -31,41 +33,55 @@ public class ApiResponseWrapper<T> implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    /** Statut logique du traitement */
+    /** Logical status of the operation */
     private boolean success;
 
-    /** Code HTTP ou interne */
+    /** HTTP or internal status code */
     @Builder.Default
     private int statusCode = 200;
 
-    /** Message explicatif */
+    /** Explanatory message */
     @Builder.Default
-    private String message = "Opération réussie";
+    private String message = "Operation successful";
 
-    /** Données de retour */
+    /** Return data */
     private T data;
 
-    /** Heure exacte du traitement */
+    /** Exact processing time */
     @Builder.Default
     private Instant timestamp = Instant.now();
 
-    /** Identifiant de traçabilité pour corrélation inter-services */
+    /** Traceability identifier for inter-service correlation */
     @Builder.Default
     private String traceId = UUID.randomUUID().toString();
 
-    /** (Optionnel) chemin de la requête */
+    /** (Optional) request path */
     private String path;
 
-    // ✅ Méthodes statiques utilitaires
+    /**
+     * Creates a successful response with data.
+     * 
+     * @param <T>  the type of data
+     * @param data the response data
+     * @return successful API response
+     */
     public static <T> ApiResponseWrapper<T> success(T data) {
         return ApiResponseWrapper.<T>builder()
                 .success(true)
                 .statusCode(200)
-                .message("Opération réussie")
+                .message("Operation successful")
                 .data(data)
                 .build();
     }
 
+    /**
+     * Creates a successful response with data and custom message.
+     * 
+     * @param <T>     the type of data
+     * @param data    the response data
+     * @param message custom success message
+     * @return successful API response
+     */
     public static <T> ApiResponseWrapper<T> success(T data, String message) {
         return ApiResponseWrapper.<T>builder()
                 .success(true)
@@ -75,6 +91,13 @@ public class ApiResponseWrapper<T> implements Serializable {
                 .build();
     }
 
+    /**
+     * Creates an error response with message.
+     * 
+     * @param <T>     the type of data
+     * @param message error message
+     * @return error API response
+     */
     public static <T> ApiResponseWrapper<T> error(String message) {
         return ApiResponseWrapper.<T>builder()
                 .success(false)
@@ -83,11 +106,36 @@ public class ApiResponseWrapper<T> implements Serializable {
                 .build();
     }
 
+    /**
+     * Creates an error response with message and custom status code.
+     * 
+     * @param <T>     the type of data
+     * @param message error message
+     * @param code    HTTP status code
+     * @return error API response
+     */
     public static <T> ApiResponseWrapper<T> error(String message, int code) {
         return ApiResponseWrapper.<T>builder()
                 .success(false)
                 .statusCode(code)
                 .message(message)
+                .build();
+    }
+
+    /**
+     * Creates an error response with message and data (e.g., validation errors).
+     * 
+     * @param <T>     the type of data
+     * @param message error message
+     * @param data    error details
+     * @return error API response
+     */
+    public static <T> ApiResponseWrapper<T> error(String message, T data) {
+        return ApiResponseWrapper.<T>builder()
+                .success(false)
+                .statusCode(400)
+                .message(message)
+                .data(data)
                 .build();
     }
 }

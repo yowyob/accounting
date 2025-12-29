@@ -1,5 +1,19 @@
 package com.yowyob.erp.accounting.service;
 
+import com.yowyob.erp.accounting.entity.FactureComptable;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import net.sourceforge.tess4j.Tesseract;
+import net.sourceforge.tess4j.TesseractException;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.PDFRenderer;
+import org.apache.pdfbox.text.PDFTextStripper;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -9,47 +23,36 @@ import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.imageio.ImageIO;
-
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.rendering.PDFRenderer;
-import org.apache.pdfbox.text.PDFTextStripper;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
-import com.yowyob.erp.accounting.entity.FactureComptable;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import net.sourceforge.tess4j.Tesseract;
-import net.sourceforge.tess4j.TesseractException;
-
+/**
+ * Service for processing invoice documents (PDF/Images) using OCR.
+ * Extracts structured data from raw documents.
+ * 
+ * @author ALD
+ * @date 30.09.25
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class FactureProcessingService {
 
     @Value("${invoice.ocr.enabled:true}")
-    private boolean ocrEnabled;
+    private boolean ocr_enabled;
 
     @Value("${invoice.ocr.tessdataPath:/usr/share/tessdata}")
-    private String tessdataPath;
+    private String tessdata_path;
 
     @Value("${invoice.ocr.lang:fra}")
-    private String ocrLang;
+    private String ocr_lang;
 
     private final InvoiceTextParser parser;
 
-        /**
-     * Main entry point: extracts and returns a reconstructed FactureComptable from the provided file.
+    /**
+     * Main entry point: extracts and returns a reconstructed FactureComptable from
+     * the provided file.
      *
      * @param file the uploaded file (PDF or image)
      * @return a FactureComptable object
      * @throws RuntimeException if extraction fails
-     * @author ALD
-     * @date 12/10/2025 07:51 AM WAT
      */
     public FactureComptable extractFactureData(MultipartFile file) {
         try {
@@ -63,32 +66,30 @@ public class FactureProcessingService {
             // 1) Parse key information
             var infos = parser.parse(text);
 
-            // Gère l'ID de la période comptable (MANQUANT AUPARAVANT, maintenant requis par le constructeur)
-            UUID periodeId = Optional.ofNullable(infos.periodeComptableId()).orElse(null);
-            
-            // Si le montant HT est nul (non trouvé), nous devons lever une exception
-            if (infos.montantHT() == null) {
-                 throw new IllegalStateException("Unable to parse a valid Montant HT from the invoice text.");
+            // Fetch accounting period ID
+            UUID periode_id = Optional.ofNullable(infos.periode_comptable_id()).orElse(null);
+
+            // If HT amount is null, throw exception
+            if (infos.montant_ht() == null) {
+                throw new IllegalStateException("Unable to parse a valid Montant HT from the invoice text.");
             }
 
             // 2) Build business object
             FactureComptable facture = new FactureComptable(
                     Optional.ofNullable(infos.id()).orElse(UUID.randomUUID()),
-                    infos.montantHT(), // Est déjà BigDecimal grâce à la mise à jour du Parser
+                    infos.montant_ht(),
                     Optional.ofNullable(infos.date()).orElse(LocalDate.now()),
                     Optional.ofNullable(infos.libelle()).orElse("Imported Invoice"),
-                    infos.journalComptableId(),
-                    periodeId, // Argument 6 : periodeComptableId
-                    infos.clientId(),
-                    Boolean.TRUE.equals(infos.isAchat())
-            );
-            
-            // CORRECTION: Convertit le Double (infos.tauxTVA()) en BigDecimal 
-            facture.setTauxTVA(
-                    infos.tauxTVA() != null 
-                        ? BigDecimal.valueOf(infos.tauxTVA()) 
-                        : BigDecimal.valueOf(0.18) // Conversion du littéral double en BigDecimal
-            );
+                    infos.journal_comptable_id(),
+                    periode_id,
+                    infos.client_id(),
+                    Boolean.TRUE.equals(infos.is_achat()));
+
+            // Convert double TVA rate to BigDecimal
+            facture.setTaux_tva(
+                    infos.taux_tva() != null
+                            ? BigDecimal.valueOf(infos.taux_tva())
+                            : BigDecimal.valueOf(0.18));
 
             return facture;
 
@@ -103,7 +104,6 @@ public class FactureProcessingService {
         }
     }
 
-
     /**
      * Extracts text from the file: PDF (text) → PDF (images via OCR) → image (OCR).
      *
@@ -116,27 +116,30 @@ public class FactureProcessingService {
             throw new IllegalArgumentException("File size exceeds 10MB limit");
         }
 
-        String contentType = file.getContentType();
-        if (contentType == null) contentType = guessContentType(file);
+        String content_type = file.getContentType();
+        if (content_type == null)
+            content_type = guessContentType(file);
 
-        if (MediaType.APPLICATION_PDF_VALUE.equals(contentType)) {
-            String pdfText = extractTextFromPDF(file);
-            if (isBlank(pdfText) && ocrEnabled) {
+        if (MediaType.APPLICATION_PDF_VALUE.equals(content_type)) {
+            String pdf_text = extractTextFromPDF(file);
+            if (isBlank(pdf_text) && ocr_enabled) {
                 return ocrFromPdf(file);
             }
-            return pdfText;
+            return pdf_text;
         }
 
-        if (ocrEnabled && contentType.startsWith("image/")) {
+        if (ocr_enabled && content_type.startsWith("image/")) {
             return ocrFromImage(file);
         }
 
         try {
-            String pdfText = extractTextFromPDF(file);
-            if (!isBlank(pdfText)) return pdfText;
-        } catch (Exception ignore) {}
+            String pdf_text = extractTextFromPDF(file);
+            if (!isBlank(pdf_text))
+                return pdf_text;
+        } catch (Exception ignore) {
+        }
 
-        if (ocrEnabled) {
+        if (ocr_enabled) {
             return ocrFromImage(file);
         }
 
@@ -152,14 +155,14 @@ public class FactureProcessingService {
 
     private String ocrFromPdf(MultipartFile file) throws IOException, TesseractException {
         try (InputStream in = file.getInputStream(); PDDocument doc = PDDocument.load(in)) {
-            if (!new File(tessdataPath).exists()) {
-                throw new IllegalStateException("Tesseract data path not found: " + tessdataPath);
+            if (!new File(tessdata_path).exists()) {
+                throw new IllegalStateException("Tesseract data path not found: " + tessdata_path);
             }
             PDFRenderer renderer = new PDFRenderer(doc);
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < doc.getNumberOfPages(); i++) {
-                BufferedImage pageImage = renderer.renderImageWithDPI(i, 300);
-                sb.append(runOcr(pageImage)).append('\n');
+                BufferedImage page_image = renderer.renderImageWithDPI(i, 300);
+                sb.append(runOcr(page_image)).append('\n');
             }
             return sb.toString();
         }
@@ -172,13 +175,14 @@ public class FactureProcessingService {
 
     private String runOcr(BufferedImage img) throws TesseractException {
         Tesseract t = new Tesseract();
-        t.setDatapath(tessdataPath);
-        t.setLanguage(ocrLang);
+        t.setDatapath(tessdata_path);
+        t.setLanguage(ocr_lang);
         return t.doOCR(img);
     }
 
     private String preview(String s, int max) {
-        if (s == null) return "";
+        if (s == null)
+            return "";
         return s.length() > max ? s.substring(0, max) + " ..." : s;
     }
 
@@ -188,8 +192,10 @@ public class FactureProcessingService {
 
     private String guessContentType(MultipartFile file) throws IOException {
         String name = Optional.ofNullable(file.getOriginalFilename()).orElse("").toLowerCase();
-        if (name.endsWith(".pdf")) return MediaType.APPLICATION_PDF_VALUE;
-        if (name.matches(".*\\.(png|jpg|jpeg|tif|tiff|bmp|webp)$")) return "image/*";
+        if (name.endsWith(".pdf"))
+            return MediaType.APPLICATION_PDF_VALUE;
+        if (name.matches(".*\\.(png|jpg|jpeg|tif|tiff|bmp|webp)$"))
+            return "image/*";
         return "application/octet-stream";
     }
 }

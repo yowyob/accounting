@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.common.serialization.Deserializer; // Import générique
+import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -15,15 +15,18 @@ import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
-import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer; // 💡 Import du Deserializer de gestion d'erreurs
+import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 
 import com.yowyob.erp.common.dto.KafkaMessage;
 
 /**
- * Configuration Kafka Consumer
- * Ajout de l'ErrorHandlingDeserializer pour la résilience aux messages corrompus.
+ * Kafka Consumer Configuration.
+ * Includes ErrorHandlingDeserializer for resilience against corrupted messages.
+ * 
+ * @author ALD
+ * @date 30.09.25
  */
 @Configuration
 @EnableKafka
@@ -32,80 +35,82 @@ import com.yowyob.erp.common.dto.KafkaMessage;
 public class KafkaConsumerConfig {
 
     @Value("${spring.kafka.bootstrap-servers}")
-    private String bootstrapServers;
+    private String bootstrap_servers;
 
     @Value("${spring.kafka.consumer.group-id:yowyob-erp-group}")
-    private String groupId;
+    private String group_id;
 
+    /**
+     * Common consumer configuration properties.
+     * 
+     * @return a map of properties
+     */
     @Bean
     public Map<String, Object> consumerConfigs() {
         Map<String, Object> props = new HashMap<>();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap_servers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, group_id);
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        
-        // Nous retirons les classes de Deserializer d'ici car elles sont configurées
-        // via les instances de Deserializer dans consumerFactory()
-        // props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        // props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class); 
-        
+
         return props;
     }
 
     /**
-     * Crée le Deserializer de valeur, en enveloppant le JsonDeserializer 
-     * dans l'ErrorHandlingDeserializer.
+     * Creates a value deserializer that wraps JsonDeserializer in
+     * ErrorHandlingDeserializer.
+     * 
+     * @return the resilient deserializer
      */
+    @SuppressWarnings("unchecked")
     private Deserializer<Object> kafkaMessageErrorHandlingDeserializer() {
-        // 1. Désérialiseur interne (le type métier réel est KafkaMessage)
-        JsonDeserializer<KafkaMessage> jsonDelegate = new JsonDeserializer<>(
-            com.yowyob.erp.common.dto.KafkaMessage.class 
-        );
-        jsonDelegate.addTrustedPackages("com.yowyob.erp.*");
+        // 1. Internal deserializer (real domain type is KafkaMessage)
+        JsonDeserializer<KafkaMessage> json_delegate = new JsonDeserializer<>(
+                com.yowyob.erp.common.dto.KafkaMessage.class);
+        json_delegate.addTrustedPackages("com.yowyob.erp.*");
 
-        // 2. Enveloppe le désérialiseur JSON dans l'ErrorHandlingDeserializer
-        // Ceci permet de capturer les SerializationException et d'éviter l'arrêt du consommateur.
-        ErrorHandlingDeserializer<KafkaMessage> errorHandlingDeserializer = 
-            new ErrorHandlingDeserializer<>(jsonDelegate);
-            
+        // 2. Wrap JSON deserializer in ErrorHandlingDeserializer
+        // This allows capturing SerializationException and avoids stopping the
+        // consumer.
+        ErrorHandlingDeserializer<KafkaMessage> error_handling_deserializer = new ErrorHandlingDeserializer<>(
+                json_delegate);
 
-        // On retourne l'objet typé pour la ConsumerFactory
-        return (Deserializer<Object>) (Deserializer<?>) errorHandlingDeserializer;
+        // Cast to Deserializer<Object> for ConsumerFactory compatibility
+        return (Deserializer<Object>) (Deserializer<?>) error_handling_deserializer;
     }
-    
+
     /**
-     * Factory générique de consommateurs Kafka, utilisant le Deserializer résilient.
+     * Generic Kafka consumer factory using the resilient deserializer.
+     * 
+     * @return the consumer factory
      */
     @Bean
     public ConsumerFactory<String, Object> consumerFactory() {
-        
-        // 💡 Le Key Deserializer reste simple
-        StringDeserializer keyDeserializer = new StringDeserializer();
-        
-        // 💡 Le Value Deserializer est le désérialiseur résilient que nous venons de créer
-        Deserializer<Object> valueDeserializer = kafkaMessageErrorHandlingDeserializer();
-        
-    
+        // Key Deserializer is simple
+        StringDeserializer key_deserializer = new StringDeserializer();
+
+        // Resilience-enhanced value deserializer
+        Deserializer<Object> value_deserializer = kafkaMessageErrorHandlingDeserializer();
+
         return new DefaultKafkaConsumerFactory<>(
-            consumerConfigs(), 
-            keyDeserializer, 
-            valueDeserializer
-        );
+                consumerConfigs(),
+                key_deserializer,
+                value_deserializer);
     }
 
     /**
-     * Factory pour gérer la concurrence et les threads d’écoute Kafka.
+     * Factory for handling concurrency and Kafka listener threads.
+     * 
+     * @return the container factory
      */
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, Object> factory =
-                new ConcurrentKafkaListenerContainerFactory<>();
+        ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
         factory.setConcurrency(3);
         factory.getContainerProperties().setPollTimeout(3000);
 
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL);
-        
+
         return factory;
     }
 }

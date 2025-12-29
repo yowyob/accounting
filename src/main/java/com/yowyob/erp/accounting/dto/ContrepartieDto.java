@@ -1,6 +1,6 @@
-// DTO pour les contreparties
 package com.yowyob.erp.accounting.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -11,6 +11,12 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Data Transfer Object for counterparty entries in an accounting operation.
+ * 
+ * @author Leonel Delmat AZANGUE
+ * @date 30.09.25
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -19,28 +25,34 @@ public class ContrepartieDto {
 
     private UUID id;
 
-    @NotNull(message = "L'ID de l'opération comptable est obligatoire")
-    private UUID operationComptableId;
+    @NotNull(message = "Accounting operation ID is required")
+    @JsonProperty("operationComptableId")
+    private UUID operation_comptable_id;
 
-    @NotBlank(message = "Le compte est obligatoire")
+    @NotBlank(message = "Account number is required")
     private String compte;
 
     @Builder.Default
-    @NotNull(message = "Le statut du compte tiers est obligatoire")
-    private Boolean estCompteTiers = false;
+    @NotNull(message = "Third-party account status is required")
+    @JsonProperty("estCompteTiers")
+    private Boolean est_compte_tiers = false;
 
-    @NotBlank(message = "Le sens est obligatoire")
+    @NotBlank(message = "Direction is required")
     private String sens;
 
-    @NotBlank(message = "Le type de montant est obligatoire")
-    private String typeMontant;
+    @NotBlank(message = "Amount type is required")
+    @JsonProperty("typeMontant")
+    private String type_montant;
 
-    @NotNull(message = "Le journal comptable est obligatoire")
-    private UUID journalComptableId;
+    @NotNull(message = "Journal is required")
+    @JsonProperty("journalComptableId")
+    private UUID journal_comptable_id;
 
     private String notes;
 
-    private LocalDateTime createdAt;
+    @JsonProperty("createdAt")
+    private LocalDateTime created_at;
 
-    private LocalDateTime updatedAt;
+    @JsonProperty("updatedAt")
+    private LocalDateTime updated_at;
 }

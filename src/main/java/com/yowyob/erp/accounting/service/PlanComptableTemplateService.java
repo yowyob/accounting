@@ -1,6 +1,5 @@
 package com.yowyob.erp.accounting.service;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -18,64 +17,75 @@ import com.yowyob.erp.config.tenant.TenantContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Service for managing the accounting plan templates (official OHADA
+ * references).
+ * Provides functionality to create and retrieve template accounts used across
+ * all tenants.
+ * Follows snake_case naming and English Javadoc as per development charter.
+ * 
+ * @author ALD
+ * @date 30.09.25
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class PlanComptableTemplateService {
 
-    private final PlanComptableTemplateRepository repository;
-    private final ValidationService validationService;
+    private final PlanComptableTemplateRepository template_repository;
+    private final ValidationService validation_service;
 
-
-
-    /* ============================================================================
-     * CREATE ACCOUNT
-     * ========================================================================== */
+    /**
+     * Creates a new accounting account template.
+     * 
+     * @param dto the template data
+     * @return the created template DTO
+     */
     @Transactional
     public PlanComptableTemplateDto createAccount(PlanComptableTemplateDto dto) {
+        String current_user = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
+        log.info("Creating accounting template account {}", dto.getNumero());
 
-        String currentUser = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
-        log.info("🧾 Création du compte comptable {} pour le tenant {}", dto.getNumero(), "tenantId");
+        validation_service.validateAccountNumber(dto.getNumero());
 
-        // ✅ Validation du numéro de compte
-        validationService.validateAccountNumber(dto.getNumero());
+        PlanComptableTemplate account = PlanComptableTemplate.builder()
+                .numero(dto.getNumero())
+                .classe(Character.getNumericValue(dto.getNumero().charAt(0)))
+                .libelle(dto.getLibelle())
+                .notes(dto.getNotes())
+                .actif(true)
+                .created_at(LocalDateTime.now())
+                .updated_at(LocalDateTime.now())
+                .created_by(current_user)
+                .updated_by(current_user)
+                .build();
 
- 
-
-        // Création de l'entité
-        PlanComptableTemplate account = new PlanComptableTemplate();
-        account.setNumero(dto.getNumero());
-        account.setClasse(Character.getNumericValue(dto.getNumero().charAt(0)));
-        account.setLibelle(dto.getLibelle());
-        account.setNotes(dto.getNotes());
-        account.setActif(true);
-        account.setCreatedAt(LocalDateTime.now());
-        account.setUpdatedAt(LocalDateTime.now());
-        account.setCreatedBy(currentUser);
-        account.setUpdatedBy(currentUser);
-
-        PlanComptableTemplate saved = repository.save(account);
+        PlanComptableTemplate saved = template_repository.save(account);
         PlanComptableTemplateDto result = mapToDto(saved);
 
-
-        log.info("✅ Template Compte comptable créé : {} - {}", saved.getNumero(), saved.getLibelle());
+        log.info("✅ Template account created: {} - {}", saved.getNumero(), saved.getLibelle());
 
         return result;
     }
 
-    /* ============================================================================
-     * READ
-     * ========================================================================== */
+    /**
+     * Retrieves all account templates.
+     * 
+     * @return list of template DTOs
+     */
     public List<PlanComptableTemplateDto> getAllAccounts() {
- 
-        List<PlanComptableTemplateDto> comptes = repository.findAll()
-                .stream().map(this::mapToDto).collect(Collectors.toList());
-        return comptes;
+        return template_repository.findAll()
+                .stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
     }
 
-    /* ============================================================================
-     * MAPPING
-     * ========================================================================== */
+    /**
+     * Maps an entity to its DTO.
+     * 
+     * @param entity the entity to map
+     * @return the mapped DTO
+     */
     private PlanComptableTemplateDto mapToDto(PlanComptableTemplate entity) {
         return PlanComptableTemplateDto.builder()
                 .id(entity.getId())
@@ -84,10 +94,10 @@ public class PlanComptableTemplateService {
                 .classe(entity.getClasse())
                 .notes(entity.getNotes())
                 .actif(entity.getActif())
-                .createdAt(entity.getCreatedAt())
-                .updatedAt(entity.getUpdatedAt())
-                .createdBy(entity.getCreatedBy())
-                .updatedBy(entity.getUpdatedBy())
+                .created_at(entity.getCreated_at())
+                .updated_at(entity.getUpdated_at())
+                .created_by(entity.getCreated_by())
+                .updated_by(entity.getUpdated_by())
                 .build();
     }
 }

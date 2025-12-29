@@ -30,127 +30,173 @@ import java.util.UUID;
 
 import static com.yowyob.erp.accounting.util.AccountingUtils.mapToComptableObject;
 
+/**
+ * Controller for managing accounting entries.
+ * Handles CRUD operations, validation, and generation from other objects.
+ * 
+ * @author ALD
+ * @date 30.09.25
+ */
 @RestController
 @RequestMapping("/api/accounting/entries")
 @RequiredArgsConstructor
-@Tag(name = "Écritures Comptables", description = "Gestion complète des écritures comptables avec Kafka + Redis + multitenant")
+@Tag(name = "Accounting Entries", description = "Management of accounting entries with Kafka + Redis + Multi-tenant")
 @SecurityRequirement(name = "BasicAuth")
 @Slf4j
 public class EcritureComptableController {
 
-    private final EcritureComptableService ecritureService;
+    private final EcritureComptableService ecriture_service;
 
-    // ✅ CRÉATION D’UNE ÉCRITURE
-    @Operation(summary = "Créer manuellement une écriture comptable",
-            description = "Crée une nouvelle écriture comptable après validation de la période et du journal.")
+    /**
+     * Manually creates an accounting entry.
+     * 
+     * @param ecriture_dto the entry data
+     * @return the created entry
+     */
+    @Operation(summary = "Create an accounting entry manually", description = "Creates a new entry after period and journal validation.")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Écriture créée avec succès",
-                    content = @Content(schema = @Schema(implementation = EcritureComptableDto.class))),
-            @ApiResponse(responseCode = "400", description = "Erreur de validation des données")
+            @ApiResponse(responseCode = "201", description = "Entry created successfully", content = @Content(schema = @Schema(implementation = EcritureComptableDto.class))),
+            @ApiResponse(responseCode = "400", description = "Data validation error")
     })
     @PostMapping
     public ResponseEntity<ApiResponseWrapper<EcritureComptableDto>> createEcriture(
-            @Valid @RequestBody EcritureComptableDto ecritureDto) {
+            @Valid @RequestBody EcritureComptableDto ecriture_dto) {
         try {
-            EcritureComptableDto created = ecritureService.createEcriture(ecritureDto);
-            log.info("🧾 Écriture créée : {}", created.getNumeroEcriture());
+            EcritureComptableDto created = ecriture_service.createEcriture(ecriture_dto);
+            log.info("🧾 Entry created: {}", created.getNumero_ecriture());
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponseWrapper.success(created, "Écriture comptable créée avec succès"));
+                    .body(ApiResponseWrapper.success(created, "Accounting entry created successfully"));
         } catch (Exception e) {
-            log.error("Erreur création écriture : {}", e.getMessage());
-            throw new BusinessException("Erreur lors de la création : " + e.getMessage());
+            log.error("Error creating entry: {}", e.getMessage());
+            throw new BusinessException("Creation error: " + e.getMessage());
         }
     }
 
-    // ✅ VALIDATION
-    @Operation(summary = "Valider une écriture comptable")
+    /**
+     * Validates an accounting entry.
+     * 
+     * @param id             entry ID
+     * @param authentication auth context
+     * @return the validated entry
+     */
+    @Operation(summary = "Validate an accounting entry")
     @PostMapping("/{id}/validate")
     public ResponseEntity<ApiResponseWrapper<EcritureComptableDto>> validateEcriture(
             @PathVariable UUID id, Authentication authentication) {
-        String user = authentication != null ? authentication.getName() : "system";
-        EcritureComptableDto validated = ecritureService.validateEcriture(id, user);
-        log.info("✅ Écriture validée par {}", user);
-        return ResponseEntity.ok(ApiResponseWrapper.success(validated, "Écriture comptable validée"));
+        String current_user = authentication != null ? authentication.getName() : "system";
+        EcritureComptableDto validated = ecriture_service.validateEcriture(id, current_user);
+        log.info("✅ Entry validated by {}", current_user);
+        return ResponseEntity.ok(ApiResponseWrapper.success(validated, "Accounting entry validated"));
     }
 
-    // ✅ RÉCUPÉRATION DE TOUTES LES ÉCRITURES
-    @Operation(summary = "Lister toutes les écritures comptables")
+    /**
+     * Lists all accounting entries for the current tenant.
+     * 
+     * @return list of entries
+     */
+    @Operation(summary = "List all accounting entries")
     @GetMapping
     public ResponseEntity<ApiResponseWrapper<List<EcritureComptableDto>>> getAllEcritures() {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        log.info("📄 Récupération de toutes les écritures pour tenant {}", tenantId);
-        List<EcritureComptableDto> ecritures = ecritureService.getAll();
-        return ResponseEntity.ok(ApiResponseWrapper.success(ecritures));
+        UUID tenant_id = TenantContext.getCurrentTenant();
+        log.info("📄 Retrieving all entries for tenant {}", tenant_id);
+        List<EcritureComptableDto> list = ecriture_service.getAll();
+        return ResponseEntity.ok(ApiResponseWrapper.success(list));
     }
 
-    // ✅ DÉTAIL D’UNE ÉCRITURE
-    @Operation(summary = "Récupérer une écriture comptable par ID")
+    /**
+     * Retrieves an accounting entry by its ID.
+     * 
+     * @param id entry ID
+     * @return the entry
+     */
+    @Operation(summary = "Get an accounting entry by ID")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponseWrapper<EcritureComptableDto>> getEcritureById(@PathVariable UUID id) {
-        EcritureComptableDto ecriture = ecritureService.getById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Écriture comptable", id.toString()));
-        log.info("🔍 Écriture récupérée : {}", id);
+        EcritureComptableDto ecriture = ecriture_service.getById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Accounting Entry", id.toString()));
+        log.info("🔍 Entry retrieved: {}", id);
         return ResponseEntity.ok(ApiResponseWrapper.success(ecriture));
     }
 
-    // ✅ NON VALIDÉES
-    @Operation(summary = "Lister les écritures non validées")
+    /**
+     * Lists non-validated entries.
+     * 
+     * @return list of non-validated entries
+     */
+    @Operation(summary = "List non-validated entries")
     @GetMapping("/non-validated")
     public ResponseEntity<ApiResponseWrapper<List<EcritureComptableDto>>> getNonValidatedEcritures() {
-        List<EcritureComptableDto> ecritures = ecritureService.getNonValidated();
-        log.info("⏳ {} écritures non validées récupérées", ecritures.size());
-        return ResponseEntity.ok(ApiResponseWrapper.success(ecritures));
+        List<EcritureComptableDto> list = ecriture_service.getNonValidated();
+        log.info("⏳ {} non-validated entries retrieved", list.size());
+        return ResponseEntity.ok(ApiResponseWrapper.success(list));
     }
 
-    // ✅ RECHERCHE PAR DATE ET JOURNAL
-    @Operation(summary = "Rechercher des écritures par période et journal")
+    /**
+     * Searches for entries by period and journal.
+     * 
+     * @param start_date start of the date range
+     * @param end_date   end of the date range
+     * @param journal_id journal ID
+     * @return list of matching entries
+     */
+    @Operation(summary = "Search entries by period and journal")
     @GetMapping("/search")
     public ResponseEntity<ApiResponseWrapper<List<EcritureComptableDto>>> searchEcritures(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
-            @RequestParam(required = false) UUID journalId) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start_date,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end_date,
+            @RequestParam(required = false) UUID journal_id) {
 
-        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+        if (start_date != null && end_date != null && start_date.isAfter(end_date)) {
             return ResponseEntity.badRequest()
-                    .body(ApiResponseWrapper.error("La date de début doit précéder la date de fin"));
+                    .body(ApiResponseWrapper.error("Start date must be before end date"));
         }
 
-        List<EcritureComptableDto> ecritures = ecritureService.searchEcritures(startDate, endDate, journalId);
-        log.info("🔎 Recherche d’écritures entre {} et {} pour journal {}", startDate, endDate, journalId);
-        return ResponseEntity.ok(ApiResponseWrapper.success(ecritures, "Recherche effectuée"));
+        List<EcritureComptableDto> list = ecriture_service.searchEcritures(start_date, end_date, journal_id);
+        log.info("🔎 Searching entries between {} and {} for journal {}", start_date, end_date, journal_id);
+        return ResponseEntity.ok(ApiResponseWrapper.success(list, "Search completed"));
     }
 
-    // ✅ GÉNÉRATION AUTOMATIQUE À PARTIR D’UN OBJET COMPTABLE
-    @Operation(summary = "Générer une écriture depuis un objet comptable")
+    /**
+     * Generates an entry from a comptable object (invoice, transaction, etc).
+     * 
+     * @param request the generation request
+     * @return the generated entry
+     */
+    @Operation(summary = "Generate an entry from an accounting object")
     @PostMapping("/generate-from-object")
     public ResponseEntity<ApiResponseWrapper<EcritureComptableDto>> generateFromComptableObject(
             @RequestBody ComptableObjectRequest request) {
         try {
             if (request.getTenantId() == null || request.getJournalComptableId() == null) {
-                throw new BusinessException("Tenant ID et Journal Comptable ID sont requis");
+                throw new BusinessException("Tenant ID and Journal ID are required");
             }
             ComptableObject object = mapToComptableObject(request);
-            EcritureComptableDto generated = ecritureService.generateFromComptableObject(object);
-            log.info("⚙️ Écriture générée automatiquement pour objet {}", object.getSourceType());
-            return ResponseEntity.ok(ApiResponseWrapper.success(generated, "Écriture générée avec succès"));
+            EcritureComptableDto generated = ecriture_service.generateFromComptableObject(object);
+            log.info("⚙️ Entry generated automatically for object {}", object.get_source_type());
+            return ResponseEntity.ok(ApiResponseWrapper.success(generated, "Entry generated successfully"));
         } catch (Exception e) {
-            log.error("Erreur génération écriture automatique : {}", e.getMessage());
-            throw new BusinessException("Erreur lors de la génération : " + e.getMessage());
+            log.error("Error generating entry: {}", e.getMessage());
+            throw new BusinessException("Generation error: " + e.getMessage());
         }
     }
 
-    // ✅ SUPPRESSION
-    @Operation(summary = "Supprimer une écriture comptable (si non validée)")
+    /**
+     * Deletes an accounting entry if not validated.
+     * 
+     * @param id entry ID
+     * @return success message
+     */
+    @Operation(summary = "Delete an accounting entry (if not validated)")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponseWrapper<Void>> deleteEcriture(@PathVariable UUID id) {
         try {
-            ecritureService.deleteEcriture(id);
-            log.info("🗑️ Écriture supprimée {}", id);
-            return ResponseEntity.ok(ApiResponseWrapper.success(null, "Écriture supprimée avec succès"));
+            ecriture_service.deleteEcriture(id);
+            log.info("🗑️ Entry deleted {}", id);
+            return ResponseEntity.ok(ApiResponseWrapper.success(null, "Entry deleted successfully"));
         } catch (IllegalStateException e) {
-            throw new BusinessException("Écriture déjà validée : " + e.getMessage());
+            throw new BusinessException("Entry already validated: " + e.getMessage());
         } catch (Exception e) {
-            throw new ResourceNotFoundException("Écriture non trouvée", id.toString());
+            throw new ResourceNotFoundException("Entry not found", id.toString());
         }
     }
 }

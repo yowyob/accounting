@@ -6,6 +6,13 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Entity representing an accounting journal (Journal Comptable).
+ * Follows snake_case naming as per Development Charter.
+ * 
+ * @author ALD
+ * @date 30.09.25
+ */
 @Entity
 @Table(name = "journaux_comptables")
 @Getter
@@ -23,14 +30,14 @@ public class JournalComptable {
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
 
-    @Column(nullable = false, length = 20)
-    private String codeJournal;
+    @Column(name = "code_journal", nullable = false, length = 20)
+    private String code_journal;
 
     @Column(nullable = false, length = 255)
     private String libelle;
 
-    @Column(nullable = false, length = 50)
-    private String typeJournal; // VENTES, ACHATS, TRESORERIE...
+    @Column(name = "type_journal", nullable = false, length = 50)
+    private String type_journal; // VENTES, ACHATS, TRESORERIE...
 
     @Column(length = 255)
     private String notes;
@@ -38,27 +45,25 @@ public class JournalComptable {
     @Builder.Default
     private Boolean actif = true;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private LocalDateTime created_at;
+    private LocalDateTime updated_at;
 
-        /** Utilisateur créateur */
     @Size(max = 255)
     @Column(name = "created_by", length = 255)
-    private String createdBy;
+    private String created_by;
 
-    /** Utilisateur ayant modifié la ressource */
     @Size(max = 255)
     @Column(name = "updated_by", length = 255)
-    private String updatedBy;
+    private String updated_by;
 
     @PrePersist
     public void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.created_at = LocalDateTime.now();
+        this.updated_at = LocalDateTime.now();
     }
 
     @PreUpdate
     public void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        this.updated_at = LocalDateTime.now();
     }
 }

@@ -3,6 +3,7 @@ package com.yowyob.erp.accounting.repository;
 import com.yowyob.erp.accounting.entity.Compte;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -10,38 +11,39 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Repository JPA pour la gestion des comptes comptables OHADA.
+ * JPA Repository for OHADA accounting accounts management.
+ * Implements multi-tenant search operations and filters by account number and
+ * class.
  * 
- * Implémente les opérations de recherche multi-tenant, 
- * ainsi que les filtres par numéro de compte et classe.
- * 
- * Conforme à la Charte de Développement Yowyob :
- * - requêtes claires
- * - noms explicites
- * - isolation par tenant_id
+ * @author ALD
+ * @date 30.09.25
  */
 @Repository
 public interface CompteRepository extends JpaRepository<Compte, UUID> {
 
-    /** Recherche un compte par tenant et numéro de compte */
-    Optional<Compte> findByTenant_IdAndNoCompte(UUID tenantId, String noCompte);
+    /** Finds an account by tenant and account number */
+    @Query("SELECT c FROM Compte c WHERE c.tenant.id = :tenant_id AND c.no_compte = :no_compte")
+    Optional<Compte> findByTenant_IdAndNo_compte(@Param("tenant_id") UUID tenant_id,
+            @Param("no_compte") String no_compte);
 
-    /** Recherche un compte par tenant et ID */
-    Optional<Compte> findByTenant_IdAndId(UUID tenantId, UUID id);
+    /** Finds an account by tenant and ID */
+    Optional<Compte> findByTenant_IdAndId(UUID tenant_id, UUID id);
 
-    /** Liste des comptes actifs d’un tenant */
-    List<Compte> findByTenant_IdAndActifTrue(UUID tenantId);
+    /** Lists active accounts for a tenant */
+    List<Compte> findByTenant_IdAndActifTrue(UUID tenant_id);
 
-    /** Liste des comptes d’un tenant par classe OHADA */
-    List<Compte> findByTenant_IdAndClasse(UUID tenantId, Integer classe);
+    /** Lists accounts for a tenant by OHADA class */
+    List<Compte> findByTenant_IdAndClasse(UUID tenant_id, Integer classe);
 
-    /** Vérifie si un compte existe pour un tenant et un numéro donné */
-    boolean existsByTenant_IdAndNoCompte(UUID tenantId, String noCompte);
+    /** Checks if an account exists for a tenant and a given number */
+    @Query("SELECT COUNT(c) > 0 FROM Compte c WHERE c.tenant.id = :tenant_id AND c.no_compte = :no_compte")
+    boolean existsByTenant_IdAndNo_compte(@Param("tenant_id") UUID tenant_id, @Param("no_compte") String no_compte);
 
-    /** Recherche des comptes dont le numéro commence par un préfixe donné */
-    @Query("SELECT c FROM Compte c WHERE c.tenant.id = :tenantId AND c.noCompte LIKE CONCAT(:prefix, '%')")
-    List<Compte> findByTenantIdAndNoCompteStartingWith(UUID tenantId, String prefix);
+    /** Finds accounts whose number starts with a given prefix */
+    @Query("SELECT c FROM Compte c WHERE c.tenant.id = :tenant_id AND c.no_compte LIKE CONCAT(:prefix, '%')")
+    List<Compte> findByTenant_IdAndNo_compteStartingWith(@Param("tenant_id") UUID tenant_id,
+            @Param("prefix") String prefix);
 
-    /** Tous les comptes d’un tenant (y compris inactifs) */
-    List<Compte> findAllByTenant_Id(UUID tenantId);
+    /** All accounts for a tenant (including inactive ones) */
+    List<Compte> findAllByTenant_Id(UUID tenant_id);
 }

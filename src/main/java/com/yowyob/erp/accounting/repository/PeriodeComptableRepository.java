@@ -10,29 +10,47 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Repository interface for managing PeriodeComptable entities.
+ * Includes tenant-aware queries and range-based period lookups.
+ * 
+ * @author ALD
+ * @date 30.09.25
+ */
 @Repository
 public interface PeriodeComptableRepository extends JpaRepository<PeriodeComptable, UUID> {
 
-  Optional<PeriodeComptable> findByTenant_IdAndId( UUID tenantId,UUID id);
-  
-    List<PeriodeComptable> findByTenant_IdOrderByDateDebutDesc(UUID tenantId);
+       /** Finds a period by tenant and ID */
+       Optional<PeriodeComptable> findByTenant_IdAndId(UUID tenant_id, UUID id);
 
-    Optional<PeriodeComptable> findByTenant_IdAndCode(UUID tenantId, String code);
+       /** Lists all periods for a tenant, ordered by start date descending */
+       List<PeriodeComptable> findByTenant_IdOrderByDate_debutDesc(UUID tenant_id);
 
-    @Query("""
-           SELECT p FROM PeriodeComptable p 
-           WHERE p.tenant.id = :tenantId 
-           AND :date BETWEEN p.dateDebut AND p.dateFin
-           """)
-    Optional<PeriodeComptable> findByTenant_IdAndDateInRange(UUID tenantId, LocalDate date);
+       /** Finds a period by tenant and period code */
+       Optional<PeriodeComptable> findByTenant_IdAndCode(UUID tenant_id, String code);
 
-    List<PeriodeComptable> findByTenant_IdAndClotureeFalse(UUID tenantId);
+       /**
+        * Finds a period for a tenant where the given date falls within the period
+        * range
+        */
+       @Query("""
+                     SELECT p FROM PeriodeComptable p
+                     WHERE p.tenant.id = :tenant_id
+                     AND :date BETWEEN p.date_debut AND p.date_fin
+                     """)
+       Optional<PeriodeComptable> findByTenant_IdAndDateInRange(UUID tenant_id, LocalDate date);
 
-    @Query("""
-           SELECT p FROM PeriodeComptable p 
-           WHERE p.tenant.id = :tenantId 
-           AND p.dateDebut >= :startDate 
-           AND p.dateFin <= :endDate
-           """)
-    List<PeriodeComptable> findByTenant_IdAndPeriodRange(UUID tenantId, LocalDate startDate, LocalDate endDate);
+       /** Lists all open (non-closed) periods for a tenant */
+       List<PeriodeComptable> findByTenant_IdAndClotureeFalse(UUID tenant_id);
+
+       /**
+        * Lists periods for a tenant that fall within a given start and end date range
+        */
+       @Query("""
+                     SELECT p FROM PeriodeComptable p
+                     WHERE p.tenant.id = :tenant_id
+                     AND p.date_debut >= :start_date
+                     AND p.date_fin <= :end_date
+                     """)
+       List<PeriodeComptable> findByTenant_IdAndPeriodRange(UUID tenant_id, LocalDate start_date, LocalDate end_date);
 }

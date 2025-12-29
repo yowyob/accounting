@@ -1,16 +1,29 @@
 package com.yowyob.erp.accounting.dto;
 
-import jakarta.validation.constraints.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.math.BigDecimal;
 
+/**
+ * Data Transfer Object for configurable accounting operations.
+ * Defines the main account, direction, and calculation rules for recurring
+ * operations.
+ * 
+ * @author ALD
+ * @date 30.09.25
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -19,47 +32,62 @@ public class OperationComptableDto {
 
     private UUID id;
 
-    @NotBlank(message = "Le type d'opération ne peut pas être vide")
-    @Size(max = 50, message = "Le type d'opération ne doit pas dépasser 50 caractères")
-    @Pattern(regexp = "^(ACHAT|VENTE|SALAIRE|PAIEMENT|DIVERS)$", message = "Type d'opération doit être ACHAT, VENTE, SALAIRE, PAIEMENT ou DIVERS")
-    private String typeOperation;
+    @NotBlank(message = "Operation type cannot be empty")
+    @Size(max = 50, message = "Operation type must not exceed 50 characters")
+    @Pattern(regexp = "^(ACHAT|VENTE|SALAIRE|PAIEMENT|DIVERS)$", message = "Operation type must be ACHAT, VENTE, SALAIRE, PAIEMENT or DIVERS")
+    @JsonProperty("typeOperation")
+    private String type_operation;
 
-    @NotBlank(message = "Le mode de règlement ne peut pas être vide")
-    @Size(max = 50, message = "Le mode de règlement ne doit pas dépasser 50 caractères")
-    @Pattern(regexp = "^(ESPECE|CHEQUE|VIREMENT|MOBILE)$", message = "Mode de règlement doit être ESPECE, CHEQUE, VIREMENT ou MOBILE")
-    private String modeReglement;
+    @NotBlank(message = "Settlement mode cannot be empty")
+    @Size(max = 50, message = "Settlement mode must not exceed 50 characters")
+    @Pattern(regexp = "^(ESPECE|CHEQUE|VIREMENT|MOBILE)$", message = "Settlement mode must be ESPECE, CHEQUE, VIREMENT or MOBILE")
+    @JsonProperty("modeReglement")
+    private String mode_reglement;
 
-    @NotBlank(message = "Le compte principal ne peut pas être vide")
-    @Size(max = 20, message = "Le compte principal ne doit pas dépasser 20 caractères")
-    private String comptePrincipal; 
+    @NotBlank(message = "Main account cannot be empty")
+    @Size(max = 20, message = "Main account must not exceed 20 characters")
+    @JsonProperty("comptePrincipal")
+    private String compte_principal;
 
-    @NotNull(message = "Le statut compte statique ne peut pas être nul")
-    private Boolean estCompteStatique;
+    @NotNull(message = "Static account status cannot be null")
+    @JsonProperty("estCompteStatique")
+    private Boolean est_compte_statique;
 
-    @NotBlank(message = "Le sens principal ne peut pas être vide")
-    @Pattern(regexp = "DEBIT|CREDIT", message = "Le sens principal doit être DEBIT ou CREDIT")
-    private String sensPrincipal;
+    @NotBlank(message = "Main direction cannot be empty")
+    @Pattern(regexp = "DEBIT|CREDIT", message = "Main direction must be DEBIT or CREDIT")
+    @JsonProperty("sensPrincipal")
+    private String sens_principal;
 
-    @NotNull(message = "L'identifiant du journal comptable ne peut pas être nul")
-    private UUID journalComptableId;
+    @NotNull(message = "Journal ID cannot be null")
+    @JsonProperty("journalComptableId")
+    private UUID journal_comptable_id;
 
-    @NotBlank(message = "Le type de montant ne peut pas être vide")
-    @Pattern(regexp = "HT|TTC|TVA|PAU", message = "Le type de montant doit être HT, TTC, TVA ou PAU")
-    private String typeMontant;
+    @NotBlank(message = "Amount type cannot be empty")
+    @Pattern(regexp = "HT|TTC|TVA|PAU", message = "Amount type must be HT, TTC, TVA or PAU")
+    @JsonProperty("typeMontant")
+    private String type_montant;
 
-    @PositiveOrZero(message = "Le plafond client doit être positif ou zéro")
-    private  BigDecimal plafondClient;
+    @PositiveOrZero(message = "Client ceiling must be positive or zero")
+    @JsonProperty("plafondClient")
+    private BigDecimal plafond_client;
 
-    @NotNull(message = "Le statut actif ne peut pas être nul")
+    @NotNull(message = "Active status cannot be null")
     private Boolean actif;
 
-    @Size(max = 255, message = "Les notes ne doivent pas dépasser 255 caractères")
+    @Size(max = 255, message = "Notes must not exceed 255 characters")
     private String notes;
 
     private List<ContrepartieDto> contreparties;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    private String createdBy;
-    private String updatedBy;
+    @JsonProperty("createdAt")
+    private LocalDateTime created_at;
+
+    @JsonProperty("updatedAt")
+    private LocalDateTime updated_at;
+
+    @JsonProperty("createdBy")
+    private String created_by;
+
+    @JsonProperty("updatedBy")
+    private String updated_by;
 }

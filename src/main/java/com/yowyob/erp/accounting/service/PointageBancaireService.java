@@ -42,7 +42,7 @@ public class PointageBancaireService {
             if (!candidats.isEmpty()) {
                 DetailEcriture de = candidats.get(0);
                 de.setPointee(true);
-                de.setReferenceBancaire("AUTO → " + op.getLibelle().substring(0, Math.min(50, op.getLibelle().length())));
+                de.setReference_bancaire("AUTO → " + op.getLibelle().substring(0, Math.min(50, op.getLibelle().length())));
                 pointees++;
             }
         }

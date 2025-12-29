@@ -26,12 +26,15 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AccountingKafkaListener {
 
-    // 💡 Déclaration et injection de l'ObjectMapper pour la désérialisation du payload interne
+    // 💡 Déclaration et injection de l'ObjectMapper pour la désérialisation du
+    // payload interne
     private final ObjectMapper objectMapper;
 
-    /* ===========================================================
+    /*
+     * ===========================================================
      * 🧾 FACTURATION
-     * =========================================================== */
+     * ===========================================================
+     */
     @KafkaListener(topics = "${app.kafka.topics.invoice-events}", groupId = "${spring.kafka.consumer.group-id}")
     public void handleInvoiceEvents(
             @Payload KafkaMessage message,
@@ -56,9 +59,11 @@ public class AccountingKafkaListener {
         }
     }
 
-    /* ===========================================================
+    /*
+     * ===========================================================
      * 📘 COMPTABILITÉ (Écritures)
-     * =========================================================== */
+     * ===========================================================
+     */
     @KafkaListener(topics = "${app.kafka.topics.accounting-entries}", groupId = "${spring.kafka.consumer.group-id}")
     public void handleAccountingEvents(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
         try {
@@ -77,13 +82,16 @@ public class AccountingKafkaListener {
         }
     }
 
-    /* ===========================================================
+    /*
+     * ===========================================================
      * 💳 TRANSACTIONS
-     * =========================================================== */
+     * ===========================================================
+     */
     @KafkaListener(topics = "transaction.events", groupId = "${spring.kafka.consumer.group-id}")
     public void handleTransactionEvents(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
         try {
-            log.info("💳 [TRANSACTION] Event reçu | type={} | tenant={}", message.getEventType(), message.getTenantId());
+            log.info("💳 [TRANSACTION] Event reçu | type={} | tenant={}", message.getEventType(),
+                    message.getTenantId());
             switch (message.getEventType()) {
                 case "TRANSACTION_CREATED" -> handleTransactionCreated(message);
                 case "TRANSACTION_VALIDATED" -> handleTransactionValidated(message);
@@ -95,13 +103,16 @@ public class AccountingKafkaListener {
         }
     }
 
-    /* ===========================================================
+    /*
+     * ===========================================================
      * 🔍 AUDIT
-     * =========================================================== */
+     * ===========================================================
+     */
     @KafkaListener(topics = "${app.kafka.topics.audit-logs}", groupId = "${spring.kafka.consumer.group-id}")
     public void handleAuditLogs(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
         try {
-            log.info("🧩 [AUDIT] Nouveau log reçu | action={} | tenant={}", message.getEventType(), message.getTenantId());
+            log.info("🧩 [AUDIT] Nouveau log reçu | action={} | tenant={}", message.getEventType(),
+                    message.getTenantId());
 
             // 💡 LOGIQUE AJOUTÉE POUR LA DÉSÉRIALISATION DU PAYLOAD
             Optional.ofNullable(message.getPayload())
@@ -110,12 +121,14 @@ public class AccountingKafkaListener {
                             if (rawPayload instanceof Map) {
                                 // 💡 Conversion du Map JSON en JournalAudit
                                 JournalAudit auditEntry = objectMapper.convertValue(rawPayload, JournalAudit.class);
-                                
-                                // TODO: Traitement de l'objet JournalAudit complété
-                                log.info("✅ Audit log converti : {} par {}", auditEntry.getAction(), auditEntry.getUtilisateur());
-                                
+
+                                // TODO: Complete JournalAudit object processing
+                                log.info("✅ Audit log converti : {} par {}", auditEntry.getAction(),
+                                        auditEntry.getUtilisateur());
+
                             } else {
-                                log.warn("⚠️ Payload d'audit non reconnu (attendu Map) : {}", rawPayload.getClass().getName());
+                                log.warn("⚠️ Payload d'audit non reconnu (attendu Map) : {}",
+                                        rawPayload.getClass().getName());
                             }
                         } catch (IllegalArgumentException e) {
                             log.error("❌ Échec de conversion du payload d'audit en JournalAudit", e);
@@ -129,36 +142,38 @@ public class AccountingKafkaListener {
         }
     }
 
-    /* ===========================================================
+    /*
+     * ===========================================================
      * 🔧 MÉTHODES PRIVÉES DE TRAITEMENT
-     * =========================================================== */
+     * ===========================================================
+     */
     private void handleInvoiceCreated(KafkaMessage message) {
         log.info("🧾 Génération écriture comptable pour facture créée : {}", message.getPayload());
-        // TODO: créer écriture (EcritureComptable + DetailEcriture)
+        // TODO: Create accounting entry (EcritureComptable + DetailEcriture)
     }
 
     private void handleInvoicePaid(KafkaMessage message) {
         log.info("💰 Génération écriture de règlement pour facture payée : {}", message.getPayload());
-        // TODO: créer écriture et mise à jour soldes
+        // TODO: Create entry and update balances
     }
 
     private void handleAccountingEntryCreated(KafkaMessage message) {
         log.info("📊 Indexation d'une écriture comptable créée : {}", message.getPayload());
-        // TODO: Indexation Elasticsearch ou mise en cache
+        // TODO: Elasticsearch indexing or caching
     }
 
     private void handleAccountingEntryValidated(KafkaMessage message) {
         log.info("✅ Mise à jour des soldes suite validation : {}", message.getPayload());
-        // TODO: recalculer soldes Redis / PostgreSQL
+        // TODO: Recalculate Redis / PostgreSQL balances
     }
 
     private void handleTransactionCreated(KafkaMessage message) {
         log.info("💸 Nouvelle transaction détectée : {}", message.getPayload());
-        // TODO: synchroniser avec module Trésorerie
+        // TODO: Synchronize with Treasury module
     }
 
     private void handleTransactionValidated(KafkaMessage message) {
         log.info("🧾 Transaction validée : {}", message.getPayload());
-        // TODO: enregistrer écriture dans le Journal TR
+        // TODO: Record entry in TR Journal
     }
 }

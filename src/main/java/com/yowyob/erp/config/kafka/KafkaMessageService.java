@@ -15,7 +15,8 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Service centralisé pour la publication d’événements Kafka dans l’ERP.
- * Chaque module (compta, facturation, audit, etc.) l’utilise pour notifier ses actions.
+ * Chaque module (compta, facturation, audit, etc.) l’utilise pour notifier ses
+ * actions.
  */
 @Service
 @RequiredArgsConstructor
@@ -48,9 +49,11 @@ public class KafkaMessageService {
     @Value("${app.kafka.topics.tenant-deleted}")
     private String tenantDeletedTopic;
 
-    /* ===========================================================
-     *  🔧 MÉTHODES GÉNÉRIQUES
-     * =========================================================== */
+    /*
+     * ===========================================================
+     * 🔧 MÉTHODES GÉNÉRIQUES
+     * ===========================================================
+     */
 
     @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000))
     public void sendMessage(String topic, String key, Object payload, String eventType, String tenantId) {
@@ -65,7 +68,8 @@ public class KafkaMessageService {
             CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(topic, key, message);
             future.whenComplete((result, exception) -> {
                 if (exception == null) {
-                    log.debug("✅ Message envoyé → Topic [{}] | Offset [{}]", topic, result.getRecordMetadata().offset());
+                    log.debug("✅ Message envoyé → Topic [{}] | Offset [{}]", topic,
+                            result.getRecordMetadata().offset());
                 } else {
                     log.error("❌ Échec de l’envoi Kafka → Topic [{}] : {}", topic, exception.getMessage());
                 }
@@ -76,9 +80,11 @@ public class KafkaMessageService {
         }
     }
 
-    /* ===========================================================
-     *  🧾 DOMAINES MÉTIERS
-     * =========================================================== */
+    /*
+     * ===========================================================
+     * 🧾 DOMAINES MÉTIERS
+     * ===========================================================
+     */
 
     public void sendAccountingEvent(Object payload, String tenantId, String type) {
         sendMessage(accountingEntriesTopic, tenantId, payload, type, tenantId);

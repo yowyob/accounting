@@ -14,25 +14,33 @@ import java.util.UUID;
 import org.springframework.core.annotation.Order;
 
 /**
- * Initialise les journaux comptables de base (OHADA)
- * - AN (Achats)
- * - VE (Ventes)
- * - TR (Trésorerie)
- * - OD (Opérations Diverses)
+ * Service to initialize basic accounting journals (OHADA)
+ * - AN (Purchases)
+ * - VE (Sales)
+ * - TR (Treasury)
+ * - OD (Miscellaneous Operations)
+ * 
+ * @author ALD
+ * @date 30.09.25
  */
 @Service
 @Order(1)
 public class JournalComptableInitializationService implements CommandLineRunner {
 
-    private final JournalComptableRepository journalComptableRepository;
-    private final UUID tenantId;
+    private final JournalComptableRepository journal_repository;
+    private final UUID tenant_id;
 
+    /**
+     * Constructor for JournalComptableInitializationService.
+     * 
+     * @param journal_repository the journal repository
+     * @param tenant_id_str      the default tenant ID string
+     */
     public JournalComptableInitializationService(
-            JournalComptableRepository journalComptableRepository,
-            @Value("${app.tenant.default-tenant:550e8400-e29b-41d4-a716-446655440000}")
-            String tenantIdStr) {
-        this.journalComptableRepository = journalComptableRepository;
-        this.tenantId = UUID.fromString(tenantIdStr);
+            JournalComptableRepository journal_repository,
+            @Value("${app.tenant.default-tenant:550e8400-e29b-41d4-a716-446655440000}") String tenant_id_str) {
+        this.journal_repository = journal_repository;
+        this.tenant_id = UUID.fromString(tenant_id_str);
     }
 
     @Override
@@ -43,21 +51,28 @@ public class JournalComptableInitializationService implements CommandLineRunner 
         createJournalIfNotExists("OD", "Journal des Opérations Diverses", "DIVERS");
     }
 
-    private void createJournalIfNotExists(String codeJournal, String libelle, String typeJournal) {
-        if (!journalComptableRepository.existsByTenant_IdAndCodeJournal(tenantId, codeJournal)) {
-            
+    /**
+     * Creates a journal if it does not already exist.
+     * 
+     * @param code_journal the journal code
+     * @param libelle      the label
+     * @param type_journal the type
+     */
+    private void createJournalIfNotExists(String code_journal, String libelle, String type_journal) {
+        if (!journal_repository.existsByTenant_IdAndCode_journal(tenant_id, code_journal)) {
+
             JournalComptable journal = JournalComptable.builder()
-                    .tenant(new Tenant(tenantId))
-                    .codeJournal(codeJournal)
+                    .tenant(new Tenant(tenant_id))
+                    .code_journal(code_journal)
                     .libelle(libelle)
-                    .typeJournal(typeJournal)
+                    .type_journal(type_journal)
                     .actif(true)
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
-                    .createdBy("system")
-                    .updatedBy("system")
+                    .created_at(LocalDateTime.now())
+                    .updated_at(LocalDateTime.now())
+                    .created_by("system")
+                    .updated_by("system")
                     .build();
-            journalComptableRepository.save(journal);
+            journal_repository.save(journal);
         }
     }
 }

@@ -18,125 +18,177 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Controller for managing accounting operations.
+ * Handles CRUD operations with Kafka auditing, Redis caching, and multi-tenant
+ * support.
+ * 
+ * @author ALD
+ * @date 30.09.25
+ */
 @RestController
 @RequestMapping("/api/accounting/operations")
 @RequiredArgsConstructor
-@Tag(name = "Opérations Comptables", description = "Gestion complète des opérations comptables avec Kafka, Redis et multitenant")
+@Tag(name = "Accounting Operations", description = "Management of accounting operations with Kafka, Redis and multi-tenancy")
 @SecurityRequirement(name = "BasicAuth")
 @Slf4j
 public class OperationComptableController {
 
-    private final OperationComptableService operationComptableService;
+    private final OperationComptableService operation_service;
 
-    // ✅ CRÉATION
-    @Operation(summary = "Créer une opération comptable", description = "Crée une nouvelle opération comptable pour le tenant courant.")
+    /**
+     * Creates a new accounting operation for the current tenant.
+     * 
+     * @param dto operation data
+     * @return response wrapper with created operation
+     */
+    @Operation(summary = "Create an accounting operation", description = "Creates a new accounting operation for the current tenant.")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Opération créée avec succès",
-                    content = @Content(schema = @Schema(implementation = OperationComptableDto.class))),
-            @ApiResponse(responseCode = "400", description = "Erreur de validation des données")
+            @ApiResponse(responseCode = "201", description = "Operation created successfully", content = @Content(schema = @Schema(implementation = OperationComptableDto.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid data validation failure")
     })
     @PostMapping
     public ResponseEntity<ApiResponseWrapper<OperationComptableDto>> createOperationComptable(
             @Valid @RequestBody OperationComptableDto dto) {
         try {
-            UUID tenantId = TenantContext.getCurrentTenant();
-            log.info("🧾 Création d’une opération comptable pour tenant {}", tenantId);
-            OperationComptableDto created = operationComptableService.createOperation(dto);
+            UUID tenant_id = TenantContext.getCurrentTenant();
+            log.info("🧾 Creating accounting operation for tenant {}", tenant_id);
+            OperationComptableDto created = operation_service.createOperation(dto);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponseWrapper.success(created, "Opération comptable créée avec succès"));
+                    .body(ApiResponseWrapper.success(created, "Accounting operation created successfully"));
         } catch (Exception e) {
-            log.error("❌ Erreur création opération : {}", e.getMessage());
-            throw new BusinessException("Erreur lors de la création : " + e.getMessage());
+            log.error("❌ Error creating operation: {}", e.getMessage());
+            throw new BusinessException("Error during creation: " + e.getMessage());
         }
     }
 
-    // ✅ LECTURE PAR ID
-    @Operation(summary = "Récupérer une opération comptable par ID")
+    /**
+     * Retrieves an accounting operation by its ID.
+     * 
+     * @param id operation ID
+     * @return response wrapper with operation data
+     */
+    @Operation(summary = "Retrieve an accounting operation by ID")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Opération trouvée"),
-            @ApiResponse(responseCode = "404", description = "Non trouvée")
+            @ApiResponse(responseCode = "200", description = "Operation found"),
+            @ApiResponse(responseCode = "404", description = "Operation not found")
     })
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponseWrapper<OperationComptableDto>> getOperationComptable(@PathVariable UUID id) {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        log.info("🔍 Récupération de l’opération comptable ID={} pour tenant {}", id, tenantId);
-        return operationComptableService.getOperation(id)
-                .map(dto -> ResponseEntity.ok(ApiResponseWrapper.success(dto, "Opération trouvée")))
+        UUID tenant_id = TenantContext.getCurrentTenant();
+        log.info("🔍 Retrieving accounting operation ID={} for tenant {}", id, tenant_id);
+        return operation_service.getOperation(id)
+                .map(dto -> ResponseEntity.ok(ApiResponseWrapper.success(dto, "Operation found")))
                 .orElseThrow(() -> new ResourceNotFoundException("OperationComptable", id.toString()));
     }
 
-    // ✅ LISTER TOUTES LES OPÉRATIONS
-    @Operation(summary = "Lister toutes les opérations comptables")
+    /**
+     * Lists all accounting operations for the current tenant.
+     * 
+     * @return response wrapper with list of operations
+     */
+    @Operation(summary = "List all accounting operations")
     @GetMapping
     public ResponseEntity<ApiResponseWrapper<List<OperationComptableDto>>> getAllOperationsComptables() {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        log.info("📋 Récupération de toutes les opérations comptables pour tenant {}", tenantId);
-        List<OperationComptableDto> operations = operationComptableService.getAllOperations();
-        return ResponseEntity.ok(ApiResponseWrapper.success(operations, "Liste des opérations comptables récupérée"));
+        UUID tenant_id = TenantContext.getCurrentTenant();
+        log.info("📋 Retrieving all accounting operations for tenant {}", tenant_id);
+        List<OperationComptableDto> operations = operation_service.getAllOperations();
+        return ResponseEntity.ok(ApiResponseWrapper.success(operations, "List of accounting operations retrieved"));
     }
 
-    // ✅ RECHERCHE PAR COMPTE
-    @Operation(summary = "Récupérer les opérations comptables d’un compte principal")
+    /**
+     * Retrieves operations associated with a specific principal account number.
+     * 
+     * @param no_compte account number
+     * @return response wrapper with list of operations
+     */
+    @Operation(summary = "Retrieve accounting operations by principal account")
     @GetMapping("/by-no-compte")
     public ResponseEntity<ApiResponseWrapper<List<OperationComptableDto>>> getOperationsByNoCompte(
-            @RequestParam String noCompte) {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        log.info("🔎 Récupération des opérations par compte={} pour tenant {}", noCompte, tenantId);
-        List<OperationComptableDto> operations = operationComptableService.getOperationsByCompte(noCompte);
-        return ResponseEntity.ok(ApiResponseWrapper.success(operations, "Opérations comptables récupérées"));
+            @RequestParam String no_compte) {
+        UUID tenant_id = TenantContext.getCurrentTenant();
+        log.info("🔎 Retrieving operations by account={} for tenant {}", no_compte, tenant_id);
+        List<OperationComptableDto> operations = operation_service.getOperationsByCompte(no_compte);
+        return ResponseEntity.ok(ApiResponseWrapper.success(operations, "Accounting operations retrieved"));
     }
 
-    // ✅ RECHERCHE PAR TYPE + MODE
-    @Operation(summary = "Rechercher une opération par type et mode de règlement")
+    /**
+     * Searches for an operation by its type and settlement mode.
+     * 
+     * @param type_operation operation type
+     * @param mode_reglement settlement mode
+     * @return response wrapper with matching operation
+     */
+    @Operation(summary = "Search operation by type and settlement mode")
     @GetMapping("/search")
     public ResponseEntity<ApiResponseWrapper<OperationComptableDto>> getOperationByTypeAndMode(
-            @RequestParam String typeOperation,
-            @RequestParam String modeReglement) {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        log.info("🔎 Recherche opération type={} / mode={} pour tenant {}", typeOperation, modeReglement, tenantId);
-        return operationComptableService.getByTypeAndMode(typeOperation, modeReglement)
-                .map(dto -> ResponseEntity.ok(ApiResponseWrapper.success(dto, "Opération trouvée")))
-                .orElseThrow(() -> new ResourceNotFoundException("OperationComptable", typeOperation + "-" + modeReglement));
+            @RequestParam String type_operation,
+            @RequestParam String mode_reglement) {
+        UUID tenant_id = TenantContext.getCurrentTenant();
+        log.info("🔎 Searching operation type={} / mode={} for tenant {}", type_operation, mode_reglement, tenant_id);
+        return operation_service.getByTypeAndMode(type_operation, mode_reglement)
+                .map(dto -> ResponseEntity.ok(ApiResponseWrapper.success(dto, "Operation found")))
+                .orElseThrow(() -> new ResourceNotFoundException("OperationComptable",
+                        type_operation + "-" + mode_reglement));
     }
 
-    // ✅ MISE À JOUR
-    @Operation(summary = "Mettre à jour une opération comptable")
+    /**
+     * Updates an existing accounting operation.
+     * 
+     * @param id  operation ID to update
+     * @param dto new operation data
+     * @return response wrapper with updated operation
+     */
+    @Operation(summary = "Update an accounting operation")
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponseWrapper<OperationComptableDto>> updateOperationComptable(
             @PathVariable UUID id,
             @Valid @RequestBody OperationComptableDto dto) {
         try {
-            UUID tenantId = TenantContext.getCurrentTenant();
-            log.info("✏️ Mise à jour de l’opération comptable ID={} pour tenant {}", id, tenantId);
-            OperationComptableDto updated = operationComptableService.updateOperation(id, dto);
-            return ResponseEntity.ok(ApiResponseWrapper.success(updated, "Opération comptable mise à jour avec succès"));
+            UUID tenant_id = TenantContext.getCurrentTenant();
+            log.info("✏️ Updating accounting operation ID={} for tenant {}", id, tenant_id);
+            OperationComptableDto updated = operation_service.updateOperation(id, dto);
+            return ResponseEntity.ok(ApiResponseWrapper.success(updated, "Accounting operation updated successfully"));
         } catch (ResourceNotFoundException e) {
             throw new ResourceNotFoundException("OperationComptable", id.toString());
         } catch (Exception e) {
-            log.error("Erreur mise à jour opération {} : {}", id, e.getMessage());
-            throw new BusinessException("Erreur mise à jour : " + e.getMessage());
+            log.error("Error updating operation {}: {}", id, e.getMessage());
+            throw new BusinessException("Update error: " + e.getMessage());
         }
     }
 
-    // ✅ SUPPRESSION
-    @Operation(summary = "Supprimer une opération comptable", description = "Supprime une opération comptable existante par ID.")
+    /**
+     * Deletes an accounting operation by ID.
+     * 
+     * @param id operation ID to delete
+     * @return response wrapper with success message
+     */
+    @Operation(summary = "Delete an accounting operation", description = "Deletes an existing accounting operation by ID.")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponseWrapper<String>> deleteOperationComptable(@PathVariable UUID id) {
         try {
-            UUID tenantId = TenantContext.getCurrentTenant();
-            log.info("🗑️ Suppression de l’opération ID={} pour tenant {}", id, tenantId);
-            operationComptableService.deleteOperation(id);
-            return ResponseEntity.ok(ApiResponseWrapper.success("Opération comptable supprimée avec succès"));
+            UUID tenant_id = TenantContext.getCurrentTenant();
+            log.info("🗑️ Deleting operation ID={} for tenant {}", id, tenant_id);
+            operation_service.deleteOperation(id);
+            return ResponseEntity.ok(ApiResponseWrapper.success("Accounting operation deleted successfully"));
         } catch (ResourceNotFoundException e) {
             throw new ResourceNotFoundException("OperationComptable", id.toString());
         } catch (Exception e) {
-            log.error("Erreur suppression opération {} : {}", id, e.getMessage());
-            throw new BusinessException("Erreur lors de la suppression : " + e.getMessage());
+            log.error("Error deleting operation {}: {}", id, e.getMessage());
+            throw new BusinessException("Error during deletion: " + e.getMessage());
         }
     }
 }

@@ -1,7 +1,6 @@
-// Service de synchronisation offline/online
+// Offline/online synchronization service
 package com.yowyob.erp.accounting.service;
 
-import com.yowyob.erp.config.kafka.KafkaMessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -10,51 +9,60 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Service for synchronizing data between offline and online states.
+ * 
+ * @author ALD
+ * @date 30.09.25
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class SynchronizationService {
 
-    private final KafkaMessageService kafkaMessageService;
-
     /**
-     * Synchronise les données offline avec le serveur central
+     * Synchronizes offline data with the central server.
+     * 
+     * @param tenant_id the tenant ID
+     * @return a CompletableFuture representing the async operation
      */
     @Async("taskExecutor")
-    public CompletableFuture<Void> synchronizeOfflineData(UUID tenantId) {
-        log.info("Début de la synchronisation offline pour le tenant: {}", tenantId);
-        
+    public CompletableFuture<Void> synchronizeOfflineData(UUID tenant_id) {
+        log.info("Starting offline synchronization for tenant: {}", tenant_id);
+
         try {
-            // TODO: Implémenter la logique de synchronisation
-            // 1. Récupérer les données SQLite locales
-            // 2. Compresser les données
-            // 3. Envoyer via Kafka
-            // 4. Résoudre les conflits
-            // 5. Mettre à jour les index Elasticsearch
-            
-            Thread.sleep(2000); // Simulation du traitement
-            
-            log.info("Synchronisation terminée avec succès pour le tenant: {}", tenantId);
-            
+            // Implementation steps:
+            // 1. Retrieve local SQLite data
+            // 2. Compress data
+            // 3. Send via Kafka
+            // 4. Resolve conflicts
+            // 5. Update Elasticsearch indexes
+
+            Thread.sleep(2000); // Simulation of processing
+
+            log.info("Synchronization completed successfully for tenant: {}", tenant_id);
+
         } catch (Exception e) {
-            log.error("Erreur lors de la synchronisation pour le tenant: {}", tenantId, e);
-            throw new RuntimeException("Échec de la synchronisation", e);
+            log.error("Error during synchronization for tenant: {}", tenant_id, e);
+            throw new RuntimeException("Synchronization failed", e);
         }
-        
+
         return CompletableFuture.completedFuture(null);
     }
 
     /**
-     * Vérifie la connectivité réseau et déclenche la synchronisation
+     * Checks network connectivity and triggers synchronization.
+     * 
+     * @param tenant_id the tenant ID
      */
-    public void checkAndSync(UUID tenantId) {
-        // TODO: Vérifier la connectivité réseau
-        boolean isOnline = true; // Simulation
-        
-        if (isOnline) {
-            synchronizeOfflineData(tenantId);
+    public void checkAndSync(UUID tenant_id) {
+        // Check network connectivity
+        boolean is_online = true; // Simulation
+
+        if (is_online) {
+            synchronizeOfflineData(tenant_id);
         } else {
-            log.warn("Pas de connectivité réseau - synchronisation reportée");
+            log.warn("No network connectivity - synchronization postponed");
         }
     }
 }

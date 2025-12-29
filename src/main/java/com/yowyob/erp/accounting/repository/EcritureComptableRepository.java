@@ -3,6 +3,7 @@ package com.yowyob.erp.accounting.repository;
 import com.yowyob.erp.accounting.entity.EcritureComptable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -10,44 +11,89 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Repository interface for managing EcritureComptable entities.
+ * Provides custom queries for tenant-specific and date-range operations.
+ * 
+ * @author ALD
+ * @date 30.09.25
+ */
 @Repository
 public interface EcritureComptableRepository extends JpaRepository<EcritureComptable, UUID> {
 
-    /* ============================================================================
-       🔹 Requêtes standards de base
-    ============================================================================ */
+   /**
+    * Retrieves all entries for a given tenant.
+    * 
+    * @param tenant_id the tenant ID
+    * @return a list of entries
+    */
+   List<EcritureComptable> findByTenant_Id(UUID tenant_id);
 
-    List<EcritureComptable> findByTenant_Id(UUID tenantId);
+   /**
+    * Retrieves an entry by tenant ID and ID.
+    * 
+    * @param tenant_id the tenant ID
+    * @param id        the entry ID
+    * @return an Optional containing the entry if found
+    */
+   Optional<EcritureComptable> findByTenant_IdAndId(UUID tenant_id, UUID id);
 
-    Optional<EcritureComptable> findByTenant_IdAndId(UUID tenantId, UUID id);
+   /**
+    * Retrieves all non-validated entries for a given tenant.
+    * 
+    * @param tenant_id the tenant ID
+    * @return a list of non-validated entries
+    */
+   List<EcritureComptable> findByTenant_IdAndValideeFalse(UUID tenant_id);
 
-    List<EcritureComptable> findByTenant_IdAndValideeFalse(UUID tenantId);
+   /**
+    * Retrieves entries within a specific date range for a tenant.
+    * 
+    * @param tenant_id  the tenant ID
+    * @param start_date range start date
+    * @param end_date   range end date
+    * @return a list of entries
+    */
+   List<EcritureComptable> findByTenant_IdAndDate_ecritureBetween(UUID tenant_id, LocalDate start_date,
+         LocalDate end_date);
 
+   /**
+    * Retrieves entries for a specific journal for a tenant.
+    * 
+    * @param tenant_id  the tenant ID
+    * @param journal_id the journal ID
+    * @return a list of entries
+    */
+   List<EcritureComptable> findByTenant_IdAndJournal_Id(UUID tenant_id, UUID journal_id);
 
-    /* ============================================================================
-       🔎 Recherche par période et journal
-    ============================================================================ */
+   /**
+    * Retrieves entries for a specific journal and date range for a tenant.
+    * 
+    * @param tenant_id  the tenant ID
+    * @param journal_id the journal ID
+    * @param start_date range start date
+    * @param end_date   range end date
+    * @return a list of entries
+    */
+   List<EcritureComptable> findByTenant_IdAndJournal_IdAndDate_ecritureBetween(
+         UUID tenant_id, UUID journal_id, LocalDate start_date, LocalDate end_date);
 
-    // ✅ Recherche par plage de dates uniquement
-    List<EcritureComptable> findByTenant_IdAndDateEcritureBetween(UUID tenantId, LocalDate startDate, LocalDate endDate);
-
-    // ✅ Recherche par journal uniquement
-    List<EcritureComptable> findByTenant_IdAndJournal_Id(UUID tenantId, UUID journalId);
-
-    // ✅ Recherche combinée : journal + période
-    List<EcritureComptable> findByTenant_IdAndJournal_IdAndDateEcritureBetween(
-            UUID tenantId, UUID journalComptableId, LocalDate startDate, LocalDate endDate
-    );
-
-    /* ============================================================================
-       🧾 Requêtes personnalisées (optionnelles)
-    ============================================================================ */
-
-    @Query("""
-           SELECT e FROM EcritureComptable e
-           WHERE e.tenant.id = :tenantId
-           AND e.dateEcriture BETWEEN :startDate AND :endDate
-           AND e.validee = false
-           """)
-    List<EcritureComptable> findNonValidatedByDateRange(UUID tenantId, LocalDate startDate, LocalDate endDate);
+   /**
+    * Finds non-validated entries within a date range using a custom JPQL query.
+    * 
+    * @param tenant_id  the tenant ID
+    * @param start_date range start date
+    * @param end_date   range end date
+    * @return a list of non-validated entries
+    */
+   @Query("""
+         SELECT e FROM EcritureComptable e
+         WHERE e.tenant.id = :tenant_id
+         AND e.date_ecriture BETWEEN :start_date AND :end_date
+         AND e.validee = false
+         """)
+   List<EcritureComptable> findNonValidatedByDateRange(
+         @Param("tenant_id") UUID tenant_id,
+         @Param("start_date") LocalDate start_date,
+         @Param("end_date") LocalDate end_date);
 }

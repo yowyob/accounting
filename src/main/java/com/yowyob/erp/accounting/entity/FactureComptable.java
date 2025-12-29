@@ -14,14 +14,18 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Represents an accounting invoice (sale or purchase) according to OHADA standards.
+ * Represents an accounting invoice (sale or purchase) according to OHADA
+ * standards.
  * Generates a 3-line entry:
- *   - Product or expense account (debit or credit)
- *   - VAT account (collected or deductible)
- *   - Client or supplier account
+ * - Product or expense account (debit or credit)
+ * - VAT account (collected or deductible)
+ * - Client or supplier account
+ * 
+ * Follows snake_case naming for methods as per specific instructions for
+ * ComptableObject.
  *
  * @author ALD
- * @date 12/10/2025 07:51 AM WAT
+ * @date 30.09.25
  */
 @Data
 public class FactureComptable implements ComptableObject {
@@ -31,90 +35,94 @@ public class FactureComptable implements ComptableObject {
     private static final String COMPTE_CLIENT_VENTE = "411000";
     private static final String COMPTE_FOURNISSEUR_ACHAT = "401000";
     private static final String COMPTE_PRODUIT_VENTE = "701000";
-    private static final String COMPTE_TVA_DEDUCTIBLE = "445100"; // Example for deductible VAT
-    private static final String COMPTE_TVA_COLLECTEE = "445700"; // Example for collected VAT
 
     private UUID id;
-    private UUID tenantId;
-    private BigDecimal montantHT; // Changed to BigDecimal for financial precision
-    private BigDecimal tauxTVA = TAUX_TVA_DEFAUT;
+    private UUID tenant_id;
+    private BigDecimal montant_ht;
+    private BigDecimal taux_tva = TAUX_TVA_DEFAUT;
     private LocalDate date;
     private String libelle;
-    private UUID journalComptableId;
-    private UUID periodeComptableId;
-    private UUID clientId; // or supplierId depending on case
-    private boolean isAchat; // true = purchase, false = sale
+    private UUID journal_comptable_id;
+    private UUID periode_comptable_id;
+    private UUID client_id;
+    private boolean is_achat; // true = purchase, false = sale
 
-    public FactureComptable(UUID id, BigDecimal montantHT, LocalDate date, String libelle,
-                            UUID journalComptableId, UUID periodeComptableId, UUID clientId, boolean isAchat) {
+    public FactureComptable(UUID id, BigDecimal montant_ht, LocalDate date, String libelle,
+            UUID journal_comptable_id, UUID periode_comptable_id, UUID client_id, boolean is_achat) {
         this.id = id;
-        this.tenantId = TenantContext.getCurrentTenant(); 
-        this.montantHT = montantHT;
+        this.tenant_id = TenantContext.getCurrentTenant();
+        this.montant_ht = montant_ht;
         this.date = date;
         this.libelle = libelle;
-        this.journalComptableId = journalComptableId;
-        this.periodeComptableId = periodeComptableId;
-        this.clientId = clientId;
-        this.isAchat = isAchat;
+        this.journal_comptable_id = journal_comptable_id;
+        this.periode_comptable_id = periode_comptable_id;
+        this.client_id = client_id;
+        this.is_achat = is_achat;
     }
 
     /* Implementation of ComptableObject */
     @Override
-    public UUID getId() {
+    public UUID get_id() {
         return id;
     }
 
     @Override
-    public UUID getTenantId() {
-        return tenantId;
+    public UUID get_tenant_id() {
+        return tenant_id;
     }
 
     @Override
-    public BigDecimal getMontant() {
-        return montantHT.multiply(BigDecimal.ONE.add(tauxTVA)); // TTC
+    public BigDecimal get_montant() {
+        return montant_ht.multiply(BigDecimal.ONE.add(taux_tva)); // TTC
     }
 
     @Override
-    public LocalDate getDate() {
+    public LocalDate get_date() {
         return date;
     }
 
     @Override
-    public String getDescription() {
+    public String get_description() {
         return libelle;
     }
 
     @Override
-    public UUID getJournalComptableId() {
-        return journalComptableId;
+    public UUID get_journal_comptable_id() {
+        return journal_comptable_id;
     }
 
     @Override
-    public UUID getPeriodeComptableId() {
-        return periodeComptableId;
+    public UUID get_periode_comptable_id() {
+        return periode_comptable_id;
     }
 
     @Override
-    public String getDebitAccount() {
-        return isAchat ? COMPTE_CHARGE_ACHAT : COMPTE_CLIENT_VENTE;
+    public String get_debit_account() {
+        return is_achat ? COMPTE_CHARGE_ACHAT : COMPTE_CLIENT_VENTE;
     }
 
     @Override
-    public String getCreditAccount() {
-        return isAchat ? COMPTE_FOURNISSEUR_ACHAT : COMPTE_PRODUIT_VENTE;
+    public String get_credit_account() {
+        return is_achat ? COMPTE_FOURNISSEUR_ACHAT : COMPTE_PRODUIT_VENTE;
     }
 
     @Override
-    public SourceType getSourceType() {
+    public SourceType get_source_type() {
         return SourceType.FACTURE;
     }
 
-    /* Generate OHADA accounting lines */
+    /**
+     * Generates OHADA accounting lines for the invoice.
+     * 
+     * @param tenant   the current tenant
+     * @param ecriture the associated accounting entry
+     * @return list of accounting details
+     */
     @Override
-    public List<DetailEcriture> generateEcritureDetails(Tenant tenant, EcritureComptable ecriture) {
+    public List<DetailEcriture> generate_ecriture_details(Tenant tenant, EcritureComptable ecriture) {
         List<DetailEcriture> details = new ArrayList<>();
-        BigDecimal montantTVA = montantHT.multiply(tauxTVA);
-        BigDecimal montantTTC = montantHT.add(montantTVA);
+        BigDecimal montant_tva = montant_ht.multiply(taux_tva);
+        BigDecimal montant_ttc = montant_ht.add(montant_tva);
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -125,14 +133,14 @@ public class FactureComptable implements ComptableObject {
                 .ecriture(ecriture)
                 .compte(null) // Should be fetched from repository based on account code
                 .libelle(libelle + " - Amount HT")
-                .sens(isAchat ? Sens.DEBIT : Sens.CREDIT)
-                .montantDebit(isAchat ? montantHT : BigDecimal.ZERO)
-                .montantCredit(isAchat ? BigDecimal.ZERO : montantHT)
-                .dateEcriture(now)
-                .createdAt(now)
-                .updatedAt(now)
-                .createdBy("system")
-                .updatedBy("system")
+                .sens(is_achat ? Sens.DEBIT : Sens.CREDIT)
+                .montant_debit(is_achat ? montant_ht : BigDecimal.ZERO)
+                .montant_credit(is_achat ? BigDecimal.ZERO : montant_ht)
+                .date_ecriture(now)
+                .created_at(now)
+                .updated_at(now)
+                .created_by("system")
+                .updated_by("system")
                 .build());
 
         // Line 2: VAT (collected or deductible)
@@ -141,15 +149,15 @@ public class FactureComptable implements ComptableObject {
                 .tenant(tenant)
                 .ecriture(ecriture)
                 .compte(null) // Should be fetched from repository
-                .libelle(isAchat ? "Deductible VAT" : "Collected VAT")
-                .sens(isAchat ? Sens.DEBIT : Sens.CREDIT)
-                .montantDebit(isAchat ? montantTVA : BigDecimal.ZERO)
-                .montantCredit(isAchat ? BigDecimal.ZERO : montantTVA)
-                .dateEcriture(now)
-                .createdAt(now)
-                .updatedAt(now)
-                .createdBy("system")
-                .updatedBy("system")
+                .libelle(is_achat ? "Deductible VAT" : "Collected VAT")
+                .sens(is_achat ? Sens.DEBIT : Sens.CREDIT)
+                .montant_debit(is_achat ? montant_tva : BigDecimal.ZERO)
+                .montant_credit(is_achat ? BigDecimal.ZERO : montant_tva)
+                .date_ecriture(now)
+                .created_at(now)
+                .updated_at(now)
+                .created_by("system")
+                .updated_by("system")
                 .build());
 
         // Line 3: Client or supplier
@@ -158,15 +166,15 @@ public class FactureComptable implements ComptableObject {
                 .tenant(tenant)
                 .ecriture(ecriture)
                 .compte(null) // Should be fetched from repository
-                .libelle(isAchat ? "Supplier" : "Client")
-                .sens(isAchat ? Sens.CREDIT : Sens.DEBIT)
-                .montantDebit(isAchat ? BigDecimal.ZERO : montantTTC)
-                .montantCredit(isAchat ? montantTTC : BigDecimal.ZERO)
-                .dateEcriture(now)
-                .createdAt(now)
-                .updatedAt(now)
-                .createdBy("system")
-                .updatedBy("system")
+                .libelle(is_achat ? "Supplier" : "Client")
+                .sens(is_achat ? Sens.CREDIT : Sens.DEBIT)
+                .montant_debit(is_achat ? BigDecimal.ZERO : montant_ttc)
+                .montant_credit(is_achat ? montant_ttc : BigDecimal.ZERO)
+                .date_ecriture(now)
+                .created_at(now)
+                .updated_at(now)
+                .created_by("system")
+                .updated_by("system")
                 .build());
 
         return details;

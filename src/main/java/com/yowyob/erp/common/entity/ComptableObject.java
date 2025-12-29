@@ -11,46 +11,93 @@ import com.yowyob.erp.accounting.entity.Tenant;
 import com.yowyob.erp.common.enums.SourceType;
 
 /**
- * Interface générique représentant tout objet comptable :
- * Transaction, Facture, Mouvement de stock, etc.
- *
- * Elle permet une intégration uniforme dans le module de comptabilité.
+ * Generic interface representing any accounting object:
+ * Transaction, Invoice, Stock movement, etc.
+ * 
+ * Allows uniform integration into the accounting module.
+ * Follows snake_case naming for methods as per specific instructions.
+ * 
+ * @author ALD
+ * @date 30.09.25
  */
 public interface ComptableObject {
 
-    /** Identifiant unique de l’objet (facture, transaction, etc.) */
-    UUID getId();
-
-    /** Identifiant du tenant (multi-tenant) */
-    UUID getTenantId();
-
-    /** Montant total de l’opération */
-    BigDecimal getMontant();
-
-    /** Date de l’opération */
-    LocalDate getDate();
-
-    /** Libellé ou description */
-    String getDescription();
-
-    /** Journal comptable associé */
-    UUID getJournalComptableId();
-
-    /**Periode comptable associé */
-    UUID getPeriodeComptableId();
-
-    /** Compte de débit (ex: 411000 pour client, 512000 pour banque) */
-    String getDebitAccount();
-
-    /** Compte de crédit (ex: 707000 pour ventes, 445700 pour TVA collectée) */
-    String getCreditAccount();
-
-    /** Source de l’objet (FACTURE, TRANSACTION, STOCK, etc.) */
-    SourceType getSourceType();
+    /**
+     * Unique identifier of the object (invoice, transaction, etc.).
+     * 
+     * @return the unique ID
+     */
+    UUID get_id();
 
     /**
-     * Génère les lignes de détail d’écriture associées à cet objet.
-     * Utilise les relations avec Tenant et EcritureComptable pour maintenir l'intégrité.
+     * Identifier of the tenant (multi-tenancy).
+     * 
+     * @return the tenant ID
      */
-    List<DetailEcriture> generateEcritureDetails(Tenant tenant, EcritureComptable ecriture);
+    UUID get_tenant_id();
+
+    /**
+     * Total amount of the operation.
+     * 
+     * @return the amount
+     */
+    BigDecimal get_montant();
+
+    /**
+     * Date of the operation.
+     * 
+     * @return the operation date
+     */
+    LocalDate get_date();
+
+    /**
+     * Label or description.
+     * 
+     * @return the description
+     */
+    String get_description();
+
+    /**
+     * Associated accounting journal ID.
+     * 
+     * @return the journal ID
+     */
+    UUID get_journal_comptable_id();
+
+    /**
+     * Associated accounting period ID.
+     * 
+     * @return the period ID
+     */
+    UUID get_periode_comptable_id();
+
+    /**
+     * Debit account (e.g., 411000 for customer, 512000 for bank).
+     * 
+     * @return the debit account number
+     */
+    String get_debit_account();
+
+    /**
+     * Credit account (e.g., 707000 for sales, 445700 for collected VAT).
+     * 
+     * @return the credit account number
+     */
+    String get_credit_account();
+
+    /**
+     * Source of the object (INVOICE, TRANSACTION, STOCK, etc.).
+     * 
+     * @return the source type
+     */
+    SourceType get_source_type();
+
+    /**
+     * Generates the accounting entry detail lines associated with this object.
+     * 
+     * @param tenant   the current tenant
+     * @param ecriture the accounting entry
+     * @return the list of entry details
+     */
+    List<DetailEcriture> generate_ecriture_details(Tenant tenant, EcritureComptable ecriture);
 }

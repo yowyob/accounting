@@ -23,11 +23,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Journal d’audit : trace les actions de création, validation et modification
- * Audit intégré directement dans l'entité sans utiliser d'interface.
+ * JournalAudit entity traces actions like creation, validation, deletion, and
+ * modification.
+ * Audit logs are integrated directly within the entity.
  * 
- * Author: Leonel Delmat AZANGUE
- * Date: 12/10/2025
+ * @author Leonel Delmat AZANGUE
+ * @date 30.09.25
  */
 @Entity
 @Table(name = "journal_audit")
@@ -48,14 +49,14 @@ public class JournalAudit {
     private Tenant tenant;
 
     @Column(name = "ecriture_id")
-    private UUID ecritureComptableId;
+    private UUID ecriture_comptable_id;
 
-    @Pattern(regexp = "CREATE|VALIDATE|UPDATE|DELETE|AUTO_GENERATE", message = "Action must be CREATE, VALIDATE,DELETE or UPDATE")
+    @Pattern(regexp = "CREATE|VALIDATE|UPDATE|DELETE|AUTO_GENERATE", message = "Action must be CREATE, VALIDATE, DELETE or UPDATE")
     @Column(length = 50, nullable = false)
     private String action;
 
     @Column(name = "date_action", nullable = false)
-    private LocalDateTime dateAction;
+    private LocalDateTime date_action;
 
     @Column(length = 255)
     private String utilisateur;
@@ -64,44 +65,50 @@ public class JournalAudit {
     private String details;
 
     @Column(name = "adresse_ip", length = 50)
-    private String adresseIp;
+    private String adresse_ip;
 
     @Column(name = "donnees_avant", columnDefinition = "TEXT")
-    private String donneesAvant;
+    private String donnees_avant;
 
     @Column(name = "donnees_apres", columnDefinition = "TEXT")
-    private String donneesApres;
+    private String donnees_apres;
 
-    /** Date de création */
+    /** Date of creation */
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime created_at;
 
-    /** Date de dernière mise à jour */
+    /** Date of last update */
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private LocalDateTime updated_at;
 
-    /** Utilisateur créateur */
+    /** User who created the record */
     @Size(max = 255)
     @Column(name = "created_by", length = 255)
-    private String createdBy;
+    private String created_by;
 
-    /** Utilisateur ayant modifié la ressource */
+    /** User who last updated the record */
     @Size(max = 255)
     @Column(name = "updated_by", length = 255)
-    private String updatedBy;
+    private String updated_by;
 
+    /**
+     * Set creation and action dates before persistence.
+     */
     @PrePersist
     public void onCreate() {
         LocalDateTime now = LocalDateTime.now();
-        this.createdAt = now;
-        this.updatedAt = now;
-        if (this.dateAction == null) {
-            this.dateAction = now;
+        this.created_at = now;
+        this.updated_at = now;
+        if (this.date_action == null) {
+            this.date_action = now;
         }
     }
 
+    /**
+     * Update the last modified date before update.
+     */
     @PreUpdate
     public void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        this.updated_at = LocalDateTime.now();
     }
 }

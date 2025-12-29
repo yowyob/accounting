@@ -8,11 +8,23 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Entity representing a tax (Taxe).
+ * Follows snake_case naming as per Development Charter.
+ * 
+ * @author ALD
+ * @date 30.09.25
+ */
 @Entity
 @Table(name = "taxes")
-@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Taxe {
 
     @Id
@@ -38,23 +50,25 @@ public class Taxe {
     private BigDecimal taux; // 19.25, 10.00, etc.
 
     @Column(name = "compte_collecte", length = 20)
-    private String compteCollecte; // ex: "445000"
+    private String compte_collecte; // ex: "445000"
 
     @Column(name = "compte_deductible", length = 20)
-    private String compteDeductible; // ex: "441000"
+    private String compte_deductible; // ex: "441000"
 
     @Column(length = 50)
     private String pays; // "CM", "CI", "SN", "GA"
 
     @Column(name = "date_debut_validite")
-    private LocalDate dateDebutValidite;
+    private LocalDate date_debut_validite;
 
     @Column(name = "date_fin_validite")
-    private LocalDate dateFinValidite;
+    private LocalDate date_fin_validite;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean actif = true;
 
+    @Builder.Default
     @Column(name = "created_at")
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime created_at = LocalDateTime.now();
 }

@@ -27,304 +27,407 @@ import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Service for managing accounting periods.
+ * Handles creation, validation, closing, and retrieval of periods.
+ * Multi-tenant aware and uses Redis for caching.
+ * 
+ * @author ALD
+ * @date 30.09.25
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class PeriodeComptableService {
 
-    private final PeriodeComptableRepository periodeRepository;
-    private final JournalAuditRepository auditRepository;
+    private final PeriodeComptableRepository periode_repository;
+    private final JournalAuditRepository audit_repository;
     private final Validator validator;
-    private final KafkaMessageService kafkaMessageService;
-    private final RedisService redisService;
+    private final KafkaMessageService kafka_service;
+    private final RedisService redis_service;
 
     private static final String CACHE_ALL = "periodes:all:";
     private static final String CACHE_ACTIVE = "periodes:active:";
     private static final String CACHE_SINGLE = "periode:";
     private static final String CACHE_CURRENT = "periode:current:";
 
-    /* ============================================================================
-     * CREATE
-     * ========================================================================== */
+    /**
+     * Creates a new accounting period.
+     * 
+     * @param dto the period data
+     * @return the created period DTO
+     */
     @Transactional
     public PeriodeComptableDto createPeriode(PeriodeComptableDto dto) {
-        UUID tenantId = TenantContext.getCurrentTenant();
+        UUID tenant_id = TenantContext.getCurrentTenant();
         String user = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
 
-        log.info("🧾 Création d’une période comptable [{} - {}] pour le tenant {}", dto.getCode(), dto.getDateDebut(), tenantId);
+        log.info("🧾 Creating accounting period [{} - {}] for tenant {}", dto.getCode(), dto.getDate_debut(),
+                tenant_id);
         validateDto(dto);
 
-        if (periodeRepository.findByTenant_IdAndCode(tenantId, dto.getCode()).isPresent()) {
-            throw new IllegalArgumentException("Le code de période existe déjà : " + dto.getCode());
+        if (periode_repository.findByTenant_IdAndCode(tenant_id, dto.getCode()).isPresent()) {
+            throw new IllegalArgumentException("Period code already exists: " + dto.getCode());
         }
 
-        validateNoOverlap(tenantId, dto.getDateDebut(), dto.getDateFin(), null);
+        validateNoOverlap(tenant_id, dto.getDate_debut(), dto.getDate_fin(), null);
 
         PeriodeComptable entity = mapToEntity(dto);
-        entity.setCreatedAt(LocalDateTime.now());
-        entity.setUpdatedAt(LocalDateTime.now());
-        entity.setCreatedBy(user);
-        entity.setUpdatedBy(user);
+        entity.setCreated_at(LocalDateTime.now());
+        entity.setUpdated_at(LocalDateTime.now());
+        entity.setCreated_by(user);
+        entity.setUpdated_by(user);
 
-        //PeriodeComptable saved = periodeRepository.save(entity);
-        PeriodeComptableDto result = null; //= mapToDto(saved);
+        PeriodeComptable saved = periode_repository.save(entity);
+        PeriodeComptableDto result = mapToDto(saved);
 
-        PeriodeComptable savedPeriode;
-        try {
-            // 🛑 Tentative de sauvegarde de la période comptable
-            savedPeriode = periodeRepository.save(entity);
-             kafkaMessageService.sendAuditLog(result, tenantId.toString(), "PERIODE_CREATED");
-            logAudit(tenantId, user, "CREATE", "Création période : " + dto.getCode());
-            redisService.delete(CACHE_ALL + tenantId);
-        } catch (Exception e) {
-            // 🛑 LOG CRITIQUE : Capture l'exception exacte pour identifier la contrainte violée.
-            log.error("🛑  Erreur critique lors de la sauvegarde de PeriodeComptable (transaction échouée) : {}", e.getMessage(), e);
-            throw e;
-        }
-       
+        kafka_service.sendAuditLog(result, tenant_id.toString(), "PERIODE_CREATED");
+        logAudit(tenant_id, user, "CREATE", "Created period: " + dto.getCode());
+
+        redis_service.delete(CACHE_ALL + tenant_id);
+        redis_service.delete(CACHE_ACTIVE + tenant_id);
 
         return result;
     }
 
-    /* ============================================================================
-     * READ
-     * ========================================================================== */
+    /**
+     * Retrieves a period by its ID.
+     * 
+     * @param id the period ID
+     * @return an Optional containing the period DTO if found
+     */
     public Optional<PeriodeComptableDto> getPeriode(UUID id) {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        String cacheKey = CACHE_SINGLE + tenantId + ":" + id;
+        UUID tenant_id = TenantContext.getCurrentTenant();
+        String cache_key = CACHE_SINGLE + tenant_id + ":" + id;
 
-        PeriodeComptableDto cached = redisService.get(cacheKey, PeriodeComptableDto.class);
-        if (cached != null) return Optional.of(cached);
+        PeriodeComptableDto cached = redis_service.get(cache_key, PeriodeComptableDto.class);
+        if (cached != null)
+            return Optional.of(cached);
 
-        PeriodeComptable periode = periodeRepository.findByTenant_IdAndId(tenantId, id)
-                .orElseThrow(() -> new ResourceNotFoundException("Période comptable", id.toString()));
+        PeriodeComptable periode = periode_repository.findByTenant_IdAndId(tenant_id, id)
+                .orElseThrow(() -> new ResourceNotFoundException("Accounting period", id.toString()));
 
         PeriodeComptableDto dto = mapToDto(periode);
-        redisService.save(cacheKey, dto, Duration.ofMinutes(15));
+        redis_service.save(cache_key, dto, Duration.ofMinutes(15));
         return Optional.of(dto);
     }
 
+    /**
+     * Retrieves all periods for the current tenant.
+     * 
+     * @return list of period DTOs
+     */
+    @SuppressWarnings("unchecked")
     public List<PeriodeComptableDto> getAllPeriodes() {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        String cacheKey = CACHE_ALL + tenantId;
+        UUID tenant_id = TenantContext.getCurrentTenant();
+        String cache_key = CACHE_ALL + tenant_id;
 
-        List<PeriodeComptableDto> cached = redisService.get(cacheKey, List.class);
-        if (cached != null) return cached;
+        List<PeriodeComptableDto> cached = redis_service.get(cache_key, List.class);
+        if (cached != null)
+            return cached;
 
-        List<PeriodeComptableDto> periodes = periodeRepository.findByTenant_IdOrderByDateDebutDesc(tenantId)
+        List<PeriodeComptableDto> periodes = periode_repository.findByTenant_IdOrderByDate_debutDesc(tenant_id)
                 .stream().map(this::mapToDto).collect(Collectors.toList());
 
-        redisService.save(cacheKey, periodes, Duration.ofMinutes(10));
+        redis_service.save(cache_key, periodes, Duration.ofMinutes(10));
         return periodes;
     }
 
+    /**
+     * Retrieves a period by its code.
+     * 
+     * @param code the period code
+     * @return an Optional containing the period DTO if found
+     */
     public Optional<PeriodeComptableDto> getByCode(String code) {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        return periodeRepository.findByTenant_IdAndCode(tenantId, code).map(this::mapToDto);
+        UUID tenant_id = TenantContext.getCurrentTenant();
+        return periode_repository.findByTenant_IdAndCode(tenant_id, code).map(this::mapToDto);
     }
 
+    /**
+     * Retrieves a period by a date within its range.
+     * 
+     * @param date the date to check
+     * @return an Optional containing the period DTO if found
+     */
     public Optional<PeriodeComptableDto> getByDate(LocalDate date) {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        return periodeRepository.findByTenant_IdAndDateInRange(tenantId, date).map(this::mapToDto);
+        UUID tenant_id = TenantContext.getCurrentTenant();
+        return periode_repository.findByTenant_IdAndDateInRange(tenant_id, date).map(this::mapToDto);
     }
 
+    /**
+     * Retrieves all non-closed periods for the current tenant.
+     * 
+     * @return list of non-closed period DTOs
+     */
+    @SuppressWarnings("unchecked")
     public List<PeriodeComptableDto> getNonClosedPeriodes() {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        String cacheKey = CACHE_ACTIVE + tenantId;
+        UUID tenant_id = TenantContext.getCurrentTenant();
+        String cache_key = CACHE_ACTIVE + tenant_id;
 
-        List<PeriodeComptableDto> cached = redisService.get(cacheKey, List.class);
-        if (cached != null) return cached;
+        List<PeriodeComptableDto> cached = redis_service.get(cache_key, List.class);
+        if (cached != null)
+            return cached;
 
-        List<PeriodeComptableDto> periodes = periodeRepository.findByTenant_IdAndClotureeFalse(tenantId)
+        List<PeriodeComptableDto> periodes = periode_repository.findByTenant_IdAndClotureeFalse(tenant_id)
                 .stream().map(this::mapToDto).collect(Collectors.toList());
 
-        redisService.save(cacheKey, periodes, Duration.ofMinutes(10));
+        redis_service.save(cache_key, periodes, Duration.ofMinutes(10));
         return periodes;
     }
 
+    /**
+     * Retrieves periods within a specific date range.
+     * 
+     * @param start the start date
+     * @param end   the end date
+     * @return list of period DTOs
+     */
     public List<PeriodeComptableDto> getByRange(LocalDate start, LocalDate end) {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        return periodeRepository.findByTenant_IdAndPeriodRange(tenantId, start, end)
-                .stream().map(this::mapToDto).toList();
+        UUID tenant_id = TenantContext.getCurrentTenant();
+        return periode_repository.findByTenant_IdAndPeriodRange(tenant_id, start, end)
+                .stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
-    /* ✅ NOUVELLE MÉTHODE : Get Current Period */
-    public PeriodeComptableDto getCurrentPeriode(UUID tenantId) {
-        String cacheKey = CACHE_CURRENT + tenantId;
+    /**
+     * Retrieves the current open period for a given tenant.
+     * 
+     * @param tenant_id the tenant ID
+     * @return the current period DTO
+     */
+    public PeriodeComptableDto getCurrentPeriode(UUID tenant_id) {
+        String cache_key = CACHE_CURRENT + tenant_id;
 
-        PeriodeComptableDto cached = redisService.get(cacheKey, PeriodeComptableDto.class);
-        if (cached != null) return cached;
+        PeriodeComptableDto cached = redis_service.get(cache_key, PeriodeComptableDto.class);
+        if (cached != null)
+            return cached;
 
         LocalDate today = LocalDate.now();
-        PeriodeComptable periode = periodeRepository.findByTenant_IdAndDateInRange(tenantId, today)
+        PeriodeComptable periode = periode_repository.findByTenant_IdAndDateInRange(tenant_id, today)
                 .filter(p -> !Boolean.TRUE.equals(p.getCloturee()))
-                .orElseThrow(() -> new ResourceNotFoundException("Aucune période comptable ouverte pour la date actuelle"));
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("No open accounting period found for the current date"));
 
         PeriodeComptableDto dto = mapToDto(periode);
-        redisService.save(cacheKey, dto, Duration.ofMinutes(30));
+        redis_service.save(cache_key, dto, Duration.ofMinutes(30));
 
-        log.info("📅 Période comptable courante pour le tenant {} : {}", tenantId, dto.getCode());
+        log.info("📅 Current accounting period for tenant {} : {}", tenant_id, dto.getCode());
         return dto;
     }
 
-    /* ============================================================================
-     * UPDATE
-     * ========================================================================== */
+    /**
+     * Updates an existing accounting period.
+     * 
+     * @param id  the period ID
+     * @param dto the new period data
+     * @return the updated period DTO
+     */
     @Transactional
     public PeriodeComptableDto updatePeriode(UUID id, PeriodeComptableDto dto) {
-        UUID tenantId = TenantContext.getCurrentTenant();
+        UUID tenant_id = TenantContext.getCurrentTenant();
         String user = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
 
-        PeriodeComptable existing = periodeRepository.findByTenant_IdAndId(tenantId, id)
-                .orElseThrow(() -> new ResourceNotFoundException("Période comptable", id.toString()));
+        PeriodeComptable existing = periode_repository.findByTenant_IdAndId(tenant_id, id)
+                .orElseThrow(() -> new ResourceNotFoundException("Accounting period", id.toString()));
 
         if (Boolean.TRUE.equals(existing.getCloturee())) {
-            throw new IllegalStateException("Impossible de modifier une période clôturée");
+            throw new IllegalStateException("Cannot modify a closed period");
         }
 
         if (!existing.getCode().equals(dto.getCode()) &&
-                periodeRepository.findByTenant_IdAndCode(tenantId, dto.getCode()).isPresent()) {
-            throw new IllegalArgumentException("Code période déjà existant : " + dto.getCode());
+                periode_repository.findByTenant_IdAndCode(tenant_id, dto.getCode()).isPresent()) {
+            throw new IllegalArgumentException("Period code already exists: " + dto.getCode());
         }
 
-        validateNoOverlap(tenantId, dto.getDateDebut(), dto.getDateFin(), id);
+        validateNoOverlap(tenant_id, dto.getDate_debut(), dto.getDate_fin(), id);
         validateDto(dto);
 
         existing.setCode(dto.getCode());
-        existing.setDateDebut(dto.getDateDebut());
-        existing.setDateFin(dto.getDateFin());
+        existing.setDate_debut(dto.getDate_debut());
+        existing.setDate_fin(dto.getDate_fin());
         existing.setNotes(dto.getNotes());
-        existing.setUpdatedAt(LocalDateTime.now());
-        existing.setUpdatedBy(user);
+        existing.setUpdated_at(LocalDateTime.now());
+        existing.setUpdated_by(user);
 
-        PeriodeComptable saved = periodeRepository.save(existing);
+        PeriodeComptable saved = periode_repository.save(existing);
         PeriodeComptableDto result = mapToDto(saved);
 
-        kafkaMessageService.sendAuditLog(result, tenantId.toString(), "PERIODE_UPDATED");
-        logAudit(tenantId, user, "UPDATE", "Mise à jour de la période : " + dto.getCode());
-        redisService.delete(CACHE_ALL + tenantId);
-        redisService.delete(CACHE_SINGLE + tenantId + ":" + id);
+        kafka_service.sendAuditLog(result, tenant_id.toString(), "PERIODE_UPDATED");
+        logAudit(tenant_id, user, "UPDATE", "Updated period: " + dto.getCode());
+
+        redis_service.delete(CACHE_ALL + tenant_id);
+        redis_service.delete(CACHE_ACTIVE + tenant_id);
+        redis_service.delete(CACHE_SINGLE + tenant_id + ":" + id);
+        redis_service.delete(CACHE_CURRENT + tenant_id);
 
         return result;
     }
 
-    /* ============================================================================
-     * CLOSE & DELETE (inchangé)
-     * ========================================================================== */
+    /**
+     * Closes an accounting period.
+     * 
+     * @param id the period ID to close
+     * @return the closed period DTO
+     */
     @Transactional
     public PeriodeComptableDto closePeriode(UUID id) {
-        UUID tenantId = TenantContext.getCurrentTenant();
+        UUID tenant_id = TenantContext.getCurrentTenant();
         String user = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
 
-        PeriodeComptable periode = periodeRepository.findByTenant_IdAndId(tenantId, id)
-                .orElseThrow(() -> new ResourceNotFoundException("Période comptable", id.toString()));
+        PeriodeComptable periode = periode_repository.findByTenant_IdAndId(tenant_id, id)
+                .orElseThrow(() -> new ResourceNotFoundException("Accounting period", id.toString()));
 
         if (Boolean.TRUE.equals(periode.getCloturee())) {
-            throw new IllegalStateException("Période déjà clôturée");
+            throw new IllegalStateException("Period is already closed");
         }
 
         periode.setCloturee(true);
-        periode.setDateCloture(LocalDate.now());
-        periode.setUpdatedBy(user);
-        periode.setUpdatedAt(LocalDateTime.now());
+        periode.setDate_cloture(LocalDate.now());
+        periode.setUpdated_by(user);
+        periode.setUpdated_at(LocalDateTime.now());
 
-        PeriodeComptable saved = periodeRepository.save(periode);
+        PeriodeComptable saved = periode_repository.save(periode);
         PeriodeComptableDto result = mapToDto(saved);
 
-        kafkaMessageService.sendAuditLog(result, tenantId.toString(), "PERIODE_CLOSED");
-        logAudit(tenantId, user, "CLOSE", "Clôture de la période : " + periode.getCode());
-        redisService.delete(CACHE_ALL + tenantId);
-        redisService.delete(CACHE_ACTIVE + tenantId);
+        kafka_service.sendAuditLog(result, tenant_id.toString(), "PERIODE_CLOSED");
+        logAudit(tenant_id, user, "CLOSE", "Closed period: " + periode.getCode());
+
+        redis_service.delete(CACHE_ALL + tenant_id);
+        redis_service.delete(CACHE_ACTIVE + tenant_id);
+        redis_service.delete(CACHE_SINGLE + tenant_id + ":" + id);
+        redis_service.delete(CACHE_CURRENT + tenant_id);
 
         return result;
     }
 
+    /**
+     * Deletes an accounting period.
+     * 
+     * @param id the period ID to delete
+     */
     @Transactional
     public void deletePeriode(UUID id) {
-        UUID tenantId = TenantContext.getCurrentTenant();
+        UUID tenant_id = TenantContext.getCurrentTenant();
         String user = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
 
-        PeriodeComptable periode = periodeRepository.findByTenant_IdAndId(tenantId, id)
-                .orElseThrow(() -> new ResourceNotFoundException("Période comptable", id.toString()));
+        PeriodeComptable periode = periode_repository.findByTenant_IdAndId(tenant_id, id)
+                .orElseThrow(() -> new ResourceNotFoundException("Accounting period", id.toString()));
 
         if (Boolean.TRUE.equals(periode.getCloturee())) {
-            throw new IllegalStateException("Impossible de supprimer une période clôturée");
+            throw new IllegalStateException("Cannot delete a closed period");
         }
 
-        periodeRepository.delete(periode);
-        kafkaMessageService.sendAuditLog(periode, tenantId.toString(), "PERIODE_DELETED");
-        logAudit(tenantId, user, "DELETE", "Suppression de la période : " + periode.getCode());
-        redisService.delete(CACHE_ALL + tenantId);
-        redisService.delete(CACHE_SINGLE + tenantId + ":" + id);
+        periode_repository.delete(periode);
+        kafka_service.sendAuditLog(periode, tenant_id.toString(), "PERIODE_DELETED");
+        logAudit(tenant_id, user, "DELETE", "Deleted period: " + periode.getCode());
+
+        redis_service.delete(CACHE_ALL + tenant_id);
+        redis_service.delete(CACHE_ACTIVE + tenant_id);
+        redis_service.delete(CACHE_SINGLE + tenant_id + ":" + id);
+        redis_service.delete(CACHE_CURRENT + tenant_id);
     }
 
-    /* ============================================================================
-     * HELPERS
-     * ========================================================================== */
+    /**
+     * Validates a period DTO.
+     * 
+     * @param dto the DTO to validate
+     */
     private void validateDto(PeriodeComptableDto dto) {
         var violations = validator.validate(dto);
-        if (!violations.isEmpty()) throw new ConstraintViolationException(violations);
-        if (dto.getDateFin().isBefore(dto.getDateDebut()))
-            throw new IllegalArgumentException("La date de fin doit être postérieure à la date de début");
+        if (!violations.isEmpty())
+            throw new ConstraintViolationException(violations);
+        if (dto.getDate_fin().isBefore(dto.getDate_debut())) {
+            throw new IllegalArgumentException("End date must be after start date");
+        }
     }
 
-    private void validateNoOverlap(UUID tenantId, LocalDate debut, LocalDate fin, UUID excludeId) {
-        List<PeriodeComptable> existing = periodeRepository.findByTenant_IdOrderByDateDebutDesc(tenantId);
+    /**
+     * Validates that a period does not overlap with existing periods for the same
+     * tenant.
+     * 
+     * @param tenant_id  the tenant ID
+     * @param debut      the start date
+     * @param fin        the end date
+     * @param exclude_id the ID to exclude from validation (for updates)
+     */
+    private void validateNoOverlap(UUID tenant_id, LocalDate debut, LocalDate fin, UUID exclude_id) {
+        List<PeriodeComptable> existing = periode_repository.findByTenant_IdOrderByDate_debutDesc(tenant_id);
         for (PeriodeComptable p : existing) {
-            if (excludeId != null && p.getId().equals(excludeId)) continue;
-            if (!(fin.isBefore(p.getDateDebut()) || debut.isAfter(p.getDateFin()))) {
-                throw new IllegalArgumentException("Période chevauchante détectée avec : " + p.getCode());
+            if (exclude_id != null && p.getId().equals(exclude_id))
+                continue;
+            if (!(fin.isBefore(p.getDate_debut()) || debut.isAfter(p.getDate_fin()))) {
+                throw new IllegalArgumentException("Overlapping period detected with: " + p.getCode());
             }
         }
     }
 
+    /**
+     * Maps a DTO to a PeriodeComptable entity.
+     * 
+     * @param dto the DTO to map
+     * @return the mapped entity
+     */
     private PeriodeComptable mapToEntity(PeriodeComptableDto dto) {
         Tenant tenant = TenantContext.getCurrentTenantAsTenant();
-
-        // LOG CRITIQUE AJOUTÉ POUR LE DÉBOGAGE
         if (tenant == null) {
-            log.error("TenantContext n'a pas pu fournir une entité Tenant valide.");
-            throw new IllegalStateException("TenantContext n'a pas pu fournir une entité Tenant valide.");
+            throw new IllegalStateException("TenantContext could not provide a valid Tenant entity.");
         }
-        // Ce log.debug n'est visible que si le niveau de log est DEBUG
-         log.debug("Tenant ID récupéré du contexte : {}", tenant.getId()); 
+
         PeriodeComptable p = new PeriodeComptable();
         p.setTenant(tenant);
         p.setCode(dto.getCode());
-        p.setDateDebut(dto.getDateDebut());
-        p.setDateFin(dto.getDateFin());
+        p.setDate_debut(dto.getDate_debut());
+        p.setDate_fin(dto.getDate_fin());
         p.setCloturee(Optional.ofNullable(dto.getCloturee()).orElse(false));
-        p.setDateCloture(dto.getDateCloture());
+        p.setDate_cloture(dto.getDate_cloture());
         p.setNotes(dto.getNotes());
         return p;
     }
 
+    /**
+     * Maps a PeriodeComptable entity to its DTO.
+     * 
+     * @param p the entity to map
+     * @return the mapped DTO
+     */
     private PeriodeComptableDto mapToDto(PeriodeComptable p) {
         return PeriodeComptableDto.builder()
                 .id(p.getId())
                 .code(p.getCode())
-                .dateDebut(p.getDateDebut())
-                .dateFin(p.getDateFin())
+                .date_debut(p.getDate_debut())
+                .date_fin(p.getDate_fin())
                 .cloturee(p.getCloturee())
-                .dateCloture(p.getDateCloture())
+                .date_cloture(p.getDate_cloture())
                 .notes(p.getNotes())
-                .createdAt(p.getCreatedAt())
-                .updatedAt(p.getUpdatedAt())
-                .createdBy(p.getCreatedBy())
-                .updatedBy(p.getUpdatedBy())
+                .created_at(p.getCreated_at())
+                .updated_at(p.getUpdated_at())
+                .created_by(p.getCreated_by())
+                .updated_by(p.getUpdated_by())
                 .build();
     }
 
-    private void logAudit(UUID tenantId, String user, String action, String details) {
+    /**
+     * Logs an audit entry.
+     * 
+     * @param tenant_id the tenant ID
+     * @param user      the user taking action
+     * @param action    the action taken
+     * @param details   the action details
+     */
+    private void logAudit(UUID tenant_id, String user, String action, String details) {
         Tenant tenant = TenantContext.getCurrentTenantAsTenant();
-
-        JournalAudit audit = new JournalAudit();
-        audit.setTenant(tenant);
-        audit.setUtilisateur(user);
-        audit.setAction(action);
-        audit.setDetails(details);
-        audit.setDateAction(LocalDateTime.now());
-        auditRepository.save(audit);
-        kafkaMessageService.sendAuditLog(audit, tenantId.toString(), action);
+        JournalAudit audit = JournalAudit.builder()
+                .tenant(tenant)
+                .utilisateur(user)
+                .action(action)
+                .details(details)
+                .date_action(LocalDateTime.now())
+                .created_at(LocalDateTime.now())
+                .updated_at(LocalDateTime.now())
+                .created_by(user)
+                .updated_by(user)
+                .build();
+        audit_repository.save(audit);
+        kafka_service.sendAuditLog(audit, tenant_id.toString(), action);
     }
 }

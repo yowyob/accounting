@@ -2,7 +2,7 @@ package com.yowyob.erp.accounting.entity;
 
 import com.yowyob.erp.common.entity.ComptableObject;
 import com.yowyob.erp.common.enums.SourceType;
-import com.yowyob.erp.common.enums.Sens; // Assumez que Sens est un enum partagé
+import com.yowyob.erp.common.enums.Sens;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -15,11 +15,14 @@ import java.util.UUID;
 /**
  * Represents an accounting stock movement (entry or exit).
  * Generates a 2-line entry:
- *   - Stock account (603000 or 31x depending on case)
- *   - Counterpart account (Supplier 401000 or Bank 512000)
+ * - Stock account (603000 or 31x depending on case)
+ * - Counterpart account (Supplier 401000 or Bank 512000)
+ * 
+ * Follows snake_case naming for methods as per specific instructions for
+ * ComptableObject.
  *
  * @author ALD
- * @date 12/10/2025
+ * @date 12.10.2025
  */
 @Data
 public class MouvementStockComptable implements ComptableObject {
@@ -29,87 +32,89 @@ public class MouvementStockComptable implements ComptableObject {
     private static final String COMPTE_BANQUE = "512000";
 
     private UUID id;
-    private UUID tenantId;
+    private UUID tenant_id;
     private int quantite;
-    private BigDecimal coutUnitaire; // Changed to BigDecimal for financial precision
+    private BigDecimal cout_unitaire; // Updated for financial precision
     private LocalDate date;
     private String libelle;
-    private UUID journalComptableId;
-    private UUID periodeComptableId;
-    private boolean isEntree; // true = entry, false = exit
-    private UUID fournisseurId; // or bankId depending on case
+    private UUID journal_comptable_id;
+    private UUID periode_comptable_id;
+    private boolean is_entree; // true = entry, false = exit
+    private UUID fournisseur_id; // or bank_id depending on case
 
-    public MouvementStockComptable(UUID id, int quantite, BigDecimal coutUnitaire, LocalDate date,
-                                   String libelle, UUID journalComptableId,UUID periodeComptableId, boolean isEntree, UUID fournisseurId) {
+    public MouvementStockComptable(UUID id, UUID tenant_id, int quantite, BigDecimal cout_unitaire, LocalDate date,
+            String libelle, UUID journal_comptable_id, UUID periode_comptable_id, boolean is_entree,
+            UUID fournisseur_id) {
         this.id = id;
+        this.tenant_id = tenant_id;
         this.quantite = quantite;
-        this.coutUnitaire = coutUnitaire;
+        this.cout_unitaire = cout_unitaire;
         this.date = date;
         this.libelle = libelle;
-        this.journalComptableId = journalComptableId;
-        this.periodeComptableId = periodeComptableId;
-        this.isEntree = isEntree;
-        this.fournisseurId = fournisseurId;
+        this.journal_comptable_id = journal_comptable_id;
+        this.periode_comptable_id = periode_comptable_id;
+        this.is_entree = is_entree;
+        this.fournisseur_id = fournisseur_id;
     }
 
     /* Implementation of ComptableObject */
     @Override
-    public UUID getId() {
+    public UUID get_id() {
         return id;
     }
 
     @Override
-    public UUID getTenantId() {
-        return tenantId;
+    public UUID get_tenant_id() {
+        return tenant_id;
     }
 
     @Override
-    public BigDecimal getMontant() {
-        return coutUnitaire.multiply(BigDecimal.valueOf(quantite));
+    public BigDecimal get_montant() {
+        return cout_unitaire.multiply(BigDecimal.valueOf(quantite));
     }
 
     @Override
-    public LocalDate getDate() {
+    public LocalDate get_date() {
         return date;
     }
 
     @Override
-    public String getDescription() {
-        return libelle != null ? libelle : (isEntree ? "Stock entry" : "Stock exit");
+    public String get_description() {
+        return libelle != null ? libelle : (is_entree ? "Stock entry" : "Stock exit");
     }
 
     @Override
-    public UUID getJournalComptableId() {
-        return journalComptableId;
+    public UUID get_journal_comptable_id() {
+        return journal_comptable_id;
     }
 
     @Override
-    public UUID getPeriodeComptableId() {
-        return periodeComptableId;
-    }   
+    public UUID get_periode_comptable_id() {
+        return periode_comptable_id;
+    }
 
     @Override
-    public String getDebitAccount() {
+    public String get_debit_account() {
         // Entry: stock (debit 603000), Exit: charge (debit 603000 also)
         return COMPTE_STOCK; // Stock variation
     }
 
     @Override
-    public String getCreditAccount() {
+    public String get_credit_account() {
         // Entry: supplier (401000), Exit: bank (512000)
-        return isEntree ? COMPTE_FOURNISSEUR : COMPTE_BANQUE;
+        return is_entree ? COMPTE_FOURNISSEUR : COMPTE_BANQUE;
     }
 
     @Override
-    public SourceType getSourceType() {
+    public SourceType get_source_type() {
         return SourceType.STOCK;
     }
 
     /* Generate accounting lines (2 lines) */
     @Override
-    public List<DetailEcriture> generateEcritureDetails(Tenant tenant, EcritureComptable ecriture) {
+    public List<DetailEcriture> generate_ecriture_details(Tenant tenant, EcritureComptable ecriture) {
         List<DetailEcriture> details = new ArrayList<>();
-        BigDecimal montantTotal = getMontant();
+        BigDecimal montant_total = get_montant();
         LocalDateTime now = LocalDateTime.now();
 
         // Line 1: Stock (603000)
@@ -117,16 +122,16 @@ public class MouvementStockComptable implements ComptableObject {
                 .id(UUID.randomUUID())
                 .tenant(tenant)
                 .ecriture(ecriture)
-                .compte(null) // Link to Compte object if needed, e.g. fetch from repo
-                .libelle(isEntree ? "Stock entry" : "Stock exit")
-                .sens(isEntree ? Sens.DEBIT : Sens.CREDIT)
-                .montantDebit(isEntree ? montantTotal : BigDecimal.ZERO)
-                .montantCredit(isEntree ? BigDecimal.ZERO : montantTotal)
-                .dateEcriture(now)
-                .createdAt(now)
-                .updatedAt(now)
-                .createdBy("system")
-                .updatedBy("system")
+                .compte(null) // Link to Compte object if needed
+                .libelle(is_entree ? "Stock entry" : "Stock exit")
+                .sens(is_entree ? Sens.DEBIT : Sens.CREDIT)
+                .montant_debit(is_entree ? montant_total : BigDecimal.ZERO)
+                .montant_credit(is_entree ? BigDecimal.ZERO : montant_total)
+                .date_ecriture(now)
+                .created_at(now)
+                .updated_at(now)
+                .created_by("system")
+                .updated_by("system")
                 .build());
 
         // Line 2: Counterpart (Supplier or Bank)
@@ -135,15 +140,15 @@ public class MouvementStockComptable implements ComptableObject {
                 .tenant(tenant)
                 .ecriture(ecriture)
                 .compte(null)
-                .libelle(isEntree ? "Supplier" : "Bank")
-                .sens(isEntree ? Sens.CREDIT : Sens.DEBIT)
-                .montantCredit(isEntree ? montantTotal : BigDecimal.ZERO)
-                .montantDebit(isEntree ? BigDecimal.ZERO : montantTotal)
-                .dateEcriture(now)
-                .createdAt(now)
-                .updatedAt(now)
-                .createdBy("system")
-                .updatedBy("system")
+                .libelle(is_entree ? "Supplier" : "Bank")
+                .sens(is_entree ? Sens.CREDIT : Sens.DEBIT)
+                .montant_credit(is_entree ? montant_total : BigDecimal.ZERO)
+                .montant_debit(is_entree ? BigDecimal.ZERO : montant_total)
+                .date_ecriture(now)
+                .created_at(now)
+                .updated_at(now)
+                .created_by("system")
+                .updated_by("system")
                 .build());
 
         return details;

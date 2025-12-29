@@ -1,6 +1,6 @@
-// DTO pour le plan comptable
 package com.yowyob.erp.accounting.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
@@ -11,6 +11,13 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Data Transfer Object for Plan Comptable Template.
+ * Follows snake_case naming as per Development Charter.
+ * 
+ * @author ALD
+ * @date 30.09.25
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -19,11 +26,11 @@ public class PlanComptableTemplateDto {
 
     private UUID id;
 
-    @NotBlank(message = "Le numéro de compte est obligatoire")
-    @Pattern(regexp = "^[1-8][0-9]{4,7}$", message = "Format de numéro de compte OHADA invalide")
+    @NotBlank(message = "The account number is required")
+    @Pattern(regexp = "^[1-8][0-9]{4,7}$", message = "Invalid OHADA account number format")
     private String numero;
 
-    @NotBlank(message = "Le libellé est obligatoire")
+    @NotBlank(message = "The label is required")
     private String libelle;
 
     private Integer classe;
@@ -33,10 +40,15 @@ public class PlanComptableTemplateDto {
     @Builder.Default
     private Boolean actif = true;
 
-    private LocalDateTime createdAt;
+    @JsonProperty("createdAt")
+    private LocalDateTime created_at;
 
-    private LocalDateTime updatedAt;
+    @JsonProperty("updatedAt")
+    private LocalDateTime updated_at;
 
-    private String  createdBy;
-    private String updatedBy;
+    @JsonProperty("createdBy")
+    private String created_by;
+
+    @JsonProperty("updatedBy")
+    private String updated_by;
 }

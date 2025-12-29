@@ -1,6 +1,6 @@
-// DTO pour les journaux comptables
 package com.yowyob.erp.accounting.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -11,6 +11,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Data Transfer Object for Accounting Journal (Journal Comptable).
+ * Follows snake_case naming as per Development Charter.
+ * 
+ * @author ALD
+ * @date 30.09.25
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -19,24 +26,29 @@ public class JournalComptableDto {
 
     private UUID id;
 
-    @NotBlank(message = "Le code journal est obligatoire")
-    private String codeJournal;
+    @NotBlank(message = "Journal code is required")
+    @JsonProperty("codeJournal")
+    private String code_journal;
 
-    @NotBlank(message = "Le libellé est obligatoire")
+    @NotBlank(message = "Label is required")
     private String libelle;
 
-    @NotBlank(message = "Le type de journal est obligatoire")
-    private String typeJournal;
+    @NotBlank(message = "Journal type is required")
+    @JsonProperty("typeJournal")
+    private String type_journal;
 
     private String notes;
 
     @Builder.Default
     private Boolean actif = true;
 
-    private LocalDateTime createdAt;
+    @JsonProperty("createdAt")
+    private LocalDateTime created_at;
 
-    private LocalDateTime updatedAt;
+    @JsonProperty("updatedAt")
+    private LocalDateTime updated_at;
 
-    //Liste des ecritures comptables
-    private List<EcritureComptableDto> ecritureComptable;
+    // List of accounting entries
+    @JsonProperty("ecritureComptable")
+    private List<EcritureComptableDto> ecriture_comptable;
 }
