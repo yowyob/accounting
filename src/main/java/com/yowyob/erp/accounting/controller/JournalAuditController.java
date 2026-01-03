@@ -2,6 +2,8 @@ package com.yowyob.erp.accounting.controller;
 
 import com.yowyob.erp.accounting.dto.JournalAuditDto;
 import com.yowyob.erp.accounting.service.JournalAuditService;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +28,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/accounting/audit")
 @RequiredArgsConstructor
+@Tag(name = "Accounting Audit", description = "Endpoints for retrieving audit logs")
 public class JournalAuditController {
 
     private final JournalAuditService audit_service;

@@ -34,7 +34,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/accounting/tax-declarations")
 @RequiredArgsConstructor
-@Tag(name = "Tax Declarations", description = "Management of VAT, IS, and other tax declarations.")
+@Tag(name = "Accounting Tax Declarations", description = "Management of VAT, IS, and other tax declarations.")
 @SecurityRequirement(name = "BasicAuth")
 @Slf4j
 public class DeclarationFiscaleController {

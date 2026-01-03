@@ -25,7 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/accounting/invoices")
 @RequiredArgsConstructor
-@Tag(name = "Invoice Upload", description = "Endpoints for uploading and processing invoice documents via OCR")
+@Tag(name = "Accounting Invoice Upload", description = "Endpoints for uploading and processing invoice documents via OCR")
 @Slf4j
 public class InvoiceUploadController {
 

@@ -22,7 +22,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/accounting/organizations")
 @RequiredArgsConstructor
-@Tag(name = "Organizations", description = "Endpoints for top-level organization management")
+@Tag(name = "Accounting Organizations", description = "Endpoints for top-level organization management")
 public class OrganizationController {
 
     private final OrganizationService organization_service;

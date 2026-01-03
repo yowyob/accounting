@@ -24,7 +24,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/accounting/exercices")
 @RequiredArgsConstructor
-@Tag(name = "Fiscal Years", description = "Endpoints for managing fiscal years (exercices comptables)")
+@Tag(name = "Accounting Fiscal Years", description = "Endpoints for managing fiscal years (exercices comptables)")
 public class ExerciceComptableController {
 
     private final ExerciceComptableService exercice_service;

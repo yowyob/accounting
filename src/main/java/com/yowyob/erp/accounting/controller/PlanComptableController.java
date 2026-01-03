@@ -41,7 +41,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/accounting/plan-comptable")
 @RequiredArgsConstructor
-@Tag(name = "Plan Comptable", description = "Accounting plan management: creation, update, deactivation, and search.")
+@Tag(name = "Accounting Plan Comptable", description = "Accounting plan management: creation, update, deactivation, and search.")
 @SecurityRequirement(name = "BasicAuth")
 @Slf4j
 public class PlanComptableController {

@@ -22,7 +22,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/accounting/agences")
 @RequiredArgsConstructor
-@Tag(name = "Agences", description = "Endpoints for branch/agency management")
+@Tag(name = "Accounting Agences", description = "Endpoints for branch/agency management")
 public class AgenceController {
 
     private final AgenceService agence_service;

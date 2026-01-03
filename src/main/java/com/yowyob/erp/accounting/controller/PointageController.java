@@ -19,7 +19,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/accounting/pointage")
 @RequiredArgsConstructor
-@Tag(name = "Pointage Bancaire", description = "Pointage automatique des opérations bancaires")
+@Tag(name = "Accounting Pointage Bancaire", description = "Pointage automatique des opérations bancaires")
 @SecurityRequirement(name = "BasicAuth")
 @Slf4j
 public class PointageController {

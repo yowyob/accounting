@@ -5,6 +5,8 @@ import com.yowyob.erp.accounting.service.CompteService;
 import com.yowyob.erp.common.dto.ApiResponseWrapper;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.config.tenant.TenantContext;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -29,6 +31,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/accounting/comptes")
+@Tag(name = "Accounting Comptes", description = "Endpoints for accounting account management")
 @RequiredArgsConstructor
 @Slf4j
 public class CompteController {
