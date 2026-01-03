@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Configuration Elasticsearch pour l'indexation et la recherche
+ * Elasticsearch configuration for indexing and searching
  */
 @Configuration
 @Slf4j
@@ -33,11 +33,10 @@ public class ElasticsearchConfig {
     public ElasticsearchTransport elasticsearchTransport() {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
-        
+
         return new RestClientTransport(
                 restClient(),
-                new JacksonJsonpMapper(objectMapper)
-        );
+                new JacksonJsonpMapper(objectMapper));
     }
 
     @Bean

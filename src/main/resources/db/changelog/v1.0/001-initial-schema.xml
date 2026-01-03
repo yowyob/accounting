@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- 
+        Initial Schema Creation
+        
+        This changeset creates the base tables for the YOWYOB ERP system.
+        Since JPA is configured with ddl-auto=none, Liquibase will manage all schema changes.
+        
+        Note: This is a placeholder. The actual schema should be generated from the existing
+        database or created based on the JPA entities.
+    -->
+
+    <changeSet id="001-initial-schema-placeholder" author="system">
+        <comment>Placeholder for initial schema - to be populated with actual table definitions</comment>
+        
+        <!-- This is a no-op changeset to allow Liquibase to run successfully -->
+        <!-- Actual table creation should be added here or use JPA to generate the schema first -->
+        
+        <sql>
+            -- Placeholder SQL
+            -- Tables will be created by JPA initially, then managed by Liquibase
+            SELECT 1;
+        </sql>
+        
+        <rollback>
+            -- No rollback needed for placeholder
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

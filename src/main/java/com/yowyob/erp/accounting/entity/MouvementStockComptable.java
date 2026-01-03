@@ -27,9 +27,10 @@ import java.util.UUID;
 @Data
 public class MouvementStockComptable implements ComptableObject {
 
-    private static final String COMPTE_STOCK = "603000";
-    private static final String COMPTE_FOURNISSEUR = "401000";
-    private static final String COMPTE_BANQUE = "512000";
+    // Account numbers should be injected or looked up, not hardcoded
+    // private static final String COMPTE_STOCK = "603000";
+    // private static final String COMPTE_FOURNISSEUR = "401000";
+    // private static final String COMPTE_BANQUE = "512000";
 
     private UUID id;
     private UUID tenant_id;
@@ -95,14 +96,14 @@ public class MouvementStockComptable implements ComptableObject {
 
     @Override
     public String get_debit_account() {
-        // Entry: stock (debit 603000), Exit: charge (debit 603000 also)
-        return COMPTE_STOCK; // Stock variation
+        // Validation logic should ensure this is populated before processing
+        // For now returning a standardized key for lookup
+        return "STOCK_ACCOUNT_REF";
     }
 
     @Override
     public String get_credit_account() {
-        // Entry: supplier (401000), Exit: bank (512000)
-        return is_entree ? COMPTE_FOURNISSEUR : COMPTE_BANQUE;
+        return is_entree ? "SUPPLIER_ACCOUNT_REF" : "BANK_ACCOUNT_REF";
     }
 
     @Override

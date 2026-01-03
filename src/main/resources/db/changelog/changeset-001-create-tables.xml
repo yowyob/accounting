@@ -8,19 +8,53 @@
      <changeSet id="001-create-accounting-tables" author="yowyob-system">
         <comment>Création des tables principales du module comptabilité (OHADA) et ajout des champs d'audit.</comment>
 
+        <createTable tableName="organizations">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_organizations" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="address" type="VARCHAR(255)"/>
+            <column name="tax_id" type="VARCHAR(100)"/>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+
         <createTable tableName="tenants">
             <column name="id" type="UUID">
                 <constraints primaryKey="true" primaryKeyName="pk_tenants" nullable="false"/>
             </column>
-            <column name="code" type="VARCHAR(100)">
+            <column name="organization_id" type="UUID"/> <column name="code" type="VARCHAR(100)">
                 <constraints nullable="false" unique="true"/>
             </column>
-            <column name="nom" type="VARCHAR(255)">
-                <constraints nullable="false"/>
+            <column name="nom" type="VARCHAR(255)"> <constraints nullable="false"/>
             </column>
+            <column name="description" type="VARCHAR(255)"/>
             <column name="adresse" type="VARCHAR(255)"/>
             <column name="email" type="VARCHAR(100)"/>
             <column name="telephone" type="VARCHAR(50)"/>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+
+        <createTable tableName="agences">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_agences" nullable="false"/>
+            </column>
+            <column name="tenant_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="address" type="VARCHAR(255)"/>
+            <column name="city" type="VARCHAR(100)"/>
+            <column name="country" type="VARCHAR(100)"/>
             <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>
@@ -139,31 +173,58 @@
             <column name="updated_by" type="VARCHAR(255)"/>
     </createTable>
 
-    <createTable tableName="periodes_comptables">
-            <column name="id" type="UUID">
-                <constraints primaryKey="true" primaryKeyName="pk_periodes_comptables" nullable="false"/>
-            </column>
-            <column name="tenant_id" type="UUID">
-                <constraints nullable="false"/>
-            </column>
-            <column name="code" type="VARCHAR(50)">
-                 <constraints unique="true" nullable="false"/>
-            </column>
-            <column name="date_debut" type="DATE">
-                 <constraints nullable="false"/>
-            </column>
-            <column name="date_fin" type="DATE">
-                 <constraints nullable="false"/>
-            </column>
-            <column name="cloturee" type="BOOLEAN" defaultValueBoolean="false"/>
-            <column name="date_cloture" type="DATE" />
-            <column name="notes" type="TEXT"/>
-            <column name="created_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
-            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
-            <column name="created_by" type="VARCHAR(255)"/>
-            <column name="updated_by" type="VARCHAR(255)"/>
+    <createTable tableName="exercices_comptables">
+        <column name="id" type="UUID">
+            <constraints primaryKey="true" primaryKeyName="pk_exercices_comptables" nullable="false"/>
+        </column>
+        <column name="tenant_id" type="UUID">
+            <constraints nullable="false"/>
+        </column>
+        <column name="code" type="VARCHAR(50)">
+            <constraints nullable="false"/>
+        </column>
+        <column name="libelle" type="VARCHAR(255)">
+            <constraints nullable="false"/>
+        </column>
+        <column name="date_debut" type="DATE">
+            <constraints nullable="false"/>
+        </column>
+        <column name="date_fin" type="DATE">
+            <constraints nullable="false"/>
+        </column>
+        <column name="cloture" type="BOOLEAN" defaultValueBoolean="false"/>
+        <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        <column name="created_by" type="VARCHAR(255)"/>
+        <column name="updated_by" type="VARCHAR(255)"/>
     </createTable>
 
+    <createTable tableName="periodes_comptables">
+        <column name="id" type="UUID">
+            <constraints primaryKey="true" primaryKeyName="pk_periodes_comptables" nullable="false"/>
+        </column>
+        <column name="tenant_id" type="UUID">
+            <constraints nullable="false"/>
+        </column>
+        <column name="exercice_id" type="UUID">
+            <constraints nullable="false"/> </column>
+        <column name="code" type="VARCHAR(50)">
+             <constraints nullable="false"/>
+        </column>
+        <column name="date_debut" type="DATE">
+             <constraints nullable="false"/>
+        </column>
+        <column name="date_fin" type="DATE">
+             <constraints nullable="false"/>
+        </column>
+        <column name="cloturee" type="BOOLEAN" defaultValueBoolean="false"/>
+        <column name="date_cloture" type="DATE" />
+        <column name="notes" type="TEXT"/>
+        <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        <column name="created_by" type="VARCHAR(255)"/>
+        <column name="updated_by" type="VARCHAR(255)"/>
+    </createTable>
 	<createTable tableName="declaration_fiscale">
 	    <column name="declaration_id" type="UUID">
 		<constraints primaryKey="true" primaryKeyName="pk_declaration_fiscale" nullable="false"/>

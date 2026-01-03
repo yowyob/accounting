@@ -1,4 +1,4 @@
-// Configuration des profils pour les tests
+// Profile configuration for tests
 package com.yowyob.erp.config.profile;
 
 import lombok.extern.slf4j.Slf4j;
@@ -9,8 +9,8 @@ import org.springframework.context.annotation.Profile;
 @Profile("no-kafka")
 @Slf4j
 public class NoKafkaConfiguration {
-    
+
     public NoKafkaConfiguration() {
-        log.info("Configuration sans Kafka activée pour les tests");
+        log.info("No-Kafka configuration enabled for tests");
     }
 }

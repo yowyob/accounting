@@ -1,4 +1,4 @@
-// DTO pour les informations utilisateur
+// DTO for user information
 package com.yowyob.erp.config.auth;
 
 import lombok.Data;
@@ -8,7 +8,7 @@ public class UserInfo {
     private String id;
     private String username;
     private String email;
-    private String tenantId; // À echanger avec le prof 
+    private String tenantId; // To check
     private String[] roles;
     private boolean active;
 }

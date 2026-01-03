@@ -14,8 +14,8 @@ import java.time.LocalDateTime;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Service centralisé pour la publication d’événements Kafka dans l’ERP.
- * Chaque module (compta, facturation, audit, etc.) l’utilise pour notifier ses
+ * Centralized service for publishing Kafka events in the ERP.
+ * Each module (accounting, billing, audit, etc.) uses it to notify its
  * actions.
  */
 @Service
@@ -51,7 +51,7 @@ public class KafkaMessageService {
 
     /*
      * ===========================================================
-     * 🔧 MÉTHODES GÉNÉRIQUES
+     * 🔧 GENERIC METHODS
      * ===========================================================
      */
 
@@ -68,21 +68,21 @@ public class KafkaMessageService {
             CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(topic, key, message);
             future.whenComplete((result, exception) -> {
                 if (exception == null) {
-                    log.debug("✅ Message envoyé → Topic [{}] | Offset [{}]", topic,
+                    log.debug("✅ Message sent → Topic [{}] | Offset [{}]", topic,
                             result.getRecordMetadata().offset());
                 } else {
-                    log.error("❌ Échec de l’envoi Kafka → Topic [{}] : {}", topic, exception.getMessage());
+                    log.error("❌ Kafka send failed → Topic [{}] : {}", topic, exception.getMessage());
                 }
             });
         } catch (Exception e) {
-            log.error("Erreur d’envoi Kafka → Topic [{}]", topic, e);
+            log.error("Kafka send error → Topic [{}]", topic, e);
             throw e;
         }
     }
 
     /*
      * ===========================================================
-     * 🧾 DOMAINES MÉTIERS
+     * 🧾 BUSINESS DOMAINS
      * ===========================================================
      */
 

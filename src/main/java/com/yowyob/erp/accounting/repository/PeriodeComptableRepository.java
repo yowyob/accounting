@@ -3,6 +3,7 @@ package com.yowyob.erp.accounting.repository;
 import com.yowyob.erp.accounting.entity.PeriodeComptable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -24,7 +25,8 @@ public interface PeriodeComptableRepository extends JpaRepository<PeriodeComptab
        Optional<PeriodeComptable> findByTenant_IdAndId(UUID tenant_id, UUID id);
 
        /** Lists all periods for a tenant, ordered by start date descending */
-       List<PeriodeComptable> findByTenant_IdOrderByDate_debutDesc(UUID tenant_id);
+       @Query("SELECT p FROM PeriodeComptable p WHERE p.tenant.id = :tenant_id ORDER BY p.date_debut DESC")
+       List<PeriodeComptable> findByTenant_IdOrderByDate_debutDesc(@Param("tenant_id") UUID tenant_id);
 
        /** Finds a period by tenant and period code */
        Optional<PeriodeComptable> findByTenant_IdAndCode(UUID tenant_id, String code);

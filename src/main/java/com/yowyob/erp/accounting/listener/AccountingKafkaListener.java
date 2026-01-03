@@ -29,6 +29,7 @@ public class AccountingKafkaListener {
     // 💡 Déclaration et injection de l'ObjectMapper pour la désérialisation du
     // payload interne
     private final ObjectMapper objectMapper;
+    private final com.yowyob.erp.accounting.repository.JournalAuditRepository journalAuditRepository;
 
     /*
      * ===========================================================
@@ -122,8 +123,9 @@ public class AccountingKafkaListener {
                                 // 💡 Conversion du Map JSON en JournalAudit
                                 JournalAudit auditEntry = objectMapper.convertValue(rawPayload, JournalAudit.class);
 
-                                // TODO: Complete JournalAudit object processing
-                                log.info("✅ Audit log converti : {} par {}", auditEntry.getAction(),
+                                // Save to database
+                                journalAuditRepository.save(auditEntry);
+                                log.info("✅ Audit log saved: {} by {}", auditEntry.getAction(),
                                         auditEntry.getUtilisateur());
 
                             } else {

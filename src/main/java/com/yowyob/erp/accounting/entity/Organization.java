@@ -4,48 +4,38 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.util.List;
 
 /**
- * Entity representing a Tenant (e.g. a specific company or subsidiary).
- * Belongs to an Organization.
- * 
+ * Entity representing an Organization.
+ * An organization can have multiple Tenants.
+ *
  * @author ALD
  * @date 30.12.2025
  */
 @Entity
-@Table(name = "tenants")
+@Table(name = "organizations")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Tenant {
+public class Organization {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organization_id")
-    private Organization organization;
+    @Column(nullable = false, unique = true)
+    private String name;
 
-    @Column(nullable = false, unique = true, length = 100)
-    private String code;
-
-    @Column(nullable = false, length = 255)
-    private String nom;
-
-    @Column(length = 255)
+    @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(length = 255)
-    private String adresse;
+    private String address;
 
-    @Column(length = 100)
-    private String email;
-
-    @Column(length = 50)
-    private String telephone;
+    @Column(name = "tax_id")
+    private String tax_id;
 
     private LocalDateTime created_at;
     private LocalDateTime updated_at;
@@ -59,9 +49,5 @@ public class Tenant {
     @PreUpdate
     public void onUpdate() {
         this.updated_at = LocalDateTime.now();
-    }
-
-    public Tenant(UUID tenantId) {
-        this.id = tenantId;
     }
 }

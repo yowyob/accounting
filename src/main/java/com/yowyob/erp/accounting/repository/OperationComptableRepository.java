@@ -2,11 +2,13 @@ package com.yowyob.erp.accounting.repository;
 
 import com.yowyob.erp.accounting.entity.OperationComptable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.repository.query.Param;
 
 /**
  * Repository interface for managing OperationComptable entities.
@@ -22,8 +24,14 @@ public interface OperationComptableRepository extends JpaRepository<OperationCom
 
     Optional<OperationComptable> findByTenant_IdAndId(UUID tenant_id, UUID id);
 
-    Optional<OperationComptable> findByTenant_IdAndType_operationAndMode_reglement(UUID tenant_id,
-            String type_operation, String mode_reglement);
+    @Query("SELECT o FROM OperationComptable o WHERE o.tenant.id = :tenantId AND o.compte_principal = :comptePrincipal")
+    List<OperationComptable> findByTenant_IdAndCompte_principal(
+            @Param("tenantId") UUID tenantId,
+            @Param("comptePrincipal") String comptePrincipal);
 
-    List<OperationComptable> findByTenant_IdAndCompte_principal(UUID tenant_id, String compte_principal);
+    @Query("SELECT o FROM OperationComptable o WHERE o.tenant.id = :tenantId AND o.type_operation = :typeOp AND o.mode_reglement = :modeReg")
+    Optional<OperationComptable> findByTenant_IdAndType_operationAndMode_reglement(
+            @Param("tenantId") UUID tenantId,
+            @Param("typeOp") String typeOp,
+            @Param("modeReg") String modeReg);
 }

@@ -9,23 +9,27 @@ import org.springframework.transaction.PlatformTransactionManager;
 import javax.sql.DataSource;
 
 /**
- * Configure le JpaTransactionManager comme le gestionnaire de transactions par défaut (@Primary).
- * Ceci est nécessaire lorsque KafkaTransactionManager est également présent,
- * car Spring Boot ne sait pas lequel choisir pour les annotations @Transactional non qualifiées.
+ * Configures JpaTransactionManager as the default transaction manager
+ * (@Primary).
+ * This is necessary when KafkaTransactionManager is also present,
+ * because Spring Boot doesn't know which one to choose for
+ * unqualified @Transactional annotations.
  */
 @Configuration
 public class PrimaryTransactionManagerConfig {
 
     /**
-     * Crée et marque le JpaTransactionManager comme @Primary.
-     * @param dataSource Le DataSource injecté par Spring Boot.
-     * @return L'instance du JpaTransactionManager.
+     * Creates and marks JpaTransactionManager as @Primary.
+     * 
+     * @param dataSource The DataSource injected by Spring Boot.
+     * @return The JpaTransactionManager instance.
      */
     @Bean
     @Primary
     public PlatformTransactionManager transactionManager(DataSource dataSource) {
-        // Le JpaTransactionManager gère les transactions pour Hibernate/JPA.
-        // Spring Boot l'aurait créé automatiquement, mais nous le créons ici pour ajouter @Primary.
+        // JpaTransactionManager manages transactions for Hibernate/JPA.
+        // Spring Boot would have created it automatically, but we create it here to add
+        // @Primary.
         JpaTransactionManager transactionManager = new JpaTransactionManager();
         transactionManager.setDataSource(dataSource);
         return transactionManager;

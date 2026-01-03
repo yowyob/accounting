@@ -12,13 +12,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Service utilitaire Redis pour :
- * - la gestion des sessions
- * - le cache applicatif
- * - les soldes de comptes
- * - la vérification de clés
+ * Redis utility service for:
+ * - session management
+ * - application cache
+ * - account balances
+ * - key verification
  *
- * Conforme à la charte Yowyob : sécurité, traçabilité, maintenabilité
+ * Compliant with Yowyob charter: security, traceability, maintainability
  */
 @Service
 @RequiredArgsConstructor
@@ -29,57 +29,58 @@ public class RedisService {
     private final ObjectMapper objectMapper;
 
     /**
-     * Sauvegarde une valeur avec TTL
+     * Saves a value with TTL
      */
     public void save(String key, Object value, Duration ttl) {
         try {
             redisTemplate.opsForValue().set(key, value, ttl.toSeconds(), TimeUnit.SECONDS);
-            log.debug("💾 Valeur sauvegardée dans Redis : {}", key);
+            log.debug("💾 Value saved in Redis: {}", key);
         } catch (Exception e) {
-            log.error("❌ Erreur lors de la sauvegarde Redis pour la clé {}", key, e);
+            log.error("❌ Error saving to Redis for key {}", key, e);
         }
     }
 
     /**
-     * Récupère une valeur avec type attendu
+     * Retrieves a value with expected type
      */
     public <T> T get(String key, Class<T> type) {
         try {
             Object value = redisTemplate.opsForValue().get(key);
-            if (value == null) return null;
+            if (value == null)
+                return null;
             return objectMapper.convertValue(value, type);
         } catch (Exception e) {
-            log.error("❌ Erreur lors de la récupération Redis pour la clé {}", key, e);
+            log.error("❌ Error retrieving from Redis for key {}", key, e);
             return null;
         }
     }
 
     /**
-     * Supprime une clé
+     * Deletes a key
      */
     public void delete(String key) {
         try {
             redisTemplate.delete(key);
-            log.debug("🗑️ Clé supprimée : {}", key);
+            log.debug("🗑️ Key deleted: {}", key);
         } catch (Exception e) {
-            log.error("❌ Erreur lors de la suppression Redis pour {}", key, e);
+            log.error("❌ Error deleting from Redis for key {}", key, e);
         }
     }
 
     /**
-     * Vérifie si une clé existe
+     * Checks if a key exists
      */
     public boolean exists(String key) {
         try {
             return Boolean.TRUE.equals(redisTemplate.hasKey(key));
         } catch (Exception e) {
-            log.error("❌ Erreur lors de la vérification d'existence Redis : {}", key, e);
+            log.error("❌ Error checking Redis existence for key: {}", key, e);
             return false;
         }
     }
 
     /**
-     * Gestion des soldes de comptes
+     * Account balance management
      */
     public void saveAccountBalance(String tenantId, String accountNumber, Double balance) {
         save(String.format("account:balance:%s:%s", tenantId, accountNumber), balance, Duration.ofMinutes(30));
@@ -90,7 +91,7 @@ public class RedisService {
     }
 
     /**
-     * Gestion des sessions utilisateur
+     * User session management
      */
     public void saveUserSession(String sessionId, Object userInfo, Duration ttl) {
         save("session:" + sessionId, userInfo, ttl);

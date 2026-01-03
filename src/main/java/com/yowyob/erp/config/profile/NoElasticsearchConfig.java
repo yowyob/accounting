@@ -1,4 +1,4 @@
-// Configuration pour désactiver Elasticsearch en mode test
+// Configuration to disable Elasticsearch in test mode
 package com.yowyob.erp.config.profile;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -12,8 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 @Profile("test")
 @Slf4j
 public class NoElasticsearchConfig {
-    
+
     public NoElasticsearchConfig() {
-        log.info("Elasticsearch désactivé pour les tests");
+        log.info("Elasticsearch disabled for tests");
     }
 }

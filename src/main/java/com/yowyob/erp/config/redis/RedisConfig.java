@@ -79,16 +79,10 @@ public class RedisConfig {
                 .entryTtl(Duration.ofMinutes(10))
                 .serializeKeysWith(org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair
                         .fromSerializer(new StringRedisSerializer()))
-                .serializeValuesWith(org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair
-                        .fromSerializer(new GenericJackson2JsonRedisSerializer()))
+                .serializeValuesWith(
+                        org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair
+                                .fromSerializer(new GenericJackson2JsonRedisSerializer()))
                 .disableCachingNullValues();
-
-        RedisCacheManagerBuilderCustomizer customizer = builder -> {
-            builder.withCacheConfiguration("ecrituresAll", defaultConfig.entryTtl(Duration.ofMinutes(10)));
-            builder.withCacheConfiguration("compteAll", defaultConfig.entryTtl(Duration.ofHours(1)));
-            builder.withCacheConfiguration("compteSolde", defaultConfig.entryTtl(Duration.ofMinutes(5)));
-            builder.withCacheConfiguration("sessionCache", defaultConfig.entryTtl(Duration.ofHours(2)));
-        };
 
         RedisCacheManager manager = RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig)
@@ -98,7 +92,8 @@ public class RedisConfig {
                 .withCacheConfiguration("sessionCache", defaultConfig.entryTtl(Duration.ofHours(2)))
                 .build();
 
-        log.info("🧠 Redis CacheManager initialized (TTL: compteAll=1h, compteSolde=5m, ecrituresAll=10m, sessionCache=2h)");
+        log.info(
+                "🧠 Redis CacheManager initialized (TTL: compteAll=1h, compteSolde=5m, ecrituresAll=10m, sessionCache=2h)");
         return manager;
     }
 }

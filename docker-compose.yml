@@ -14,9 +14,9 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
-      - my-network
+      - yowyob-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U yowyob_admin -d yowyob_erp"]
+      test: [ "CMD-SHELL", "pg_isready -U yowyob_admin -d yowyob_erp" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -46,9 +46,9 @@ services:
     volumes:
       - es-data:/usr/share/elasticsearch/data
     networks:
-      - my-network
+      - yowyob-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cat/health || exit 1"]
+      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cat/health || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 15
@@ -71,12 +71,12 @@ services:
       - zookeeper-data:/var/lib/zookeeper/data
       - zookeeper-log:/var/lib/zookeeper/log
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      test: [ "CMD", "nc", "-z", "localhost", "2181" ]
       interval: 10s
       timeout: 10s
       retries: 15
     networks:
-      - my-network
+      - yowyob-network
     restart: unless-stopped
 
   # ==========================
@@ -91,6 +91,7 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_KRAFT_MODE_ENABLED: "false"
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
@@ -102,12 +103,12 @@ services:
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       KAFKA_DELETE_TOPIC_ENABLE: "true"
     networks:
-      - my-network
+      - yowyob-network
     depends_on:
       zookeeper:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list || exit 1"]
+      test: [ "CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list || exit 1" ]
       interval: 10s
       timeout: 10s
       retries: 5
@@ -126,9 +127,9 @@ services:
     volumes:
       - redis-data:/data
     networks:
-      - my-network
+      - yowyob-network
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a azaleodel -p 6379 ping | grep -q PONG"]
+      test: [ "CMD-SHELL", "redis-cli -a azaleodel -p 6379 ping | grep -q PONG" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -148,7 +149,7 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
     networks:
-      - my-network
+      - yowyob-network
     depends_on:
       kafka:
         condition: service_healthy
@@ -163,6 +164,8 @@ services:
     container_name: yowyob-erp-backend
     ports:
       - "8081:8081"
+    volumes:
+      - ~/.m2:/root/.m2
     env_file:
       - .env
     environment:
@@ -177,7 +180,7 @@ services:
       spring.kafka.bootstrap-servers: kafka:9092
       spring.jpa.hibernate.ddl-auto: none
       spring.liquibase.enabled: "true"
-      spring.liquibase.change-log: file:///app/resources/db/changelog/db.changelog-master.xml
+      spring.liquibase.change-log: classpath:db/changelog/db.changelog-master.xml
       spring.kafka.producer.transaction-id-prefix: yowyob-erp-tx-
     depends_on:
       postgres:
@@ -189,7 +192,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - my-network
+      - yowyob-network
     restart: unless-stopped
 
 # ==========================
@@ -206,6 +209,5 @@ volumes:
 # Network
 # ==========================
 networks:
-  my-network:
+  yowyob-network:
     driver: bridge
-

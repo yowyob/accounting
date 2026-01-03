@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import java.util.UUID;
 
-// Intercepteur pour extraire le tenantId des requêtes
+// Interceptor to extract tenantId from requests
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -28,7 +28,7 @@ public class TenantInterceptor implements HandlerInterceptor {
             @NonNull Object handler) {
         UUID tenantId = extractTenantId(request);
         TenantContext.setCurrentTenant(tenantId);
-        log.debug("Tenant défini: {}", tenantId);
+        log.debug("Tenant set: {}", tenantId);
         return true;
     }
 
@@ -40,16 +40,16 @@ public class TenantInterceptor implements HandlerInterceptor {
     }
 
     private UUID extractTenantId(HttpServletRequest request) {
-        // Extraction depuis le header
+        // Extraction from header
         String tenantIdStr = request.getHeader(tenantHeaderName);
 
         if (tenantIdStr == null || tenantIdStr.trim().isEmpty()) {
-            // Extraction depuis JWT token (si disponible)
+            // Extraction from JWT token (if available)
             tenantIdStr = extractFromJWT(request);
         }
 
         if (tenantIdStr == null || tenantIdStr.trim().isEmpty()) {
-            // Extraction depuis les paramètres de requête
+            // Extraction from query parameters
             tenantIdStr = request.getParameter("tenantId");
         }
 

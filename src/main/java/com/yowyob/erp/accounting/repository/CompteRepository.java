@@ -14,8 +14,7 @@ import java.util.UUID;
  * JPA Repository for OHADA accounting accounts management.
  * Implements multi-tenant search operations and filters by account number and
  * class.
- * 
- * @author ALD
+ * * @author ALD
  * @date 30.09.25
  */
 @Repository
@@ -27,13 +26,16 @@ public interface CompteRepository extends JpaRepository<Compte, UUID> {
             @Param("no_compte") String no_compte);
 
     /** Finds an account by tenant and ID */
-    Optional<Compte> findByTenant_IdAndId(UUID tenant_id, UUID id);
+    @Query("SELECT c FROM Compte c WHERE c.tenant.id = :tenant_id AND c.id = :id")
+    Optional<Compte> findByTenant_IdAndId(@Param("tenant_id") UUID tenant_id, @Param("id") UUID id);
 
     /** Lists active accounts for a tenant */
-    List<Compte> findByTenant_IdAndActifTrue(UUID tenant_id);
+    @Query("SELECT c FROM Compte c WHERE c.tenant.id = :tenant_id AND c.actif = true")
+    List<Compte> findByTenant_IdAndActifTrue(@Param("tenant_id") UUID tenant_id);
 
     /** Lists accounts for a tenant by OHADA class */
-    List<Compte> findByTenant_IdAndClasse(UUID tenant_id, Integer classe);
+    @Query("SELECT c FROM Compte c WHERE c.tenant.id = :tenant_id AND c.classe = :classe")
+    List<Compte> findByTenant_IdAndClasse(@Param("tenant_id") UUID tenant_id, @Param("classe") Integer classe);
 
     /** Checks if an account exists for a tenant and a given number */
     @Query("SELECT COUNT(c) > 0 FROM Compte c WHERE c.tenant.id = :tenant_id AND c.no_compte = :no_compte")
@@ -45,5 +47,6 @@ public interface CompteRepository extends JpaRepository<Compte, UUID> {
             @Param("prefix") String prefix);
 
     /** All accounts for a tenant (including inactive ones) */
-    List<Compte> findAllByTenant_Id(UUID tenant_id);
+    @Query("SELECT c FROM Compte c WHERE c.tenant.id = :tenant_id")
+    List<Compte> findAllByTenant_Id(@Param("tenant_id") UUID tenant_id);
 }

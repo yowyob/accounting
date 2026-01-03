@@ -1,27 +1,27 @@
 package com.yowyob.erp.accounting.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Size;
 import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.util.List;
 
 /**
- * Entity representing an accounting period (Periode Comptable).
- * Follows snake_case naming as per Development Charter.
- * 
+ * Entity representing a Fiscal Year (Exercice Comptable).
+ * A fiscal year contains multiple accounting periods.
+ *
  * @author ALD
- * @date 30.09.25
+ * @date 30.12.2025
  */
 @Entity
-@Table(name = "periodes_comptables")
+@Table(name = "exercices_comptables")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PeriodeComptable {
+public class ExerciceComptable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -31,36 +31,27 @@ public class PeriodeComptable {
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "exercice_id", nullable = false)
-    private ExerciceComptable exercice;
+    @Column(nullable = false, length = 50)
+    private String code; // e.g., "2025"
 
-    @Column(nullable = false, unique = true, length = 50)
-    private String code;
+    @Column(nullable = false, length = 255)
+    private String libelle; // e.g., "Exercice 2025"
 
-    @Column(name = "date_debut", nullable = false)
+    @Column(nullable = false)
     private LocalDate date_debut;
 
-    @Column(name = "date_fin", nullable = false)
+    @Column(nullable = false)
     private LocalDate date_fin;
 
     @Builder.Default
-    private Boolean cloturee = false;
+    private Boolean cloture = false;
 
-    private String notes;
-
-    @Column(name = "date_cloture")
-    private LocalDate date_cloture;
+    @OneToMany(mappedBy = "exercice", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<PeriodeComptable> periodes;
 
     private LocalDateTime created_at;
     private LocalDateTime updated_at;
-
-    @Size(max = 255)
-    @Column(name = "created_by", length = 255)
     private String created_by;
-
-    @Size(max = 255)
-    @Column(name = "updated_by", length = 255)
     private String updated_by;
 
     @PrePersist

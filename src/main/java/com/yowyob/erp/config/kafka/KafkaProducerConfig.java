@@ -17,9 +17,9 @@ import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 
 /**
- * Configuration Kafka Producer
- * Permet d’envoyer des objets JSON (DetailEcriture, JournalAudit, etc.)
- * vers les topics Kafka définis dans KafkaTopicConfig.
+ * Kafka Producer Configuration
+ * Allows sending JSON objects (DetailEcriture, JournalAudit, etc.)
+ * to Kafka topics defined in KafkaTopicConfig.
  */
 @Configuration
 @EnableKafka
@@ -30,12 +30,11 @@ public class KafkaProducerConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
-    @Value("${spring.kafka.producer.transaction-id-prefix}") // 💡 AJOUT : Injection du préfixe d'ID de transaction
+    @Value("${spring.kafka.producer.transaction-id-prefix}") // 💡 ADDITION: Transaction ID prefix injection
     private String transactionIdPrefix;
 
-
     /**
-     * Configuration de base du Producer.
+     * Basic Producer Configuration.
      */
     @Bean
     public Map<String, Object> producerConfigs() {
@@ -43,30 +42,31 @@ public class KafkaProducerConfig {
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
-        props.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false); // Nettoie les headers inutiles
-        props.put(ProducerConfig.ACKS_CONFIG, "all"); // Garantie de livraison
+        props.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false); // Cleans useless headers
+        props.put(ProducerConfig.ACKS_CONFIG, "all"); // Delivery guarantee
         props.put(ProducerConfig.RETRIES_CONFIG, 3);
         props.put(ProducerConfig.LINGER_MS_CONFIG, 5);
         props.put(ProducerConfig.BATCH_SIZE_CONFIG, 16_384);
         props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33_554_432);
-        
-        // 💡 CORRECTION : Ajout du préfixe d'ID de transaction pour rendre la ProducerFactory transactionnelle
-        props.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transactionIdPrefix); 
-        
+
+        // 💡 FIX: Adding transaction ID prefix to make ProducerFactory transactional
+        props.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transactionIdPrefix);
+
         return props;
     }
 
     /**
-     * Factory générique de producteurs Kafka.
+     * Generic Kafka Producer Factory.
      */
     @Bean
     public ProducerFactory<String, Object> producerFactory() {
-        // La DefaultKafkaProducerFactory devient transactionnelle car TRANSACTIONAL_ID_CONFIG est inclus dans producerConfigs()
+        // DefaultKafkaProducerFactory becomes transactional because
+        // TRANSACTIONAL_ID_CONFIG is included in producerConfigs()
         return new DefaultKafkaProducerFactory<>(producerConfigs());
     }
 
     /**
-     * KafkaTemplate utilisé pour publier les événements.
+     * KafkaTemplate used to publish events.
      */
     @Bean
     public KafkaTemplate<String, Object> kafkaTemplate() {

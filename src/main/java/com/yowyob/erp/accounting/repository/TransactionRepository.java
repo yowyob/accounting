@@ -11,36 +11,49 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Repository interface for managing Transaction entities.
+ * Updated to use snake_case field names to match the Java Entity.
+ * * @author ALD
+ * @date 30.12.25
+ */
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, UUID> {
 
-   Optional<Transaction> findByTenant_IdAndId(UUID tenantId, UUID id);
-   
-    List<Transaction> findByTenant_IdOrderByDateTransactionDesc(UUID tenantId);
+    @Query("SELECT t FROM Transaction t WHERE t.tenant.id = :tenantId AND t.id = :id")
+    Optional<Transaction> findByTenant_IdAndId(@Param("tenantId") UUID tenantId, @Param("id") UUID id);
 
-    Optional<Transaction> findByTenant_IdAndNumeroRecu(UUID tenantId, String numeroRecu);
+    @Query("SELECT t FROM Transaction t WHERE t.tenant.id = :tenantId ORDER BY t.date_transaction DESC")
+    List<Transaction> findByTenant_IdOrderByDateTransactionDesc(@Param("tenantId") UUID tenantId);
 
-    List<Transaction> findByTenant_IdAndEstComptabiliseeFalse(UUID tenantId);
+    @Query("SELECT t FROM Transaction t WHERE t.tenant.id = :tenantId AND t.numero_recu = :numeroRecu")
+    Optional<Transaction> findByTenant_IdAndNumeroRecu(@Param("tenantId") UUID tenantId, @Param("numeroRecu") String numeroRecu);
 
-    List<Transaction> findByTenant_IdAndEstValideeFalse(UUID tenantId);
+    @Query("SELECT t FROM Transaction t WHERE t.tenant.id = :tenantId AND t.est_comptabilisee = false")
+    List<Transaction> findByTenant_IdAndEstComptabiliseeFalse(@Param("tenantId") UUID tenantId);
+
+    @Query("SELECT t FROM Transaction t WHERE t.tenant.id = :tenantId AND t.est_validee = false")
+    List<Transaction> findByTenant_IdAndEstValideeFalse(@Param("tenantId") UUID tenantId);
 
     @Query("""
            SELECT t FROM Transaction t 
            WHERE t.tenant.id = :tenantId 
-           AND t.dateTransaction BETWEEN :startDate AND :endDate
+           AND t.date_transaction BETWEEN :startDate AND :endDate
            """)
     List<Transaction> findByTenant_IdAndDateRange(@Param("tenantId") UUID tenantId,
                                                  @Param("startDate") LocalDateTime startDate,
                                                  @Param("endDate") LocalDateTime endDate);
 
     @Query("""
-           SELECT COALESCE(SUM(t.montantTransaction), 0) 
+           SELECT COALESCE(SUM(t.montant_transaction), 0) 
            FROM Transaction t 
-           WHERE t.tenant.id = :tenantId AND t.estValidee = true
+           WHERE t.tenant.id = :tenantId AND t.est_validee = true
            """)
     Double getTotalValidatedTransactions(@Param("tenantId") UUID tenantId);
 
-    List<Transaction> findByTenant_IdAndCaissier(UUID tenantId, String caissier);
+    @Query("SELECT t FROM Transaction t WHERE t.tenant.id = :tenantId AND t.caissier = :caissier")
+    List<Transaction> findByTenant_IdAndCaissier(@Param("tenantId") UUID tenantId, @Param("caissier") String caissier);
 
-    boolean existsByTenantIdAndNumeroRecu(UUID tenantId, String numeroRecu);
+    @Query("SELECT COUNT(t) > 0 FROM Transaction t WHERE t.tenant.id = :tenantId AND t.numero_recu = :numeroRecu")
+    boolean existsByTenantIdAndNumeroRecu(@Param("tenantId") UUID tenantId, @Param("numeroRecu") String numeroRecu);
 }

@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 
 /**
- * Service pour interagir avec l'API d'authentification externe
+ * Service for interacting with external authentication API
  */
 @Service
 @RequiredArgsConstructor
@@ -28,22 +28,22 @@ public class AuthService {
     private int timeout;
 
     /**
-     * Valide un token JWT via l'API externe
-     * Résultat mis en cache pour éviter les appels répétés
+     * Validates a JWT token via external API
+     * Result cached to avoid repeated calls
      */
     @Cacheable(value = "jwt-validation", key = "#token")
     public Mono<AuthValidationResponse> validateToken(String token) {
-        log.debug("Validation du token JWT via API externe");
-        
+        log.debug("Validating JWT token via external API");
+
         return webClient
                 .post()
-                .uri(authApiUrl + "/validate") // Endpoint de validation du token à implementer par ce servi
+                .uri(authApiUrl + "/validate") // Token validation endpoint to be implemented by this service
                 .header("Authorization", "Bearer " + token)
                 .retrieve()
                 .bodyToMono(JsonNode.class)
                 .map(this::parseAuthResponse)
                 .timeout(Duration.ofMillis(timeout))
-                .doOnError(error -> log.error("Erreur lors de la validation du token", error))
+                .doOnError(error -> log.error("Error validating token", error))
                 .onErrorReturn(AuthValidationResponse.invalid());
     }
 
@@ -60,7 +60,7 @@ public class AuthService {
     }
 
     /**
-     * Récupère les informations utilisateur
+     * Retrieves user information
      */
     @Cacheable(value = "user-info", key = "#userEmail")
     public Mono<UserInfo> getUserInfo(String userEmail, String token) {
@@ -71,6 +71,6 @@ public class AuthService {
                 .retrieve()
                 .bodyToMono(UserInfo.class)
                 .timeout(Duration.ofMillis(timeout))
-                .doOnError(error -> log.error("Erreur lors de la récupération des infos utilisateur", error));
+                .doOnError(error -> log.error("Error retrieving user info", error));
     }
 }

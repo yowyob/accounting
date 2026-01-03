@@ -21,7 +21,9 @@ public interface ContrepartieRepository extends JpaRepository<Contrepartie, UUID
      * @param operation_comptable_id the operation ID
      * @return list of counterparties
      */
-    List<Contrepartie> findByTenant_IdAndOperation_comptable_Id(UUID tenant_id, UUID operation_comptable_id);
+    @Query("SELECT c FROM Contrepartie c WHERE c.tenant.id = :tenant_id AND c.operation_comptable.id = :operation_comptable_id")
+    List<Contrepartie> findByTenant_IdAndOperation_comptable_Id(@Param("tenant_id") UUID tenant_id,
+            @Param("operation_comptable_id") UUID operation_comptable_id);
 
     /**
      * Finds counterparties by tenant and account number.

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- 
+        YOWYOB ERP Backend - Liquibase Master Changelog
+        
+        This file orchestrates all database migrations for the ERP system.
+        Migrations are organized by version and feature area.
+    -->
+
+    <!-- Initial schema creation -->
+    <include file="v1.0/001-initial-schema.xml" relativeToChangelogFile="true"/>
+    <include file="v1.0/002-add-tenant-description.xml" relativeToChangelogFile="true"/>
+    
+    <!-- Additional changesets can be added here as the application evolves -->
+    <!-- Example:
+    <include file="db/changelog/v1.1/002-add-new-tables.xml"/>
+    -->
+
+</databaseChangeLog>

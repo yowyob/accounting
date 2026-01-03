@@ -16,12 +16,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Configuration Kafka – Gestion automatique des topics ERP comptable.
+ * Kafka Configuration – Automatic management of ERP accounting topics.
  * 
- * Gère :
- *  - Flux comptables (écritures, détails, journaux)
- *  - Événements métiers (factures, transactions, notifications)
- *  - Audit & intégration
+ * Manages:
+ * - Accounting flows (entries, details, journals)
+ * - Business events (invoices, transactions, notifications)
+ * - Audit & integration
  */
 @Configuration
 @EnableKafka
@@ -37,13 +37,15 @@ public class KafkaTopicConfig {
     public KafkaAdmin kafkaAdmin() {
         Map<String, Object> configs = new HashMap<>();
         configs.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        log.info("✅ Kafka Admin configuré avec serveur: {}", bootstrapServers);
+        log.info("✅ Kafka Admin configured with server: {}", bootstrapServers);
         return new KafkaAdmin(configs);
     }
 
-    /* ==============================================================
-     *  🧾 DOMAINES COMPTABLES (OHADA)
-     * ============================================================== */
+    /*
+     * ==============================================================
+     * 🧾 ACCOUNTING DOMAINS (OHADA)
+     * ==============================================================
+     */
 
     @Bean
     public NewTopic accountingEntriesTopic() {
@@ -85,9 +87,11 @@ public class KafkaTopicConfig {
                 .build();
     }
 
-    /* ==============================================================
-     *  💳 DOMAINES FINANCIERS / FACTURATION
-     * ============================================================== */
+    /*
+     * ==============================================================
+     * 💳 FINANCIAL DOMAINS / BILLING
+     * ==============================================================
+     */
 
     @Bean
     public NewTopic invoiceEventsTopic() {
@@ -105,9 +109,11 @@ public class KafkaTopicConfig {
                 .build();
     }
 
-    /* ==============================================================
-     *  🔔 NOTIFICATIONS & JOURNAL D’AUDIT
-     * ============================================================== */
+    /*
+     * ==============================================================
+     * 🔔 NOTIFICATIONS & AUDIT LOG
+     * ==============================================================
+     */
 
     @Bean
     public NewTopic notificationsTopic() {
