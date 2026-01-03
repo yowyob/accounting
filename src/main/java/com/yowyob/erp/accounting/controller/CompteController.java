@@ -28,7 +28,7 @@ import java.util.UUID;
  * @date 30.09.25
  */
 @RestController
-@RequestMapping("/api/comptes")
+@RequestMapping("/api/accounting/comptes")
 @RequiredArgsConstructor
 @Slf4j
 public class CompteController {

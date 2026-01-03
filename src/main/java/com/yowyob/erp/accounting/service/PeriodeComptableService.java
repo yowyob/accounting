@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.yowyob.erp.accounting.dto.JournalAuditDto;
 import com.yowyob.erp.accounting.dto.PeriodeComptableDto;
 import com.yowyob.erp.accounting.entity.JournalAudit;
 import com.yowyob.erp.accounting.entity.PeriodeComptable;
@@ -82,8 +83,7 @@ public class PeriodeComptableService {
         PeriodeComptable saved = periode_repository.save(entity);
         PeriodeComptableDto result = mapToDto(saved);
 
-        kafka_service.sendAuditLog(result, tenant_id, "PERIODE_CREATED");
-        logAudit(tenant_id, user, "CREATE", "Created period: " + dto.getCode());
+        logAudit(tenant_id, user, "PERIODE_CREATED", "Created period: " + dto.getCode());
 
         redis_service.delete(CACHE_ALL + tenant_id);
         redis_service.delete(CACHE_ACTIVE + tenant_id);
@@ -179,6 +179,7 @@ public class PeriodeComptableService {
 
     /**
      * Retrieves periods within a specific date range.
+     * JournalAudit.builder
      * 
      * @param start the start date
      * @param end   the end date
@@ -429,19 +430,26 @@ public class PeriodeComptableService {
      * @param details   the action details
      */
     private void logAudit(UUID tenant_id, String user, String action, String details) {
-        Tenant tenant = TenantContext.getCurrentTenantAsTenant();
+        // 1. Sauvegarde SQL Locale (On garde l'entité car Hibernate est fait pour ça)
         JournalAudit audit = JournalAudit.builder()
-                .tenant(tenant)
+                .tenant(TenantContext.getCurrentTenantAsTenant())
                 .utilisateur(user)
                 .action(action)
                 .details(details)
                 .date_action(LocalDateTime.now())
-                .created_at(LocalDateTime.now())
-                .updated_at(LocalDateTime.now())
-                .created_by(user)
-                .updated_by(user)
                 .build();
-        audit_repository.save(audit);
-        kafka_service.sendAuditLog(audit, tenant_id, action);
+        JournalAudit savedAudit = audit_repository.save(audit);
+
+        // 2. Conversion en DTO pour Kafka (On extrait les données "pures")
+        JournalAuditDto auditDto = JournalAuditDto.builder()
+                .id(savedAudit.getId()) // Optionnel car on veut forcer l'insert côté listener
+                .action(action)
+                .utilisateur(user)
+                .details(details)
+                .date_action(savedAudit.getDate_action())
+                .build();
+
+        // 3. Appel du service Kafka avec le DTO
+        kafka_service.sendAuditLog(auditDto, tenant_id, action);
     }
 }

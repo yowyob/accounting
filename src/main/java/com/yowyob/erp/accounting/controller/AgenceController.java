@@ -20,7 +20,7 @@ import java.util.UUID;
  * @date 03.01.2026
  */
 @RestController
-@RequestMapping("/api/v1/agences")
+@RequestMapping("/api/accounting/agences")
 @RequiredArgsConstructor
 @Tag(name = "Agences", description = "Endpoints for branch/agency management")
 public class AgenceController {

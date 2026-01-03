@@ -22,7 +22,7 @@ import java.util.UUID;
  * @date 03.01.2026
  */
 @RestController
-@RequestMapping("/api/v1/exercices")
+@RequestMapping("/api/accounting/exercices")
 @RequiredArgsConstructor
 @Tag(name = "Fiscal Years", description = "Endpoints for managing fiscal years (exercices comptables)")
 public class ExerciceComptableController {

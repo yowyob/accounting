@@ -109,7 +109,7 @@ public class AccountingKafkaListener {
 
     /*
      * ===========================================================
-     * 🔍 AUDIT
+     * 🔍 AUDIT (Version Sécurisée et Robuste)
      * ===========================================================
      */
     @KafkaListener(topics = "${app.kafka.topics.audit-logs}", groupId = "${spring.kafka.consumer.group-id}")
@@ -119,32 +119,58 @@ public class AccountingKafkaListener {
                     message.getTenantId());
 
             if (message.getPayload() instanceof Map<?, ?> rawPayload) {
-                // 1. Désérialisation vers le DTO (propre, sans proxy Hibernate)
+                // 1. Conversion sécurisée en DTO
                 JournalAuditDto dto = objectMapper.convertValue(rawPayload, JournalAuditDto.class);
 
-                // 2. Conversion DTO -> Entité (On ignore l'ID pour forcer la création)
+                // 2. FILTRE ANTI-POISON : Si l'action est nulle (ancien message), on l'ignore
+                // proprement
+                if (dto.getAction() == null) {
+                    log.warn("⚠️ Ignoré : Message d'audit ancien format ou corrompu détecté. Action is NULL.");
+                    acknowledgment.acknowledge(); // On confirme pour supprimer le message du topic
+                    return;
+                }
+
+                // 3. RECONSTRUCTION DE L'ENTITÉ (Mapping Manuel)
+                // On ne passe PAS d'ID ici -> force l'auto-génération par PostgreSQL (Garantit
+                // l'INSERT)
                 JournalAudit auditEntry = JournalAudit.builder()
+                        .tenant(new Tenant(message.getTenantId()))
                         .action(dto.getAction())
                         .utilisateur(dto.getUtilisateur())
                         .details(dto.getDetails())
                         .date_action(dto.getDate_action() != null ? dto.getDate_action() : LocalDateTime.now())
+                        .ecriture_comptable_id(dto.getEcriture_comptable_id())
                         .adresse_ip(dto.getAdresse_ip())
                         .donnees_avant(dto.getDonnees_avant())
                         .donnees_apres(dto.getDonnees_apres())
-                        .tenant(new Tenant(message.getTenantId())) // Associe le tenant
+                        .created_by("KAFKA_CONSUMER")
+                        .updated_by("KAFKA_CONSUMER")
                         .build();
 
-                // 3. Sauvegarde (Garantit un INSERT car ID est null)
+                // 4. SAUVEGARDE
+                // Comme l'ID est nul, Hibernate fera un "INSERT INTO" sans conflit de version
+                // (Optimistic Lock)
                 journalAuditRepository.save(auditEntry);
+                log.info("✅ Audit log sauvegardé en base pour l'action : {}", auditEntry.getAction());
 
-                log.info("✅ Audit log sauvegardé avec succès pour : {}", auditEntry.getAction());
+            } else {
+                log.warn("⚠️ Payload d'audit non reconnu (attendu Map) : {}",
+                        message.getPayload() != null ? message.getPayload().getClass().getName() : "null");
             }
 
+            // 5. ACKNOWLEDGMENT : On confirme le succès à Kafka
             acknowledgment.acknowledge();
+
         } catch (Exception e) {
-            log.error("❌ Erreur critique lors du traitement de l'audit log", e);
-            // On ne fait pas acknowledgment.acknowledge() ici pour permettre un retry si
-            // besoin
+            log.error("❌ Erreur critique lors du traitement de l'audit log : {}", e.getMessage());
+            // En cas d'erreur de conversion Jackson, on acknowledge quand même pour ne pas
+            // bloquer la file
+            if (e instanceof IllegalArgumentException) {
+                log.error("👉 Message mal formé définitivement ignoré.");
+                acknowledgment.acknowledge();
+            }
+            // Pour les autres erreurs (ex: DB Down), on ne fait pas d'ACK pour permettre un
+            // retry automatique
         }
     }
 

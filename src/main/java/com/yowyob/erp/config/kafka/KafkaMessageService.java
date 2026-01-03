@@ -99,7 +99,15 @@ public class KafkaMessageService {
         sendMessage(transactionEventsTopic, tenantId.toString(), payload, type, tenantId);
     }
 
+    /**
+     * Envoie un log d'audit.
+     * Note: Assurez-vous de passer un JournalAuditDto ici, pas une @Entity
+     */
     public void sendAuditLog(Object payload, UUID tenantId, String action) {
+        if (payload instanceof com.yowyob.erp.accounting.entity.JournalAudit) {
+            log.warn("⚠️ Attention: Envoi d'une entité JPA vers Kafka détecté. Risque de SerializationException.");
+        }
+
         sendMessage(auditLogsTopic, tenantId.toString(), payload, action, tenantId);
     }
 

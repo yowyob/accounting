@@ -20,7 +20,7 @@ import java.util.UUID;
  * @date 03.01.2026
  */
 @RestController
-@RequestMapping("/api/v1/organizations")
+@RequestMapping("/api/accounting/organizations")
 @RequiredArgsConstructor
 @Tag(name = "Organizations", description = "Endpoints for top-level organization management")
 public class OrganizationController {
