@@ -48,7 +48,7 @@ public class KafkaMessage implements Serializable {
 
     /** Unique tenant identifier (multi-tenant ERP) */
     @JsonProperty("tenant_id")
-    private String tenantId;
+    private UUID tenantId;
 
     /** Event type (INVOICE_CREATED, ACCOUNTING_ENTRY_VALIDATED, etc.) */
     @JsonProperty("event_type")

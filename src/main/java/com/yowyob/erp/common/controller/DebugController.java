@@ -50,7 +50,7 @@ public class DebugController {
         UUID tenantId = TenantContext.getCurrentTenant();
         log.info("🛰️ Envoi d’un message Kafka de test pour le tenant {}", tenantId);
 
-        kafkaMessageService.sendAccountingEvent(payload, tenantId.toString(), "DEBUG_TEST_EVENT");
+        kafkaMessageService.sendAccountingEvent(payload, tenantId, "DEBUG_TEST_EVENT");
         return ApiResponseWrapper.success("✅ Message Kafka de test envoyé avec succès");
     }
 

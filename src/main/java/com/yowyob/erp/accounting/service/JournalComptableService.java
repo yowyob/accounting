@@ -79,7 +79,7 @@ public class JournalComptableService {
 
         JournalComptable saved = journal_repository.save(entity);
         logAudit(tenant, user, "CREATE", "Creation of journal " + dto.getCode_journal());
-        kafka_service.sendAuditLog(saved, tenant_id.toString(), "JOURNAL_CREATED");
+        kafka_service.sendAuditLog(saved, tenant_id, "JOURNAL_CREATED");
 
         redis_service.delete(CACHE_JOURNAL_ALL + tenant_id);
         redis_service.delete(CACHE_JOURNAL_ACTIVE + tenant_id);
@@ -182,7 +182,7 @@ public class JournalComptableService {
         JournalComptable saved = journal_repository.save(existing);
         logAudit(TenantContext.getCurrentTenantAsTenant(), user, "UPDATE",
                 "Update of journal " + dto.getCode_journal());
-        kafka_service.sendAuditLog(saved, tenant_id.toString(), "JOURNAL_UPDATED");
+        kafka_service.sendAuditLog(saved, tenant_id, "JOURNAL_UPDATED");
 
         redis_service.delete(CACHE_JOURNAL_ALL + tenant_id);
         redis_service.delete(CACHE_JOURNAL_ACTIVE + tenant_id);
@@ -206,7 +206,7 @@ public class JournalComptableService {
         journal_repository.delete(journal);
         logAudit(TenantContext.getCurrentTenantAsTenant(), user, "DELETE",
                 "Deletion of journal " + journal.getCode_journal());
-        kafka_service.sendAuditLog(journal, tenant_id.toString(), "JOURNAL_DELETED");
+        kafka_service.sendAuditLog(journal, tenant_id, "JOURNAL_DELETED");
 
         redis_service.delete(CACHE_JOURNAL_ALL + tenant_id);
         redis_service.delete(CACHE_JOURNAL_ACTIVE + tenant_id);
@@ -259,7 +259,7 @@ public class JournalComptableService {
                 .updated_by(utilisateur)
                 .build();
         audit_repository.save(audit);
-        kafka_service.sendAuditLog(audit, tenant.getId().toString(), action);
+        kafka_service.sendAuditLog(audit, tenant.getId(), action);
     }
 
     /**

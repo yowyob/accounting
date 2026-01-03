@@ -125,7 +125,7 @@ public class PlanComptableService {
         PlanComptable saved = account_repository.save(account);
         PlanComptableDto result = mapToDto(saved);
 
-        kafka_service.sendAuditLog(result, tenant_id.toString(), "CREATION");
+        kafka_service.sendAuditLog(result, tenant_id, "CREATION");
         redis_service.delete(CACHE_ALL + tenant_id);
         log.info("✅ Account created: {} - {}", saved.getNo_compte(), saved.getLibelle());
 
@@ -259,7 +259,7 @@ public class PlanComptableService {
         PlanComptable saved = account_repository.save(account);
         PlanComptableDto result = mapToDto(saved);
 
-        kafka_service.sendAuditLog(result, tenant_id.toString(), "PLAN_COMPTABLE_UPDATED");
+        kafka_service.sendAuditLog(result, tenant_id, "PLAN_COMPTABLE_UPDATED");
         redis_service.delete(CACHE_SINGLE + tenant_id + ":" + id);
         redis_service.delete(CACHE_ALL + tenant_id);
         log.info("✏️ Account updated: {}", saved.getNo_compte());
@@ -285,7 +285,7 @@ public class PlanComptableService {
         account.setUpdated_by(current_user);
         account_repository.save(account);
 
-        kafka_service.sendAuditLog(account, tenant_id.toString(), "PLAN_COMPTABLE_DEACTIVATED");
+        kafka_service.sendAuditLog(account, tenant_id, "PLAN_COMPTABLE_DEACTIVATED");
         redis_service.delete(CACHE_SINGLE + tenant_id + ":" + id);
         redis_service.delete(CACHE_ACTIVE + tenant_id);
         log.info("🛑 Account deactivated: {}", account.getNo_compte());

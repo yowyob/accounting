@@ -42,6 +42,7 @@ public class PeriodeComptableService {
 
     private final PeriodeComptableRepository periode_repository;
     private final JournalAuditRepository audit_repository;
+    private final com.yowyob.erp.accounting.repository.ExerciceComptableRepository exercice_repository;
     private final Validator validator;
     private final KafkaMessageService kafka_service;
     private final RedisService redis_service;
@@ -81,7 +82,7 @@ public class PeriodeComptableService {
         PeriodeComptable saved = periode_repository.save(entity);
         PeriodeComptableDto result = mapToDto(saved);
 
-        kafka_service.sendAuditLog(result, tenant_id.toString(), "PERIODE_CREATED");
+        kafka_service.sendAuditLog(result, tenant_id, "PERIODE_CREATED");
         logAudit(tenant_id, user, "CREATE", "Created period: " + dto.getCode());
 
         redis_service.delete(CACHE_ALL + tenant_id);
@@ -252,7 +253,7 @@ public class PeriodeComptableService {
         PeriodeComptable saved = periode_repository.save(existing);
         PeriodeComptableDto result = mapToDto(saved);
 
-        kafka_service.sendAuditLog(result, tenant_id.toString(), "PERIODE_UPDATED");
+        kafka_service.sendAuditLog(result, tenant_id, "PERIODE_UPDATED");
         logAudit(tenant_id, user, "UPDATE", "Updated period: " + dto.getCode());
 
         redis_service.delete(CACHE_ALL + tenant_id);
@@ -289,7 +290,7 @@ public class PeriodeComptableService {
         PeriodeComptable saved = periode_repository.save(periode);
         PeriodeComptableDto result = mapToDto(saved);
 
-        kafka_service.sendAuditLog(result, tenant_id.toString(), "PERIODE_CLOSED");
+        kafka_service.sendAuditLog(result, tenant_id, "PERIODE_CLOSED");
         logAudit(tenant_id, user, "CLOSE", "Closed period: " + periode.getCode());
 
         redis_service.delete(CACHE_ALL + tenant_id);
@@ -318,7 +319,7 @@ public class PeriodeComptableService {
         }
 
         periode_repository.delete(periode);
-        kafka_service.sendAuditLog(periode, tenant_id.toString(), "PERIODE_DELETED");
+        kafka_service.sendAuditLog(periode, tenant_id, "PERIODE_DELETED");
         logAudit(tenant_id, user, "DELETE", "Deleted period: " + periode.getCode());
 
         redis_service.delete(CACHE_ALL + tenant_id);
@@ -338,6 +339,16 @@ public class PeriodeComptableService {
             throw new ConstraintViolationException(violations);
         if (dto.getDate_fin().isBefore(dto.getDate_debut())) {
             throw new IllegalArgumentException("End date must be after start date");
+        }
+        if (dto.getExercice_id() != null) {
+            com.yowyob.erp.accounting.entity.ExerciceComptable exercice = exercice_repository
+                    .findById(dto.getExercice_id())
+                    .orElseThrow(
+                            () -> new ResourceNotFoundException("ExerciceComptable", dto.getExercice_id().toString()));
+            if (dto.getDate_debut().isBefore(exercice.getDate_debut())
+                    || dto.getDate_fin().isAfter(exercice.getDate_fin())) {
+                throw new IllegalArgumentException("Period dates must be within the fiscal year range.");
+            }
         }
     }
 
@@ -381,6 +392,9 @@ public class PeriodeComptableService {
         p.setCloturee(Optional.ofNullable(dto.getCloturee()).orElse(false));
         p.setDate_cloture(dto.getDate_cloture());
         p.setNotes(dto.getNotes());
+        if (dto.getExercice_id() != null) {
+            p.setExercice(exercice_repository.getReferenceById(dto.getExercice_id()));
+        }
         return p;
     }
 
@@ -401,8 +415,8 @@ public class PeriodeComptableService {
                 .notes(p.getNotes())
                 .created_at(p.getCreated_at())
                 .updated_at(p.getUpdated_at())
-                .created_by(p.getCreated_by())
                 .updated_by(p.getUpdated_by())
+                .exercice_id(p.getExercice() != null ? p.getExercice().getId() : null)
                 .build();
     }
 
@@ -428,6 +442,6 @@ public class PeriodeComptableService {
                 .updated_by(user)
                 .build();
         audit_repository.save(audit);
-        kafka_service.sendAuditLog(audit, tenant_id.toString(), action);
+        kafka_service.sendAuditLog(audit, tenant_id, action);
     }
 }

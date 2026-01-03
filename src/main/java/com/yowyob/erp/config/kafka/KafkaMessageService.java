@@ -11,6 +11,7 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -56,7 +57,7 @@ public class KafkaMessageService {
      */
 
     @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000))
-    public void sendMessage(String topic, String key, Object payload, String eventType, String tenantId) {
+    public void sendMessage(String topic, String key, Object payload, String eventType, UUID tenantId) {
         KafkaMessage message = KafkaMessage.builder()
                 .tenantId(tenantId)
                 .eventType(eventType)
@@ -86,35 +87,35 @@ public class KafkaMessageService {
      * ===========================================================
      */
 
-    public void sendAccountingEvent(Object payload, String tenantId, String type) {
-        sendMessage(accountingEntriesTopic, tenantId, payload, type, tenantId);
+    public void sendAccountingEvent(Object payload, UUID tenantId, String type) {
+        sendMessage(accountingEntriesTopic, tenantId.toString(), payload, type, tenantId);
     }
 
-    public void sendInvoiceEvent(Object payload, String tenantId, String type) {
-        sendMessage(invoiceEventsTopic, tenantId, payload, type, tenantId);
+    public void sendInvoiceEvent(Object payload, UUID tenantId, String type) {
+        sendMessage(invoiceEventsTopic, tenantId.toString(), payload, type, tenantId);
     }
 
-    public void sendTransactionEvent(Object payload, String tenantId, String type) {
-        sendMessage(transactionEventsTopic, tenantId, payload, type, tenantId);
+    public void sendTransactionEvent(Object payload, UUID tenantId, String type) {
+        sendMessage(transactionEventsTopic, tenantId.toString(), payload, type, tenantId);
     }
 
-    public void sendAuditLog(Object payload, String tenantId, String action) {
-        sendMessage(auditLogsTopic, tenantId, payload, action, tenantId);
+    public void sendAuditLog(Object payload, UUID tenantId, String action) {
+        sendMessage(auditLogsTopic, tenantId.toString(), payload, action, tenantId);
     }
 
-    public void sendNotification(Object payload, String tenantId, String type) {
-        sendMessage(notificationsTopic, tenantId, payload, type, tenantId);
+    public void sendNotification(Object payload, UUID tenantId, String type) {
+        sendMessage(notificationsTopic, tenantId.toString(), payload, type, tenantId);
     }
 
-    public void sendTenantCreated(Object payload, String tenantId) {
-        sendMessage(tenantCreatedTopic, tenantId, payload, "TENANT_CREATED", tenantId);
+    public void sendTenantCreated(Object payload, UUID tenantId) {
+        sendMessage(tenantCreatedTopic, tenantId.toString(), payload, "TENANT_CREATED", tenantId);
     }
 
-    public void sendTenantUpdated(Object payload, String tenantId) {
-        sendMessage(tenantUpdatedTopic, tenantId, payload, "TENANT_UPDATED", tenantId);
+    public void sendTenantUpdated(Object payload, UUID tenantId) {
+        sendMessage(tenantUpdatedTopic, tenantId.toString(), payload, "TENANT_UPDATED", tenantId);
     }
 
-    public void sendTenantDeleted(Object payload, String tenantId) {
-        sendMessage(tenantDeletedTopic, tenantId, payload, "TENANT_DELETED", tenantId);
+    public void sendTenantDeleted(Object payload, UUID tenantId) {
+        sendMessage(tenantDeletedTopic, tenantId.toString(), payload, "TENANT_DELETED", tenantId);
     }
 }

@@ -322,7 +322,7 @@ public class EcritureComptableService {
                     .date_action(LocalDateTime.now())
                     .build();
             audit_repository.save(audit);
-            kafka_message_service.sendAuditLog(audit, tenant.getId().toString(), action);
+            kafka_message_service.sendAuditLog(audit, tenant.getId(), action);
             return null;
         });
     }

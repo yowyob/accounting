@@ -29,6 +29,9 @@ public class PeriodeComptableDto {
 
     private UUID id;
 
+    @JsonProperty("exercice_id")
+    private UUID exercice_id;
+
     @NotBlank(message = "Le code ne peut pas être vide")
     @Size(max = 50, message = "Le code ne doit pas dépasser 50 caractères")
     @Pattern(regexp = "^\\d{4}-\\d{2}$", message = "Le code doit être au format YYYY-MM")

@@ -81,7 +81,7 @@ public class DeclarationFiscaleService {
         redis_service.delete(CACHE_KEY_PREFIX + "all:" + tenant_id);
 
         // Audit log
-        kafka_service.sendAuditLog(result, tenant_id.toString(),
+        kafka_service.sendAuditLog(result, tenant_id,
                 dto.getId() != null ? "TAX_DECLARATION_UPDATED" : "TAX_DECLARATION_CREATED");
 
         return result;
@@ -165,7 +165,7 @@ public class DeclarationFiscaleService {
         declaration_repository.delete(entity);
         redis_service.delete(CACHE_KEY_PREFIX + "all:" + tenant_id);
 
-        kafka_service.sendAuditLog(entity, tenant_id.toString(), "TAX_DECLARATION_DELETED");
+        kafka_service.sendAuditLog(entity, tenant_id, "TAX_DECLARATION_DELETED");
         log.info("Deleted tax declaration {} for tenant {}", id, tenant_id);
     }
 

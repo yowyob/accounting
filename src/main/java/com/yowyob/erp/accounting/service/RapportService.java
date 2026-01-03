@@ -94,7 +94,7 @@ public class RapportService {
         redis_service.save(cache_key, bilan, java.time.Duration.ofMinutes(30));
 
         // Publish Kafka event
-        kafka_service.sendAuditLog(bilan, tenant_id.toString(), "BILAN_GENERATED");
+        kafka_service.sendAuditLog(bilan, tenant_id, "BILAN_GENERATED");
 
         log.info("✅ Balance sheet generated: Actif={} | Passif={} | Tenant={}", total_actif, total_passif, tenant_id);
         return bilan;
@@ -155,7 +155,7 @@ public class RapportService {
         redis_service.save(cache_key, compte_resultat, java.time.Duration.ofMinutes(30));
 
         // Publish Kafka event
-        kafka_service.sendAuditLog(compte_resultat, tenant_id.toString(), "COMPTE_RESULTAT_GENERATED");
+        kafka_service.sendAuditLog(compte_resultat, tenant_id, "COMPTE_RESULTAT_GENERATED");
 
         log.info("✅ Income statement generated: Charges={} | Produits={} | Resultat={} | Tenant={}",
                 total_charges.abs(), total_produits, resultat, tenant_id);

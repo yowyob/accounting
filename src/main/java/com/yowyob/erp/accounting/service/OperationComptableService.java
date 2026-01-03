@@ -109,7 +109,7 @@ public class OperationComptableService {
             contrepartie_repository.saveAll(contreparties);
         }
 
-        kafka_service.sendAuditLog(saved, tenant_id.toString(), "OPERATION_CREATED");
+        kafka_service.sendAuditLog(saved, tenant_id, "OPERATION_CREATED");
         logAudit(tenant, user, "CREATE", "Creation of operation: " + dto.getType_operation());
         redis_service.delete(CACHE_OPERATIONS_ALL + tenant_id);
 
@@ -226,7 +226,7 @@ public class OperationComptableService {
             contrepartie_repository.saveAll(contreparties);
         }
 
-        kafka_service.sendAuditLog(saved, tenant_id.toString(), "OPERATION_UPDATED");
+        kafka_service.sendAuditLog(saved, tenant_id, "OPERATION_UPDATED");
         logAudit(tenant, user, "UPDATE", "Update of operation: " + dto.getType_operation());
         redis_service.delete(CACHE_OPERATIONS_ALL + tenant_id);
         redis_service.delete(CACHE_OPERATION + tenant_id + ":" + id);
@@ -251,7 +251,7 @@ public class OperationComptableService {
         contrepartie_repository.deleteByTenantIdAndOperationComptableId(tenant_id, id);
         operation_repository.delete(operation);
 
-        kafka_service.sendAuditLog(operation, tenant_id.toString(), "OPERATION_DELETED");
+        kafka_service.sendAuditLog(operation, tenant_id, "OPERATION_DELETED");
         logAudit(tenant, user, "DELETE", "Deletion of operation: " + operation.getType_operation());
         redis_service.delete(CACHE_OPERATIONS_ALL + tenant_id);
         redis_service.delete(CACHE_OPERATION + tenant_id + ":" + id);
@@ -315,7 +315,7 @@ public class OperationComptableService {
                 .updated_by(utilisateur)
                 .build();
         audit_repository.save(audit);
-        kafka_service.sendAuditLog(audit, tenant.getId().toString(), action);
+        kafka_service.sendAuditLog(audit, tenant.getId(), action);
     }
 
     /**

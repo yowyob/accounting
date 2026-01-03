@@ -1,5 +1,6 @@
 package com.yowyob.erp.accounting.listener;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
 
@@ -11,7 +12,9 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.yowyob.erp.accounting.dto.JournalAuditDto;
 import com.yowyob.erp.accounting.entity.JournalAudit;
+import com.yowyob.erp.accounting.entity.Tenant;
 import com.yowyob.erp.common.dto.KafkaMessage;
 
 import lombok.RequiredArgsConstructor;
@@ -115,32 +118,33 @@ public class AccountingKafkaListener {
             log.info("🧩 [AUDIT] Nouveau log reçu | action={} | tenant={}", message.getEventType(),
                     message.getTenantId());
 
-            // 💡 LOGIQUE AJOUTÉE POUR LA DÉSÉRIALISATION DU PAYLOAD
-            Optional.ofNullable(message.getPayload())
-                    .ifPresent(rawPayload -> {
-                        try {
-                            if (rawPayload instanceof Map) {
-                                // 💡 Conversion du Map JSON en JournalAudit
-                                JournalAudit auditEntry = objectMapper.convertValue(rawPayload, JournalAudit.class);
+            if (message.getPayload() instanceof Map<?, ?> rawPayload) {
+                // 1. Désérialisation vers le DTO (propre, sans proxy Hibernate)
+                JournalAuditDto dto = objectMapper.convertValue(rawPayload, JournalAuditDto.class);
 
-                                // Save to database
-                                journalAuditRepository.save(auditEntry);
-                                log.info("✅ Audit log saved: {} by {}", auditEntry.getAction(),
-                                        auditEntry.getUtilisateur());
+                // 2. Conversion DTO -> Entité (On ignore l'ID pour forcer la création)
+                JournalAudit auditEntry = JournalAudit.builder()
+                        .action(dto.getAction())
+                        .utilisateur(dto.getUtilisateur())
+                        .details(dto.getDetails())
+                        .date_action(dto.getDate_action() != null ? dto.getDate_action() : LocalDateTime.now())
+                        .adresse_ip(dto.getAdresse_ip())
+                        .donnees_avant(dto.getDonnees_avant())
+                        .donnees_apres(dto.getDonnees_apres())
+                        .tenant(new Tenant(message.getTenantId())) // Associe le tenant
+                        .build();
 
-                            } else {
-                                log.warn("⚠️ Payload d'audit non reconnu (attendu Map) : {}",
-                                        rawPayload.getClass().getName());
-                            }
-                        } catch (IllegalArgumentException e) {
-                            log.error("❌ Échec de conversion du payload d'audit en JournalAudit", e);
-                            // NOTE : Ne pas ackowledge() si l'erreur n'est pas gérée par un ErrorHandler
-                        }
-                    });
+                // 3. Sauvegarde (Garantit un INSERT car ID est null)
+                journalAuditRepository.save(auditEntry);
+
+                log.info("✅ Audit log sauvegardé avec succès pour : {}", auditEntry.getAction());
+            }
 
             acknowledgment.acknowledge();
         } catch (Exception e) {
-            log.error("Erreur traitement audit log", e);
+            log.error("❌ Erreur critique lors du traitement de l'audit log", e);
+            // On ne fait pas acknowledgment.acknowledge() ici pour permettre un retry si
+            // besoin
         }
     }
 
