@@ -9,17 +9,11 @@
         YOWYOB ERP Backend - Liquibase Master Changelog
         
         This file orchestrates all database migrations for the ERP system.
-        Migrations are organized by version and feature area.
     -->
 
-    <!-- Initial schema creation -->
-    <include file="v1.0/001-initial-schema.xml" relativeToChangelogFile="true"/>
-    <include file="v1.0/002-add-tenant-description.xml" relativeToChangelogFile="true"/>
-    <include file="v1.0/003-fix-comptes-constraints.xml" relativeToChangelogFile="true"/>
-    
-    <!-- Additional changesets can be added here as the application evolves -->
-    <!-- Example:
-    <include file="db/changelog/v1.1/002-add-new-tables.xml"/>
-    -->
+    <!-- Base Schema Migrations (v1.0) -->
+    <include file="changeset-001-create-tables.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-002-constraints-indexes.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-003-inserts-initiaux.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>
