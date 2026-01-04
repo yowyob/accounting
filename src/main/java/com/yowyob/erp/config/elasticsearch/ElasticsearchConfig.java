@@ -21,11 +21,11 @@ import org.springframework.context.annotation.Configuration;
 public class ElasticsearchConfig {
 
     @Value("${spring.elasticsearch.uris}")
-    private String elasticsearchUri;
+    private String elasticsearch_uri;
 
     @Bean
     public RestClient restClient() {
-        HttpHost host = HttpHost.create(elasticsearchUri);
+        HttpHost host = HttpHost.create(elasticsearch_uri);
         return RestClient.builder(host).build();
     }
 

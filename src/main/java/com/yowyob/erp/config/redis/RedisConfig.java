@@ -29,47 +29,47 @@ import lombok.extern.slf4j.Slf4j;
 public class RedisConfig {
 
     @Value("${spring.data.redis.host}")
-    private String redisHost;
+    private String redis_host;
 
     @Value("${spring.data.redis.port}")
-    private int redisPort;
+    private int redis_port;
 
     @Value("${spring.data.redis.password:}")
-    private String redisPassword;
+    private String redis_password;
 
     @Value("${spring.data.redis.timeout:5000}")
-    private long redisTimeout;
+    private long redis_timeout;
 
     @Bean
     public LettuceConnectionFactory redisConnectionFactory() {
-        RedisStandaloneConfiguration config = new RedisStandaloneConfiguration(redisHost, redisPort);
-        if (redisPassword != null && !redisPassword.isBlank()) {
-            config.setPassword(redisPassword);
+        RedisStandaloneConfiguration config = new RedisStandaloneConfiguration(redis_host, redis_port);
+        if (redis_password != null && !redis_password.isBlank()) {
+            config.setPassword(redis_password);
         }
 
-        LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
-                .commandTimeout(Duration.ofMillis(redisTimeout))
+        LettuceClientConfiguration client_config = LettuceClientConfiguration.builder()
+                .commandTimeout(Duration.ofMillis(redis_timeout))
                 .shutdownTimeout(Duration.ofSeconds(2))
                 .build();
 
-        log.info("🧩 Redis Connection initialized → host={} port={} timeout={}ms", redisHost, redisPort, redisTimeout);
-        return new LettuceConnectionFactory(config, clientConfig);
+        log.info("🧩 Redis Connection initialized → host={} port={} timeout={}ms", redis_host, redis_port, redis_timeout);
+        return new LettuceConnectionFactory(config, client_config);
     }
 
     @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connection_factory) {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
 
         RedisTemplate<String, Object> template = new RedisTemplate<>();
-        template.setConnectionFactory(connectionFactory);
+        template.setConnectionFactory(connection_factory);
         template.setKeySerializer(new StringRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(new GenericJackson2JsonRedisSerializer(mapper));
         template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer(mapper));
         template.afterPropertiesSet();
 
-        log.info("✅ RedisTemplate configured with JSON serialization and timeout={}ms", redisTimeout);
+        log.info("✅ RedisTemplate configured with JSON serialization and timeout={}ms", redis_timeout);
         return template;
     }
 

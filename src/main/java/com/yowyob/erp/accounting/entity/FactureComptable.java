@@ -4,7 +4,9 @@ import com.yowyob.erp.common.entity.ComptableObject;
 import com.yowyob.erp.common.enums.SourceType;
 import com.yowyob.erp.config.tenant.TenantContext;
 import com.yowyob.erp.common.enums.Sens;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -28,6 +30,8 @@ import java.util.UUID;
  * @date 30.09.25
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class FactureComptable implements ComptableObject {
 
     private static final BigDecimal TAUX_TVA_DEFAUT = BigDecimal.valueOf(0.18); // Default VAT rate 18% OHADA

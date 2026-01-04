@@ -16,6 +16,8 @@ import java.util.UUID;
 @Slf4j
 public class TenantInterceptor implements HandlerInterceptor {
 
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+
     @Value("${app.tenant.header-name:X-Tenant-ID}")
     private String tenantHeaderName;
 
@@ -66,9 +68,22 @@ public class TenantInterceptor implements HandlerInterceptor {
     private String extractFromJWT(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            // TODO: Decode JWT and extract tenantId
-            // For now, return null
-            return null;
+            String token = authHeader.substring(7);
+            try {
+                String[] parts = token.split("\\.");
+                if (parts.length >= 2) {
+                    byte[] decodedPayload = java.util.Base64.getUrlDecoder().decode(parts[1]);
+                    com.fasterxml.jackson.databind.JsonNode payloadNode = objectMapper.readTree(decodedPayload);
+                    // Standard claim for tenant in many multi-tenant apps
+                    if (payloadNode.has("tenantId")) {
+                        return payloadNode.get("tenantId").asText();
+                    } else if (payloadNode.has("tenant_id")) {
+                        return payloadNode.get("tenant_id").asText();
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Error decoding JWT for tenant extraction: {}", e.getMessage());
+            }
         }
         return null;
     }

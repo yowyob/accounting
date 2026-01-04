@@ -3,7 +3,9 @@ package com.yowyob.erp.accounting.entity;
 import com.yowyob.erp.common.entity.ComptableObject;
 import com.yowyob.erp.common.enums.SourceType;
 import com.yowyob.erp.common.enums.Sens;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -25,6 +27,8 @@ import java.util.UUID;
  * @date 12.10.2025
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class TransactionComptable implements ComptableObject {
 
     private UUID id;
@@ -39,18 +43,6 @@ public class TransactionComptable implements ComptableObject {
     private String compte_principal; // e.g., "512000" Bank
     private String contrepartie; // e.g., "401000" Supplier
 
-    public TransactionComptable(UUID id, UUID tenant_id, BigDecimal montant, LocalDate date, String libelle,
-            UUID journal_comptable_id, UUID periode_comptable_id, String compte_principal, String contrepartie) {
-        this.id = id;
-        this.tenant_id = tenant_id;
-        this.montant = montant;
-        this.date = date;
-        this.libelle = libelle;
-        this.journal_comptable_id = journal_comptable_id;
-        this.periode_comptable_id = periode_comptable_id;
-        this.compte_principal = compte_principal;
-        this.contrepartie = contrepartie;
-    }
 
     /* Implementation of ComptableObject */
     @Override

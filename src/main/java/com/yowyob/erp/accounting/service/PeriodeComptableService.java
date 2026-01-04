@@ -83,6 +83,7 @@ public class PeriodeComptableService {
         PeriodeComptable saved = periode_repository.save(entity);
         PeriodeComptableDto result = mapToDto(saved);
 
+        kafka_service.sendAuditLog(result, tenant_id, "PERIODE_CREATED");
         logAudit(tenant_id, user, "PERIODE_CREATED", "Created period: " + dto.getCode());
 
         redis_service.delete(CACHE_ALL + tenant_id);

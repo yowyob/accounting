@@ -20,7 +20,7 @@ public class OpenApiConfig {
         public OpenAPI customOpenAPI() {
                 return new OpenAPI()
                                 .info(new Info()
-                                                .title("Yowyob ERP - API Comptabilité")
+                                                .title("Yowyob ERP - Accounting API")
                                                 .description("REST API for OHADA compliant accounting module")
                                                 .version("1.0.0")
                                                 .contact(new Contact()

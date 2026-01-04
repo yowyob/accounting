@@ -7,11 +7,9 @@ import com.yowyob.erp.accounting.entity.EcritureComptable;
 import com.yowyob.erp.accounting.entity.JournalAudit;
 import com.yowyob.erp.accounting.entity.Tenant;
 import com.yowyob.erp.accounting.repository.EcritureComptableRepository;
-import com.yowyob.erp.accounting.repository.OperationComptableRepository;
 import com.yowyob.erp.accounting.repository.DetailEcritureRepository;
 import com.yowyob.erp.accounting.repository.TransactionRepository;
 import com.yowyob.erp.accounting.repository.JournalComptableRepository;
-import com.yowyob.erp.accounting.repository.PlanComptableRepository;
 import com.yowyob.erp.accounting.repository.PeriodeComptableRepository;
 import com.yowyob.erp.accounting.repository.JournalAuditRepository;
 import com.yowyob.erp.common.entity.ComptableObject;
@@ -82,7 +80,7 @@ public class EcritureComptableService {
 
         // Verify journal & period
         journal_service.getJournalComptable(dto.getJournal_comptable_id());
-        PeriodeComptableDto periode_dto = periode_service.getPeriode(dto.getPeriode_comptable_id())
+        periode_service.getPeriode(dto.getPeriode_comptable_id())
                 .filter(p -> !p.getCloturee())
                 .orElseThrow(() -> new BusinessException("Accounting period is closed"));
 

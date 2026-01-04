@@ -3,6 +3,7 @@ package com.yowyob.erp.accounting.listener;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.kafka.annotation.KafkaListener; // 💡 Import de l'entité cible
 import org.springframework.kafka.support.Acknowledgment; // 💡 Import pour l'injection via constructeur
@@ -33,6 +34,9 @@ public class AccountingKafkaListener {
     // payload interne
     private final ObjectMapper objectMapper;
     private final com.yowyob.erp.accounting.repository.JournalAuditRepository journalAuditRepository;
+    private final com.yowyob.erp.accounting.service.EcritureComptableService ecritureComptableService;
+    private final com.yowyob.erp.accounting.service.CompteService compteService;
+    private final com.yowyob.erp.config.elasticsearch.ElasticsearchService elasticsearchService;
 
     /*
      * ===========================================================
@@ -181,31 +185,65 @@ public class AccountingKafkaListener {
      */
     private void handleInvoiceCreated(KafkaMessage message) {
         log.info("🧾 Génération écriture comptable pour facture créée : {}", message.getPayload());
-        // TODO: Create accounting entry (EcritureComptable + DetailEcriture)
+        com.yowyob.erp.accounting.entity.FactureComptable facture = objectMapper.convertValue(message.getPayload(),
+                com.yowyob.erp.accounting.entity.FactureComptable.class);
+        ecritureComptableService.generateFromComptableObject(facture);
     }
 
     private void handleInvoicePaid(KafkaMessage message) {
         log.info("💰 Génération écriture de règlement pour facture payée : {}", message.getPayload());
-        // TODO: Create entry and update balances
+        com.yowyob.erp.accounting.entity.TransactionComptable transaction = objectMapper
+                .convertValue(message.getPayload(), com.yowyob.erp.accounting.entity.TransactionComptable.class);
+        ecritureComptableService.generateFromComptableObject(transaction);
     }
 
     private void handleAccountingEntryCreated(KafkaMessage message) {
         log.info("📊 Indexation d'une écriture comptable créée : {}", message.getPayload());
-        // TODO: Elasticsearch indexing or caching
+        elasticsearchService.indexAccountingEntry(message.getPayload(), message.getTenantId().toString());
     }
 
     private void handleAccountingEntryValidated(KafkaMessage message) {
         log.info("✅ Mise à jour des soldes suite validation : {}", message.getPayload());
-        // TODO: Recalculate Redis / PostgreSQL balances
+        
+        // 1. Recalculate balances in DB/Redis
+        if (message.getPayload() instanceof Map<?, ?> payload) {
+            Object idObj = payload.get("id");
+            if (idObj != null) {
+                UUID entryId = UUID.fromString(idObj.toString());
+                compteService.updateBalances(message.getTenantId(), entryId);
+            }
+        }
+
+        // 2. Re-index in Elasticsearch for search visibility
+        elasticsearchService.indexAccountingEntry(message.getPayload(), message.getTenantId().toString());
     }
 
     private void handleTransactionCreated(KafkaMessage message) {
         log.info("💸 Nouvelle transaction détectée : {}", message.getPayload());
-        // TODO: Synchronize with Treasury module
+        com.yowyob.erp.accounting.entity.TransactionComptable transaction = objectMapper
+                .convertValue(message.getPayload(), com.yowyob.erp.accounting.entity.TransactionComptable.class);
+        
+        // 1. Generate the accounting entry
+        ecritureComptableService.generateFromComptableObject(transaction);
+        
+        // 2. TODO: Call Treasury module API to synchronize/confirm
+        log.debug("Treasury synchronization placeholder for transaction: {}", transaction.get_id());
     }
 
     private void handleTransactionValidated(KafkaMessage message) {
         log.info("🧾 Transaction validée : {}", message.getPayload());
-        // TODO: Record entry in TR Journal
+        
+        // 1. If this validation implies balance update (e.g. if it validates an entry)
+        if (message.getPayload() instanceof Map<?, ?> payload) {
+            Object entryId = payload.get("ecriture_id"); // or "id" depending on payload structure
+            if (entryId != null) {
+                compteService.updateBalances(message.getTenantId(), UUID.fromString(entryId.toString()));
+            }
+        }
+        
+        // 2. Re-index or log validation
+        elasticsearchService.indexAccountingEntry(message.getPayload(), message.getTenantId().toString());
+        
+        log.debug("TR Journal recording/validation confirmed for correlation ID: {}", message.getCorrelationId());
     }
 }

@@ -3,7 +3,9 @@ package com.yowyob.erp.accounting.entity;
 import com.yowyob.erp.common.entity.ComptableObject;
 import com.yowyob.erp.common.enums.SourceType;
 import com.yowyob.erp.common.enums.Sens;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -25,6 +27,8 @@ import java.util.UUID;
  * @date 12.10.2025
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class MouvementStockComptable implements ComptableObject {
 
     // Account numbers should be injected or looked up, not hardcoded
@@ -42,21 +46,6 @@ public class MouvementStockComptable implements ComptableObject {
     private UUID periode_comptable_id;
     private boolean is_entree; // true = entry, false = exit
     private UUID fournisseur_id; // or bank_id depending on case
-
-    public MouvementStockComptable(UUID id, UUID tenant_id, int quantite, BigDecimal cout_unitaire, LocalDate date,
-            String libelle, UUID journal_comptable_id, UUID periode_comptable_id, boolean is_entree,
-            UUID fournisseur_id) {
-        this.id = id;
-        this.tenant_id = tenant_id;
-        this.quantite = quantite;
-        this.cout_unitaire = cout_unitaire;
-        this.date = date;
-        this.libelle = libelle;
-        this.journal_comptable_id = journal_comptable_id;
-        this.periode_comptable_id = periode_comptable_id;
-        this.is_entree = is_entree;
-        this.fournisseur_id = fournisseur_id;
-    }
 
     /* Implementation of ComptableObject */
     @Override
@@ -96,14 +85,12 @@ public class MouvementStockComptable implements ComptableObject {
 
     @Override
     public String get_debit_account() {
-        // Validation logic should ensure this is populated before processing
-        // For now returning a standardized key for lookup
-        return "STOCK_ACCOUNT_REF";
+        return is_entree ? "311000" : "603100"; // Entry: Stock debit, Exit: Expense debit (Variation)
     }
 
     @Override
     public String get_credit_account() {
-        return is_entree ? "SUPPLIER_ACCOUNT_REF" : "BANK_ACCOUNT_REF";
+        return is_entree ? "401000" : "311000"; // Entry: Supplier credit, Exit: Stock credit
     }
 
     @Override

@@ -28,10 +28,10 @@ import org.springframework.kafka.support.serializer.JsonSerializer;
 public class KafkaProducerConfig {
 
     @Value("${spring.kafka.bootstrap-servers}")
-    private String bootstrapServers;
+    private String bootstrap_servers;
 
-    @Value("${spring.kafka.producer.transaction-id-prefix}") // 💡 ADDITION: Transaction ID prefix injection
-    private String transactionIdPrefix;
+    @Value("${spring.kafka.producer.transaction-id-prefix}") // ADDITION: Transaction ID prefix injection
+    private String transaction_id_prefix;
 
     /**
      * Basic Producer Configuration.
@@ -39,7 +39,7 @@ public class KafkaProducerConfig {
     @Bean
     public Map<String, Object> producerConfigs() {
         Map<String, Object> props = new HashMap<>();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap_servers);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
         props.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false); // Cleans useless headers
@@ -49,8 +49,8 @@ public class KafkaProducerConfig {
         props.put(ProducerConfig.BATCH_SIZE_CONFIG, 16_384);
         props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33_554_432);
 
-        // 💡 FIX: Adding transaction ID prefix to make ProducerFactory transactional
-        props.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transactionIdPrefix);
+        // FIX: Adding transaction ID prefix to make ProducerFactory transactional
+        props.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transaction_id_prefix);
 
         return props;
     }

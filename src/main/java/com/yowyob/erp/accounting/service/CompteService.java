@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 public class CompteService {
 
     private final CompteRepository compte_repository;
+    private final com.yowyob.erp.accounting.repository.DetailEcritureRepository detail_repository;
     private final RedisTemplate<String, Object> redis_template;
     private final TenantRepository tenant_repository;
 
@@ -184,6 +185,41 @@ public class CompteService {
         compte_repository.delete(compte);
         invalidateCache(tenant_id, compte.getNo_compte());
         log.info("Account deleted: {} for tenant {}", compte.getNo_compte(), tenant_id);
+    }
+
+    /**
+     * Updates account balances based on a validated accounting entry.
+     * 
+     * @param tenant_id   the tenant ID
+     * @param ecriture_id the entry ID
+     */
+    @Transactional
+    public void updateBalances(UUID tenant_id, UUID ecriture_id) {
+        log.info("Updating account balances for entry {} (Tenant: {})", ecriture_id, tenant_id);
+
+        List<com.yowyob.erp.accounting.entity.DetailEcriture> details = detail_repository.findByTenant_IdAndEcriture_Id(tenant_id, ecriture_id);
+
+        for (com.yowyob.erp.accounting.entity.DetailEcriture detail : details) {
+            Compte compte = detail.getCompte();
+            if (compte != null) {
+                BigDecimal debit = detail.getMontant_debit() != null ? detail.getMontant_debit() : BigDecimal.ZERO;
+                BigDecimal credit = detail.getMontant_credit() != null ? detail.getMontant_credit() : BigDecimal.ZERO;
+
+                BigDecimal delta;
+                if ("ACTIF".equals(compte.getType_compte()) || "CHARGE".equals(compte.getType_compte())) {
+                    delta = debit.subtract(credit);
+                } else {
+                    delta = credit.subtract(debit);
+                }
+
+                compte.setSolde(compte.getSolde().add(delta));
+                compte_repository.save(compte);
+
+                // Update Redis cache
+                redis_template.opsForValue().set(CACHE_PREFIX + tenant_id + ":" + compte.getId(), compte.getSolde());
+                invalidateCache(tenant_id, compte.getNo_compte());
+            }
+        }
     }
 
     /**

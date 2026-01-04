@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Service
 @Slf4j
+@org.springframework.core.annotation.Order(-1)
 public class PlanComptableTemplateInitializationService implements CommandLineRunner {
 
     private final PlanComptableTemplateRepository template_repository;

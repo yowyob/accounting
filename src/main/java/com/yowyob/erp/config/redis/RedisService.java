@@ -25,15 +25,15 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class RedisService {
 
-    private final RedisTemplate<String, Object> redisTemplate;
-    private final ObjectMapper objectMapper;
+    private final RedisTemplate<String, Object> redis_template;
+    private final ObjectMapper object_mapper;
 
     /**
      * Saves a value with TTL
      */
     public void save(String key, Object value, Duration ttl) {
         try {
-            redisTemplate.opsForValue().set(key, value, ttl.toSeconds(), TimeUnit.SECONDS);
+            redis_template.opsForValue().set(key, value, ttl.toSeconds(), TimeUnit.SECONDS);
             log.debug("💾 Value saved in Redis: {}", key);
         } catch (Exception e) {
             log.error("❌ Error saving to Redis for key {}", key, e);
@@ -45,10 +45,10 @@ public class RedisService {
      */
     public <T> T get(String key, Class<T> type) {
         try {
-            Object value = redisTemplate.opsForValue().get(key);
+            Object value = redis_template.opsForValue().get(key);
             if (value == null)
                 return null;
-            return objectMapper.convertValue(value, type);
+            return object_mapper.convertValue(value, type);
         } catch (Exception e) {
             log.error("❌ Error retrieving from Redis for key {}", key, e);
             return null;
@@ -60,7 +60,7 @@ public class RedisService {
      */
     public void delete(String key) {
         try {
-            redisTemplate.delete(key);
+            redis_template.delete(key);
             log.debug("🗑️ Key deleted: {}", key);
         } catch (Exception e) {
             log.error("❌ Error deleting from Redis for key {}", key, e);
@@ -72,7 +72,7 @@ public class RedisService {
      */
     public boolean exists(String key) {
         try {
-            return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+            return Boolean.TRUE.equals(redis_template.hasKey(key));
         } catch (Exception e) {
             log.error("❌ Error checking Redis existence for key: {}", key, e);
             return false;
@@ -82,22 +82,22 @@ public class RedisService {
     /**
      * Account balance management
      */
-    public void saveAccountBalance(String tenantId, String accountNumber, Double balance) {
-        save(String.format("account:balance:%s:%s", tenantId, accountNumber), balance, Duration.ofMinutes(30));
+    public void saveAccountBalance(String tenant_id, String account_number, Double balance) {
+        save(String.format("account:balance:%s:%s", tenant_id, account_number), balance, Duration.ofMinutes(30));
     }
 
-    public Double getAccountBalance(String tenantId, String accountNumber) {
-        return get(String.format("account:balance:%s:%s", tenantId, accountNumber), Double.class);
+    public Double getAccountBalance(String tenant_id, String account_number) {
+        return get(String.format("account:balance:%s:%s", tenant_id, account_number), Double.class);
     }
 
     /**
      * User session management
      */
-    public void saveUserSession(String sessionId, Object userInfo, Duration ttl) {
-        save("session:" + sessionId, userInfo, ttl);
+    public void saveUserSession(String session_id, Object user_info, Duration ttl) {
+        save("session:" + session_id, user_info, ttl);
     }
 
-    public <T> T getUserSession(String sessionId, Class<T> type) {
-        return get("session:" + sessionId, type);
+    public <T> T getUserSession(String session_id, Class<T> type) {
+        return get("session:" + session_id, type);
     }
 }

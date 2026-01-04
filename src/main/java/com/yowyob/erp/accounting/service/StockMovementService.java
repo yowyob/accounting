@@ -24,6 +24,7 @@ import java.util.UUID;
 public class StockMovementService {
 
     private final EcritureComptableRepository ecritureRepository;
+    private final PeriodeComptableService periodeComptableService;
     private final TimeService timeService;
     // P.S. CompteRepository, JournalComptableRepository needed for real
     // implementation
@@ -52,10 +53,11 @@ public class StockMovementService {
                 .date_ecriture(mouvement.get_date())
                 // .date_comptabilisation() does not exist, date_ecriture serves this purpose
                 .journal(JournalComptable.builder().id(mouvement.get_journal_comptable_id()).build())
-                // .exercice() does not exist directly on EcritureComptable (inferred via
-                // Periode)
-                .periode(null) // TODO: Lookup period based on date
-                .validee(true) // Was .statut("VALIDATED"), changed to boolean validee=true
+                .periode(periodeComptableService.getByDate(mouvement.get_date())
+                        .map(p -> PeriodeComptable.builder().id(p.getId()).build())
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "No accounting period found for date: " + mouvement.get_date())))
+                .validee(true)
                 .numero_ecriture("MVT-" + UUID.randomUUID().toString().substring(0, 8)) // Was .reference()
                 .build();
 
