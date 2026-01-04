@@ -3,7 +3,6 @@ package com.yowyob.erp.config.redis;
 import java.time.Duration;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.cache.RedisCacheManagerBuilderCustomizer;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -28,72 +27,74 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class RedisConfig {
 
-    @Value("${spring.data.redis.host}")
-    private String redis_host;
+        @Value("${spring.data.redis.host}")
+        private String redis_host;
 
-    @Value("${spring.data.redis.port}")
-    private int redis_port;
+        @Value("${spring.data.redis.port}")
+        private int redis_port;
 
-    @Value("${spring.data.redis.password:}")
-    private String redis_password;
+        @Value("${spring.data.redis.password:}")
+        private String redis_password;
 
-    @Value("${spring.data.redis.timeout:5000}")
-    private long redis_timeout;
+        @Value("${spring.data.redis.timeout:5000}")
+        private long redis_timeout;
 
-    @Bean
-    public LettuceConnectionFactory redisConnectionFactory() {
-        RedisStandaloneConfiguration config = new RedisStandaloneConfiguration(redis_host, redis_port);
-        if (redis_password != null && !redis_password.isBlank()) {
-            config.setPassword(redis_password);
+        @Bean
+        public LettuceConnectionFactory redisConnectionFactory() {
+                RedisStandaloneConfiguration config = new RedisStandaloneConfiguration(redis_host, redis_port);
+                if (redis_password != null && !redis_password.isBlank()) {
+                        config.setPassword(redis_password);
+                }
+
+                LettuceClientConfiguration client_config = LettuceClientConfiguration.builder()
+                                .commandTimeout(Duration.ofMillis(redis_timeout))
+                                .shutdownTimeout(Duration.ofSeconds(2))
+                                .build();
+
+                log.info("🧩 Redis Connection initialized → host={} port={} timeout={}ms", redis_host, redis_port,
+                                redis_timeout);
+                return new LettuceConnectionFactory(config, client_config);
         }
 
-        LettuceClientConfiguration client_config = LettuceClientConfiguration.builder()
-                .commandTimeout(Duration.ofMillis(redis_timeout))
-                .shutdownTimeout(Duration.ofSeconds(2))
-                .build();
+        @Bean
+        public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connection_factory) {
+                ObjectMapper mapper = new ObjectMapper();
+                mapper.registerModule(new JavaTimeModule());
 
-        log.info("🧩 Redis Connection initialized → host={} port={} timeout={}ms", redis_host, redis_port, redis_timeout);
-        return new LettuceConnectionFactory(config, client_config);
-    }
+                RedisTemplate<String, Object> template = new RedisTemplate<>();
+                template.setConnectionFactory(connection_factory);
+                template.setKeySerializer(new StringRedisSerializer());
+                template.setHashKeySerializer(new StringRedisSerializer());
+                template.setValueSerializer(new GenericJackson2JsonRedisSerializer(mapper));
+                template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer(mapper));
+                template.afterPropertiesSet();
 
-    @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connection_factory) {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
+                log.info("✅ RedisTemplate configured with JSON serialization and timeout={}ms", redis_timeout);
+                return template;
+        }
 
-        RedisTemplate<String, Object> template = new RedisTemplate<>();
-        template.setConnectionFactory(connection_factory);
-        template.setKeySerializer(new StringRedisSerializer());
-        template.setHashKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(new GenericJackson2JsonRedisSerializer(mapper));
-        template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer(mapper));
-        template.afterPropertiesSet();
+        @Bean
+        public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
+                RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
+                                .entryTtl(Duration.ofMinutes(10))
+                                .serializeKeysWith(
+                                                org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair
+                                                                .fromSerializer(new StringRedisSerializer()))
+                                .serializeValuesWith(
+                                                org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair
+                                                                .fromSerializer(new GenericJackson2JsonRedisSerializer()))
+                                .disableCachingNullValues();
 
-        log.info("✅ RedisTemplate configured with JSON serialization and timeout={}ms", redis_timeout);
-        return template;
-    }
+                RedisCacheManager manager = RedisCacheManager.builder(connectionFactory)
+                                .cacheDefaults(defaultConfig)
+                                .withCacheConfiguration("ecrituresAll", defaultConfig.entryTtl(Duration.ofMinutes(10)))
+                                .withCacheConfiguration("compteAll", defaultConfig.entryTtl(Duration.ofHours(1)))
+                                .withCacheConfiguration("compteSolde", defaultConfig.entryTtl(Duration.ofMinutes(5)))
+                                .withCacheConfiguration("sessionCache", defaultConfig.entryTtl(Duration.ofHours(2)))
+                                .build();
 
-    @Bean
-    public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-        RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofMinutes(10))
-                .serializeKeysWith(org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair
-                        .fromSerializer(new StringRedisSerializer()))
-                .serializeValuesWith(
-                        org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair
-                                .fromSerializer(new GenericJackson2JsonRedisSerializer()))
-                .disableCachingNullValues();
-
-        RedisCacheManager manager = RedisCacheManager.builder(connectionFactory)
-                .cacheDefaults(defaultConfig)
-                .withCacheConfiguration("ecrituresAll", defaultConfig.entryTtl(Duration.ofMinutes(10)))
-                .withCacheConfiguration("compteAll", defaultConfig.entryTtl(Duration.ofHours(1)))
-                .withCacheConfiguration("compteSolde", defaultConfig.entryTtl(Duration.ofMinutes(5)))
-                .withCacheConfiguration("sessionCache", defaultConfig.entryTtl(Duration.ofHours(2)))
-                .build();
-
-        log.info(
-                "🧠 Redis CacheManager initialized (TTL: compteAll=1h, compteSolde=5m, ecrituresAll=10m, sessionCache=2h)");
-        return manager;
-    }
+                log.info(
+                                "🧠 Redis CacheManager initialized (TTL: compteAll=1h, compteSolde=5m, ecrituresAll=10m, sessionCache=2h)");
+                return manager;
+        }
 }

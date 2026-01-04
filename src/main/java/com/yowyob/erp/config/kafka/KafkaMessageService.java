@@ -50,6 +50,9 @@ public class KafkaMessageService {
     @Value("${app.kafka.topics.tenant-deleted}")
     private String tenantDeletedTopic;
 
+    @Value("${app.kafka.topics.treasury-sync:treasury.sync.events}")
+    private String treasurySyncTopic;
+
     /*
      * ===========================================================
      * 🔧 GENERIC METHODS
@@ -125,5 +128,16 @@ public class KafkaMessageService {
 
     public void sendTenantDeleted(Object payload, UUID tenantId) {
         sendMessage(tenantDeletedTopic, tenantId.toString(), payload, "TENANT_DELETED", tenantId);
+    }
+
+    /**
+     * Sends a synchronization message to the Treasury module.
+     * 
+     * @param payload  the data to synchronize
+     * @param tenantId the tenant ID
+     * @param type     the sync event type (e.g. TREASURY_SYNC_SUCCESS)
+     */
+    public void sendTreasurySync(Object payload, UUID tenantId, String type) {
+        sendMessage(treasurySyncTopic, tenantId.toString(), payload, type, tenantId);
     }
 }

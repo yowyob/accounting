@@ -14,11 +14,12 @@ import com.yowyob.erp.common.entity.ComptableObject;
 import com.yowyob.erp.common.enums.Sens;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.config.tenant.TenantContext;
+import com.yowyob.erp.accounting.dto.JournalAuditDto;
+import com.yowyob.erp.config.kafka.KafkaMessageService;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,7 +49,7 @@ public class DetailEcritureService {
         private final CompteRepository compte_repository;
         private final JournalAuditRepository journal_audit_repository;
         private final Validator validator;
-        private final KafkaTemplate<String, Object> kafka_template;
+        private final KafkaMessageService kafka_message_service;
 
         /**
          * Manually creates a new accounting entry detail.
@@ -82,7 +83,7 @@ public class DetailEcritureService {
                 DetailEcriture saved = detail_repository.save(detail);
                 logAudit(tenant, ecriture.getId(), current_user, "CREATE",
                                 "Creation of entry detail " + saved.getId());
-                kafka_template.send("detail.ecriture.created", tenant.getId().toString(), saved);
+                kafka_message_service.sendAccountingEvent(saved, tenant.getId(), "DETAIL_CREATED");
 
                 log.info("✅ Entry detail created successfully: {}", saved.getId());
                 return saved;
@@ -302,7 +303,7 @@ public class DetailEcritureService {
                 DetailEcriture saved = detail_repository.save(existing);
                 logAudit(tenant, ecriture.getId(), current_user, "UPDATE",
                                 "Update of entry detail " + saved.getId());
-                kafka_template.send("detail.ecriture.updated", tenant.getId().toString(), saved);
+                kafka_message_service.sendAccountingEvent(saved, tenant.getId(), "DETAIL_UPDATED");
 
                 log.info("✏️ Entry detail updated: {}", saved.getId());
                 return saved;
@@ -327,7 +328,7 @@ public class DetailEcritureService {
                 detail_repository.delete(detail);
                 logAudit(tenant, ecriture.getId(), current_user, "DELETE",
                                 "Deletion of entry detail " + id);
-                kafka_template.send("detail.ecriture.deleted", tenant.getId().toString(), id);
+                kafka_message_service.sendAccountingEvent(id, tenant.getId(), "DETAIL_DELETED");
 
                 log.info("🗑️ Entry detail deleted: {}", id);
         }
@@ -384,7 +385,18 @@ public class DetailEcritureService {
                                 .build();
 
                 journal_audit_repository.save(audit);
-                kafka_template.send("journal.audit.created", tenant.getId().toString(), audit);
+
+                // Publish to Kafka via standardized service
+                JournalAuditDto auditDto = JournalAuditDto.builder()
+                                .id(audit.getId())
+                                .action(action)
+                                .utilisateur(utilisateur)
+                                .details(details)
+                                .date_action(audit.getDate_action())
+                                .ecriture_comptable_id(ecriture_comptable_id)
+                                .build();
+
+                kafka_message_service.sendAuditLog(auditDto, tenant.getId(), action);
         }
 
         /**

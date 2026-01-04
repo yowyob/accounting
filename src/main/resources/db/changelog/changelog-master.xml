@@ -15,6 +15,7 @@
     <!-- Initial schema creation -->
     <include file="v1.0/001-initial-schema.xml" relativeToChangelogFile="true"/>
     <include file="v1.0/002-add-tenant-description.xml" relativeToChangelogFile="true"/>
+    <include file="v1.0/003-fix-comptes-constraints.xml" relativeToChangelogFile="true"/>
     
     <!-- Additional changesets can be added here as the application evolves -->
     <!-- Example:

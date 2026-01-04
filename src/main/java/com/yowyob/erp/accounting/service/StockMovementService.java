@@ -2,7 +2,6 @@ package com.yowyob.erp.accounting.service;
 
 import com.yowyob.erp.accounting.entity.*;
 import com.yowyob.erp.accounting.repository.EcritureComptableRepository;
-import com.yowyob.erp.common.enums.Sens;
 import com.yowyob.erp.common.service.TimeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,7 +23,7 @@ public class StockMovementService {
 
     private final EcritureComptableRepository ecritureRepository;
     private final PeriodeComptableService periodeComptableService;
-    private final TimeService timeService;
+    // private final TimeService timeService;
     // P.S. CompteRepository, JournalComptableRepository needed for real
     // implementation
     // For now, we simulate dynamic lookups or expect Objects to be fully populated

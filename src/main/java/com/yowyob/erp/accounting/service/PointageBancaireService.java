@@ -10,12 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -23,7 +19,7 @@ import java.util.UUID;
 public class PointageBancaireService {
 
     private final DetailEcritureRepository detailRepo;
-    private final CsvReleveBancaireService csvService;  
+    private final CsvReleveBancaireService csvService;
 
     public int importerEtPointer(MultipartFile file) throws Exception {
         Tenant tenant = TenantContext.getCurrentTenantAsTenant();
@@ -36,13 +32,13 @@ public class PointageBancaireService {
             LocalDate ref = op.getDateOperation();
 
             List<DetailEcriture> candidats = detailRepo.findByTenantIdAndMontantAndDateProche(
-                tenant.getId(), op.getMontant(),   debut, fin, ref
-            );
+                    tenant.getId(), op.getMontant(), debut, fin, ref);
 
             if (!candidats.isEmpty()) {
                 DetailEcriture de = candidats.get(0);
                 de.setPointee(true);
-                de.setReference_bancaire("AUTO → " + op.getLibelle().substring(0, Math.min(50, op.getLibelle().length())));
+                de.setReference_bancaire(
+                        "AUTO → " + op.getLibelle().substring(0, Math.min(50, op.getLibelle().length())));
                 pointees++;
             }
         }

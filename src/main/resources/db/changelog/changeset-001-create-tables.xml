@@ -125,7 +125,7 @@
                 <constraints unique="true" nullable="false"/>
             </column>
             <column name="type_compte" type="VARCHAR(20)">
-                <constraints unique="true" nullable="false"/>
+                <constraints  nullable="false"/>
             </column>
              <column name="solde" type="NUMERIC(19,4)" defaultValueNumeric="0.0">
                 <constraints nullable="false"/>
@@ -144,6 +144,9 @@
             <column name="created_by" type="VARCHAR(255)"/>
             <column name="updated_by" type="VARCHAR(255)"/>
      </createTable>
+     <addUniqueConstraint tableName="comptes" 
+                     columnNames="tenant_id, no_compte" 
+                     constraintName="uk_comptes_tenant_no_compte"/>
 
     <createTable tableName="journaux_comptables">
             <column name="id" type="UUID">

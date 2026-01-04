@@ -15,7 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Service to initialize the accounting plan template from a CSV file.
  * Expected file: /resources/comptes_comptables.csv
- * Format: id,no_compte,libelle,classe
+ * Format:
+ * numero|libelle|classe|sens|lettrable|collectif|niveau|compte_mere|actif
  * Follows snake_case naming and English Javadoc as per development charter.
  * 
  * @author ALD
@@ -52,17 +53,22 @@ public class PlanComptableTemplateInitializationService implements CommandLineRu
                 boolean first_line = true;
 
                 while ((line = reader.readLine()) != null) {
-                    if (first_line) {
-                        first_line = false; // skip header
+                    if (first_line || line.isBlank()) {
+                        first_line = false; // skip header or empty lines
                         continue;
                     }
 
-                    String[] data = line.split(",");
-                    if (data.length >= 4) {
+                    // CSV uses '|' as separator
+                    String[] data = line.split("\\|");
+                    if (data.length >= 3) {
                         String numero = data[0].trim();
                         String libelle = data[1].trim();
-                        Integer classe = Integer.parseInt(data[2].trim());
-                        createAccountIfNotExists(numero, libelle, classe);
+                        try {
+                            Integer classe = Integer.parseInt(data[2].trim());
+                            createAccountIfNotExists(numero, libelle, classe);
+                        } catch (NumberFormatException e) {
+                            log.warn("Invalid class number for account {}: {}", numero, data[2]);
+                        }
                     }
                 }
             }

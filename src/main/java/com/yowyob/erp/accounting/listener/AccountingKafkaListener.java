@@ -2,7 +2,6 @@ package com.yowyob.erp.accounting.listener;
 
 import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.kafka.annotation.KafkaListener; // 💡 Import de l'entité cible
@@ -36,6 +35,8 @@ public class AccountingKafkaListener {
     private final com.yowyob.erp.accounting.repository.JournalAuditRepository journalAuditRepository;
     private final com.yowyob.erp.accounting.service.EcritureComptableService ecritureComptableService;
     private final com.yowyob.erp.accounting.service.CompteService compteService;
+    private final com.yowyob.erp.accounting.repository.JournalComptableRepository journalComptableRepository;
+    private final com.yowyob.erp.config.kafka.KafkaMessageService kafkaMessageService;
     private final com.yowyob.erp.config.elasticsearch.ElasticsearchService elasticsearchService;
 
     /*
@@ -204,7 +205,7 @@ public class AccountingKafkaListener {
 
     private void handleAccountingEntryValidated(KafkaMessage message) {
         log.info("✅ Mise à jour des soldes suite validation : {}", message.getPayload());
-        
+
         // 1. Recalculate balances in DB/Redis
         if (message.getPayload() instanceof Map<?, ?> payload) {
             Object idObj = payload.get("id");
@@ -222,17 +223,24 @@ public class AccountingKafkaListener {
         log.info("💸 Nouvelle transaction détectée : {}", message.getPayload());
         com.yowyob.erp.accounting.entity.TransactionComptable transaction = objectMapper
                 .convertValue(message.getPayload(), com.yowyob.erp.accounting.entity.TransactionComptable.class);
-        
+
         // 1. Generate the accounting entry
+        // Ensure journal is set to TR (Treasury) if not provided
+        if (transaction.get_journal_comptable_id() == null) {
+            journalComptableRepository.findByTenant_IdAndCode_journal(message.getTenantId(), "TR")
+                .ifPresent(j -> transaction.setJournal_comptable_id(j.getId()));
+        }
+
         ecritureComptableService.generateFromComptableObject(transaction);
-        
-        // 2. TODO: Call Treasury module API to synchronize/confirm
-        log.debug("Treasury synchronization placeholder for transaction: {}", transaction.get_id());
+
+        // 2. Synchronize with Treasury module
+        kafkaMessageService.sendTreasurySync(transaction, message.getTenantId(), "TREASURY_SYNC_SUCCESS");
+        log.info("✅ Treasury synchronization successful for transaction: {}", transaction.get_id());
     }
 
     private void handleTransactionValidated(KafkaMessage message) {
         log.info("🧾 Transaction validée : {}", message.getPayload());
-        
+
         // 1. If this validation implies balance update (e.g. if it validates an entry)
         if (message.getPayload() instanceof Map<?, ?> payload) {
             Object entryId = payload.get("ecriture_id"); // or "id" depending on payload structure
@@ -240,10 +248,12 @@ public class AccountingKafkaListener {
                 compteService.updateBalances(message.getTenantId(), UUID.fromString(entryId.toString()));
             }
         }
-        
+
         // 2. Re-index or log validation
         elasticsearchService.indexAccountingEntry(message.getPayload(), message.getTenantId().toString());
-        
-        log.debug("TR Journal recording/validation confirmed for correlation ID: {}", message.getCorrelationId());
+
+        // 3. Notify Treasury of validation
+        kafkaMessageService.sendTreasurySync(message.getPayload(), message.getTenantId(), "TREASURY_VALIDATION_NOTIFIED");
+        log.info("✅ Treasury validation notified for correlation ID: {}", message.getCorrelationId());
     }
 }

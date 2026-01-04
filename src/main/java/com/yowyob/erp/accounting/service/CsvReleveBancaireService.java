@@ -41,7 +41,6 @@ public class CsvReleveBancaireService {
     
     public List<ReleveBancaire> parseReleveBancaire(MultipartFile file) throws Exception {
         List<ReleveBancaire> operations = new ArrayList<>();
-        String fileName = file.getOriginalFilename().toLowerCase();
         Tenant tenant = TenantContext.getCurrentTenantAsTenant();
 
 

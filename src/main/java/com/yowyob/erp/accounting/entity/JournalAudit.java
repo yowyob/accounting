@@ -51,8 +51,8 @@ public class JournalAudit {
     @Column(name = "ecriture_id")
     private UUID ecriture_comptable_id;
 
-    @Pattern(regexp = "CREATE|VALIDATE|UPDATE|DELETE|AUTO_GENERATE", message = "Action must be CREATE, VALIDATE, DELETE or UPDATE")
-    @Column(length = 50, nullable = false)
+    @Size(max = 100)
+    @Column(length = 100, nullable = false)
     private String action;
 
     @Column(name = "date_action", nullable = false)

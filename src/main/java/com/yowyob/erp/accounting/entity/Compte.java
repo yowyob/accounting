@@ -28,7 +28,10 @@ import java.util.UUID;
  * @date 30.09.25
  */
 @Entity
-@Table(name = "comptes")
+@Table(name = "comptes", uniqueConstraints = {
+        @jakarta.persistence.UniqueConstraint(name = "uk_comptes_tenant_no_compte", columnNames = { "tenant_id",
+                "no_compte" })
+})
 @Getter
 @Setter
 @Builder

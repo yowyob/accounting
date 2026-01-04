@@ -36,7 +36,7 @@ public class ExerciceComptableInitializationService implements CommandLineRunner
     @Transactional
     public void run(String... args) {
         createExerciceIfNotExists("2026", "Exercice 2026",
-                LocalDate.of(2026, 1, 3), LocalDate.of(2026, 12, 31));
+                LocalDate.of(2026, 1, 4), LocalDate.of(2026, 12, 31));
     }
 
     private void createExerciceIfNotExists(String code, String libelle, LocalDate start, LocalDate end) {
