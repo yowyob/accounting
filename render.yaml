@@ -1,18 +1,28 @@
 services:
   - type: web
     name: yowyob-erp-backend
-    runtime: docker
+    runtime: docker # Indique à Render d'utiliser votre Dockerfile
     plan: free
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
-      - key: SPRING_ELASTICSEARCH_ENABLED
-        value: "true"
       
-      # FIX: Use Render's variable substitution to get the correct internal host
+      # Construction manuelle de l'URL JDBC pour Java
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:postgresql://${YOWYOB_ERP_DB_HOST}:${YOWYOB_ERP_DB_PORT}/${YOWYOB_ERP_DB_DATABASE}
+        value: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
       
+      - key: DB_HOST
+        fromDatabase:
+          name: yowyob-erp-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: yowyob-erp-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: yowyob-erp-db
+          property: database
       - key: SPRING_DATASOURCE_USERNAME
         fromDatabase:
           name: yowyob-erp-db
@@ -21,29 +31,6 @@ services:
         fromDatabase:
           name: yowyob-erp-db
           property: password
-      
-      # These helper variables provide the values for the URL above
-      - key: YOWYOB_ERP_DB_HOST
-        fromDatabase:
-          name: yowyob-erp-db
-          property: host
-      - key: YOWYOB_ERP_DB_PORT
-        fromDatabase:
-          name: yowyob-erp-db
-          property: port
-      - key: YOWYOB_ERP_DB_DATABASE
-        fromDatabase:
-          name: yowyob-erp-db
-          property: database
-
-      - key: JWT_SECRET
-        generateValue: true
-      - key: JWT_EXPIRATION
-        value: "86400000"
-      - key: TENANT_DEFAULT
-        value: "default"
-      - key: AUTH_API_URL
-        value: "https://gateway.yowyob.com/auth-service"
 
 databases:
   - name: yowyob-erp-db
