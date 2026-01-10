@@ -12,8 +12,6 @@ services:
         fromDatabase:
           name: yowyob-erp-db
           property: connectionString
-      - key: REDIS_URL
-       
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRATION
