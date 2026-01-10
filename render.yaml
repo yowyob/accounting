@@ -13,10 +13,7 @@ services:
           name: yowyob-erp-db
           property: connectionString
       - key: REDIS_URL
-        # Note: Change this from 'fromKeyValue' to 'fromRedis' to match the new resource type
-        fromRedis:
-          name: yowyob-erp-redis
-          property: connectionString
+       
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRATION
