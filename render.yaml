@@ -13,7 +13,8 @@ services:
           name: yowyob-erp-db
           property: connectionString
       - key: REDIS_URL
-        fromKeyValue:
+        # Note: Change this from 'fromKeyValue' to 'fromRedis' to match the new resource type
+        fromRedis:
           name: yowyob-erp-redis
           property: connectionString
       - key: JWT_SECRET
@@ -29,7 +30,8 @@ databases:
   - name: yowyob-erp-db
     plan: free
 
-keyValues:
+# Corrected section below
+redis:
   - name: yowyob-erp-redis
     plan: free
-    ipAllowList: [] # Only allow internal connections
+    ipAllowList: []
