@@ -1,18 +1,17 @@
 services:
   - type: web
     name: yowyob-erp-backend
-    runtime: docker # Indique à Render d'utiliser votre Dockerfile
+    runtime: docker
     plan: free
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
       - key: SPRING_LIQUIBASE_CHANGE_LOG
-        value: classpath:db/changelog/db.changelog-master.xml 
-       
-      # Construction manuelle de l'URL JDBC pour Java
+        value: classpath:db/changelog/db.changelog-master.xml
+      
+      # --- CONFIGURATION POSTGRES ---
       - key: SPRING_DATASOURCE_URL
         value: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
-      
       - key: DB_HOST
         fromDatabase:
           name: yowyob-erp-db
@@ -33,6 +32,23 @@ services:
         fromDatabase:
           name: yowyob-erp-db
           property: password
+
+      # --- CONFIGURATION REDIS ---
+      # Remplacez les valeurs ci-dessous par les infos de votre Redis créé manuellement sur Render
+      - key: SPRING_DATA_REDIS_HOST
+        value: red-xxxxxxxxxxxx # À copier depuis l'onglet Redis sur Render
+      - key: SPRING_DATA_REDIS_PORT
+        value: "6379"
+      - key: SPRING_DATA_REDIS_PASSWORD
+        value: azaleodel # Correspond à votre config Docker locale
+
+      # --- CONFIGURATION KAFKA & ELASTIC ---
+      # Note : Sur Render Free, vous devrez probablement utiliser des services externes 
+      # (ex: Confluent Cloud pour Kafka, Bonsai pour Elastic) ou désactiver ces modules
+      - key: SPRING_KAFKA_BOOTSTRAP_SERVERS
+        value: kafka.votre-service-externe.com:9092 
+      - key: SPRING_ELASTICSEARCH_URIS
+        value: http://elasticsearch.votre-service-externe.com:9200
 
 databases:
   - name: yowyob-erp-db
