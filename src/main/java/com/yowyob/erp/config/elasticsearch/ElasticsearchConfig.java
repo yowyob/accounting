@@ -18,6 +18,7 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @Slf4j
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "spring.elasticsearch.enabled", havingValue = "true", matchIfMissing = true)
 public class ElasticsearchConfig {
 
     @Value("${spring.elasticsearch.uris}")

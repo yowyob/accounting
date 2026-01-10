@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: yowyob-erp-backend
+    runtime: docker
+    plan: free
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod,no-kafka
+      - key: SPRING_ELASTICSEARCH_ENABLED
+        value: "false"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: yowyob-erp-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: yowyob-erp-redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRATION
+        value: "86400000"
+      - key: TENANT_DEFAULT
+        value: "default"
+      - key: AUTH_API_URL
+        value: "https://gateway.yowyob.com/auth-service"
+
+databases:
+  - name: yowyob-erp-db
+    plan: free
+
+redis:
+  - name: yowyob-erp-redis
+    plan: free
+    ipAllowList: [] # Only allow internal connections
