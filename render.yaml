@@ -5,16 +5,15 @@ services:
     plan: free
     envVars:
       - key: SPRING_PROFILES_ACTIVE
-        value: prod,no-kafka
+        value: prod
       - key: SPRING_ELASTICSEARCH_ENABLED
-        value: "false"
+        value: "true"
       - key: DATABASE_URL
         fromDatabase:
           name: yowyob-erp-db
           property: connectionString
       - key: REDIS_URL
-        fromService:
-          type: redis
+        fromKeyValue:
           name: yowyob-erp-redis
           property: connectionString
       - key: JWT_SECRET
@@ -30,7 +29,7 @@ databases:
   - name: yowyob-erp-db
     plan: free
 
-redis:
+keyValues:
   - name: yowyob-erp-redis
     plan: free
     ipAllowList: [] # Only allow internal connections
