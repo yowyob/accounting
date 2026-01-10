@@ -30,8 +30,4 @@ databases:
   - name: yowyob-erp-db
     plan: free
 
-# Corrected section below
-redis:
-  - name: yowyob-erp-redis
-    plan: free
-    ipAllowList: []
+
