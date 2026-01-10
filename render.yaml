@@ -8,11 +8,17 @@ services:
         value: prod
       - key: SPRING_ELASTICSEARCH_ENABLED
         value: "true"
-      - key: DATABASE_URL
+      # Manual JDBC construction to bypass the Blueprint property limitation
+      - key: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://yowyob-erp-db:5432/yowyob_erp
+      - key: SPRING_DATASOURCE_USERNAME
         fromDatabase:
           name: yowyob-erp-db
-          # CHANGE THIS from 'connectionString' to 'jdbcInternalConnectionString'
-          property: jdbcInternalConnectionString
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: yowyob-erp-db
+          property: password
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRATION
@@ -21,9 +27,10 @@ services:
         value: "default"
       - key: AUTH_API_URL
         value: "https://gateway.yowyob.com/auth-service"
+      # Add the Redis URL here manually after creating the Redis instance in the dashboard
+      # - key: SPRING_DATA_REDIS_URL
+      #   value: redis://red-xxxxxxxxxxxx:6379
 
 databases:
   - name: yowyob-erp-db
     plan: free
-
-
