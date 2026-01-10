@@ -8,9 +8,11 @@ services:
         value: prod
       - key: SPRING_ELASTICSEARCH_ENABLED
         value: "true"
-      # Manual JDBC construction to bypass the Blueprint property limitation
+      
+      # FIX: Use Render's variable substitution to get the correct internal host
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:postgresql://yowyob-erp-db:5432/yowyob_erp
+        value: jdbc:postgresql://${YOWYOB_ERP_DB_HOST}:${YOWYOB_ERP_DB_PORT}/${YOWYOB_ERP_DB_DATABASE}
+      
       - key: SPRING_DATASOURCE_USERNAME
         fromDatabase:
           name: yowyob-erp-db
@@ -19,6 +21,21 @@ services:
         fromDatabase:
           name: yowyob-erp-db
           property: password
+      
+      # These helper variables provide the values for the URL above
+      - key: YOWYOB_ERP_DB_HOST
+        fromDatabase:
+          name: yowyob-erp-db
+          property: host
+      - key: YOWYOB_ERP_DB_PORT
+        fromDatabase:
+          name: yowyob-erp-db
+          property: port
+      - key: YOWYOB_ERP_DB_DATABASE
+        fromDatabase:
+          name: yowyob-erp-db
+          property: database
+
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRATION
@@ -27,9 +44,6 @@ services:
         value: "default"
       - key: AUTH_API_URL
         value: "https://gateway.yowyob.com/auth-service"
-      # Add the Redis URL here manually after creating the Redis instance in the dashboard
-      # - key: SPRING_DATA_REDIS_URL
-      #   value: redis://red-xxxxxxxxxxxx:6379
 
 databases:
   - name: yowyob-erp-db
