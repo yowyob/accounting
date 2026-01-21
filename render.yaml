@@ -3,7 +3,6 @@ services:
     name: yowyob-erp-backend
     runtime: docker
     plan: free
-    region: frankfurt # Optionnel, pour être proche
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
