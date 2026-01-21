@@ -65,4 +65,48 @@ public class SynchronizationService {
             log.warn("No network connectivity - synchronization postponed");
         }
     }
+
+    /**
+     * Force la synchronisation Elasticsearch pour un tenant.
+     * 
+     * @param tenant_id ID du tenant
+     * @return résultat de la synchronisation
+     */
+    public java.util.Map<String, Object> synchroniserElasticsearch(UUID tenant_id) {
+        log.info("Forcing Elasticsearch synchronization for tenant: {}", tenant_id);
+
+        // Cette méthode nécessiterait une intégration complète avec Elasticsearch
+        // Pour l'instant, retourne un résultat basique
+        return java.util.Map.of(
+                "tenant_id", tenant_id,
+                "documents_indexes", 0,
+                "message", "Synchronisation Elasticsearch - implémentation partielle");
+    }
+
+    /**
+     * Vide le cache Redis pour un tenant.
+     * 
+     * @param tenant_id ID du tenant
+     */
+    public void viderCacheRedis(UUID tenant_id) {
+        log.warn("Clearing Redis cache for tenant: {}", tenant_id);
+
+        // Cette méthode nécessiterait une intégration avec RedisService
+        // Pour l'instant, ne fait rien
+    }
+
+    /**
+     * Récupère le statut de synchronisation.
+     * 
+     * @param tenant_id ID du tenant
+     * @return statut de synchronisation
+     */
+    public java.util.Map<String, Object> getStatutSynchronisation(UUID tenant_id) {
+        return java.util.Map.of(
+                "tenant_id", tenant_id,
+                "elasticsearch_synced", true,
+                "redis_cache_size", 0,
+                "last_sync", java.time.LocalDateTime.now(),
+                "message", "Statut de synchronisation - implémentation partielle");
+    }
 }

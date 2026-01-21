@@ -11,11 +11,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.yowyob.erp.accounting.dto.PlanComptableDto;
+import com.yowyob.erp.accounting.entity.JournalAudit;
 import com.yowyob.erp.accounting.entity.PlanComptable;
 import com.yowyob.erp.accounting.entity.PlanComptableTemplate;
 import com.yowyob.erp.accounting.entity.Tenant;
 import com.yowyob.erp.accounting.repository.PlanComptableRepository;
 import com.yowyob.erp.accounting.repository.PlanComptableTemplateRepository;
+import com.yowyob.erp.accounting.dto.JournalAuditDto;
 import com.yowyob.erp.common.exception.BusinessException;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.common.service.ValidationService;
@@ -125,7 +127,7 @@ public class PlanComptableService {
         PlanComptable saved = account_repository.save(account);
         PlanComptableDto result = mapToDto(saved);
 
-        kafka_service.sendAuditLog(result, tenant_id, "CREATION");
+        logAudit(tenant, current_user, "ACCOUNT_CREATED", "Creation of account: " + saved.getNo_compte());
         redis_service.delete(CACHE_ALL + tenant_id);
         log.info("✅ Account created: {} - {}", saved.getNo_compte(), saved.getLibelle());
 
@@ -259,7 +261,8 @@ public class PlanComptableService {
         PlanComptable saved = account_repository.save(account);
         PlanComptableDto result = mapToDto(saved);
 
-        kafka_service.sendAuditLog(result, tenant_id, "PLAN_COMPTABLE_UPDATED");
+        logAudit(TenantContext.getCurrentTenantAsTenant(), current_user, "ACCOUNT_UPDATED",
+                "Update of account: " + saved.getNo_compte());
         redis_service.delete(CACHE_SINGLE + tenant_id + ":" + id);
         redis_service.delete(CACHE_ALL + tenant_id);
         log.info("✏️ Account updated: {}", saved.getNo_compte());
@@ -283,9 +286,11 @@ public class PlanComptableService {
         account.setActif(false);
         account.setUpdated_at(LocalDateTime.now());
         account.setUpdated_by(current_user);
-        account_repository.save(account);
+        PlanComptable saved = account_repository.save(account);
 
-        kafka_service.sendAuditLog(account, tenant_id, "PLAN_COMPTABLE_DEACTIVATED");
+        PlanComptableDto dto_out = mapToDto(saved);
+        logAudit(TenantContext.getCurrentTenantAsTenant(), current_user, "ACCOUNT_DEACTIVATED",
+                "Deactivation of account: " + saved.getNo_compte());
         redis_service.delete(CACHE_SINGLE + tenant_id + ":" + id);
         redis_service.delete(CACHE_ACTIVE + tenant_id);
         log.info("🛑 Account deactivated: {}", account.getNo_compte());
@@ -304,5 +309,28 @@ public class PlanComptableService {
                 .created_by(entity.getCreated_by())
                 .updated_by(entity.getUpdated_by())
                 .build();
+    }
+
+    private void logAudit(Tenant tenant, String utilisateur, String action, String details) {
+        JournalAudit audit = JournalAudit.builder()
+                .tenant(tenant)
+                .action(action)
+                .utilisateur(utilisateur)
+                .details(details)
+                .date_action(LocalDateTime.now())
+                .created_at(LocalDateTime.now())
+                .updated_at(LocalDateTime.now())
+                .created_by("system")
+                .updated_by("system")
+                .build();
+
+        JournalAuditDto auditDto = JournalAuditDto.builder()
+                .action(audit.getAction())
+                .utilisateur(audit.getUtilisateur())
+                .details(audit.getDetails())
+                .date_action(audit.getDate_action())
+                .build();
+
+        kafka_service.sendAuditLog(auditDto, tenant.getId(), action);
     }
 }

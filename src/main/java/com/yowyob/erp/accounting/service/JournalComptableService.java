@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.yowyob.erp.accounting.dto.EcritureComptableDto;
+import com.yowyob.erp.accounting.dto.JournalAuditDto;
 import com.yowyob.erp.accounting.dto.JournalComptableDto;
 import com.yowyob.erp.accounting.entity.EcritureComptable;
 import com.yowyob.erp.accounting.entity.JournalAudit;
@@ -78,13 +79,14 @@ public class JournalComptableService {
         entity.setUpdated_by(user);
 
         JournalComptable saved = journal_repository.save(entity);
-        logAudit(tenant, user, "CREATE", "Creation of journal " + dto.getCode_journal());
-        kafka_service.sendAuditLog(saved, tenant_id, "JOURNAL_CREATED");
+        logAudit(tenant, user, "JOURNAL_CREATED", "Creation of journal " + dto.getCode_journal());
+
+        JournalComptableDto savedDto = mapToDto(saved);
 
         redis_service.delete(CACHE_JOURNAL_ALL + tenant_id);
         redis_service.delete(CACHE_JOURNAL_ACTIVE + tenant_id);
 
-        return mapToDto(saved);
+        return savedDto;
     }
 
     /**
@@ -180,14 +182,15 @@ public class JournalComptableService {
         existing.setUpdated_at(LocalDateTime.now());
 
         JournalComptable saved = journal_repository.save(existing);
-        logAudit(TenantContext.getCurrentTenantAsTenant(), user, "UPDATE",
+        logAudit(TenantContext.getCurrentTenantAsTenant(), user, "JOURNAL_UPDATED",
                 "Update of journal " + dto.getCode_journal());
-        kafka_service.sendAuditLog(saved, tenant_id, "JOURNAL_UPDATED");
+
+        JournalComptableDto savedDto = mapToDto(saved);
 
         redis_service.delete(CACHE_JOURNAL_ALL + tenant_id);
         redis_service.delete(CACHE_JOURNAL_ACTIVE + tenant_id);
 
-        return mapToDto(saved);
+        return savedDto;
     }
 
     /**
@@ -204,9 +207,8 @@ public class JournalComptableService {
                 .orElseThrow(() -> new ResourceNotFoundException("JournalComptable", id.toString()));
 
         journal_repository.delete(journal);
-        logAudit(TenantContext.getCurrentTenantAsTenant(), user, "DELETE",
+        logAudit(TenantContext.getCurrentTenantAsTenant(), user, "JOURNAL_DELETED",
                 "Deletion of journal " + journal.getCode_journal());
-        kafka_service.sendAuditLog(journal, tenant_id, "JOURNAL_DELETED");
 
         redis_service.delete(CACHE_JOURNAL_ALL + tenant_id);
         redis_service.delete(CACHE_JOURNAL_ACTIVE + tenant_id);
@@ -258,8 +260,22 @@ public class JournalComptableService {
                 .created_by(utilisateur)
                 .updated_by(utilisateur)
                 .build();
-        audit_repository.save(audit);
-        kafka_service.sendAuditLog(audit, tenant.getId(), action);
+        JournalAudit savedAudit = audit_repository.save(audit);
+
+        // Convert to DTO to avoid Hibernate proxy serialization issues
+        JournalAuditDto auditDto = JournalAuditDto.builder()
+                .id(savedAudit.getId())
+                .action(savedAudit.getAction())
+                .date_action(savedAudit.getDate_action())
+                .utilisateur(savedAudit.getUtilisateur())
+                .details(savedAudit.getDetails())
+                .created_at(savedAudit.getCreated_at())
+                .updated_at(savedAudit.getUpdated_at())
+                .created_by(savedAudit.getCreated_by())
+                .updated_by(savedAudit.getUpdated_by())
+                .build();
+
+        kafka_service.sendAuditLog(auditDto, tenant.getId(), action);
     }
 
     /**

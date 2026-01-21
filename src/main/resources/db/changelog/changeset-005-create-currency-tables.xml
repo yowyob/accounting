@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <changeSet id="005-create-currency-tables" author="yowyob-system">
+        <comment>Création des tables pour la gestion multidevise et des taux de change.</comment>
+
+        <!-- Table des devises -->
+        <createTable tableName="devises">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_devises" nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(10)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="nom" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="symbole" type="VARCHAR(10)"/>
+            <column name="est_nationale" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="actif" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+
+        <!-- Table des taux de change -->
+        <createTable tableName="taux_change">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_taux_change" nullable="false"/>
+            </column>
+            <column name="tenant_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="devise_source_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="devise_cible_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="taux" type="NUMERIC(18, 6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_effet" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="notes" type="VARCHAR(255)"/>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+
+        <!-- Contraintes et Index -->
+        <addForeignKeyConstraint
+            baseTableName="taux_change"
+            baseColumnNames="tenant_id"
+            constraintName="fk_taux_change_tenant"
+            referencedTableName="tenants"
+            referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint
+            baseTableName="taux_change"
+            baseColumnNames="devise_source_id"
+            constraintName="fk_taux_source"
+            referencedTableName="devises"
+            referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint
+            baseTableName="taux_change"
+            baseColumnNames="devise_cible_id"
+            constraintName="fk_taux_cible"
+            referencedTableName="devises"
+            referencedColumnNames="id"/>
+
+        <createIndex tableName="taux_change" indexName="idx_taux_tenant_dates">
+            <column name="tenant_id"/>
+            <column name="devise_source_id"/>
+            <column name="devise_cible_id"/>
+            <column name="date_effet"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

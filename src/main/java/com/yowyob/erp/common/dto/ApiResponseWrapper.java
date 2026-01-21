@@ -1,6 +1,7 @@
 package com.yowyob.erp.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -37,6 +38,7 @@ public class ApiResponseWrapper<T> implements Serializable {
     private boolean success;
 
     /** HTTP or internal status code */
+    @JsonProperty("code")
     @Builder.Default
     private int statusCode = 200;
 

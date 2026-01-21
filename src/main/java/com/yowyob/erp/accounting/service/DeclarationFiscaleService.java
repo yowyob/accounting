@@ -1,6 +1,8 @@
 package com.yowyob.erp.accounting.service;
 
 import com.yowyob.erp.accounting.dto.DeclarationFiscaleDto;
+import com.yowyob.erp.accounting.dto.JournalAuditDto;
+import com.yowyob.erp.accounting.entity.JournalAudit;
 import com.yowyob.erp.accounting.entity.DeclarationFiscale;
 import com.yowyob.erp.accounting.entity.Tenant;
 import com.yowyob.erp.accounting.repository.DeclarationFiscaleRepository;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -81,8 +84,10 @@ public class DeclarationFiscaleService {
         redis_service.delete(CACHE_KEY_PREFIX + "all:" + tenant_id);
 
         // Audit log
-        kafka_service.sendAuditLog(result, tenant_id,
-                dto.getId() != null ? "TAX_DECLARATION_UPDATED" : "TAX_DECLARATION_CREATED");
+        logAudit(tenant, current_user,
+                dto.getId() != null ? "TAX_DECLARATION_UPDATED" : "TAX_DECLARATION_CREATED",
+                "Tax declaration "
+                        + (dto.getNumero_declaration() != null ? dto.getNumero_declaration() : saved.getId()));
 
         return result;
     }
@@ -162,10 +167,17 @@ public class DeclarationFiscaleService {
         DeclarationFiscale entity = declaration_repository.findByTenant_IdAndId(tenant_id, id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tax declaration", id.toString()));
 
+        // Map to DTO before deletion for Kafka
+        DeclarationFiscaleDto result = mapToDto(entity);
+
         declaration_repository.delete(entity);
         redis_service.delete(CACHE_KEY_PREFIX + "all:" + tenant_id);
 
-        kafka_service.sendAuditLog(entity, tenant_id, "TAX_DECLARATION_DELETED");
+        logAudit(TenantContext.getCurrentTenantAsTenant(),
+                Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system"),
+                "TAX_DECLARATION_DELETED",
+                "Deleted tax declaration: "
+                        + (result.getNumero_declaration() != null ? result.getNumero_declaration() : id));
         log.info("Deleted tax declaration {} for tenant {}", id, tenant_id);
     }
 
@@ -188,5 +200,28 @@ public class DeclarationFiscaleService {
                 .donnees_declaration(entity.getDonnees_declaration())
                 .notes(entity.getNotes())
                 .build();
+    }
+
+    private void logAudit(Tenant tenant, String utilisateur, String action, String details) {
+        JournalAudit audit = JournalAudit.builder()
+                .tenant(tenant)
+                .action(action)
+                .utilisateur(utilisateur)
+                .details(details)
+                .date_action(LocalDateTime.now())
+                .created_at(LocalDateTime.now())
+                .updated_at(LocalDateTime.now())
+                .created_by("system")
+                .updated_by("system")
+                .build();
+
+        JournalAuditDto auditDto = JournalAuditDto.builder()
+                .action(audit.getAction())
+                .utilisateur(audit.getUtilisateur())
+                .details(audit.getDetails())
+                .date_action(audit.getDate_action())
+                .build();
+
+        kafka_service.sendAuditLog(auditDto, tenant.getId(), action);
     }
 }

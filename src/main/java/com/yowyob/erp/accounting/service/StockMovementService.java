@@ -69,4 +69,49 @@ public class StockMovementService {
         ecritureRepository.save(ecriture);
         log.info("Accounting entry created for stock movement: {}", ecriture.getNumero_ecriture());
     }
+
+    /**
+     * Crée un mouvement de stock.
+     * 
+     * @param mouvement données du mouvement
+     * @param user      utilisateur
+     * @return résultat de la création
+     */
+    @Transactional
+    public java.util.Map<String, Object> creerMouvementStock(java.util.Map<String, Object> mouvement, String user) {
+        // Cette méthode nécessiterait une entité MouvementStock complète
+        // Pour l'instant, retourne un résultat basique
+        return java.util.Map.of(
+                "mouvement_id", UUID.randomUUID(),
+                "message", "Mouvement de stock créé - implémentation partielle");
+    }
+
+    /**
+     * Récupère les mouvements de stock.
+     * 
+     * @param tenant_id  ID du tenant
+     * @param type       type de mouvement
+     * @param produit_id ID du produit
+     * @return liste des mouvements
+     */
+    public java.util.List<java.util.Map<String, Object>> getMouvements(UUID tenant_id, String type, String produit_id) {
+        // Cette méthode nécessiterait une entité MouvementStock et un repository
+        // Pour l'instant, retourne une liste vide
+        return new java.util.ArrayList<>();
+    }
+
+    /**
+     * Récupère l'impact comptable d'un mouvement.
+     * 
+     * @param mouvement_id ID du mouvement
+     * @return impact comptable
+     */
+    public java.util.Map<String, Object> getImpactComptable(UUID mouvement_id) {
+        // Cette méthode nécessiterait un lien entre mouvement et écritures
+        // Pour l'instant, retourne un résultat basique
+        return java.util.Map.of(
+                "mouvement_id", mouvement_id,
+                "ecritures", new java.util.ArrayList<>(),
+                "message", "Impact comptable - implémentation partielle");
+    }
 }

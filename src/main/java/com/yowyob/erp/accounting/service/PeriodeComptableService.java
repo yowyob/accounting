@@ -83,7 +83,6 @@ public class PeriodeComptableService {
         PeriodeComptable saved = periode_repository.save(entity);
         PeriodeComptableDto result = mapToDto(saved);
 
-        kafka_service.sendAuditLog(result, tenant_id, "PERIODE_CREATED");
         logAudit(tenant_id, user, "PERIODE_CREATED", "Created period: " + dto.getCode());
 
         redis_service.delete(CACHE_ALL + tenant_id);
@@ -255,8 +254,7 @@ public class PeriodeComptableService {
         PeriodeComptable saved = periode_repository.save(existing);
         PeriodeComptableDto result = mapToDto(saved);
 
-        kafka_service.sendAuditLog(result, tenant_id, "PERIODE_UPDATED");
-        logAudit(tenant_id, user, "UPDATE", "Updated period: " + dto.getCode());
+        logAudit(tenant_id, user, "PERIODE_UPDATED", "Updated period: " + dto.getCode());
 
         redis_service.delete(CACHE_ALL + tenant_id);
         redis_service.delete(CACHE_ACTIVE + tenant_id);
@@ -292,8 +290,7 @@ public class PeriodeComptableService {
         PeriodeComptable saved = periode_repository.save(periode);
         PeriodeComptableDto result = mapToDto(saved);
 
-        kafka_service.sendAuditLog(result, tenant_id, "PERIODE_CLOSED");
-        logAudit(tenant_id, user, "CLOSE", "Closed period: " + periode.getCode());
+        logAudit(tenant_id, user, "PERIODE_CLOSED", "Closed period: " + periode.getCode());
 
         redis_service.delete(CACHE_ALL + tenant_id);
         redis_service.delete(CACHE_ACTIVE + tenant_id);
@@ -320,9 +317,11 @@ public class PeriodeComptableService {
             throw new IllegalStateException("Cannot delete a closed period");
         }
 
+        // Map to DTO before deletion for Kafka
+        PeriodeComptableDto result = mapToDto(periode);
+
         periode_repository.delete(periode);
-        kafka_service.sendAuditLog(periode, tenant_id, "PERIODE_DELETED");
-        logAudit(tenant_id, user, "DELETE", "Deleted period: " + periode.getCode());
+        logAudit(tenant_id, user, "PERIODE_DELETED", "Deleted period: " + periode.getCode());
 
         redis_service.delete(CACHE_ALL + tenant_id);
         redis_service.delete(CACHE_ACTIVE + tenant_id);

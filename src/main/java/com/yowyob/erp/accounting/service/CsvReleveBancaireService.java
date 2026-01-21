@@ -25,24 +25,22 @@ public class CsvReleveBancaireService {
 
     // Formats de date acceptés automatiquement
     private static final List<DateTimeFormatter> DATE_FORMATS = List.of(
-        DateTimeFormatter.ofPattern("dd/MM/yyyy"),
-        DateTimeFormatter.ofPattern("dd-MM-yyyy"),
-        DateTimeFormatter.ofPattern("yyyy-MM-dd"),
-        DateTimeFormatter.ofPattern("dd.MM.yyyy"),
-        new DateTimeFormatterBuilder()
-            .parseCaseInsensitive()
-            .appendPattern("dd MMM yyyy")
-            .toFormatter(Locale.FRENCH),
-        new DateTimeFormatterBuilder()
-            .parseCaseInsensitive()
-            .appendPattern("dd MMMM yyyy")
-            .toFormatter(Locale.FRENCH)
-    );
-    
+            DateTimeFormatter.ofPattern("dd/MM/yyyy"),
+            DateTimeFormatter.ofPattern("dd-MM-yyyy"),
+            DateTimeFormatter.ofPattern("yyyy-MM-dd"),
+            DateTimeFormatter.ofPattern("dd.MM.yyyy"),
+            new DateTimeFormatterBuilder()
+                    .parseCaseInsensitive()
+                    .appendPattern("dd MMM yyyy")
+                    .toFormatter(Locale.FRENCH),
+            new DateTimeFormatterBuilder()
+                    .parseCaseInsensitive()
+                    .appendPattern("dd MMMM yyyy")
+                    .toFormatter(Locale.FRENCH));
+
     public List<ReleveBancaire> parseReleveBancaire(MultipartFile file) throws Exception {
         List<ReleveBancaire> operations = new ArrayList<>();
         Tenant tenant = TenantContext.getCurrentTenantAsTenant();
-
 
         try (BufferedReader br = new BufferedReader(new InputStreamReader(file.getInputStream(), "UTF-8"))) {
             String line;
@@ -56,12 +54,14 @@ public class CsvReleveBancaireService {
 
                 String[] cols = line.split(";|,|\t"); // gère ; , et tabulation
 
-                if (cols.length < 4) continue;
+                if (cols.length < 4)
+                    continue;
 
                 ReleveBancaire op = new ReleveBancaire();
                 op.setTenant(tenant);
 
-                // Détection intelligente des colonnes (fonctionne avec 90% des banques africaines)
+                // Détection intelligente des colonnes (fonctionne avec 90% des banques
+                // africaines)
                 int idxDate = detectColumnIndex(cols, "date", "operation", "valeur");
                 int idxLibelle = detectColumnIndex(cols, "libell", "description", "motif", "intitul");
                 int idxMontant = detectColumnIndex(cols, "montant", "credit", "debit", "amount");
@@ -86,7 +86,8 @@ public class CsvReleveBancaireService {
         for (int i = 0; i < cols.length; i++) {
             String header = cols[i].toLowerCase();
             for (String kw : keywords) {
-                if (header.contains(kw)) return i;
+                if (header.contains(kw))
+                    return i;
             }
         }
         return Math.min(0, cols.length - 1); // fallback
@@ -97,7 +98,8 @@ public class CsvReleveBancaireService {
         for (DateTimeFormatter fmt : DATE_FORMATS) {
             try {
                 return LocalDate.parse(clean, fmt);
-            } catch (Exception e) {}
+            } catch (Exception e) {
+            }
         }
         return LocalDate.now(); // fallback
     }
@@ -122,17 +124,78 @@ public class CsvReleveBancaireService {
 
     private String normalizeLibelle(String lib) {
         return lib.replaceAll("\"", "")
-                  .replaceAll(" +", " ")
-                  .trim()
-                  .toUpperCase();
+                .replaceAll(" +", " ")
+                .trim()
+                .toUpperCase();
     }
 
     private String detecterCategorie(String libelle) {
-        if (libelle.contains("VIR") || libelle.contains("VIREMENT")) return "VIREMENT";
-        if (libelle.contains("CHQ") || libelle.contains("CHEQUE")) return "CHEQUE";
-        if (libelle.contains("FRAIS") || libelle.contains("COMMISSION") || libelle.contains("AGIOS")) return "FRAIS BANCAIRES";
-        if (libelle.contains("RETRAIT") || libelle.contains("GAB")) return "RETRAIT";
-        if (libelle.contains("CARTE") || libelle.contains("CB")) return "CARTE";
+        if (libelle.contains("VIR") || libelle.contains("VIREMENT"))
+            return "VIREMENT";
+        if (libelle.contains("CHQ") || libelle.contains("CHEQUE"))
+            return "CHEQUE";
+        if (libelle.contains("FRAIS") || libelle.contains("COMMISSION") || libelle.contains("AGIOS"))
+            return "FRAIS BANCAIRES";
+        if (libelle.contains("RETRAIT") || libelle.contains("GAB"))
+            return "RETRAIT";
+        if (libelle.contains("CARTE") || libelle.contains("CB"))
+            return "CARTE";
         return "AUTRE";
+    }
+
+    /**
+     * Parse un fichier CSV de relevé bancaire.
+     * 
+     * @param file            fichier CSV
+     * @param compte_bancaire numéro de compte
+     * @return liste des transactions détectées
+     */
+    public List<java.util.Map<String, Object>> parseReleveCsv(MultipartFile file, String compte_bancaire) {
+        try {
+            List<ReleveBancaire> operations = parseReleveBancaire(file);
+            List<java.util.Map<String, Object>> result = new ArrayList<>();
+
+            for (ReleveBancaire op : operations) {
+                result.add(java.util.Map.of(
+                        "date", op.getDateOperation(),
+                        "libelle", op.getLibelle(),
+                        "montant", op.getMontant(),
+                        "sens", op.getSens(),
+                        "categorie", op.getCategorieDetectee()));
+            }
+
+            return result;
+        } catch (Exception e) {
+            throw new RuntimeException("Erreur lors du parsing du relevé CSV", e);
+        }
+    }
+
+    /**
+     * Récupère la liste des relevés importés.
+     * 
+     * @param tenant_id ID du tenant
+     * @return liste des relevés
+     */
+    public List<java.util.Map<String, Object>> getListeReleves(java.util.UUID tenant_id) {
+        // Cette méthode nécessiterait une entité ReleveBancaireImport pour stocker les
+        // imports
+        // Pour l'instant, retourne une liste vide
+        return new ArrayList<>();
+    }
+
+    /**
+     * Importe les transactions d'un relevé en écritures comptables.
+     * 
+     * @param releve_id ID du relevé
+     * @param user      utilisateur
+     * @return résultat de l'import
+     */
+    public java.util.Map<String, Object> importerReleveEnEcritures(java.util.UUID releve_id, String user) {
+        // Cette méthode nécessiterait une logique complète d'import
+        // Pour l'instant, retourne un résultat basique
+        return java.util.Map.of(
+                "releve_id", releve_id,
+                "ecritures_creees", 0,
+                "message", "Import non implémenté - nécessite une entité ReleveBancaireImport");
     }
 }

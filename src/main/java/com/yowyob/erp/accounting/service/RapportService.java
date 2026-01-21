@@ -1,20 +1,26 @@
 package com.yowyob.erp.accounting.service;
 
+import com.yowyob.erp.accounting.dto.JournalAuditDto;
 import com.yowyob.erp.accounting.entity.Compte;
 import com.yowyob.erp.accounting.entity.DetailEcriture;
+import com.yowyob.erp.accounting.entity.JournalAudit;
+import com.yowyob.erp.accounting.entity.Tenant;
 import com.yowyob.erp.accounting.repository.CompteRepository;
 import com.yowyob.erp.accounting.repository.DetailEcritureRepository;
 import com.yowyob.erp.config.kafka.KafkaMessageService;
 import com.yowyob.erp.config.redis.RedisService;
+import com.yowyob.erp.config.tenant.TenantContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -94,7 +100,10 @@ public class RapportService {
         redis_service.save(cache_key, bilan, java.time.Duration.ofMinutes(30));
 
         // Publish Kafka event
-        kafka_service.sendAuditLog(bilan, tenant_id, "BILAN_GENERATED");
+        logAudit(TenantContext.getCurrentTenantAsTenant(),
+                Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system"),
+                "BILAN_GENERATED",
+                "Balance sheet generated from " + date_debut + " to " + date_fin);
 
         log.info("✅ Balance sheet generated: Actif={} | Passif={} | Tenant={}", total_actif, total_passif, tenant_id);
         return bilan;
@@ -155,7 +164,10 @@ public class RapportService {
         redis_service.save(cache_key, compte_resultat, java.time.Duration.ofMinutes(30));
 
         // Publish Kafka event
-        kafka_service.sendAuditLog(compte_resultat, tenant_id, "COMPTE_RESULTAT_GENERATED");
+        logAudit(TenantContext.getCurrentTenantAsTenant(),
+                Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system"),
+                "COMPTE_RESULTAT_GENERATED",
+                "Income statement generated from " + date_debut + " to " + date_fin);
 
         log.info("✅ Income statement generated: Charges={} | Produits={} | Resultat={} | Tenant={}",
                 total_charges.abs(), total_produits, resultat, tenant_id);
@@ -181,5 +193,28 @@ public class RapportService {
                             : credit.subtract(debit);
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private void logAudit(Tenant tenant, String utilisateur, String action, String details) {
+        JournalAudit audit = JournalAudit.builder()
+                .tenant(tenant)
+                .action(action)
+                .utilisateur(utilisateur)
+                .details(details)
+                .date_action(LocalDateTime.now())
+                .created_at(LocalDateTime.now())
+                .updated_at(LocalDateTime.now())
+                .created_by("system")
+                .updated_by("system")
+                .build();
+
+        JournalAuditDto auditDto = JournalAuditDto.builder()
+                .action(audit.getAction())
+                .utilisateur(audit.getUtilisateur())
+                .details(audit.getDetails())
+                .date_action(audit.getDate_action())
+                .build();
+
+        kafka_service.sendAuditLog(auditDto, tenant.getId(), action);
     }
 }

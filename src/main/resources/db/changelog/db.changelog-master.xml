@@ -15,5 +15,7 @@
     <include file="changeset-001-create-tables.xml" relativeToChangelogFile="true"/>
     <include file="changeset-002-constraints-indexes.xml" relativeToChangelogFile="true"/>
     <include file="changeset-003-inserts-initiaux.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-004-create-taxes.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-005-create-currency-tables.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

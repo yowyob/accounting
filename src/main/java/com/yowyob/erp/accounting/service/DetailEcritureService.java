@@ -14,6 +14,7 @@ import com.yowyob.erp.common.entity.ComptableObject;
 import com.yowyob.erp.common.enums.Sens;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.config.tenant.TenantContext;
+import com.yowyob.erp.accounting.dto.DetailEcritureDto;
 import com.yowyob.erp.accounting.dto.JournalAuditDto;
 import com.yowyob.erp.config.kafka.KafkaMessageService;
 import jakarta.validation.ConstraintViolationException;
@@ -83,7 +84,9 @@ public class DetailEcritureService {
                 DetailEcriture saved = detail_repository.save(detail);
                 logAudit(tenant, ecriture.getId(), current_user, "CREATE",
                                 "Creation of entry detail " + saved.getId());
-                kafka_message_service.sendAccountingEvent(saved, tenant.getId(), "DETAIL_CREATED");
+
+                DetailEcritureDto savedDto = mapToDto(saved);
+                kafka_message_service.sendAccountingEvent(savedDto, tenant.getId(), "DETAIL_CREATED");
 
                 log.info("✅ Entry detail created successfully: {}", saved.getId());
                 return saved;
@@ -303,7 +306,9 @@ public class DetailEcritureService {
                 DetailEcriture saved = detail_repository.save(existing);
                 logAudit(tenant, ecriture.getId(), current_user, "UPDATE",
                                 "Update of entry detail " + saved.getId());
-                kafka_message_service.sendAccountingEvent(saved, tenant.getId(), "DETAIL_UPDATED");
+
+                DetailEcritureDto savedDto = mapToDto(saved);
+                kafka_message_service.sendAccountingEvent(savedDto, tenant.getId(), "DETAIL_UPDATED");
 
                 log.info("✏️ Entry detail updated: {}", saved.getId());
                 return saved;
@@ -405,5 +410,24 @@ public class DetailEcritureService {
         private void validateTenantAccess() {
                 if (TenantContext.getCurrentTenant() == null)
                         throw new SecurityException("Access denied: Tenant ID not defined");
+        }
+
+        private DetailEcritureDto mapToDto(DetailEcriture entity) {
+                return DetailEcritureDto.builder()
+                                .id(entity.getId())
+                                .ecriture_comptable_id(
+                                                entity.getEcriture() != null ? entity.getEcriture().getId() : null)
+                                .compte_comptable_id(entity.getCompte() != null ? entity.getCompte().getId() : null)
+                                .libelle(entity.getLibelle())
+                                .sens(entity.getSens() != null ? entity.getSens().name() : null)
+                                .montant_debit(entity.getMontant_debit())
+                                .montant_credit(entity.getMontant_credit())
+                                .lettree(entity.getLettree())
+                                .date_lettrage(entity.getDate_lettrage())
+                                .pointee(entity.getPointee())
+                                .reference_bancaire(entity.getReference_bancaire())
+                                .notes(entity.getNotes())
+                                .date_ecriture(entity.getDate_ecriture())
+                                .build();
         }
 }

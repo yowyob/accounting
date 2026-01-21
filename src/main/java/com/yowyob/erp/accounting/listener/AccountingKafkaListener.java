@@ -127,12 +127,44 @@ public class AccountingKafkaListener {
                 // 1. Conversion sécurisée en DTO
                 JournalAuditDto dto = objectMapper.convertValue(rawPayload, JournalAuditDto.class);
 
-                // 2. FILTRE ANTI-POISON : Si l'action est nulle (ancien message), on l'ignore
-                // proprement
+                // 2. FILTRE ANTI-POISON & RÉSILIENCE : Si l'action est nulle, on tente de
+                // reconstruire le log
                 if (dto.getAction() == null) {
-                    log.warn("⚠️ Ignoré : Message d'audit ancien format ou corrompu détecté. Action is NULL.");
-                    acknowledgment.acknowledge(); // On confirme pour supprimer le message du topic
-                    return;
+                    log.warn("⚠️ Message d'audit sans action explicite. Reconstruction depuis l'événement Kafka : {}",
+                            message.getEventType());
+
+                    dto.setAction(message.getEventType());
+
+                    // Tentative d'extraction intelligente des détails
+                    if (dto.getDetails() == null) {
+                        if (rawPayload.containsKey("libelle")) {
+                            dto.setDetails(String.valueOf(rawPayload.get("libelle")));
+                        } else if (rawPayload.containsKey("type_operation")) {
+                            dto.setDetails("Type d'opération: " + rawPayload.get("type_operation"));
+                        } else if (rawPayload.containsKey("code_journal")) {
+                            dto.setDetails("Journal: " + rawPayload.get("code_journal"));
+                        } else {
+                            dto.setDetails("Action automatique via Kafka: " + message.getEventType());
+                        }
+                    }
+
+                    // Tentative d'extraction de l'utilisateur
+                    if (dto.getUtilisateur() == null) {
+                        if (rawPayload.containsKey("updated_by")) {
+                            dto.setUtilisateur(String.valueOf(rawPayload.get("updated_by")));
+                        } else if (rawPayload.containsKey("created_by")) {
+                            dto.setUtilisateur(String.valueOf(rawPayload.get("created_by")));
+                        } else {
+                            dto.setUtilisateur("system");
+                        }
+                    }
+
+                    // On sauvegarde l'état complet de l'objet pour la traçabilité
+                    try {
+                        dto.setDonnees_apres(objectMapper.writeValueAsString(rawPayload));
+                    } catch (Exception e) {
+                        log.warn("Impossible de sérialiser le payload pour l'audit : {}", e.getMessage());
+                    }
                 }
 
                 // 3. RECONSTRUCTION DE L'ENTITÉ (Mapping Manuel)
@@ -228,7 +260,7 @@ public class AccountingKafkaListener {
         // Ensure journal is set to TR (Treasury) if not provided
         if (transaction.get_journal_comptable_id() == null) {
             journalComptableRepository.findByTenant_IdAndCode_journal(message.getTenantId(), "TR")
-                .ifPresent(j -> transaction.setJournal_comptable_id(j.getId()));
+                    .ifPresent(j -> transaction.setJournal_comptable_id(j.getId()));
         }
 
         ecritureComptableService.generateFromComptableObject(transaction);
@@ -253,7 +285,8 @@ public class AccountingKafkaListener {
         elasticsearchService.indexAccountingEntry(message.getPayload(), message.getTenantId().toString());
 
         // 3. Notify Treasury of validation
-        kafkaMessageService.sendTreasurySync(message.getPayload(), message.getTenantId(), "TREASURY_VALIDATION_NOTIFIED");
+        kafkaMessageService.sendTreasurySync(message.getPayload(), message.getTenantId(),
+                "TREASURY_VALIDATION_NOTIFIED");
         log.info("✅ Treasury validation notified for correlation ID: {}", message.getCorrelationId());
     }
 }

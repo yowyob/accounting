@@ -6,9 +6,12 @@ import com.yowyob.erp.common.dto.ApiResponseWrapper;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.config.tenant.TenantContext;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,11 +48,13 @@ public class CompteController {
      * @return the created account wrapped in ApiResponseWrapper
      */
     @PostMapping
-    public ApiResponseWrapper<CompteDto> createCompte(@RequestBody CompteDto dto) {
+    @Operation(summary = "Create an accounting account")
+    public ResponseEntity<ApiResponseWrapper<CompteDto>> createCompte(@RequestBody CompteDto dto) {
         UUID tenant_id = TenantContext.getCurrentTenant();
         log.info("Request to create an account for tenant {}", tenant_id);
         CompteDto saved = compte_service.createCompte(dto);
-        return ApiResponseWrapper.success(saved, "Account created successfully");
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponseWrapper.success(saved, "Account created successfully"));
     }
 
     /**
@@ -58,11 +63,12 @@ public class CompteController {
      * @return list of accounts wrapped in ApiResponseWrapper
      */
     @GetMapping
-    public ApiResponseWrapper<List<CompteDto>> getAllComptes() {
+    @Operation(summary = "List all accounts")
+    public ResponseEntity<ApiResponseWrapper<List<CompteDto>>> getAllComptes() {
         UUID tenant_id = TenantContext.getCurrentTenant();
         log.info("Retrieving all accounts for tenant {}", tenant_id);
         List<CompteDto> comptes = compte_service.findAllByTenant(tenant_id);
-        return ApiResponseWrapper.success(comptes, "Accounts list retrieved successfully");
+        return ResponseEntity.ok(ApiResponseWrapper.success(comptes, "Accounts list retrieved successfully"));
     }
 
     /**
@@ -72,12 +78,13 @@ public class CompteController {
      * @return the account wrapped in ApiResponseWrapper
      */
     @GetMapping("/{id}")
-    public ApiResponseWrapper<CompteDto> getCompteById(@PathVariable UUID id) {
+    @Operation(summary = "Get account by ID")
+    public ResponseEntity<ApiResponseWrapper<CompteDto>> getCompteById(@PathVariable UUID id) {
         UUID tenant_id = TenantContext.getCurrentTenant();
         log.info("Retrieving account ID={} for tenant {}", id, tenant_id);
         CompteDto compte = compte_service.findById(tenant_id, id)
                 .orElseThrow(() -> new ResourceNotFoundException("Accounting account", id.toString()));
-        return ApiResponseWrapper.success(compte, "Account found");
+        return ResponseEntity.ok(ApiResponseWrapper.success(compte, "Account found"));
     }
 
     /**
@@ -87,11 +94,12 @@ public class CompteController {
      * @return list of matching accounts wrapped in ApiResponseWrapper
      */
     @GetMapping("/search")
-    public ApiResponseWrapper<List<CompteDto>> findByNoCompte(@RequestParam String no_compte) {
+    @Operation(summary = "Search accounts by account number")
+    public ResponseEntity<ApiResponseWrapper<List<CompteDto>>> findByNoCompte(@RequestParam String no_compte) {
         UUID tenant_id = TenantContext.getCurrentTenant();
         log.info("Searching accounts with no_compte={} for tenant {}", no_compte, tenant_id);
         List<CompteDto> comptes = compte_service.findByNoCompte(tenant_id, no_compte);
-        return ApiResponseWrapper.success(comptes, "Search results");
+        return ResponseEntity.ok(ApiResponseWrapper.success(comptes, "Search results"));
     }
 
     /**
@@ -102,11 +110,13 @@ public class CompteController {
      * @return the updated account wrapped in ApiResponseWrapper
      */
     @PutMapping("/{id}")
-    public ApiResponseWrapper<CompteDto> updateCompte(@PathVariable UUID id, @RequestBody CompteDto dto) {
+    @Operation(summary = "Update an account")
+    public ResponseEntity<ApiResponseWrapper<CompteDto>> updateCompte(@PathVariable UUID id,
+            @RequestBody CompteDto dto) {
         UUID tenant_id = TenantContext.getCurrentTenant();
         log.info("Updating account ID={} for tenant {}", id, tenant_id);
         CompteDto updated = compte_service.updateCompte(tenant_id, id, dto);
-        return ApiResponseWrapper.success(updated, "Account updated successfully");
+        return ResponseEntity.ok(ApiResponseWrapper.success(updated, "Account updated successfully"));
     }
 
     /**
@@ -116,10 +126,11 @@ public class CompteController {
      * @return success message wrapped in ApiResponseWrapper
      */
     @DeleteMapping("/{id}")
-    public ApiResponseWrapper<String> deleteCompte(@PathVariable UUID id) {
+    @Operation(summary = "Delete an account")
+    public ResponseEntity<ApiResponseWrapper<String>> deleteCompte(@PathVariable UUID id) {
         UUID tenant_id = TenantContext.getCurrentTenant();
         log.info("Deleting account ID={} for tenant {}", id, tenant_id);
         compte_service.deleteById(tenant_id, id);
-        return ApiResponseWrapper.success("Account deleted successfully");
+        return ResponseEntity.ok(ApiResponseWrapper.success("Account deleted successfully"));
     }
 }

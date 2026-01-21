@@ -1,6 +1,7 @@
 package com.yowyob.erp.accounting.service;
 
 import com.yowyob.erp.accounting.dto.EcritureComptableDto;
+import com.yowyob.erp.accounting.dto.JournalAuditDto;
 import com.yowyob.erp.accounting.dto.PeriodeComptableDto;
 import com.yowyob.erp.accounting.entity.DetailEcriture;
 import com.yowyob.erp.accounting.entity.EcritureComptable;
@@ -101,7 +102,7 @@ public class EcritureComptableService {
         validateBalance(details);
 
         // Audit + Kafka + Cache
-        logAuditAndSendKafka(TenantContext.getCurrentTenantAsTenant(), saved.getId(), current_user, "CREATE",
+        logAuditAndSendKafka(TenantContext.getCurrentTenantAsTenant(), saved.getId(), current_user, "ECRITURE_CREATED",
                 "Entry created");
         redis_service.delete(CACHE_ALL + tenant_id);
 
@@ -137,7 +138,8 @@ public class EcritureComptableService {
         ecriture.setUpdated_by(current_user);
 
         EcritureComptable validated = ecriture_repository.save(ecriture);
-        logAuditAndSendKafka(TenantContext.getCurrentTenantAsTenant(), id, current_user, "VALIDATE", "Entry validated");
+        logAuditAndSendKafka(TenantContext.getCurrentTenantAsTenant(), id, current_user, "ECRITURE_VALIDATED",
+                "Entry validated");
         redis_service.delete(CACHE_NON_VALIDATED + tenant_id);
 
         return mapToDto(validated);
@@ -284,7 +286,8 @@ public class EcritureComptableService {
 
         validateBalance(detail_repository.findByTenant_IdAndEcriture_Id(tenant_id, saved.getId()));
 
-        logAuditAndSendKafka(tenant, saved.getId(), current_user, "AUTO_GENERATE", "Entry generated automatically");
+        logAuditAndSendKafka(tenant, saved.getId(), current_user, "ECRITURE_AUTO_GENERATED",
+                "Entry generated automatically");
         redis_service.delete(CACHE_ALL + tenant_id);
 
         return mapToDto(saved);
@@ -304,7 +307,10 @@ public class EcritureComptableService {
         if (Boolean.TRUE.equals(ecriture.getValidee()))
             throw new BusinessException("Cannot delete a validated entry");
 
+        String current_user = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
         ecriture_repository.delete(ecriture);
+        logAuditAndSendKafka(TenantContext.getCurrentTenantAsTenant(), id, current_user, "ECRITURE_DELETED",
+                "Deletion of entry: " + ecriture.getLibelle());
         redis_service.delete(CACHE_ALL + tenant_id);
         log.info("🗑️ Entry {} deleted", id);
     }
@@ -319,8 +325,19 @@ public class EcritureComptableService {
                     .details(details)
                     .date_action(LocalDateTime.now())
                     .build();
-            audit_repository.save(audit);
-            kafka_message_service.sendAuditLog(audit, tenant.getId(), action);
+            JournalAudit savedAudit = audit_repository.save(audit);
+
+            // Convert to DTO to avoid Hibernate proxy serialization issues
+            JournalAuditDto auditDto = JournalAuditDto.builder()
+                    .id(savedAudit.getId())
+                    .ecriture_comptable_id(savedAudit.getEcriture_comptable_id())
+                    .action(savedAudit.getAction())
+                    .date_action(savedAudit.getDate_action())
+                    .utilisateur(savedAudit.getUtilisateur())
+                    .details(savedAudit.getDetails())
+                    .build();
+
+            kafka_message_service.sendAuditLog(auditDto, tenant.getId(), action);
             return null;
         });
     }

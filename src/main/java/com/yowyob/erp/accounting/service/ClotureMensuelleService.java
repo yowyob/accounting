@@ -24,7 +24,8 @@ public class ClotureMensuelleService {
 
     /**
      * Clôture le mois donné et génère les À-nouveaux pour le mois suivant
-     * Conforme OHADA : solde des comptes de charges/produits → compte 120 (Résultat)
+     * Conforme OHADA : solde des comptes de charges/produits → compte 120
+     * (Résultat)
      * Puis création automatique des écritures À-nouveaux au 01 du mois suivant
      */
     @Transactional
@@ -60,7 +61,8 @@ public class ClotureMensuelleService {
         // Écriture finale : Report du résultat sur le compte 120
         BigDecimal resultat = totalProduits.subtract(totalCharges);
         String compteResultat = resultat.compareTo(BigDecimal.ZERO) >= 0 ? "120000" : "121000";
-        insererDetailEcriture(ecritureClotureId, tenantId, compteResultat, resultat.abs(), resultat.compareTo(BigDecimal.ZERO) >= 0 ? "DEBIT" : "CREDIT");
+        insererDetailEcriture(ecritureClotureId, tenantId, compteResultat, resultat.abs(),
+                resultat.compareTo(BigDecimal.ZERO) >= 0 ? "DEBIT" : "CREDIT");
 
         // Étape 3 : Génération des À-nouveaux au 01 du mois suivant
         genererEcrituresANouveaux(tenantId, dateANouveaux);
@@ -68,11 +70,11 @@ public class ClotureMensuelleService {
 
     private UUID creerEcritureCloture(UUID tenantId, LocalDate date) {
         String sql = """
-            INSERT INTO ecriture_comptable 
-            (tenant_id, date_operation, libelle, journal_code, validee, created_at)
-            VALUES (?, ?, 'Clôture mois ' || ? || '/' || ?, 'OD', true, NOW())
-            RETURNING id
-            """;
+                INSERT INTO ecriture_comptable
+                (tenant_id, date_operation, libelle, journal_code, validee, created_at)
+                VALUES (?, ?, 'Clôture mois ' || ? || '/' || ?, 'OD', true, NOW())
+                RETURNING id
+                """;
 
         Query q = em.createNativeQuery(sql);
         q.setParameter(1, tenantId);
@@ -85,27 +87,27 @@ public class ClotureMensuelleService {
     @SuppressWarnings("unchecked")
     private List<Object[]> calculerSoldesClasses67(UUID tenantId, int mois, int annee) {
         String sql = """
-            SELECT c.numero,
-                   SUM(
-                     CASE 
-                       WHEN de.sens = 'DEBIT' THEN COALESCE(de.montant_debit, 0)
-                       ELSE -COALESCE(de.montant_credit, 0)
-                     END
-                   ) as solde
-            FROM details_ecritures de
-            JOIN comptes c ON de.compte_id = c.id
-            WHERE de.tenant_id = ?
-              AND EXTRACT(MONTH FROM de.date_ecriture) = ?
-              AND EXTRACT(YEAR FROM de.date_ecriture) = ?
-              AND c.numero LIKE '6%' OR c.numero LIKE '7%'
-            GROUP BY c.numero
-            HAVING SUM(
-                     CASE 
-                       WHEN de.sens = 'DEBIT' THEN COALESCE(de.montant_debit, 0)
-                       ELSE -COALESCE(de.montant_credit, 0)
-                     END
-                   ) <> 0
-            """;
+                SELECT c.numero,
+                       SUM(
+                         CASE
+                           WHEN de.sens = 'DEBIT' THEN COALESCE(de.montant_debit, 0)
+                           ELSE -COALESCE(de.montant_credit, 0)
+                         END
+                       ) as solde
+                FROM details_ecritures de
+                JOIN comptes c ON de.compte_id = c.id
+                WHERE de.tenant_id = ?
+                  AND EXTRACT(MONTH FROM de.date_ecriture) = ?
+                  AND EXTRACT(YEAR FROM de.date_ecriture) = ?
+                  AND c.numero LIKE '6%' OR c.numero LIKE '7%'
+                GROUP BY c.numero
+                HAVING SUM(
+                         CASE
+                           WHEN de.sens = 'DEBIT' THEN COALESCE(de.montant_debit, 0)
+                           ELSE -COALESCE(de.montant_credit, 0)
+                         END
+                       ) <> 0
+                """;
 
         Query q = em.createNativeQuery(sql);
         q.setParameter(1, tenantId);
@@ -114,17 +116,18 @@ public class ClotureMensuelleService {
         return q.getResultList();
     }
 
-    private void insererDetailEcriture(UUID ecritureId, UUID tenantId, String numeroCompte, BigDecimal montant, String sens) {
+    private void insererDetailEcriture(UUID ecritureId, UUID tenantId, String numeroCompte, BigDecimal montant,
+            String sens) {
         String sql = """
-            INSERT INTO details_ecritures 
-            (ecriture_id, tenant_id, compte_id, libelle, sens, montant_debit, montant_credit, date_ecriture, created_at)
-            SELECT ?, ?, c.id, 'Clôture automatique', ?, 
-                   CASE WHEN ? = 'DEBIT' THEN ? ELSE NULL END,
-                   CASE WHEN ? = 'CREDIT' THEN ? ELSE NULL END,
-                   NOW(), NOW()
-            FROM comptes c 
-            WHERE c.tenant_id = ? AND c.numero = ?
-            """;
+                INSERT INTO details_ecritures
+                (ecriture_id, tenant_id, compte_id, libelle, sens, montant_debit, montant_credit, date_ecriture, created_at)
+                SELECT ?, ?, c.id, 'Clôture automatique', ?,
+                       CASE WHEN ? = 'DEBIT' THEN ? ELSE NULL END,
+                       CASE WHEN ? = 'CREDIT' THEN ? ELSE NULL END,
+                       NOW(), NOW()
+                FROM comptes c
+                WHERE c.tenant_id = ? AND c.numero = ?
+                """;
 
         Query q = em.createNativeQuery(sql);
         q.setParameter(1, ecritureId);
@@ -142,10 +145,10 @@ public class ClotureMensuelleService {
 
     private void genererEcrituresANouveaux(UUID tenantId, LocalDate dateDebut) {
         String sql = """
-            INSERT INTO ecriture_comptable (tenant_id, date_operation, libelle, journal_code, validee, created_at)
-            VALUES (?, ?, 'À-nouveaux', 'AN', true, NOW())
-            RETURNING id
-            """;
+                INSERT INTO ecriture_comptable (tenant_id, date_operation, libelle, journal_code, validee, created_at)
+                VALUES (?, ?, 'À-nouveaux', 'AN', true, NOW())
+                RETURNING id
+                """;
 
         Query q = em.createNativeQuery(sql);
         q.setParameter(1, tenantId);
@@ -154,23 +157,23 @@ public class ClotureMensuelleService {
 
         // Copie des soldes des comptes de bilan (1 à 5) au 01 du mois
         String sqlDetails = """
-            INSERT INTO details_ecritures 
-            (ecriture_id, tenant_id, compte_id, libelle, sens, montant_debit, montant_credit, date_ecriture)
-            SELECT ?, ?, compte_id, 'À-nouveaux', 
-                   CASE WHEN solde >= 0 THEN 'DEBIT' ELSE 'CREDIT' END,
-                   CASE WHEN solde >= 0 THEN ABS(solde) ELSE NULL END,
-                   CASE WHEN solde < 0 THEN ABS(solde) ELSE NULL END,
-                   ?
-            FROM (
-                SELECT compte_id, 
-                       SUM(COALESCE(montant_debit,0) - COALESCE(montant_credit,0)) as solde
-                FROM details_ecritures 
-                WHERE tenant_id = ? 
-                  AND date_ecriture < ?
-                GROUP BY compte_id
-                HAVING SUM(COALESCE(montant_debit,0) - COALESCE(montant_credit,0)) <> 0
-            ) soldes
-            """;
+                INSERT INTO details_ecritures
+                (ecriture_id, tenant_id, compte_id, libelle, sens, montant_debit, montant_credit, date_ecriture)
+                SELECT ?, ?, compte_id, 'À-nouveaux',
+                       CASE WHEN solde >= 0 THEN 'DEBIT' ELSE 'CREDIT' END,
+                       CASE WHEN solde >= 0 THEN ABS(solde) ELSE NULL END,
+                       CASE WHEN solde < 0 THEN ABS(solde) ELSE NULL END,
+                       ?
+                FROM (
+                    SELECT compte_id,
+                           SUM(COALESCE(montant_debit,0) - COALESCE(montant_credit,0)) as solde
+                    FROM details_ecritures
+                    WHERE tenant_id = ?
+                      AND date_ecriture < ?
+                    GROUP BY compte_id
+                    HAVING SUM(COALESCE(montant_debit,0) - COALESCE(montant_credit,0)) <> 0
+                ) soldes
+                """;
 
         Query q2 = em.createNativeQuery(sqlDetails);
         q2.setParameter(1, ecritureANouveauxId);
@@ -179,5 +182,82 @@ public class ClotureMensuelleService {
         q2.setParameter(4, tenantId);
         q2.setParameter(5, dateDebut);
         q2.executeUpdate();
+    }
+
+    /**
+     * Clôture une période comptable avec validation et génération d'écritures.
+     * 
+     * @param periode_id ID de la période à clôturer
+     * @param user       utilisateur effectuant la clôture
+     * @return résultat de la clôture avec statistiques
+     */
+    @Transactional
+    public java.util.Map<String, Object> cloturerPeriode(UUID periode_id, String user) {
+        // Récupération de la période via SQL natif
+        String sqlPeriode = "SELECT tenant_id, date_debut, date_fin FROM periode_comptable WHERE id = ?";
+        Query q = em.createNativeQuery(sqlPeriode);
+        q.setParameter(1, periode_id);
+        Object[] periode = (Object[]) q.getSingleResult();
+
+        UUID tenant_id = (UUID) periode[0];
+        java.sql.Date dateDebut = (java.sql.Date) periode[1];
+        java.sql.Date dateFin = (java.sql.Date) periode[2];
+
+        // Clôture du mois
+        cloturerMoisEtGenererANouveaux(
+                tenant_id,
+                dateFin.toLocalDate().getMonthValue(),
+                dateFin.toLocalDate().getYear());
+
+        // Marquer la période comme clôturée
+        String sqlUpdate = "UPDATE periode_comptable SET cloturee = true, date_cloture = NOW() WHERE id = ?";
+        Query qUpdate = em.createNativeQuery(sqlUpdate);
+        qUpdate.setParameter(1, periode_id);
+        qUpdate.executeUpdate();
+
+        return java.util.Map.of(
+                "periode_id", periode_id,
+                "statut", "cloturee",
+                "message", "Période clôturée avec succès");
+    }
+
+    /**
+     * Vérifie si une période est éligible à la clôture.
+     * 
+     * @param periode_id ID de la période
+     * @return statut d'éligibilité
+     */
+    public java.util.Map<String, Object> verifierEligibiliteCloture(UUID periode_id) {
+        String sql = """
+                SELECT COUNT(*) as ecritures_non_validees
+                FROM ecriture_comptable ec
+                WHERE ec.periode_comptable_id = ?
+                  AND ec.validee = false
+                """;
+
+        Query q = em.createNativeQuery(sql);
+        q.setParameter(1, periode_id);
+        Long count = ((Number) q.getSingleResult()).longValue();
+
+        boolean eligible = count == 0;
+
+        return java.util.Map.of(
+                "eligible", eligible,
+                "ecritures_non_validees", count,
+                "message", eligible ? "Période éligible à la clôture" : count + " écritures non validées");
+    }
+
+    /**
+     * Annule la clôture d'une période (admin uniquement).
+     * 
+     * @param periode_id ID de la période
+     * @param user       utilisateur admin
+     */
+    @Transactional
+    public void annulerCloture(UUID periode_id, String user) {
+        String sql = "UPDATE periode_comptable SET cloturee = false, date_cloture = NULL WHERE id = ?";
+        Query q = em.createNativeQuery(sql);
+        q.setParameter(1, periode_id);
+        q.executeUpdate();
     }
 }

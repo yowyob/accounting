@@ -1,0 +1,267 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{amsmath}
+
+% Configuration des couleurs pour le code
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstset{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Yowyob ERP - Rapport Technique Détaillé}
+\lhead{Backend Architecture}
+\cfoot{\thepage}
+
+\title{
+    \vspace{2cm}
+    \textbf{Rapport Technique Approfondi} \\
+    \Large{Entités, Workflows et Gouvernance du Système Yowyob ERP} \\
+    \vspace{1cm}
+    %\includegraphics[width=0.4\textwidth]{logo.png} 
+}
+\author{Équipe de Développement Yowyob}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\newpage
+\tableofcontents
+\newpage
+
+\section{Introduction}
+Ce document complète le rapport technique précédent en apportant un éclairage détaillé sur la structure des données (Entités) et les processus métier (Workflows) qui régissent le fonctionnement du backend de Yowyob ERP.
+
+\section{Modèle de Données et Gouvernance des Entités}
+Le système repose sur une hiérarchie d'entités assurant l'isolation et la conformité comptable.
+
+\subsection{Entités de Structure}
+\begin{itemize}
+    \item \textbf{Tenant} : L'entité racine. Chaque donnée du système est rattachée à un \texttt{tenant\_id}. L'isolation est garantie par des clauses \texttt{WHERE} automatiques et des intercepteurs.
+    \item \textbf{Organization / Agence} : Permettent une segmentation géographique ou structurelle au sein d'un même tenant.
+\end{itemize}
+
+\subsection{Entités Comptables}
+\begin{itemize}
+    \item \textbf{PlanComptable (Compte)} : Représente un compte du plan OHADA. 
+        \begin{itemize}
+            \item \textit{Attributs clés} : \texttt{no\_compte} (5 chiffres min), \texttt{libelle}, \texttt{classe} (1-7), \texttt{actif}.
+        \end{itemize}
+    \item \textbf{JournalComptable} : Segmentation des écritures (Achats, Ventes, Banque, Caisse, OD).
+    \item \textbf{ExerciceComptable} : Représente une année fiscale. Il définit les bornes temporelles globales pour une année donnée.
+    \item \textbf{PeriodeComptable} : Subdivision d'un exercice (généralement mensuelle). \textbf{Chaque période est obligatoirement incluse dans un exercice comptable ouvert}.
+        \begin{itemize}
+            \item \textit{Attributs clés} : \texttt{date\_debut}, \texttt{date\_fin}, \texttt{cloturee}, \texttt{exercice\_id}.
+        \end{itemize}
+\end{itemize}
+
+\subsection{Entités Opérationnelles}
+\begin{itemize}
+    \item \textbf{OperationComptable} : Modèle de transaction prédéfini (ex: "Vente au comptant"). Elle définit le compte de contrepartie et le sens (Débit/Crédit) par défaut.
+    \item \textbf{EcritureComptable} : L'entête d'un mouvement financier regroupant plusieurs détails.
+    \item \textbf{DetailEcriture} : La ligne élémentaire d'une écriture (un compte, un montant débit ou crédit).
+\end{itemize}
+
+\section{Workflows Métier et Dépendances}
+Le système impose une logique rigoureuse de validation des étapes.
+
+\subsection{Initialisation d'un Nouveau Tenant}
+Lorsqu'un tenant est créé, le workflow suivant est déclenché :
+\begin{enumerate}
+    \item Création du dossier \textbf{Organization} par défaut.
+    \item Injection automatique du \textbf{Plan Comptable OHADA} standard (via \texttt{PlanComptableInitializationService}).
+    \item Création des \textbf{Journaux} standards (ACH, VEN, BQ, CAI, OD).
+\end{enumerate}
+
+\subsection{Cycle de Vie de la Période Comptable}
+La gestion du temps est critique pour l'intégrité des données :
+\begin{enumerate}
+    \item \textbf{Ouverture} : Création d'une \texttt{PeriodeComptable}. Elle doit être comprise dans un \texttt{ExerciceComptable} ouvert.
+    \item \textbf{Vérification de Disponibilité} : Toute création d'opération ou d'écriture vérifie \texttt{periode.isCloturee() == false}.
+    \item \textbf{Clôture} : Une fois clôturée, la période devient immuable. Seul un administrateur peut la réouvrir sous conditions strictes.
+\end{enumerate}
+
+\subsection{Workflow de Création d'une Opération Comptable}
+Une opération n'est pas une simple écriture, c'est un paramétrage qui nécessite :
+\begin{itemize}
+    \item \textbf{Prérequis 1} : Un \textbf{JournalComptable} existant et actif.
+    \item \textbf{Prérequis 2} : Un \textbf{Compte Principal} valide dans le Plan Comptable du tenant.
+    \item \textbf{Processus} : 
+        \begin{itemize}
+            \item L'utilisateur définit le type (Vente, Achat) et le mode (Caisse, Banque).
+            \item Le système valide l'unicité du couple (Type, Mode) pour le tenant.
+            \item Enregistrement des contreparties associées.
+        \end{itemize}
+\end{itemize}
+
+\subsection{Cycle Saisie-Validation d'une Écriture}
+Le workflow garantit l'équilibre comptable :
+\begin{enumerate}
+    \item \textbf{Draft} : L'utilisateur saisit l'entête et les lignes de détail.
+    \item \textbf{Contrôle d'Équilibre} : Le système calcule $\sum \text{Débits} - \sum \text{Crédits}$. Si la différence $> 0.01$, l'enregistrement est refusé.
+    \item \textbf{Validation} : L'écriture passe du statut \texttt{validee=false} à \texttt{validee=true}. À ce stade :
+        \begin{itemize}
+            \item L'écriture devient non supprimable.
+            \item Les soldes des comptes concernés sont mis à jour dynamiquement.
+            \item Un événement Kafka est publié pour synchroniser le cache Redis et Elasticsearch.
+        \end{itemize}
+\end{enumerate}
+
+\subsection{Automatisation via OCR}
+Le workflow de haut niveau pour les factures numériques :
+\begin{enumerate}
+    \item Upload d'un PDF/Image au \texttt{FactureProcessingService}.
+    \item \textbf{OCR} : Extraction du texte via Tesseract.
+    \item \textbf{Parsing} : Analyse heuristique pour extraire le montant TTC, la TVA, et le nom du fournisseur.
+    \item \textbf{Matching} : Recherche d'une \texttt{OperationComptable} correspondante.
+    \item \textbf{Génération} : Création automatique d'une \texttt{EcritureComptable} en mode "Non Validée" pour revue humaine.
+\end{enumerate}
+
+\section{Paramétrages Disponibles dans le Module Comptabilité}
+Le système offre une flexibilité importante via des paramétrages configurables par tenant, permettant d'adapter le comportement comptable aux besoins spécifiques de chaque organisation.
+
+\subsection{Paramétrage des Opérations Comptables}
+L'\texttt{OperationComptable} est l'élément central de configuration. Chaque opération définit :
+\begin{itemize}
+    \item \textbf{Type d'opération} : Catégorie de la transaction (ex: "VENTE", "ACHAT", "ENCAISSEMENT", "DECAISSEMENT").
+    \item \textbf{Mode de règlement} : Moyen de paiement utilisé. Valeurs courantes :
+        \begin{itemize}
+            \item \texttt{ESPECES} : Paiement en espèces
+            \item \texttt{CHEQUE} : Paiement par chèque
+            \item \texttt{VIREMENT} : Virement bancaire
+            \item \texttt{CARTE\_BANCAIRE} : Paiement par carte
+            \item \texttt{MOBILE\_MONEY} : Paiement mobile (Orange Money, MTN, etc.)
+            \item \texttt{CREDIT} : Vente à crédit
+        \end{itemize}
+    \item \textbf{Compte principal} : Numéro de compte OHADA associé (ex: 411000 pour clients, 401000 pour fournisseurs).
+    \item \textbf{Sens principal} : \texttt{DEBIT} ou \texttt{CREDIT}, définissant le sens comptable par défaut.
+    \item \textbf{Type de montant} : Précise si le montant saisi est :
+        \begin{itemize}
+            \item \texttt{HT} : Hors Taxes
+            \item \texttt{TTC} : Toutes Taxes Comprises
+            \item \texttt{TVA} : Montant de TVA uniquement
+            \item \texttt{PAU} : Prix À l'Unité
+        \end{itemize}
+    \item \textbf{Journal comptable} : Association à un journal (Achats, Ventes, Banque, Caisse, OD).
+    \item \textbf{Contreparties} : Liste des comptes de contrepartie automatiques avec leurs règles de calcul.
+\end{itemize}
+
+\subsection{Configuration des Journaux Comptables}
+Chaque \texttt{JournalComptable} peut être paramétré avec :
+\begin{itemize}
+    \item \textbf{Code} : Identifiant court (ex: "ACH", "VEN", "BQ").
+    \item \textbf{Libellé} : Description complète.
+    \item \textbf{Type} : Catégorie du journal (Achats, Ventes, Trésorerie, Opérations Diverses).
+    \item \textbf{Statut actif/inactif} : Permet de désactiver temporairement un journal sans le supprimer.
+\end{itemize}
+
+\subsection{Gestion des Exercices et Périodes}
+\begin{itemize}
+    \item \textbf{ExerciceComptable} : Définit l'année fiscale avec dates de début et fin.
+    \item \textbf{PeriodeComptable} : Subdivision mensuelle ou trimestrielle avec possibilité de clôture individuelle.
+    \item \textbf{Paramètres de clôture} : Règles de validation avant clôture (toutes les écritures doivent être validées).
+\end{itemize}
+
+\subsection{Paramètres de TVA}
+Le \texttt{TvaAutomatiqueService} peut être configuré avec :
+\begin{itemize}
+    \item \textbf{Taux de TVA} : Configurable par défaut (ex: 19.25\% au Cameroun, 18\% dans d'autres pays OHADA).
+    \item \textbf{Comptes de TVA} : Association des comptes (445000 pour TVA collectée, 445200 pour TVA déductible).
+    \item \textbf{Activation/Désactivation} : Possibilité de désactiver le calcul automatique pour certains types d'opérations.
+\end{itemize}
+
+\subsection{Paramètres d'Automatisation}
+\begin{itemize}
+    \item \textbf{OCR} : Configuration du chemin Tesseract, langue de reconnaissance (fra, eng), activation/désactivation.
+    \item \textbf{Lettrage automatique} : Fenêtre temporelle de rapprochement (par défaut 120 jours), tolérance d'écart (0.01).
+    \item \textbf{Synchronisation} : Fréquence de mise à jour Elasticsearch, durée de vie du cache Redis.
+\end{itemize}
+
+\section{Règles Métier et Prérequis Critiques}
+\begin{table}[h]
+\centering
+\begin{tabular}{|p{4cm}|p{8cm}|}
+\hline
+\textbf{Action} & \textbf{Prérequis obligatoires} \\ \hline
+Créer une Écriture & Période ouverte AND Journal actif AND Équilibre Débit/Crédit \\ \hline
+Supprimer une Écriture & \texttt{validee == false} \\ \hline
+Clôturer une Période & Aucune écriture non validée dans cette période \\ \hline
+Générer un Bilan & Toutes les écritures de la plage de dates doivent être validées \\ \hline
+\end{tabular}
+\caption{Tableau des contraintes métier}
+\end{table}
+
+\section{Implémentation Technique de l'Automatisation}
+L'automatisation dans Yowyob ERP est conçue comme une suite de services intelligents imbriqués, minimisant les interventions manuelles à chaque étape de la chaîne de valeur comptable.
+
+\subsection{Extraction de Données (OCR et Parsing)}
+Le processus d'automatisation commence souvent par la réception d'un document brut (PDF ou Image).
+\begin{itemize}
+    \item \textbf{Moteur OCR (Tesseract)} : Le système utilise \texttt{Tesseract OCR} (via \texttt{Tess4J}) pour transformer les pixels ou les couches PDF non textuelles en texte brut. Le service \texttt{FactureProcessingService} gère le rendu des pages PDF en images haute résolution (300 DPI) avant de les soumettre au moteur.
+    \item \textbf{Analyseur Heuristique (Regex Parser)} : Une fois le texte extrait, le \texttt{InvoiceTextParser} utilise des expressions régulières avancées pour isoler :
+        \begin{itemize}
+            \item Le \textbf{Montant HT} (recherche de patterns comme \texttt{HT : [0-9]...}).
+            \item La \textbf{Date d'émission} (extraction et conversion au format ISO).
+            \item Le \textbf{Sens de l'opération} : Utilisation de mots-clés ("fournisseur", "achat", "vente") pour catégoriser automatiquement le flux.
+        \end{itemize}
+\end{itemize}
+
+\subsection{Comptabilisation Automatique (TVA)}
+Pour chaque écriture détectée ou saisie, le \texttt{TvaAutomatiqueService} intervient de manière transparente :
+\begin{enumerate}
+    \item \textbf{Détection} : Analyse des comptes de classe 70 (Ventes) présents dans les détails de l'écriture.
+    \item \textbf{Calcul} : Application du taux standard (ex: 19.25\% au Cameroun) sur la base hors-taxe détectée.
+    \item \textbf{Génération de ligne} : Création automatique d'un \texttt{DetailEcriture} au crédit du compte de TVA \texttt{445000}.
+\end{enumerate}
+
+\subsection{Lettrage Automatique}
+Le lettrage est la vérification que chaque facture a été payée. Le \texttt{LettrageAutomatiqueService} automatise cette tâche via des algorithmes SQL haute performance :
+\begin{itemize}
+    \item \textbf{Optimisation SQL} : Utilisation d'une "Common Table Expression" (\textit{WITH candidats AS...}) pour identifier les couples Débit/Crédit qui s'annulent parfaitement (\texttt{montant\_debit = montant\_credit}).
+    \item \textbf{Critères de Matching} : Les lignes sont rapprochées si elles partagent le même \texttt{compte\_id} et si l'écart entre leurs dates est raisonnable (fenêtre de 120 jours).
+    \item \textbf{Performance} : Le traitement est effectué massivement côté base de données, permettant de lettrer des milliers de lignes en une seule transaction.
+\end{itemize}
+
+\subsection{Synchronisation Événementielle}
+L'automatisation ne s'arrête pas à la saisie. Le \texttt{SynchronizationService} assure que :
+\begin{itemize}
+    \item Chaque écriture validée est immédiatement poussée vers \textbf{Elasticsearch}, rendant la recherche analytique instantanée.
+    \item Le cache \textbf{Redis} est invalidé stratégiquement pour que la balance et le bilan soient toujours à jour sans re-calculer les millions de lignes à chaque requête.
+\end{itemize}>
+
+\section{Conclusion}
+La robustesse de Yowyob ERP Backend repose sur ces workflows entrelacés. La séparation entre la configuration (\texttt{OperationComptable}) et l'exécution (\texttt{EcritureComptable}) permet une utilisation simplifiée pour les comptables tout en maintenant une rigueur technique absolue sous le capot.
+
+\end{document}
