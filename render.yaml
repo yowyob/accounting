@@ -3,13 +3,15 @@ services:
     name: yowyob-erp-backend
     runtime: docker
     plan: free
+    region: frankfurt # Optionnel, pour être proche
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
+      # Liquibase config
       - key: SPRING_LIQUIBASE_CHANGE_LOG
         value: classpath:db/changelog/db.changelog-master.xml
       
-      # --- CONFIGURATION POSTGRES ---
+      # --- POSTGRESQL (Auto-provisioned) ---
       - key: SPRING_DATASOURCE_URL
         value: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
       - key: DB_HOST
@@ -33,23 +35,22 @@ services:
           name: yowyob-erp-db
           property: password
 
-      # --- CONFIGURATION REDIS ---
-      # Remplacez les valeurs ci-dessous par les infos de votre Redis créé manuellement sur Render
-      - key: SPRING_DATA_REDIS_HOST
-        value: red-xxxxxxxxxxxx # À copier depuis l'onglet Redis sur Render
-      - key: SPRING_DATA_REDIS_PORT
-        value: "6379"
-      - key: SPRING_DATA_REDIS_PASSWORD
-        value: azaleodel # Correspond à votre config Docker locale
+      # --- REDIS (Disabled or External) ---
+      # Si vous ajoutez un Redis sur Render, décommentez et remplissez :
+      # - key: SPRING_DATA_REDIS_HOST
+      #   value: red-xxxxxxxx
+      # - key: SPRING_DATA_REDIS_PORT
+      #   value: "6379"
 
-      # --- CONFIGURATION KAFKA & ELASTIC ---
-      # Note : Sur Render Free, vous devrez probablement utiliser des services externes 
-      # (ex: Confluent Cloud pour Kafka, Bonsai pour Elastic) ou désactiver ces modules
-      - key: SPRING_KAFKA_BOOTSTRAP_SERVERS
-        value: kafka.votre-service-externe.com:9092 
+      # --- KAFKA & ELASTIC (Disabled by default for cost/simplicity) ---
+      - key: SPRING_KAFKA_ENABLED
+        value: "false" 
+      # Elastic require external service or can be ignored if not critical on startup
       - key: SPRING_ELASTICSEARCH_URIS
-        value: http://elasticsearch.votre-service-externe.com:9200
+        value: ""
 
 databases:
   - name: yowyob-erp-db
     plan: free
+    databaseName: yowyob_erp
+    user: yowyob_admin
