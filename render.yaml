@@ -44,6 +44,8 @@ services:
       # --- KAFKA & ELASTIC (Disabled by default for cost/simplicity) ---
       - key: SPRING_KAFKA_ENABLED
         value: "false" 
+      - key: SPRING_ELASTICSEARCH_ENABLED
+        value: "false"
       # Elastic require external service or can be ignored if not critical on startup
       - key: SPRING_ELASTICSEARCH_URIS
         value: ""
