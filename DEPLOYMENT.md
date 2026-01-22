@@ -99,6 +99,7 @@ docker run -d \
   -e SPRING_DATASOURCE_PASSWORD=<password> \
   -e REDIS_URL=redis://<user_redis>:<pass>@<host_redis>:6379 \
   -e SPRING_KAFKA_ENABLED=false \
+  -e SPRING_ELASTICSEARCH_ENABLED=false \
   delmat237/yowyob-erp-backend:latest
 ```
 
@@ -115,9 +116,3 @@ docker run -d \
 - [x] **Maven Plugin** : `spring-boot-maven-plugin` est configuré pour produire un JAR exécutable.
 - [x] **Docker Compose** : Le service `yowyob-erp-backend` est bien configuré pour construire depuis le contexte courant.
 
-SPRING_DATASOURCE_PASSWORD=PSuQ5Zoc2tJbwRYjVrbtCD8W1xhRaEJr
-SPRING_DATASOURCE_URL=jdbc:postgresql://dpg-d5oiekf5r7bs73dc9940-a:5432/yowyob_erp_db_maem
-SPRING_DATASOURCE_USERNAME=yowyob_user
-SPRING_KAFKA_ENABLED=false
-SPRING_LIQUIBASE_CHANGE_LOG=classpath:db/changelog/db.changelog-master.xml
-SPRING_PROFILES_ACTIVE=prod
