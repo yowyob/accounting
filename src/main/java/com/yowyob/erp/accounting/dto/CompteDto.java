@@ -28,7 +28,7 @@ public class CompteDto {
     private UUID id;
 
     @NotBlank(message = "Account number is required")
-    @Pattern(regexp = "^[1-8][0-9]{4,7}$", message = "Invalid OHADA account number format")
+    @Pattern(regexp = "^[1-8][0-9]{4,11}$", message = "Invalid OHADA account number format. Must be between 5 and 12 digits.")
     @JsonProperty("noCompte")
     private String no_compte;
 

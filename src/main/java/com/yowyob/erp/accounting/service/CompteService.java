@@ -308,9 +308,9 @@ public class CompteService {
                             log.warn("Could not parse account suffix for {}", lastNo);
                         }
                     }
-                    return prefix + "0001"; // Fallback
+                    return prefix + "00001"; // Fallback with 5 digits (supports 99,999 initial accounts before expanding)
                 })
-                .orElse(prefix + "0001"); // First account
+                .orElse(prefix + "00001"); // First account
     }
 
     /**
