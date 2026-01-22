@@ -37,7 +37,9 @@ public class AccountingKafkaListener {
     private final com.yowyob.erp.accounting.service.CompteService compteService;
     private final com.yowyob.erp.accounting.repository.JournalComptableRepository journalComptableRepository;
     private final com.yowyob.erp.config.kafka.KafkaMessageService kafkaMessageService;
-    private final com.yowyob.erp.config.elasticsearch.ElasticsearchService elasticsearchService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.yowyob.erp.config.elasticsearch.ElasticsearchService elasticsearchService;
 
     /*
      * ===========================================================
@@ -232,7 +234,9 @@ public class AccountingKafkaListener {
 
     private void handleAccountingEntryCreated(KafkaMessage message) {
         log.info("📊 Indexation d'une écriture comptable créée : {}", message.getPayload());
-        elasticsearchService.indexAccountingEntry(message.getPayload(), message.getTenantId().toString());
+        if (elasticsearchService != null) {
+            elasticsearchService.indexAccountingEntry(message.getPayload(), message.getTenantId().toString());
+        }
     }
 
     private void handleAccountingEntryValidated(KafkaMessage message) {
@@ -248,7 +252,9 @@ public class AccountingKafkaListener {
         }
 
         // 2. Re-index in Elasticsearch for search visibility
-        elasticsearchService.indexAccountingEntry(message.getPayload(), message.getTenantId().toString());
+        if (elasticsearchService != null) {
+            elasticsearchService.indexAccountingEntry(message.getPayload(), message.getTenantId().toString());
+        }
     }
 
     private void handleTransactionCreated(KafkaMessage message) {
@@ -282,7 +288,9 @@ public class AccountingKafkaListener {
         }
 
         // 2. Re-index or log validation
-        elasticsearchService.indexAccountingEntry(message.getPayload(), message.getTenantId().toString());
+        if (elasticsearchService != null) {
+            elasticsearchService.indexAccountingEntry(message.getPayload(), message.getTenantId().toString());
+        }
 
         // 3. Notify Treasury of validation
         kafkaMessageService.sendTreasurySync(message.getPayload(), message.getTenantId(),
