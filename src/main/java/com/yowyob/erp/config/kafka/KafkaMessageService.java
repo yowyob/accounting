@@ -53,6 +53,15 @@ public class KafkaMessageService {
     @Value("${app.kafka.topics.treasury-sync:treasury.sync.events}")
     private String treasurySyncTopic;
 
+    @Value("${app.kafka.topics.stock-events:stock.events}")
+    private String stockEventsTopic;
+
+    @Value("${app.kafka.topics.thirdparty-events:thirdparty.events}")
+    private String thirdPartyEventsTopic;
+
+    @Value("${app.kafka.topics.organization-events:organization.events}")
+    private String organizationEventsTopic;
+
     /*
      * ===========================================================
      * 🔧 GENERIC METHODS
@@ -144,5 +153,17 @@ public class KafkaMessageService {
      */
     public void sendTreasurySync(Object payload, UUID tenantId, String type) {
         sendMessage(treasurySyncTopic, tenantId.toString(), payload, type, tenantId);
+    }
+
+    public void sendStockEvent(Object payload, UUID tenantId, String type) {
+        sendMessage(stockEventsTopic, tenantId.toString(), payload, type, tenantId);
+    }
+
+    public void sendThirdPartyEvent(Object payload, UUID tenantId, String type) {
+        sendMessage(thirdPartyEventsTopic, tenantId.toString(), payload, type, tenantId);
+    }
+
+    public void sendOrganizationEvent(Object payload, UUID tenantId, String type) {
+        sendMessage(organizationEventsTopic, tenantId.toString(), payload, type, tenantId);
     }
 }

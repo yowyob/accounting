@@ -197,7 +197,8 @@ public class CompteService {
     public void updateBalances(UUID tenant_id, UUID ecriture_id) {
         log.info("Updating account balances for entry {} (Tenant: {})", ecriture_id, tenant_id);
 
-        List<com.yowyob.erp.accounting.entity.DetailEcriture> details = detail_repository.findByTenant_IdAndEcriture_Id(tenant_id, ecriture_id);
+        List<com.yowyob.erp.accounting.entity.DetailEcriture> details = detail_repository
+                .findByTenant_IdAndEcriture_Id(tenant_id, ecriture_id);
 
         for (com.yowyob.erp.accounting.entity.DetailEcriture detail : details) {
             Compte compte = detail.getCompte();
@@ -260,6 +261,56 @@ public class CompteService {
                 .created_at(compte.getCreated_at())
                 .updated_at(compte.getUpdated_at())
                 .build();
+    }
+
+    /**
+     * Creates a Third-Party account (Client/Provider) with auto-generated number.
+     * 
+     * @param name  Account name
+     * @param type  "CLIENT" or "PROVIDER"
+     * @param notes Optional notes
+     * @return Created account DTO
+     */
+    @Transactional
+    public CompteDto createThirdPartyAccount(String name, String type, String notes) {
+        UUID tenant_id = TenantContext.getCurrentTenant();
+        String prefix = "CLIENT".equalsIgnoreCase(type) ? "411" : "401";
+
+        // Auto-generate number
+        String no_compte = generateNextAccountNumber(tenant_id, prefix);
+
+        CompteDto dto = CompteDto.builder()
+                .no_compte(no_compte)
+                .libelle(name)
+                .notes(notes)
+                .type_compte("CLIENT".equalsIgnoreCase(type) ? "ACTIF" : "PASSIF") // Simplified mapping
+                .classe(4)
+                .actif(true)
+                .solde(BigDecimal.ZERO)
+                .build();
+
+        return createCompte(dto);
+    }
+
+    private String generateNextAccountNumber(UUID tenant_id, String prefix) {
+        // Default suffix length (e.g., 4110001)
+        int suffixLength = 4; // 411 + 0001 = 7 digits
+
+        return compte_repository.findTopByTenant_IdAndNo_compteStartingWithOrderByNo_compteDesc(tenant_id, prefix)
+                .map(lastAccount -> {
+                    String lastNo = lastAccount.getNo_compte();
+                    if (lastNo.length() > prefix.length()) {
+                        try {
+                            String suffixStr = lastNo.substring(prefix.length());
+                            int sequence = Integer.parseInt(suffixStr);
+                            return prefix + String.format("%0" + suffixStr.length() + "d", sequence + 1);
+                        } catch (NumberFormatException e) {
+                            log.warn("Could not parse account suffix for {}", lastNo);
+                        }
+                    }
+                    return prefix + "0001"; // Fallback
+                })
+                .orElse(prefix + "0001"); // First account
     }
 
     /**

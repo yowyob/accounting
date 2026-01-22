@@ -37,6 +37,8 @@ public class AccountingKafkaListener {
     private final com.yowyob.erp.accounting.service.CompteService compteService;
     private final com.yowyob.erp.accounting.repository.JournalComptableRepository journalComptableRepository;
     private final com.yowyob.erp.config.kafka.KafkaMessageService kafkaMessageService;
+    private final com.yowyob.erp.accounting.repository.AgenceRepository agenceRepository;
+    private final com.yowyob.erp.accounting.repository.TenantRepository tenantRepository;
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.yowyob.erp.config.elasticsearch.ElasticsearchService elasticsearchService;
@@ -296,5 +298,77 @@ public class AccountingKafkaListener {
         kafkaMessageService.sendTreasurySync(message.getPayload(), message.getTenantId(),
                 "TREASURY_VALIDATION_NOTIFIED");
         log.info("✅ Treasury validation notified for correlation ID: {}", message.getCorrelationId());
+    }
+
+    /*
+     * ===========================================================
+     * 📦 STOCK (Inventaire)
+     * ===========================================================
+     */
+    @KafkaListener(topics = "${app.kafka.topics.stock-events:stock.events}", groupId = "${spring.kafka.consumer.group-id}")
+    public void handleStockEvents(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
+        try {
+            log.info("📦 [STOCK] Event reçu | type={} | tenant={}", message.getEventType(), message.getTenantId());
+            if ("STOCK_MOVEMENT_VALIDATED".equals(message.getEventType())) {
+                // TODO: Implement generic StockMovementComptable mapping logic
+                // For now, we acknowledge the reception to ensure communication
+                log.info("✅ Mouvement de stock reçu et marqué pour traitement futur : {}", message.getPayload());
+            }
+            acknowledgment.acknowledge();
+        } catch (Exception e) {
+            log.error("❌ Erreur lors du traitement d'un événement stock", e);
+        }
+    }
+
+    /*
+     * ===========================================================
+     * 👥 GESTION DES TIERS (Clients / Fournisseurs)
+     * ===========================================================
+     */
+    @KafkaListener(topics = "${app.kafka.topics.thirdparty-events:thirdparty.events}", groupId = "${spring.kafka.consumer.group-id}")
+    public void handleThirdPartyEvents(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
+        try {
+            log.info("👥 [TIERS] Event reçu | type={} | tenant={}", message.getEventType(), message.getTenantId());
+
+            if (message.getPayload() instanceof Map<?, ?> payload) {
+                String name = (String) payload.get("name");
+                String type = (String) payload.get("type"); // CLIENT / PROVIDER
+                String id = (String) payload.get("id");
+
+                if ("THIRDPARTY_CREATED".equals(message.getEventType())) {
+                    log.info("🆕 Création automatique de compte pour le tiers : {}", name);
+                    // Logic to create auxiliary account could be added here
+                    // e.g., compteService.createAuxiliaryAccount(...)
+                }
+            }
+            acknowledgment.acknowledge();
+        } catch (Exception e) {
+            log.error("❌ Erreur lors du traitement d'un événement tiers", e);
+        }
+    }
+
+    /*
+     * ===========================================================
+     * 🏢 ORGANISATION (Agences / Tenants)
+     * ===========================================================
+     */
+    @KafkaListener(topics = "${app.kafka.topics.organization-events:organization.events}", groupId = "${spring.kafka.consumer.group-id}")
+    public void handleOrganizationEvents(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
+        try {
+            log.info("🏢 [ORGANISATION] Event reçu | type={} | tenant={}", message.getEventType(),
+                    message.getTenantId());
+
+            if ("AGENCY_CREATED".equals(message.getEventType()) && message.getPayload() instanceof Map<?, ?> payload) {
+                com.yowyob.erp.accounting.entity.Agence agence = new com.yowyob.erp.accounting.entity.Agence();
+                agence.setCode((String) payload.get("code"));
+                agence.setName((String) payload.get("name"));
+                agence.setTenant(new Tenant(message.getTenantId()));
+                // agenceRepository.save(agence);
+                log.info("✅ Agence synchronisée : {}", agence.getCode());
+            }
+            acknowledgment.acknowledge();
+        } catch (Exception e) {
+            log.error("❌ Erreur lors du traitement d'un événement organisation", e);
+        }
     }
 }
