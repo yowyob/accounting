@@ -200,6 +200,243 @@ public class RapportService {
                                 }));
         }
 
+        /**
+         * Generates the General Ledger (Grand Livre) for a given period.
+         */
+        public Mono<List<com.yowyob.erp.accounting.dto.GrandLivreDto>> generateGrandLivre(UUID tenant_id,
+                        String date_debut,
+                        String date_fin) {
+                LocalDate start = LocalDate.parse(date_debut);
+                LocalDate end = LocalDate.parse(date_fin);
+
+                return compte_repository.findAllByTenant_Id(tenant_id)
+                                .flatMap(compte -> {
+                                        // 1. Calculate opening balance (all entries before start date)
+                                        return detail_repository
+                                                        .findByTenant_IdAndDateRange(tenant_id,
+                                                                        LocalDate.of(2000, 1, 1).atStartOfDay(),
+                                                                        start.atStartOfDay())
+                                                        .filter(d -> d.getCompte_id().equals(compte.getId()))
+                                                        .collectList()
+                                                        .flatMap(openingDetails -> {
+                                                                BigDecimal soldeOuverture = calculateAccountBalance(
+                                                                                openingDetails, compte);
+
+                                                                // 2. Get period details
+                                                                return detail_repository
+                                                                                .findByTenant_IdAndDateRange(tenant_id,
+                                                                                                start.atStartOfDay(),
+                                                                                                end.plusDays(1)
+                                                                                                                .atStartOfDay())
+                                                                                .filter(d -> d.getCompte_id()
+                                                                                                .equals(compte.getId()))
+                                                                                .collectList()
+                                                                                .map(periodDetails -> {
+                                                                                        BigDecimal totalDebit = periodDetails
+                                                                                                        .stream()
+                                                                                                        .map(d -> d.getMontant_debit() != null
+                                                                                                                        ? d.getMontant_debit()
+                                                                                                                        : BigDecimal.ZERO)
+                                                                                                        .reduce(BigDecimal.ZERO,
+                                                                                                                        BigDecimal::add);
+
+                                                                                        BigDecimal totalCredit = periodDetails
+                                                                                                        .stream()
+                                                                                                        .map(d -> d.getMontant_credit() != null
+                                                                                                                        ? d.getMontant_credit()
+                                                                                                                        : BigDecimal.ZERO)
+                                                                                                        .reduce(BigDecimal.ZERO,
+                                                                                                                        BigDecimal::add);
+
+                                                                                        // Calculate closing balance
+                                                                                        // properly respecting account
+                                                                                        // type
+                                                                                        BigDecimal waitingBalance = periodDetails
+                                                                                                        .stream()
+                                                                                                        .map(d -> {
+                                                                                                                BigDecimal debit = d
+                                                                                                                                .getMontant_debit() != null
+                                                                                                                                                ? d.getMontant_debit()
+                                                                                                                                                : BigDecimal.ZERO;
+                                                                                                                BigDecimal credit = d
+                                                                                                                                .getMontant_credit() != null
+                                                                                                                                                ? d.getMontant_credit()
+                                                                                                                                                : BigDecimal.ZERO;
+                                                                                                                return "ACTIF".equals(
+                                                                                                                                compte
+                                                                                                                                                .getType_compte())
+                                                                                                                                || "CHARGE".equals(
+                                                                                                                                                compte.getType_compte())
+                                                                                                                                                                ? debit.subtract(
+                                                                                                                                                                                credit)
+                                                                                                                                                                : credit.subtract(
+                                                                                                                                                                                debit);
+                                                                                                        })
+                                                                                                        .reduce(BigDecimal.ZERO,
+                                                                                                                        BigDecimal::add);
+
+                                                                                        BigDecimal soldeCloture = soldeOuverture
+                                                                                                        .add(waitingBalance);
+
+                                                                                        List<com.yowyob.erp.accounting.dto.GrandLivreDto.LigneGrandLivreDto> lignes = periodDetails
+                                                                                                        .stream()
+                                                                                                        .map(d -> com.yowyob.erp.accounting.dto.GrandLivreDto.LigneGrandLivreDto
+                                                                                                                        .builder()
+                                                                                                                        .ecritureId(d.getEcriture_id())
+                                                                                                                        .date(d.getCreated_at())
+                                                                                                                        .libelle(d.getLibelle())
+                                                                                                                        .debit(d.getMontant_debit())
+                                                                                                                        .credit(d.getMontant_credit())
+                                                                                                                        .build())
+                                                                                                        .collect(java.util.stream.Collectors
+                                                                                                                        .toList());
+
+                                                                                        return com.yowyob.erp.accounting.dto.GrandLivreDto
+                                                                                                        .builder()
+                                                                                                        .noCompte(compte.getNo_compte())
+                                                                                                        .libelleCompte(compte
+                                                                                                                        .getLibelle())
+                                                                                                        .soldeOuverture(soldeOuverture)
+                                                                                                        .totalDebit(totalDebit)
+                                                                                                        .totalCredit(totalCredit)
+                                                                                                        .soldeCloture(soldeCloture)
+                                                                                                        .lignes(lignes)
+                                                                                                        .build();
+                                                                                });
+                                                        });
+                                })
+                                .collectList();
+        }
+
+        /**
+         * Generates the Trial Balance (Balance des Comptes) for a given period.
+         */
+        public Mono<com.yowyob.erp.accounting.dto.BalanceDesComptesDto> generateBalanceDesComptes(UUID tenant_id,
+                        String date_debut,
+                        String date_fin) {
+                LocalDate start = LocalDate.parse(date_debut);
+                LocalDate end = LocalDate.parse(date_fin);
+
+                return compte_repository.findAllByTenant_Id(tenant_id)
+                                .flatMap(compte -> {
+                                        // 1. Calculate opening balance details
+                                        return detail_repository
+                                                        .findByTenant_IdAndDateRange(tenant_id,
+                                                                        LocalDate.of(2000, 1, 1).atStartOfDay(),
+                                                                        start.atStartOfDay())
+                                                        .filter(d -> d.getCompte_id().equals(compte.getId()))
+                                                        .collectList()
+                                                        .flatMap(openingDetails -> {
+                                                                BigDecimal soldeOuverture = calculateAccountBalance(
+                                                                                openingDetails, compte);
+                                                                BigDecimal debitOuverture = openingDetails.stream()
+                                                                                .map(d -> d.getMontant_debit() != null
+                                                                                                ? d.getMontant_debit()
+                                                                                                : BigDecimal.ZERO)
+                                                                                .reduce(BigDecimal.ZERO,
+                                                                                                BigDecimal::add);
+                                                                BigDecimal creditOuverture = openingDetails.stream()
+                                                                                .map(d -> d.getMontant_credit() != null
+                                                                                                ? d.getMontant_credit()
+                                                                                                : BigDecimal.ZERO)
+                                                                                .reduce(BigDecimal.ZERO,
+                                                                                                BigDecimal::add);
+
+                                                                // 2. Get period details
+                                                                return detail_repository
+                                                                                .findByTenant_IdAndDateRange(tenant_id,
+                                                                                                start.atStartOfDay(),
+                                                                                                end.plusDays(1)
+                                                                                                                .atStartOfDay())
+                                                                                .filter(d -> d.getCompte_id()
+                                                                                                .equals(compte.getId()))
+                                                                                .collectList()
+                                                                                .map(periodDetails -> {
+                                                                                        BigDecimal mvmtDebit = periodDetails
+                                                                                                        .stream()
+                                                                                                        .map(d -> d.getMontant_debit() != null
+                                                                                                                        ? d.getMontant_debit()
+                                                                                                                        : BigDecimal.ZERO)
+                                                                                                        .reduce(BigDecimal.ZERO,
+                                                                                                                        BigDecimal::add);
+
+                                                                                        BigDecimal mvmtCredit = periodDetails
+                                                                                                        .stream()
+                                                                                                        .map(d -> d.getMontant_credit() != null
+                                                                                                                        ? d.getMontant_credit()
+                                                                                                                        : BigDecimal.ZERO)
+                                                                                                        .reduce(BigDecimal.ZERO,
+                                                                                                                        BigDecimal::add);
+
+                                                                                        BigDecimal soldeCloture = soldeOuverture
+                                                                                                        .add(calculateAccountBalance(
+                                                                                                                        periodDetails,
+                                                                                                                        compte));
+
+                                                                                        return com.yowyob.erp.accounting.dto.BalanceDesComptesDto.LigneBalanceDto
+                                                                                                        .builder()
+                                                                                                        .noCompte(compte.getNo_compte())
+                                                                                                        .libelle(compte.getLibelle())
+                                                                                                        .soldeOuvertureDebit(
+                                                                                                                        soldeOuverture.compareTo(
+                                                                                                                                        BigDecimal.ZERO) >= 0
+                                                                                                                                                        ? soldeOuverture
+                                                                                                                                                        : BigDecimal.ZERO)
+                                                                                                        .soldeOuvertureCredit(
+                                                                                                                        soldeOuverture.compareTo(
+                                                                                                                                        BigDecimal.ZERO) < 0
+                                                                                                                                                        ? soldeOuverture.abs()
+                                                                                                                                                        : BigDecimal.ZERO)
+                                                                                                        .mouvementDebit(mvmtDebit)
+                                                                                                        .mouvementCredit(
+                                                                                                                        mvmtCredit)
+                                                                                                        .soldeClotureDebit(
+                                                                                                                        soldeCloture.compareTo(
+                                                                                                                                        BigDecimal.ZERO) >= 0
+                                                                                                                                                        ? soldeCloture
+                                                                                                                                                        : BigDecimal.ZERO)
+                                                                                                        .soldeClotureCredit(
+                                                                                                                        soldeCloture.compareTo(
+                                                                                                                                        BigDecimal.ZERO) < 0
+                                                                                                                                                        ? soldeCloture.abs()
+                                                                                                                                                        : BigDecimal.ZERO)
+                                                                                                        .build();
+                                                                                });
+                                                        });
+                                })
+                                .collectList()
+                                .map(lignes -> {
+                                        BigDecimal totDebitOuv = lignes.stream()
+                                                        .map(com.yowyob.erp.accounting.dto.BalanceDesComptesDto.LigneBalanceDto::getSoldeOuvertureDebit)
+                                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                        BigDecimal totCreditOuv = lignes.stream()
+                                                        .map(com.yowyob.erp.accounting.dto.BalanceDesComptesDto.LigneBalanceDto::getSoldeOuvertureCredit)
+                                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                        BigDecimal totMvmtDebit = lignes.stream()
+                                                        .map(com.yowyob.erp.accounting.dto.BalanceDesComptesDto.LigneBalanceDto::getMouvementDebit)
+                                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                        BigDecimal totMvmtCredit = lignes.stream()
+                                                        .map(com.yowyob.erp.accounting.dto.BalanceDesComptesDto.LigneBalanceDto::getMouvementCredit)
+                                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                        BigDecimal totDebitClo = lignes.stream()
+                                                        .map(com.yowyob.erp.accounting.dto.BalanceDesComptesDto.LigneBalanceDto::getSoldeClotureDebit)
+                                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                        BigDecimal totCreditClo = lignes.stream()
+                                                        .map(com.yowyob.erp.accounting.dto.BalanceDesComptesDto.LigneBalanceDto::getSoldeClotureCredit)
+                                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                                        return com.yowyob.erp.accounting.dto.BalanceDesComptesDto.builder()
+                                                        .lignes(lignes)
+                                                        .totalDebitOuverture(totDebitOuv)
+                                                        .totalCreditOuverture(totCreditOuv)
+                                                        .totalDebitMouvement(totMvmtDebit)
+                                                        .totalCreditMouvement(totMvmtCredit)
+                                                        .totalDebitCloture(totDebitClo)
+                                                        .totalCreditCloture(totCreditClo)
+                                                        .build();
+                                });
+        }
+
         private BigDecimal calculateAccountBalance(List<DetailEcriture> details, Compte compte) {
                 return details.stream()
                                 .filter(d -> d.getCompte_id() != null && d.getCompte_id().equals(compte.getId()))

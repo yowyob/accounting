@@ -1,4 +1,3 @@
-// DTO pour le grand livre
 package com.yowyob.erp.accounting.dto;
 
 import lombok.AllArgsConstructor;
@@ -6,34 +5,35 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class GrandLivreDto {
-
-    private String tenantId;
-    private String numeroCompte;
+    private String noCompte;
     private String libelleCompte;
-    private LocalDate dateDebut;
-    private LocalDate dateFin;
-    private Double soldeInitial;
-    private Double soldeFinal;
-    private List<GrandLivreLineDto> mouvements;
+    private BigDecimal soldeOuverture;
+    private BigDecimal totalDebit;
+    private BigDecimal totalCredit;
+    private BigDecimal soldeCloture;
+    private List<LigneGrandLivreDto> lignes;
 
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class GrandLivreLineDto {
-        private LocalDate date;
-        private String numeroEcriture;
+    public static class LigneGrandLivreDto {
+        private UUID ecritureId;
+        private LocalDateTime date;
+        private String journal;
+        private String reference;
         private String libelle;
-        private Double montantDebit;
-        private Double montantCredit;
-        private Double soldeProgressive;
+        private BigDecimal debit;
+        private BigDecimal credit;
     }
 }
