@@ -34,6 +34,8 @@ public class TaxeDto {
     @Positive(message = "Le taux doit être positif")
     private BigDecimal taux;
 
+    private String type_taxe;
+
     private String compte_collecte;
     private String compte_deductible;
     private String pays;

@@ -21,7 +21,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/accounting/taxes")
 @RequiredArgsConstructor
-@Tag(name = "Tax Management", description = "Endpoints for managing taxes in the accounting module")
+@Tag(name = "  Accounting Tax Management", description = "Endpoints for managing taxes in the accounting module")
 public class TaxeController {
 
     private final TaxeService taxe_service;

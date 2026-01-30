@@ -1,9 +1,7 @@
 package com.yowyob.erp.accounting.serviceInitialization;
 
-import com.yowyob.erp.accounting.entity.Compte;
 import com.yowyob.erp.accounting.entity.JournalComptable;
 import com.yowyob.erp.accounting.entity.OperationComptable;
-import com.yowyob.erp.accounting.entity.Tenant;
 import com.yowyob.erp.accounting.repository.CompteRepository;
 import com.yowyob.erp.accounting.repository.JournalComptableRepository;
 import com.yowyob.erp.accounting.repository.OperationComptableRepository;

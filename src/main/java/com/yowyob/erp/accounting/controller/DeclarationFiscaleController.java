@@ -146,11 +146,32 @@ public class DeclarationFiscaleController {
         return declaration_service.delete(id)
                 .then(Mono.fromCallable(() -> {
                     log.info("Tax declaration deleted: {}", id);
-                    return ResponseEntity.ok(ApiResponseWrapper.<Void>success(null, "Tax declaration deleted successfully"));
+                    return ResponseEntity
+                            .ok(ApiResponseWrapper.<Void>success(null, "Tax declaration deleted successfully"));
                 }))
                 .onErrorResume(e -> {
                     log.error("Error deleting tax declaration: {}", e.getMessage());
                     return Mono.error(new ResourceNotFoundException("Tax declaration", id.toString()));
                 });
+    }
+
+    /**
+     * Generates a tax declaration automatically for a period.
+     * 
+     * @param type  the declaration type (e.g., "TVA")
+     * @param start the start date
+     * @param end   the end date
+     * @return the generated declaration
+     */
+    @Operation(summary = "Auto-generate a tax declaration for a period")
+    @PostMapping("/generate")
+    public Mono<ResponseEntity<ApiResponseWrapper<DeclarationFiscaleDto>>> generate(
+            @RequestParam String type,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
+        log.info("Request to generate {} declaration from {} to {}", type, start, end);
+        return declaration_service.generateDeclaration(type, start, end)
+                .map(generated -> ResponseEntity.status(HttpStatus.CREATED)
+                        .body(ApiResponseWrapper.success(generated, "Tax declaration generated successfully")));
     }
 }

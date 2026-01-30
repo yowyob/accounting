@@ -49,6 +49,9 @@ public class Taxe {
     @Column("taux")
     private BigDecimal taux;
 
+    @Column("type_taxe")
+    private String type_taxe;
+
     @Column("compte_collecte")
     private String compte_collecte;
 

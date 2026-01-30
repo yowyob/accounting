@@ -8,7 +8,6 @@ import com.yowyob.erp.accounting.entity.Contrepartie;
 import com.yowyob.erp.accounting.entity.JournalAudit;
 import com.yowyob.erp.accounting.entity.JournalComptable;
 import com.yowyob.erp.accounting.entity.OperationComptable;
-import com.yowyob.erp.accounting.entity.PlanComptable;
 import com.yowyob.erp.accounting.entity.Tenant;
 import com.yowyob.erp.accounting.repository.CompteRepository;
 import com.yowyob.erp.accounting.repository.ContrepartieRepository;
@@ -375,6 +374,7 @@ public class OperationComptableService {
                 op.setType_montant(dto.getType_montant());
                 op.setPlafond_client(dto.getPlafond_client() != null ? dto.getPlafond_client() : BigDecimal.ZERO);
                 op.setActif(dto.getActif());
+                op.setNotes(dto.getNotes());
                 return op;
         }
 
@@ -394,11 +394,18 @@ public class OperationComptableService {
                                                 .type_operation(op.getType_operation())
                                                 .mode_reglement(op.getMode_reglement())
                                                 .compte_principal_id(op.getCompte_principal_id())
+                                                .est_compte_statique(op.getEst_compte_statique())
                                                 .sens_principal(op.getSens_principal())
                                                 .journal_comptable_id(op.getJournal_comptable_id())
                                                 .type_montant(op.getType_montant())
+                                                .plafond_client(op.getPlafond_client())
                                                 .actif(op.getActif())
+                                                .notes(op.getNotes())
                                                 .contreparties(cps)
+                                                .created_at(op.getCreated_at())
+                                                .updated_at(op.getUpdated_at())
+                                                .created_by(op.getCreated_by())
+                                                .updated_by(op.getUpdated_by())
                                                 .build());
         }
 }

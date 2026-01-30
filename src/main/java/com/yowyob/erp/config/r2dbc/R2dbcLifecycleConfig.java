@@ -4,7 +4,6 @@ import com.yowyob.erp.common.persistence.SettablePersistable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.r2dbc.mapping.event.AfterConvertCallback;
-import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
 @Configuration
