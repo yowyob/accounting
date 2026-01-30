@@ -8,13 +8,17 @@
     <changeSet id="007-refactor-operation-to-compte" author="yowyob-system">
         <comment>Refactor operation_comptable and contreparties to use UUID links to comptes instead of strings.</comment>
 
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="operation_comptable" columnName="compte_principal_id" />
+            </not>
+        </preConditions>
+
         <!-- Operation Comptable -->
         <addColumn tableName="operation_comptable">
             <column name="compte_principal_id" type="UUID" />
         </addColumn>
         
-        <!-- Migration logic would go here if there was data to preserve, 
-             but for now we drop the old column and add FK -->
         <dropColumn tableName="operation_comptable" columnName="compte_principal" />
         
         <addForeignKeyConstraint baseTableName="operation_comptable" 

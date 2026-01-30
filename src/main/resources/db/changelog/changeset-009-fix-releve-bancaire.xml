@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <changeSet id="009-fix-releve-bancaire" author="yowyob-system">
+        <comment>Amélioration de la table releve_bancaire pour le rapprochement.</comment>
+        
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="releve_bancaire" columnName="compte_id" />
+            </not>
+        </preConditions>
+
+        <addColumn tableName="releve_bancaire">
+            <column name="compte_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_releve_compte" referencedTableName="comptes" referencedColumnNames="id"/>
+            </column>
+            <column name="rapproche" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_rapprochement" type="TIMESTAMP WITHOUT TIME ZONE"/>
+            <column name="detail_ecriture_id" type="UUID">
+                <constraints foreignKeyName="fk_releve_detail_ecriture" referencedTableName="details_ecritures" referencedColumnNames="id"/>
+            </column>
+        </addColumn>
+
+        <modifyDataType tableName="releve_bancaire" columnName="date_operation" newDataType="TIMESTAMP WITHOUT TIME ZONE"/>
+        <modifyDataType tableName="releve_bancaire" columnName="date_valeur" newDataType="TIMESTAMP WITHOUT TIME ZONE"/>
+    </changeSet>
+
+</databaseChangeLog>

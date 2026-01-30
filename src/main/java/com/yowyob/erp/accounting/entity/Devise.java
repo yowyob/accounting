@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.data.relational.core.mapping.Column;
 import jakarta.validation.constraints.NotBlank;
@@ -22,7 +23,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Devise {
+public class Devise implements com.yowyob.erp.common.persistence.SettablePersistable<UUID> {
 
     @Id
     private UUID id;
@@ -49,4 +50,18 @@ public class Devise {
     @Builder.Default
     @Column("created_at")
     private LocalDateTime created_at = LocalDateTime.now();
+
+    @Transient
+    @Builder.Default
+    private boolean isNew = true;
+
+    @Override
+    @Transient
+    public boolean isNew() {
+        return isNew || id == null;
+    }
+
+    public void setNotNew() {
+        this.isNew = false;
+    }
 }

@@ -20,6 +20,9 @@ public interface PeriodeComptableRepository extends R2dbcRepository<PeriodeCompt
        @Query("SELECT * FROM periodes_comptables WHERE tenant_id = :tenant_id AND id = :id")
        Mono<PeriodeComptable> findByTenant_IdAndId(@Param("tenant_id") UUID tenant_id, @Param("id") UUID id);
 
+       @Query("SELECT * FROM periodes_comptables WHERE exercice_id = :exercice_id")
+       Flux<PeriodeComptable> findByExerciceId(@Param("exercice_id") UUID exercice_id);
+
        @Query("SELECT * FROM periodes_comptables WHERE tenant_id = :tenant_id ORDER BY date_debut DESC")
        Flux<PeriodeComptable> findByTenant_IdOrderByDate_debutDesc(@Param("tenant_id") UUID tenant_id);
 

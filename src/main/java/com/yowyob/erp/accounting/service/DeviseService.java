@@ -52,12 +52,14 @@ public class DeviseService {
                                                         }
 
                                                         Devise entity = Devise.builder()
+                                                                        .id(UUID.randomUUID())
                                                                         .code(dto.getCode())
                                                                         .nom(dto.getNom())
                                                                         .symbole(dto.getSymbole())
                                                                         .est_nationale(dto.isEst_nationale())
                                                                         .actif(true)
                                                                         .created_at(LocalDateTime.now())
+                                                                        .isNew(true)
                                                                         .build();
 
                                                         return devise_repository.save(entity)
@@ -96,6 +98,7 @@ public class DeviseService {
                                                                         existing.setEst_nationale(
                                                                                         dto.isEst_nationale());
                                                                         existing.setActif(dto.isActif());
+                                                                        existing.setNotNew();
 
                                                                         return devise_repository.save(existing)
                                                                                         .flatMap(saved -> ReactiveTenantContext

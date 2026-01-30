@@ -15,6 +15,9 @@ import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 /**
  * Reactive Controller for bank reconciliation (pointage).
  */
@@ -47,12 +50,13 @@ public class PointageController {
                 .flatMapMany(Flux::fromIterable)
                 .flatMap(op -> {
                     // This assumes findByTenantIdAndMontantAndDateProche returns a Flux
+                    LocalDate dOp = op.getDateOperation().toLocalDate();
                     return detailEcritureRepository.findByTenantIdAndMontantAndDateProche(
-                            null, // Tenant ID handled at repository/aspect level
+                            null,
                             op.getMontant(),
-                            op.getDateOperation(),
-                            op.getDateOperation().plusDays(1),
-                            op.getDateOperation().plusDays(1))
+                            dOp,
+                            dOp.plusDays(1),
+                            dOp)
                             .next() // Take the first candidate
                             .flatMap(d -> {
                                 d.setPointee(true);
@@ -61,7 +65,7 @@ public class PointageController {
                             })
                             .defaultIfEmpty(0);
                 })
-                .reduce(0, Integer::sum)
+                .reduce(0, (a, b) -> a + b)
                 .map(count -> ResponseEntity.ok(count + " opérations pointées automatiquement"))
                 .onErrorResume(e -> {
                     log.error("Error during pointage: {}", e.getMessage());

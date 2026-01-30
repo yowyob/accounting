@@ -9,22 +9,20 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.data.relational.core.mapping.Column;
-import jakarta.validation.constraints.Size;
+import com.yowyob.erp.common.persistence.SettablePersistable;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * Entity representing an accounting period (Periode Comptable) for R2DBC.
- */
-@Table(name = "periodes_comptables")
+@Table(name = "immobilisations")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PeriodeComptable implements com.yowyob.erp.common.persistence.SettablePersistable<UUID> {
+public class Immobilisation implements SettablePersistable<UUID> {
 
     @Id
     private UUID id;
@@ -32,47 +30,49 @@ public class PeriodeComptable implements com.yowyob.erp.common.persistence.Setta
     @Column("tenant_id")
     private UUID tenantId;
 
-    @Column("exercice_id")
-    private UUID exerciceId;
-
-    @Column("code")
     private String code;
+    private String libelle;
 
-    @Column("date_debut")
-    private LocalDate date_debut;
+    @Column("date_acquisition")
+    private LocalDate dateAcquisition;
 
-    @Column("date_fin")
-    private LocalDate date_fin;
+    @Column("valeur_origine")
+    private BigDecimal valeurOrigine;
+
+    @Column("duree_vie")
+    private Integer dureeVie;
+
+    @Column("methode_amortissement")
+    @Builder.Default
+    private String methodeAmortissement = "LINEAIRE";
+
+    @Column("compte_immo_id")
+    private UUID compteImmoId;
+
+    @Column("compte_amort_id")
+    private UUID compteAmortId;
+
+    @Column("compte_dotation_id")
+    private UUID compteDotationId;
 
     @Builder.Default
-    @Column("cloturee")
-    private Boolean cloturee = false;
+    private String statut = "ACTIF";
 
-    @Column("notes")
-    private String notes;
-
-    @Column("date_cloture")
-    private LocalDate date_cloture;
+    @Column("valeur_residuelle")
+    @Builder.Default
+    private BigDecimal valeurResiduelle = BigDecimal.ZERO;
 
     @Column("created_at")
-    private LocalDateTime created_at;
+    private LocalDateTime createdAt;
 
     @Column("updated_at")
-    private LocalDateTime updated_at;
+    private LocalDateTime updatedAt;
 
-    @Size(max = 255)
     @Column("created_by")
-    private String created_by;
+    private String createdBy;
 
-    @Size(max = 255)
     @Column("updated_by")
-    private String updated_by;
-
-    @Transient
-    private Tenant tenant;
-
-    @Transient
-    private ExerciceComptable exercice;
+    private String updatedBy;
 
     @Transient
     @Builder.Default
@@ -84,6 +84,7 @@ public class PeriodeComptable implements com.yowyob.erp.common.persistence.Setta
         return isNew || id == null;
     }
 
+    @Override
     public void setNotNew() {
         this.isNew = false;
     }

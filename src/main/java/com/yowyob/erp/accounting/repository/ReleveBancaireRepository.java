@@ -1,0 +1,14 @@
+package com.yowyob.erp.accounting.repository;
+
+import com.yowyob.erp.accounting.entity.ReleveBancaire;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
+import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
+import java.util.UUID;
+
+@Repository
+public interface ReleveBancaireRepository extends R2dbcRepository<ReleveBancaire, UUID> {
+    Flux<ReleveBancaire> findByTenantIdAndCompteId(UUID tenantId, UUID compteId);
+
+    Flux<ReleveBancaire> findByTenantIdAndCompteIdAndRapprocheFalse(UUID tenantId, UUID compteId);
+}

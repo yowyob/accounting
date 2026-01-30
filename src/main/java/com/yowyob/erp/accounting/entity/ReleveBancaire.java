@@ -1,39 +1,84 @@
 package com.yowyob.erp.accounting.entity;
 
-import lombok.*;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.relational.core.mapping.Column;
+import com.yowyob.erp.common.persistence.SettablePersistable;
+
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Entity
+/**
+ * Entity representing a bank statement line (Relevé Bancaire) for R2DBC.
+ */
 @Table(name = "releve_bancaire")
-@Data
+@Getter
+@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class ReleveBancaire {
+public class ReleveBancaire implements SettablePersistable<UUID> {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "releve_bancaire_id")
+    @Column("releve_bancaire_id")
     private UUID id;
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tenant_id", nullable = false)
-    private Tenant tenant;
-    @Column(name = "date_operation")
-    private LocalDate dateOperation;
+    @Column("tenant_id")
+    private UUID tenantId;
 
-    @Column(name = "date_valeur")
-    private LocalDate dateValeur;
+    @Column("compte_id")
+    private UUID compteId; // The bank account in the ledger
+
+    @Column("date_operation")
+    private LocalDateTime dateOperation;
+
+    @Column("date_valeur")
+    private LocalDateTime dateValeur;
+
+    @Column("libelle")
     private String libelle;
-    private String reference;           // N° chèque, virement, etc.
-    private BigDecimal montant;         // positif = crédit, négatif = débit
-    private String sens;                // "CREDIT" ou "DEBIT"
-    @Column(name = "categorie")
-    private String categorieDetectee;   // "VIREMENT", "CHEQUE", "FRAIS", etc.
 
-    
+    @Column("reference")
+    private String reference; // Check number, wire ref, etc.
+
+    @Column("montant")
+    private BigDecimal montant;
+
+    @Column("sens")
+    private String sens; // "CREDIT" or "DEBIT"
+
+    @Column("categorie")
+    private String categorieDetectee;
+
+    @Builder.Default
+    @Column("rapproche")
+    private boolean rapproche = false;
+
+    @Column("date_rapprochement")
+    private LocalDateTime dateRapprochement;
+
+    @Column("detail_ecriture_id")
+    private UUID detailEcritureId; // Link to the matched ledger entry detail
+
+    @Transient
+    @Builder.Default
+    private boolean isNew = true;
+
+    @Override
+    @Transient
+    public boolean isNew() {
+        return isNew || id == null;
+    }
+
+    @Override
+    public void setNotNew() {
+        this.isNew = false;
+    }
 }

@@ -182,8 +182,7 @@ public class OperationComptableService {
                                 .flatMap(tenant_id -> compte_repository
                                                 .findByTenant_IdAndNo_compte(tenant_id, no_compte)
                                                 .flatMap(compte -> getOperationsByCompteId(compte.getId()))
-                                                .switchIfEmpty(Mono.error(
-                                                                new ResourceNotFoundException("Compte", no_compte))));
+                                                .switchIfEmpty(Mono.just(List.of())));
         }
 
         public Mono<OperationComptableDto> getByTypeAndMode(String type, String mode) {

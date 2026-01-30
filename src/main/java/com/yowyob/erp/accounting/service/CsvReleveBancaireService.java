@@ -41,9 +41,8 @@ public class CsvReleveBancaireService {
     public Mono<List<ReleveBancaire>> parseReleveBancaire(MultipartFile file) {
         return Mono.fromCallable(() -> {
             List<ReleveBancaire> operations = new ArrayList<>();
-            // Assuming Tenant is handled by context or aspect.
-            // If explicit tenant is needed, it should be passed or retrieved reactively.
-            Tenant tenant = null;
+            // Assuming Tenant is handled by context or passed externally
+            UUID tenantId = null;
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(file.getInputStream(), "UTF-8"))) {
                 String line;
@@ -60,13 +59,14 @@ public class CsvReleveBancaireService {
                         continue;
 
                     ReleveBancaire op = new ReleveBancaire();
-                    op.setTenant(tenant);
+                    op.setTenantId(tenantId);
+                    op.setNew(true);
 
                     int idxDate = detectColumnIndex(cols, "date", "operation", "valeur");
                     int idxLibelle = detectColumnIndex(cols, "libell", "description", "motif", "intitul");
                     int idxMontant = detectColumnIndex(cols, "montant", "credit", "debit", "amount");
 
-                    op.setDateOperation(parseDate(cols[idxDate]));
+                    op.setDateOperation(parseDate(cols[idxDate]).atStartOfDay());
                     op.setLibelle(normalizeLibelle(cols[idxLibelle]));
 
                     BigDecimal montant = parseMontant(cols, idxMontant);

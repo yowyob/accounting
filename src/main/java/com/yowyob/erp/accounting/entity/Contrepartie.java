@@ -22,7 +22,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Contrepartie {
+public class Contrepartie implements com.yowyob.erp.common.persistence.SettablePersistable<UUID> {
 
     @Id
     private UUID id;
@@ -76,4 +76,18 @@ public class Contrepartie {
 
     @Transient
     private JournalComptable journal_comptable;
+
+    @Transient
+    @Builder.Default
+    private boolean isNew = true;
+
+    @Override
+    @Transient
+    public boolean isNew() {
+        return isNew || id == null;
+    }
+
+    public void setNotNew() {
+        this.isNew = false;
+    }
 }

@@ -12,6 +12,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * Reactive Service for bank statement reconciliation (Pointage Bancaire).
@@ -34,12 +35,12 @@ public class PointageBancaireService {
                 .flatMap(tenant_id -> csvService.parseReleveBancaire(file)
                         .flatMapMany(Flux::fromIterable)
                         .concatMap(op -> {
-                            LocalDate debut = op.getDateOperation();
-                            LocalDate fin = op.getDateOperation().plusDays(1);
-                            LocalDate ref = op.getDateOperation();
+                            LocalDate dDebut = op.getDateOperation().toLocalDate();
+                            LocalDate dFin = dDebut.plusDays(1);
 
                             return detailRepo
-                                    .findByTenantIdAndMontantAndDateProche(tenant_id, op.getMontant(), debut, fin, ref)
+                                    .findByTenantIdAndMontantAndDateProche(tenant_id, op.getMontant(), dDebut, dFin,
+                                            dDebut)
                                     .collectList()
                                     .flatMap(candidats -> {
                                         if (!candidats.isEmpty()) {
@@ -53,7 +54,7 @@ public class PointageBancaireService {
                                         return Mono.just(0);
                                     });
                         })
-                        .reduce(0, Integer::sum)
+                        .reduce(0, (a, b) -> a + b)
                         .doOnSuccess(count -> log.info("✅ {} operations automatically pointed for tenant {}", count,
                                 tenant_id)));
     }

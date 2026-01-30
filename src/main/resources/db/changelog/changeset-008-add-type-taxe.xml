@@ -7,6 +7,11 @@
 
     <changeSet id="008-add-type-taxe" author="yowyob-system">
         <comment>Ajout du type de taxe pour distinguer TVA et Retenues.</comment>
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="taxes" columnName="type_taxe" />
+            </not>
+        </preConditions>
         <addColumn tableName="taxes">
             <column name="type_taxe" type="VARCHAR(20)" defaultValue="TVA">
                 <constraints nullable="false"/>

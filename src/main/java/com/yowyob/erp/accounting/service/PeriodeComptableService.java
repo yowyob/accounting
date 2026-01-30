@@ -275,7 +275,7 @@ public class PeriodeComptableService {
                                                                                                                         LocalDateTime.now());
                                                                                                         existing.setUpdated_by(
                                                                                                                         user);
-
+                                                                                                        existing.setNotNew();
                                                                                                         return periode_repository
                                                                                                                         .save(existing)
                                                                                                                         .flatMap(saved -> ReactiveTenantContext
@@ -334,7 +334,7 @@ public class PeriodeComptableService {
                                                                                 periode.setUpdated_by(user);
                                                                                 periode.setUpdated_at(
                                                                                                 LocalDateTime.now());
-
+                                                                                periode.setNotNew();
                                                                                 return periode_repository.save(periode)
                                                                                                 .flatMap(saved -> ReactiveTenantContext
                                                                                                                 .getCurrentTenantAsTenant()
@@ -466,7 +466,9 @@ public class PeriodeComptableService {
          */
         private PeriodeComptable mapToEntity(PeriodeComptableDto dto, Tenant tenant) {
                 PeriodeComptable p = new PeriodeComptable();
+                p.setId(dto.getId() != null ? dto.getId() : UUID.randomUUID());
                 p.setTenantId(tenant.getId());
+                p.setNew(dto.getId() == null);
                 p.setCode(dto.getCode());
                 p.setDate_debut(dto.getDate_debut());
                 p.setDate_fin(dto.getDate_fin());
