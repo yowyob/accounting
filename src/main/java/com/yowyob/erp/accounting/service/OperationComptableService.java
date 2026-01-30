@@ -171,18 +171,29 @@ public class OperationComptableService {
 
         public Mono<List<OperationComptableDto>> getOperationsByCompteId(UUID compte_id) {
                 return ReactiveTenantContext.getTenantId()
+                                .doOnNext(tid -> log.info("getOperationsByCompteId for account {} with tenant {}",
+                                                compte_id, tid))
                                 .flatMap(tenant_id -> operation_repository
                                                 .findByTenant_IdAndCompte_principal_id(tenant_id, compte_id)
+                                                .doOnNext(op -> log.info("Found operation: {}", op.getId()))
                                                 .flatMap(this::mapToDto)
-                                                .collectList());
+                                                .collectList()
+                                                .doOnSuccess(list -> log.info("Collected {} operations", list.size())));
         }
 
         public Mono<List<OperationComptableDto>> getOperationsByCompte(String no_compte) {
                 return ReactiveTenantContext.getTenantId()
+                                .doOnNext(tid -> log.info("Searching for account {} with tenant {}", no_compte, tid))
                                 .flatMap(tenant_id -> compte_repository
                                                 .findByTenant_IdAndNo_compte(tenant_id, no_compte)
+                                                .doOnNext(c -> log.info("Found account: {} ({})", c.getNo_compte(),
+                                                                c.getId()))
                                                 .flatMap(compte -> getOperationsByCompteId(compte.getId()))
-                                                .switchIfEmpty(Mono.just(List.of())));
+                                                .switchIfEmpty(Mono.defer(() -> {
+                                                        log.warn("Account {} not found for tenant {}", no_compte,
+                                                                        tenant_id);
+                                                        return Mono.just(List.of());
+                                                })));
         }
 
         public Mono<OperationComptableDto> getByTypeAndMode(String type, String mode) {

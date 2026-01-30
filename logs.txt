@@ -1,0 +1,500 @@
+yowyob-erp-backend  | 	auto.commit.interval.ms = 5000
+yowyob-erp-backend  | 	auto.include.jmx.reporter = true
+yowyob-erp-backend  | 	auto.offset.reset = earliest
+yowyob-erp-backend  | 	bootstrap.servers = [kafka:9092]
+yowyob-erp-backend  | 	check.crcs = true
+yowyob-erp-backend  | 	client.dns.lookup = use_all_dns_ips
+yowyob-erp-backend  | 	client.id = consumer-accounting-service-group-21
+yowyob-erp-backend  | 	client.rack = 
+yowyob-erp-backend  | 	connections.max.idle.ms = 540000
+yowyob-erp-backend  | 	default.api.timeout.ms = 60000
+yowyob-erp-backend  | 	enable.auto.commit = false
+yowyob-erp-backend  | 	enable.metrics.push = true
+yowyob-erp-backend  | 	exclude.internal.topics = true
+yowyob-erp-backend  | 	fetch.max.bytes = 52428800
+yowyob-erp-backend  | 	fetch.max.wait.ms = 500
+yowyob-erp-backend  | 	fetch.min.bytes = 1
+yowyob-erp-backend  | 	group.id = accounting-service-group
+yowyob-erp-backend  | 	group.instance.id = null
+yowyob-erp-backend  | 	group.protocol = classic
+yowyob-erp-backend  | 	group.remote.assignor = null
+yowyob-erp-backend  | 	heartbeat.interval.ms = 3000
+yowyob-erp-backend  | 	interceptor.classes = []
+yowyob-erp-backend  | 	internal.leave.group.on.close = true
+yowyob-erp-backend  | 	internal.throw.on.fetch.stable.offset.unsupported = false
+yowyob-erp-backend  | 	isolation.level = read_uncommitted
+yowyob-erp-backend  | 	key.deserializer = class org.apache.kafka.common.serialization.StringDeserializer
+yowyob-erp-backend  | 	max.partition.fetch.bytes = 1048576
+yowyob-erp-backend  | 	max.poll.interval.ms = 300000
+yowyob-erp-backend  | 	max.poll.records = 500
+yowyob-erp-backend  | 	metadata.max.age.ms = 300000
+yowyob-erp-backend  | 	metadata.recovery.strategy = none
+yowyob-erp-backend  | 	metric.reporters = []
+yowyob-erp-backend  | 	metrics.num.samples = 2
+yowyob-erp-backend  | 	metrics.recording.level = INFO
+yowyob-erp-backend  | 	metrics.sample.window.ms = 30000
+yowyob-erp-backend  | 	partition.assignment.strategy = [class org.apache.kafka.clients.consumer.RangeAssignor, class org.apache.kafka.clients.consumer.CooperativeStickyAssignor]
+yowyob-erp-backend  | 	receive.buffer.bytes = 65536
+yowyob-erp-backend  | 	reconnect.backoff.max.ms = 1000
+yowyob-erp-backend  | 	reconnect.backoff.ms = 50
+yowyob-erp-backend  | 	request.timeout.ms = 30000
+yowyob-erp-backend  | 	retry.backoff.max.ms = 1000
+yowyob-erp-backend  | 	retry.backoff.ms = 100
+yowyob-erp-backend  | 	sasl.client.callback.handler.class = null
+yowyob-erp-backend  | 	sasl.jaas.config = null
+yowyob-erp-backend  | 	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+yowyob-erp-backend  | 	sasl.kerberos.min.time.before.relogin = 60000
+yowyob-erp-backend  | 	sasl.kerberos.service.name = null
+yowyob-erp-backend  | 	sasl.kerberos.ticket.renew.jitter = 0.05
+yowyob-erp-backend  | 	sasl.kerberos.ticket.renew.window.factor = 0.8
+yowyob-erp-backend  | 	sasl.login.callback.handler.class = null
+yowyob-erp-backend  | 	sasl.login.class = null
+yowyob-erp-backend  | 	sasl.login.connect.timeout.ms = null
+yowyob-erp-backend  | 	sasl.login.read.timeout.ms = null
+yowyob-erp-backend  | 	sasl.login.refresh.buffer.seconds = 300
+yowyob-erp-backend  | 	sasl.login.refresh.min.period.seconds = 60
+yowyob-erp-backend  | 	sasl.login.refresh.window.factor = 0.8
+yowyob-erp-backend  | 	sasl.login.refresh.window.jitter = 0.05
+yowyob-erp-backend  | 	sasl.login.retry.backoff.max.ms = 10000
+yowyob-erp-backend  | 	sasl.login.retry.backoff.ms = 100
+yowyob-erp-backend  | 	sasl.mechanism = GSSAPI
+yowyob-erp-backend  | 	sasl.oauthbearer.clock.skew.seconds = 30
+yowyob-erp-backend  | 	sasl.oauthbearer.expected.audience = null
+yowyob-erp-backend  | 	sasl.oauthbearer.expected.issuer = null
+yowyob-erp-backend  | 	sasl.oauthbearer.header.urlencode = false
+yowyob-erp-backend  | 	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+yowyob-erp-backend  | 	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+yowyob-erp-backend  | 	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+yowyob-erp-backend  | 	sasl.oauthbearer.jwks.endpoint.url = null
+yowyob-erp-backend  | 	sasl.oauthbearer.scope.claim.name = scope
+yowyob-erp-backend  | 	sasl.oauthbearer.sub.claim.name = sub
+yowyob-erp-backend  | 	sasl.oauthbearer.token.endpoint.url = null
+yowyob-erp-backend  | 	security.protocol = PLAINTEXT
+yowyob-erp-backend  | 	security.providers = null
+yowyob-erp-backend  | 	send.buffer.bytes = 131072
+yowyob-erp-backend  | 	session.timeout.ms = 45000
+yowyob-erp-backend  | 	socket.connection.setup.timeout.max.ms = 30000
+yowyob-erp-backend  | 	socket.connection.setup.timeout.ms = 10000
+yowyob-erp-backend  | 	ssl.cipher.suites = null
+yowyob-erp-backend  | 	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+yowyob-erp-backend  | 	ssl.endpoint.identification.algorithm = https
+yowyob-erp-backend  | 	ssl.engine.factory.class = null
+yowyob-erp-backend  | 	ssl.key.password = null
+yowyob-erp-backend  | 	ssl.keymanager.algorithm = SunX509
+yowyob-erp-backend  | 	ssl.keystore.certificate.chain = null
+yowyob-erp-backend  | 	ssl.keystore.key = null
+yowyob-erp-backend  | 	ssl.keystore.location = null
+yowyob-erp-backend  | 	ssl.keystore.password = null
+yowyob-erp-backend  | 	ssl.keystore.type = JKS
+yowyob-erp-backend  | 	ssl.protocol = TLSv1.3
+yowyob-erp-backend  | 	ssl.provider = null
+yowyob-erp-backend  | 	ssl.secure.random.implementation = null
+yowyob-erp-backend  | 	ssl.trustmanager.algorithm = PKIX
+yowyob-erp-backend  | 	ssl.truststore.certificates = null
+yowyob-erp-backend  | 	ssl.truststore.location = null
+yowyob-erp-backend  | 	ssl.truststore.password = null
+yowyob-erp-backend  | 	ssl.truststore.type = JKS
+yowyob-erp-backend  | 	value.deserializer = class org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+yowyob-erp-backend  | 
+yowyob-erp-backend  | 2026-01-30 17:19:30 - initializing Kafka metrics collector
+yowyob-erp-backend  | 2026-01-30 17:19:30 - Kafka version: 3.9.1
+yowyob-erp-backend  | 2026-01-30 17:19:30 - Kafka commitId: f745dfdcee2b9851
+yowyob-erp-backend  | 2026-01-30 17:19:30 - Kafka startTimeMs: 1769793570684
+yowyob-erp-backend  | 2026-01-30 17:19:30 - [Consumer clientId=consumer-accounting-service-group-21, groupId=accounting-service-group] Subscribed to topic(s): accounting.entries
+yowyob-erp-backend  | 2026-01-30 17:19:30 - [Consumer clientId=consumer-accounting-service-group-19, groupId=accounting-service-group] Cluster ID: ZsCbbd74TP6uye_cKRffYA
+yowyob-erp-backend  | 2026-01-30 17:19:30 - [Consumer clientId=consumer-accounting-service-group-21, groupId=accounting-service-group] Cluster ID: ZsCbbd74TP6uye_cKRffYA
+yowyob-erp-backend  | 2026-01-30 17:19:30 - [Consumer clientId=consumer-accounting-service-group-20, groupId=accounting-service-group] Cluster ID: ZsCbbd74TP6uye_cKRffYA
+yowyob-erp-backend  | 2026-01-30 17:19:30 - [Consumer clientId=consumer-accounting-service-group-21, groupId=accounting-service-group] Discovered group coordinator kafka:9092 (id: 2147483646 rack: null)
+yowyob-erp-backend  | 2026-01-30 17:19:30 - [Consumer clientId=consumer-accounting-service-group-20, groupId=accounting-service-group] Discovered group coordinator kafka:9092 (id: 2147483646 rack: null)
+yowyob-erp-backend  | 2026-01-30 17:19:30 - [Consumer clientId=consumer-accounting-service-group-21, groupId=accounting-service-group] (Re-)joining group
+yowyob-erp-backend  | 2026-01-30 17:19:30 - [Consumer clientId=consumer-accounting-service-group-19, groupId=accounting-service-group] Discovered group coordinator kafka:9092 (id: 2147483646 rack: null)
+yowyob-erp-backend  | 2026-01-30 17:19:30 - [Consumer clientId=consumer-accounting-service-group-20, groupId=accounting-service-group] (Re-)joining group
+yowyob-erp-backend  | 2026-01-30 17:19:30 - [Consumer clientId=consumer-accounting-service-group-19, groupId=accounting-service-group] (Re-)joining group
+yowyob-erp-backend  | 2026-01-30 17:19:30 - [Consumer clientId=consumer-accounting-service-group-21, groupId=accounting-service-group] Request joining group due to: need to re-join with the given member-id: consumer-accounting-service-group-21-a3286e37-a49b-459a-9bd2-87f1320789c7
+yowyob-erp-backend  | 2026-01-30 17:19:30 - [Consumer clientId=consumer-accounting-service-group-21, groupId=accounting-service-group] (Re-)joining group
+yowyob-erp-backend  | 2026-01-30 17:19:30 - [Consumer clientId=consumer-accounting-service-group-20, groupId=accounting-service-group] Request joining group due to: need to re-join with the given member-id: consumer-accounting-service-group-20-d5dc5811-58e2-4b14-8281-41dae0184230
+yowyob-erp-backend  | 2026-01-30 17:19:30 - [Consumer clientId=consumer-accounting-service-group-19, groupId=accounting-service-group] Request joining group due to: need to re-join with the given member-id: consumer-accounting-service-group-19-0f9b9c56-9d05-45a2-80c1-5957c9138acc
+yowyob-erp-backend  | 2026-01-30 17:19:30 - [Consumer clientId=consumer-accounting-service-group-19, groupId=accounting-service-group] (Re-)joining group
+yowyob-erp-backend  | 2026-01-30 17:19:30 - [Consumer clientId=consumer-accounting-service-group-20, groupId=accounting-service-group] (Re-)joining group
+yowyob-erp-backend  | 2026-01-30 17:19:31 - Started YowyobErpBackendApplication in 40.74 seconds (process running for 46.372)
+yowyob-erp-backend  | 2026-01-30 17:19:31 - Starting reactive accounting plan template initialization...
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-1, groupId=accounting-service-group] Request joining group due to: group is already rebalancing
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-3, groupId=accounting-service-group] Request joining group due to: group is already rebalancing
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-3, groupId=accounting-service-group] Revoke previously assigned partitions 
+yowyob-erp-backend  | 2026-01-30 17:19:31 - accounting-service-group: partitions revoked: []
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-2, groupId=accounting-service-group] Request joining group due to: group is already rebalancing
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-2, groupId=accounting-service-group] Revoke previously assigned partitions 
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-3, groupId=accounting-service-group] (Re-)joining group
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-1, groupId=accounting-service-group] Revoke previously assigned partitions organization.events-0
+yowyob-erp-backend  | 2026-01-30 17:19:31 - accounting-service-group: partitions revoked: [organization.events-0]
+yowyob-erp-backend  | 2026-01-30 17:19:31 - accounting-service-group: partitions revoked: []
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-1, groupId=accounting-service-group] (Re-)joining group
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-2, groupId=accounting-service-group] (Re-)joining group
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-18, groupId=accounting-service-group] Successfully joined group with generation Generation{generationId=177, memberId='consumer-accounting-service-group-18-634e3a29-0101-4c7c-a425-08dc4752f2e3', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-16, groupId=accounting-service-group] Successfully joined group with generation Generation{generationId=177, memberId='consumer-accounting-service-group-16-f451821b-c91c-4960-a9a4-fc563d610d1f', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-20, groupId=accounting-service-group] Successfully joined group with generation Generation{generationId=177, memberId='consumer-accounting-service-group-20-d5dc5811-58e2-4b14-8281-41dae0184230', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-7, groupId=accounting-service-group] Successfully joined group with generation Generation{generationId=177, memberId='consumer-accounting-service-group-7-a79519b4-d99e-4b57-a26b-071b2e0f2aba', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-9, groupId=accounting-service-group] Successfully joined group with generation Generation{generationId=177, memberId='consumer-accounting-service-group-9-c6228196-3198-4f65-b714-0726339e9a19', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-21, groupId=accounting-service-group] Successfully joined group with generation Generation{generationId=177, memberId='consumer-accounting-service-group-21-a3286e37-a49b-459a-9bd2-87f1320789c7', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-12, groupId=accounting-service-group] Successfully joined group with generation Generation{generationId=177, memberId='consumer-accounting-service-group-12-2aa33ebd-92dd-420d-aa88-2756ea82e4d7', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-11, groupId=accounting-service-group] Successfully joined group with generation Generation{generationId=177, memberId='consumer-accounting-service-group-11-f5b09f84-b453-404e-8d65-4bd5c04f387a', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-8, groupId=accounting-service-group] Successfully joined group with generation Generation{generationId=177, memberId='consumer-accounting-service-group-8-0fabb0c6-ef48-4486-9536-5902e4fc2596', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-13, groupId=accounting-service-group] Successfully joined group with generation Generation{generationId=177, memberId='consumer-accounting-service-group-13-479723ad-6948-46a1-9b79-9608a2907be7', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-3, groupId=accounting-service-group] Successfully joined group with generation Generation{generationId=177, memberId='consumer-accounting-service-group-3-dd035d14-00ad-40e5-900f-237fad1e0288', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-15, groupId=accounting-service-group] Successfully joined group with generation Generation{generationId=177, memberId='consumer-accounting-service-group-15-0f021c89-f435-4671-8374-cebf4240d8a2', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-19, groupId=accounting-service-group] Successfully joined group with generation Generation{generationId=177, memberId='consumer-accounting-service-group-19-0f9b9c56-9d05-45a2-80c1-5957c9138acc', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-5, groupId=accounting-service-group] Successfully joined group with generation Generation{generationId=177, memberId='consumer-accounting-service-group-5-02f04376-b340-4b87-96bb-72d952db7561', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-1, groupId=accounting-service-group] Successfully joined group with generation Generation{generationId=177, memberId='consumer-accounting-service-group-1-2e336fd8-cf3e-4474-a90a-f799479e2dce', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-6, groupId=accounting-service-group] Successfully joined group with generation Generation{generationId=177, memberId='consumer-accounting-service-group-6-142b1c50-9056-47cd-ab08-ea1ae87fa111', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-17, groupId=accounting-service-group] Successfully joined group with generation Generation{generationId=177, memberId='consumer-accounting-service-group-17-f37b8c73-d42b-4809-b2f5-882f563f4d68', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-2, groupId=accounting-service-group] Successfully joined group with generation Generation{generationId=177, memberId='consumer-accounting-service-group-2-41820e33-a038-417a-93e1-c2827f627b1c', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-4, groupId=accounting-service-group] Successfully joined group with generation Generation{generationId=177, memberId='consumer-accounting-service-group-4-d660217f-5f94-4e6a-b21a-7dcd53166296', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-10, groupId=accounting-service-group] Successfully joined group with generation Generation{generationId=177, memberId='consumer-accounting-service-group-10-fb6c17f0-ccc7-437a-8236-07b153f1fb8d', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-14, groupId=accounting-service-group] Successfully joined group with generation Generation{generationId=177, memberId='consumer-accounting-service-group-14-4881b540-d03b-476d-a522-9924128380a2', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-3, groupId=accounting-service-group] Finished assignment for group at generation 177: {consumer-accounting-service-group-18-634e3a29-0101-4c7c-a425-08dc4752f2e3=Assignment(partitions=[invoice.events-2]), consumer-accounting-service-group-21-a3286e37-a49b-459a-9bd2-87f1320789c7=Assignment(partitions=[accounting.entries-2]), consumer-accounting-service-group-8-0fabb0c6-ef48-4486-9536-5902e4fc2596=Assignment(partitions=[audit.logs-1]), consumer-accounting-service-group-20-d5dc5811-58e2-4b14-8281-41dae0184230=Assignment(partitions=[accounting.entries-1]), consumer-accounting-service-group-1-2e336fd8-cf3e-4474-a90a-f799479e2dce=Assignment(partitions=[organization.events-0]), consumer-accounting-service-group-10-fb6c17f0-ccc7-437a-8236-07b153f1fb8d=Assignment(partitions=[stock.events-0]), consumer-accounting-service-group-2-41820e33-a038-417a-93e1-c2827f627b1c=Assignment(partitions=[]), consumer-accounting-service-group-16-f451821b-c91c-4960-a9a4-fc563d610d1f=Assignment(partitions=[invoice.events-0]), consumer-accounting-service-group-6-142b1c50-9056-47cd-ab08-ea1ae87fa111=Assignment(partitions=[transaction.events-2]), consumer-accounting-service-group-3-dd035d14-00ad-40e5-900f-237fad1e0288=Assignment(partitions=[]), consumer-accounting-service-group-4-d660217f-5f94-4e6a-b21a-7dcd53166296=Assignment(partitions=[transaction.events-0]), consumer-accounting-service-group-17-f37b8c73-d42b-4809-b2f5-882f563f4d68=Assignment(partitions=[invoice.events-1]), consumer-accounting-service-group-11-f5b09f84-b453-404e-8d65-4bd5c04f387a=Assignment(partitions=[]), consumer-accounting-service-group-19-0f9b9c56-9d05-45a2-80c1-5957c9138acc=Assignment(partitions=[accounting.entries-0]), consumer-accounting-service-group-5-02f04376-b340-4b87-96bb-72d952db7561=Assignment(partitions=[transaction.events-1]), consumer-accounting-service-group-9-c6228196-3198-4f65-b714-0726339e9a19=Assignment(partitions=[]), consumer-accounting-service-group-13-479723ad-6948-46a1-9b79-9608a2907be7=Assignment(partitions=[thirdparty.events-0]), consumer-accounting-service-group-12-2aa33ebd-92dd-420d-aa88-2756ea82e4d7=Assignment(partitions=[]), consumer-accounting-service-group-15-0f021c89-f435-4671-8374-cebf4240d8a2=Assignment(partitions=[]), consumer-accounting-service-group-14-4881b540-d03b-476d-a522-9924128380a2=Assignment(partitions=[]), consumer-accounting-service-group-7-a79519b4-d99e-4b57-a26b-071b2e0f2aba=Assignment(partitions=[audit.logs-0])}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-7, groupId=accounting-service-group] Successfully synced group in generation Generation{generationId=177, memberId='consumer-accounting-service-group-7-a79519b4-d99e-4b57-a26b-071b2e0f2aba', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-13, groupId=accounting-service-group] Successfully synced group in generation Generation{generationId=177, memberId='consumer-accounting-service-group-13-479723ad-6948-46a1-9b79-9608a2907be7', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-8, groupId=accounting-service-group] Successfully synced group in generation Generation{generationId=177, memberId='consumer-accounting-service-group-8-0fabb0c6-ef48-4486-9536-5902e4fc2596', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-8, groupId=accounting-service-group] Notifying assignor about the new Assignment(partitions=[audit.logs-1])
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-9, groupId=accounting-service-group] Successfully synced group in generation Generation{generationId=177, memberId='consumer-accounting-service-group-9-c6228196-3198-4f65-b714-0726339e9a19', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-9, groupId=accounting-service-group] Notifying assignor about the new Assignment(partitions=[])
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-9, groupId=accounting-service-group] Adding newly assigned partitions: 
+yowyob-erp-backend  | 2026-01-30 17:19:31 - accounting-service-group: partitions assigned: []
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-7, groupId=accounting-service-group] Notifying assignor about the new Assignment(partitions=[audit.logs-0])
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-7, groupId=accounting-service-group] Adding newly assigned partitions: audit.logs-0
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-12, groupId=accounting-service-group] Successfully synced group in generation Generation{generationId=177, memberId='consumer-accounting-service-group-12-2aa33ebd-92dd-420d-aa88-2756ea82e4d7', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-12, groupId=accounting-service-group] Notifying assignor about the new Assignment(partitions=[])
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-12, groupId=accounting-service-group] Adding newly assigned partitions: 
+yowyob-erp-backend  | 2026-01-30 17:19:31 - accounting-service-group: partitions assigned: []
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-18, groupId=accounting-service-group] Successfully synced group in generation Generation{generationId=177, memberId='consumer-accounting-service-group-18-634e3a29-0101-4c7c-a425-08dc4752f2e3', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-18, groupId=accounting-service-group] Notifying assignor about the new Assignment(partitions=[invoice.events-2])
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-18, groupId=accounting-service-group] Adding newly assigned partitions: invoice.events-2
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-10, groupId=accounting-service-group] Successfully synced group in generation Generation{generationId=177, memberId='consumer-accounting-service-group-10-fb6c17f0-ccc7-437a-8236-07b153f1fb8d', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-5, groupId=accounting-service-group] Successfully synced group in generation Generation{generationId=177, memberId='consumer-accounting-service-group-5-02f04376-b340-4b87-96bb-72d952db7561', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-10, groupId=accounting-service-group] Notifying assignor about the new Assignment(partitions=[stock.events-0])
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-10, groupId=accounting-service-group] Adding newly assigned partitions: stock.events-0
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-14, groupId=accounting-service-group] Successfully synced group in generation Generation{generationId=177, memberId='consumer-accounting-service-group-14-4881b540-d03b-476d-a522-9924128380a2', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-14, groupId=accounting-service-group] Notifying assignor about the new Assignment(partitions=[])
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-14, groupId=accounting-service-group] Adding newly assigned partitions: 
+yowyob-erp-backend  | 2026-01-30 17:19:31 - accounting-service-group: partitions assigned: []
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-7, groupId=accounting-service-group] Found no committed offset for partition audit.logs-0
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-21, groupId=accounting-service-group] Successfully synced group in generation Generation{generationId=177, memberId='consumer-accounting-service-group-21-a3286e37-a49b-459a-9bd2-87f1320789c7', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-21, groupId=accounting-service-group] Notifying assignor about the new Assignment(partitions=[accounting.entries-2])
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-6, groupId=accounting-service-group] Successfully synced group in generation Generation{generationId=177, memberId='consumer-accounting-service-group-6-142b1c50-9056-47cd-ab08-ea1ae87fa111', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-11, groupId=accounting-service-group] Successfully synced group in generation Generation{generationId=177, memberId='consumer-accounting-service-group-11-f5b09f84-b453-404e-8d65-4bd5c04f387a', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-21, groupId=accounting-service-group] Adding newly assigned partitions: accounting.entries-2
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-19, groupId=accounting-service-group] Successfully synced group in generation Generation{generationId=177, memberId='consumer-accounting-service-group-19-0f9b9c56-9d05-45a2-80c1-5957c9138acc', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-19, groupId=accounting-service-group] Notifying assignor about the new Assignment(partitions=[accounting.entries-0])
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-19, groupId=accounting-service-group] Adding newly assigned partitions: accounting.entries-0
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-3, groupId=accounting-service-group] Successfully synced group in generation Generation{generationId=177, memberId='consumer-accounting-service-group-3-dd035d14-00ad-40e5-900f-237fad1e0288', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-3, groupId=accounting-service-group] Notifying assignor about the new Assignment(partitions=[])
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-3, groupId=accounting-service-group] Adding newly assigned partitions: 
+yowyob-erp-backend  | 2026-01-30 17:19:31 - accounting-service-group: partitions assigned: []
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-16, groupId=accounting-service-group] Successfully synced group in generation Generation{generationId=177, memberId='consumer-accounting-service-group-16-f451821b-c91c-4960-a9a4-fc563d610d1f', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-16, groupId=accounting-service-group] Notifying assignor about the new Assignment(partitions=[invoice.events-0])
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-16, groupId=accounting-service-group] Adding newly assigned partitions: invoice.events-0
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-20, groupId=accounting-service-group] Successfully synced group in generation Generation{generationId=177, memberId='consumer-accounting-service-group-20-d5dc5811-58e2-4b14-8281-41dae0184230', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-1, groupId=accounting-service-group] Successfully synced group in generation Generation{generationId=177, memberId='consumer-accounting-service-group-1-2e336fd8-cf3e-4474-a90a-f799479e2dce', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-1, groupId=accounting-service-group] Notifying assignor about the new Assignment(partitions=[organization.events-0])
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-1, groupId=accounting-service-group] Adding newly assigned partitions: organization.events-0
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-13, groupId=accounting-service-group] Notifying assignor about the new Assignment(partitions=[thirdparty.events-0])
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-13, groupId=accounting-service-group] Adding newly assigned partitions: thirdparty.events-0
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-20, groupId=accounting-service-group] Notifying assignor about the new Assignment(partitions=[accounting.entries-1])
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-20, groupId=accounting-service-group] Adding newly assigned partitions: accounting.entries-1
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-8, groupId=accounting-service-group] Adding newly assigned partitions: audit.logs-1
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-2, groupId=accounting-service-group] Successfully synced group in generation Generation{generationId=177, memberId='consumer-accounting-service-group-2-41820e33-a038-417a-93e1-c2827f627b1c', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-1, groupId=accounting-service-group] Found no committed offset for partition organization.events-0
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-2, groupId=accounting-service-group] Notifying assignor about the new Assignment(partitions=[])
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-2, groupId=accounting-service-group] Adding newly assigned partitions: 
+yowyob-erp-backend  | 2026-01-30 17:19:31 - accounting-service-group: partitions assigned: []
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-16, groupId=accounting-service-group] Found no committed offset for partition invoice.events-0
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-5, groupId=accounting-service-group] Notifying assignor about the new Assignment(partitions=[transaction.events-1])
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-5, groupId=accounting-service-group] Adding newly assigned partitions: transaction.events-1
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-4, groupId=accounting-service-group] Successfully synced group in generation Generation{generationId=177, memberId='consumer-accounting-service-group-4-d660217f-5f94-4e6a-b21a-7dcd53166296', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-17, groupId=accounting-service-group] Successfully synced group in generation Generation{generationId=177, memberId='consumer-accounting-service-group-17-f37b8c73-d42b-4809-b2f5-882f563f4d68', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-15, groupId=accounting-service-group] Successfully synced group in generation Generation{generationId=177, memberId='consumer-accounting-service-group-15-0f021c89-f435-4671-8374-cebf4240d8a2', protocol='range'}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-15, groupId=accounting-service-group] Notifying assignor about the new Assignment(partitions=[])
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-20, groupId=accounting-service-group] Found no committed offset for partition accounting.entries-1
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-13, groupId=accounting-service-group] Found no committed offset for partition thirdparty.events-0
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-4, groupId=accounting-service-group] Notifying assignor about the new Assignment(partitions=[transaction.events-0])
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-18, groupId=accounting-service-group] Found no committed offset for partition invoice.events-2
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-4, groupId=accounting-service-group] Adding newly assigned partitions: transaction.events-0
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-6, groupId=accounting-service-group] Notifying assignor about the new Assignment(partitions=[transaction.events-2])
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-6, groupId=accounting-service-group] Adding newly assigned partitions: transaction.events-2
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-20, groupId=accounting-service-group] Resetting offset for partition accounting.entries-1 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[kafka:9092 (id: 1 rack: null)], epoch=0}}.
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-11, groupId=accounting-service-group] Notifying assignor about the new Assignment(partitions=[])
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-11, groupId=accounting-service-group] Adding newly assigned partitions: 
+yowyob-erp-backend  | 2026-01-30 17:19:31 - accounting-service-group: partitions assigned: []
+yowyob-erp-backend  | 2026-01-30 17:19:31 - accounting-service-group: partitions assigned: [accounting.entries-1]
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-18, groupId=accounting-service-group] Resetting offset for partition invoice.events-2 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[kafka:9092 (id: 1 rack: null)], epoch=0}}.
+yowyob-erp-backend  | 2026-01-30 17:19:31 - accounting-service-group: partitions assigned: [invoice.events-2]
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-10, groupId=accounting-service-group] Found no committed offset for partition stock.events-0
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-6, groupId=accounting-service-group] Found no committed offset for partition transaction.events-2
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-7, groupId=accounting-service-group] Resetting offset for partition audit.logs-0 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[kafka:9092 (id: 1 rack: null)], epoch=0}}.
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-19, groupId=accounting-service-group] Found no committed offset for partition accounting.entries-0
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-21, groupId=accounting-service-group] Found no committed offset for partition accounting.entries-2
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-19, groupId=accounting-service-group] Resetting offset for partition accounting.entries-0 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[kafka:9092 (id: 1 rack: null)], epoch=0}}.
+yowyob-erp-backend  | 2026-01-30 17:19:31 - accounting-service-group: partitions assigned: [accounting.entries-0]
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-10, groupId=accounting-service-group] Resetting offset for partition stock.events-0 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[kafka:9092 (id: 1 rack: null)], epoch=0}}.
+yowyob-erp-backend  | 2026-01-30 17:19:31 - accounting-service-group: partitions assigned: [stock.events-0]
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-1, groupId=accounting-service-group] Resetting offset for partition organization.events-0 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[kafka:9092 (id: 1 rack: null)], epoch=0}}.
+yowyob-erp-backend  | 2026-01-30 17:19:31 - accounting-service-group: partitions assigned: [organization.events-0]
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-17, groupId=accounting-service-group] Notifying assignor about the new Assignment(partitions=[invoice.events-1])
+yowyob-erp-backend  | 2026-01-30 17:19:32 - [Consumer clientId=consumer-accounting-service-group-17, groupId=accounting-service-group] Adding newly assigned partitions: invoice.events-1
+yowyob-erp-backend  | 2026-01-30 17:19:32 - [Consumer clientId=consumer-accounting-service-group-6, groupId=accounting-service-group] Resetting offset for partition transaction.events-2 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[kafka:9092 (id: 1 rack: null)], epoch=0}}.
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-15, groupId=accounting-service-group] Adding newly assigned partitions: 
+yowyob-erp-backend  | 2026-01-30 17:19:32 - accounting-service-group: partitions assigned: []
+yowyob-erp-backend  | 2026-01-30 17:19:32 - [Consumer clientId=consumer-accounting-service-group-21, groupId=accounting-service-group] Resetting offset for partition accounting.entries-2 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[kafka:9092 (id: 1 rack: null)], epoch=0}}.
+yowyob-erp-backend  | 2026-01-30 17:19:32 - accounting-service-group: partitions assigned: [accounting.entries-2]
+yowyob-erp-backend  | 2026-01-30 17:19:31 - Setting offset for partition audit.logs-1 to the committed offset FetchPosition{offset=9, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[kafka:9092 (id: 1 rack: null)], epoch=0}}
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-5, groupId=accounting-service-group] Found no committed offset for partition transaction.events-1
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-4, groupId=accounting-service-group] Found no committed offset for partition transaction.events-0
+yowyob-erp-backend  | 2026-01-30 17:19:31 - accounting-service-group: partitions assigned: [audit.logs-0]
+yowyob-erp-backend  | 2026-01-30 17:19:31 - [Consumer clientId=consumer-accounting-service-group-16, groupId=accounting-service-group] Resetting offset for partition invoice.events-0 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[kafka:9092 (id: 1 rack: null)], epoch=0}}.
+yowyob-erp-backend  | 2026-01-30 17:19:32 - accounting-service-group: partitions assigned: [invoice.events-0]
+yowyob-erp-backend  | 2026-01-30 17:19:32 - accounting-service-group: partitions assigned: [transaction.events-2]
+yowyob-erp-backend  | 2026-01-30 17:19:32 - [Consumer clientId=consumer-accounting-service-group-13, groupId=accounting-service-group] Resetting offset for partition thirdparty.events-0 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[kafka:9092 (id: 1 rack: null)], epoch=0}}.
+yowyob-erp-backend  | 2026-01-30 17:19:32 - accounting-service-group: partitions assigned: [thirdparty.events-0]
+yowyob-erp-backend  | 2026-01-30 17:19:32 - [Consumer clientId=consumer-accounting-service-group-17, groupId=accounting-service-group] Found no committed offset for partition invoice.events-1
+yowyob-erp-backend  | 2026-01-30 17:19:32 - [Consumer clientId=consumer-accounting-service-group-4, groupId=accounting-service-group] Resetting offset for partition transaction.events-0 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[kafka:9092 (id: 1 rack: null)], epoch=0}}.
+yowyob-erp-backend  | 2026-01-30 17:19:32 - accounting-service-group: partitions assigned: [transaction.events-0]
+yowyob-erp-backend  | 2026-01-30 17:19:32 - [Consumer clientId=consumer-accounting-service-group-17, groupId=accounting-service-group] Resetting offset for partition invoice.events-1 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[kafka:9092 (id: 1 rack: null)], epoch=0}}.
+yowyob-erp-backend  | 2026-01-30 17:19:32 - accounting-service-group: partitions assigned: [invoice.events-1]
+yowyob-erp-backend  | 2026-01-30 17:19:32 - accounting-service-group: partitions assigned: [audit.logs-1]
+yowyob-erp-backend  | 2026-01-30 17:19:32 - [Consumer clientId=consumer-accounting-service-group-5, groupId=accounting-service-group] Resetting offset for partition transaction.events-1 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[kafka:9092 (id: 1 rack: null)], epoch=0}}.
+yowyob-erp-backend  | 2026-01-30 17:19:32 - accounting-service-group: partitions assigned: [transaction.events-1]
+yowyob-erp-backend  | 2026-01-30 17:19:32 - Initializing default organizations (reactive)...
+yowyob-erp-backend  | 2026-01-30 17:19:35 - Default Agency initialized: Headquarters
+yowyob-erp-backend  | 2026-01-30 17:19:35 - Starting accounting journals initialization...
+yowyob-erp-backend  | 2026-01-30 17:19:35 - Starting accounting operations initialization...
+yowyob-erp-backend  | 2026-01-30 17:19:35 - Linking tenant YOWYOB-ERP to organization YOWYOB Group
+yowyob-erp-backend  | 2026-01-30 17:19:35 - Starting default tenant setup for ID: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:19:36 - Default tenant found, proceeding with setup.
+yowyob-erp-backend  | 2026-01-30 17:19:36 - Seeding essential ledger accounts (Compte) for tenant: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:19:36 - Organization initialization completed.
+yowyob-erp-backend  | 2026-01-30 17:19:36 - Accounting journals initialization completed successfully.
+yowyob-erp-backend  | 2026-01-30 17:19:36 - Attempting to create period: 2026-02
+yowyob-erp-backend  | 2026-01-30 17:19:36 - Attempting to create period: 2026-03
+yowyob-erp-backend  | 2026-01-30 17:19:36 - Attempting to create period: 2026-01
+yowyob-erp-backend  | 2026-01-30 17:19:36 - 🧾 Creating accounting period [2026-01 - 2026-01-01] for tenant 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:19:36 - 🧾 Creating accounting period [2026-02 - 2026-02-01] for tenant 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:19:36 - 🧾 Creating accounting period [2026-03 - 2026-03-01] for tenant 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:19:37 - Attempting to create period: 2026-04
+yowyob-erp-backend  | 2026-01-30 17:19:37 - 🧾 Creating accounting period [2026-04 - 2026-04-01] for tenant 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:19:37 - Error creating period 2026-01: Period code already exists: 2026-01
+yowyob-erp-backend  | 2026-01-30 17:19:37 - Error creating period 2026-02: Period code already exists: 2026-02
+yowyob-erp-backend  | 2026-01-30 17:19:37 - Error creating period 2026-03: Period code already exists: 2026-03
+yowyob-erp-backend  | 2026-01-30 17:19:37 - Attempting to create period: 2026-05
+yowyob-erp-backend  | 2026-01-30 17:19:37 - 🧾 Creating accounting period [2026-05 - 2026-05-01] for tenant 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:19:37 - Attempting to create period: 2026-07
+yowyob-erp-backend  | 2026-01-30 17:19:37 - 🧾 Creating accounting period [2026-07 - 2026-07-01] for tenant 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:19:37 - Attempting to create period: 2026-06
+yowyob-erp-backend  | 2026-01-30 17:19:37 - 🧾 Creating accounting period [2026-06 - 2026-06-01] for tenant 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:19:37 - Error creating period 2026-05: Period code already exists: 2026-05
+yowyob-erp-backend  | 2026-01-30 17:19:37 - Error creating period 2026-06: Period code already exists: 2026-06
+yowyob-erp-backend  | 2026-01-30 17:19:37 - Attempting to create period: 2026-09
+yowyob-erp-backend  | 2026-01-30 17:19:37 - 🧾 Creating accounting period [2026-09 - 2026-09-01] for tenant 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:19:37 - Attempting to create period: 2026-08
+yowyob-erp-backend  | 2026-01-30 17:19:37 - 🧾 Creating accounting period [2026-08 - 2026-08-01] for tenant 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:19:37 - Error creating period 2026-04: Period code already exists: 2026-04
+yowyob-erp-backend  | 2026-01-30 17:19:37 - Error creating period 2026-07: Period code already exists: 2026-07
+yowyob-erp-backend  | 2026-01-30 17:19:37 - Attempting to create period: 2026-11
+yowyob-erp-backend  | 2026-01-30 17:19:37 - 🧾 Creating accounting period [2026-11 - 2026-11-01] for tenant 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:19:37 - Attempting to create period: 2026-10
+yowyob-erp-backend  | 2026-01-30 17:19:37 - 🧾 Creating accounting period [2026-10 - 2026-10-01] for tenant 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:19:38 - Error creating period 2026-09: Period code already exists: 2026-09
+yowyob-erp-backend  | 2026-01-30 17:19:38 - Attempting to create period: 2026-12
+yowyob-erp-backend  | 2026-01-30 17:19:38 - 🧾 Creating accounting period [2026-12 - 2026-12-01] for tenant 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:19:38 - Error creating period 2026-11: Period code already exists: 2026-11
+yowyob-erp-backend  | 2026-01-30 17:19:38 - Error creating period 2026-12: Period code already exists: 2026-12
+yowyob-erp-backend  | 2026-01-30 17:19:38 - Error creating period 2026-08: Period code already exists: 2026-08
+yowyob-erp-backend  | 2026-01-30 17:19:38 - Error creating period 2026-10: Period code already exists: 2026-10
+yowyob-erp-backend  | 2026-01-30 17:19:38 - ✅ Initialization of accounting periods complete
+yowyob-erp-backend  | 2026-01-30 17:19:39 - Accounting plan template initialization completed.
+yowyob-erp-backend  | 2026-01-30 17:19:40 - 🗑️ Key deleted: operations:all:550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:19:40 - Accounting operations initialization completed.
+yowyob-erp-backend  | 2026-01-30 17:19:51 - Initializing Spring DispatcherServlet 'dispatcherServlet'
+yowyob-erp-backend  | 2026-01-30 17:19:51 - Initializing Servlet 'dispatcherServlet'
+yowyob-erp-backend  | 2026-01-30 17:19:52 - Completed initialization in 5 ms
+yowyob-erp-backend  | 2026-01-30 17:19:52 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:19:52 - 🗑️ Key deleted: devise:all
+yowyob-erp-backend  | 2026-01-30 17:19:52 - 🗑️ Key deleted: devise:active
+yowyob-erp-backend  | 2026-01-30 17:19:52 - 🗑️ Key deleted: devise:single:8a3fb93d-0a5f-4bef-af15-3a8c8467194a
+yowyob-erp-backend  | 2026-01-30 17:19:52 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:19:52 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:19:52 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:19:52 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:19:53 - 💾 Value saved in Redis: devise:all
+yowyob-erp-backend  | 2026-01-30 17:19:53 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:22:03 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:22:03 - 🗑️ Key deleted: devise:all
+yowyob-erp-backend  | 2026-01-30 17:22:03 - 🗑️ Key deleted: devise:active
+yowyob-erp-backend  | 2026-01-30 17:22:03 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:22:03 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:22:03 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:22:03 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:22:03 - 💾 Value saved in Redis: devise:all
+yowyob-erp-backend  | 2026-01-30 17:22:03 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:22:16 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:22:17 - 🗑️ Key deleted: devise:all
+yowyob-erp-backend  | 2026-01-30 17:22:17 - 🗑️ Key deleted: devise:active
+yowyob-erp-backend  | 2026-01-30 17:22:17 - 🗑️ Key deleted: devise:single:8a3fb93d-0a5f-4bef-af15-3a8c8467194a
+yowyob-erp-backend  | 2026-01-30 17:22:17 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:22:17 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:22:17 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:22:17 - 💾 Value saved in Redis: devise:all
+yowyob-erp-backend  | 2026-01-30 17:22:17 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:22:17 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:22:18 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:22:18 - 💾 Value saved in Redis: plancomptable:all:550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:22:18 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:23:08 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:23:08 - Internal server error
+yowyob-erp-backend  | org.springframework.http.converter.HttpMessageNotReadableException: JSON parse error: Cannot deserialize value of type `java.time.LocalDateTime` from String "2026-01-30": Failed to deserialize java.time.LocalDateTime: (java.time.format.DateTimeParseException) Text '2026-01-30' could not be parsed at index 10
+yowyob-erp-backend  | 	at org.springframework.http.converter.json.AbstractJackson2HttpMessageConverter.readJavaType(AbstractJackson2HttpMessageConverter.java:408)
+yowyob-erp-backend  | 	at org.springframework.http.converter.json.AbstractJackson2HttpMessageConverter.read(AbstractJackson2HttpMessageConverter.java:356)
+yowyob-erp-backend  | 	at org.springframework.web.servlet.mvc.method.annotation.AbstractMessageConverterMethodArgumentResolver.readWithMessageConverters(AbstractMessageConverterMethodArgumentResolver.java:204)
+yowyob-erp-backend  | 	at org.springframework.web.servlet.mvc.method.annotation.RequestResponseBodyMethodProcessor.readWithMessageConverters(RequestResponseBodyMethodProcessor.java:176)
+yowyob-erp-backend  | 	at org.springframework.web.servlet.mvc.method.annotation.RequestResponseBodyMethodProcessor.resolveArgument(RequestResponseBodyMethodProcessor.java:150)
+yowyob-erp-backend  | 	at org.springframework.web.method.support.HandlerMethodArgumentResolverComposite.resolveArgument(HandlerMethodArgumentResolverComposite.java:122)
+yowyob-erp-backend  | 	at org.springframework.web.method.support.InvocableHandlerMethod.getMethodArgumentValues(InvocableHandlerMethod.java:227)
+yowyob-erp-backend  | 	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:181)
+yowyob-erp-backend  | 	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118)
+yowyob-erp-backend  | 	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:986)
+yowyob-erp-backend  | 	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:891)
+yowyob-erp-backend  | 	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87)
+yowyob-erp-backend  | 	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1089)
+yowyob-erp-backend  | 	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:979)
+yowyob-erp-backend  | 	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014)
+yowyob-erp-backend  | 	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914)
+yowyob-erp-backend  | 	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590)
+yowyob-erp-backend  | 	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885)
+yowyob-erp-backend  | 	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658)
+yowyob-erp-backend  | 	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:195)
+yowyob-erp-backend  | 	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+yowyob-erp-backend  | 	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51)
+yowyob-erp-backend  | 	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+yowyob-erp-backend  | 	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+yowyob-erp-backend  | 	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:110)
+yowyob-erp-backend  | 	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+yowyob-erp-backend  | 	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+yowyob-erp-backend  | 	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:110)
+yowyob-erp-backend  | 	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+yowyob-erp-backend  | 	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+yowyob-erp-backend  | 	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108)
+yowyob-erp-backend  | 	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108)
+yowyob-erp-backend  | 	at org.springframework.security.web.FilterChainProxy.lambda$doFilterInternal$3(FilterChainProxy.java:231)
+yowyob-erp-backend  | 	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:365)
+yowyob-erp-backend  | 	at org.springframework.security.web.access.intercept.AuthorizationFilter.doFilter(AuthorizationFilter.java:101)
+yowyob-erp-backend  | 	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+yowyob-erp-backend  | 	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:125)
+yowyob-erp-backend  | 	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:119)
+yowyob-erp-backend  | 	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+yowyob-erp-backend  | 	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:131)
+yowyob-erp-backend  | 	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:85)
+yowyob-erp-backend  | 	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+yowyob-erp-backend  | 	at org.springframework.security.web.authentication.AnonymousAuthenticationFilter.doFilter(AnonymousAuthenticationFilter.java:100)
+yowyob-erp-backend  | 	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+yowyob-erp-backend  | 	at org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter.doFilter(SecurityContextHolderAwareRequestFilter.java:179)
+yowyob-erp-backend  | 	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+yowyob-erp-backend  | 	at org.springframework.security.web.savedrequest.RequestCacheAwareFilter.doFilter(RequestCacheAwareFilter.java:63)
+yowyob-erp-backend  | 	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+yowyob-erp-backend  | 	at com.yowyob.erp.config.auth.JwtAuthenticationFilter.doFilterInternal(JwtAuthenticationFilter.java:48)
+yowyob-erp-backend  | 	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+yowyob-erp-backend  | 	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+yowyob-erp-backend  | 	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:110)
+yowyob-erp-backend  | 	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+yowyob-erp-backend  | 	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:107)
+yowyob-erp-backend  | 	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:93)
+yowyob-erp-backend  | 	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+yowyob-erp-backend  | 	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:110)
+yowyob-erp-backend  | 	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+yowyob-erp-backend  | 	at org.springframework.web.filter.CorsFilter.doFilterInternal(CorsFilter.java:91)
+yowyob-erp-backend  | 	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+yowyob-erp-backend  | 	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+yowyob-erp-backend  | 	at org.springframework.security.web.header.HeaderWriterFilter.doHeadersAfter(HeaderWriterFilter.java:90)
+yowyob-erp-backend  | 	at org.springframework.security.web.header.HeaderWriterFilter.doFilterInternal(HeaderWriterFilter.java:75)
+yowyob-erp-backend  | 	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+yowyob-erp-backend  | 	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+yowyob-erp-backend  | 	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:82)
+yowyob-erp-backend  | 	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:69)
+yowyob-erp-backend  | 	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+yowyob-erp-backend  | 	at org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter.doFilterInternal(WebAsyncManagerIntegrationFilter.java:62)
+yowyob-erp-backend  | 	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+yowyob-erp-backend  | 	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+yowyob-erp-backend  | 	at org.springframework.security.web.session.DisableEncodeUrlFilter.doFilterInternal(DisableEncodeUrlFilter.java:42)
+yowyob-erp-backend  | 	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+yowyob-erp-backend  | 	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+yowyob-erp-backend  | 	at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:233)
+yowyob-erp-backend  | 	at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:191)
+yowyob-erp-backend  | 	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+yowyob-erp-backend  | 	at org.springframework.web.filter.ServletRequestPathFilter.doFilter(ServletRequestPathFilter.java:52)
+yowyob-erp-backend  | 	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+yowyob-erp-backend  | 	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74)
+yowyob-erp-backend  | 	at org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebSecurityConfiguration.java:319)
+yowyob-erp-backend  | 	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+yowyob-erp-backend  | 	at org.springframework.web.servlet.handler.HandlerMappingIntrospector.lambda$createCacheFilter$4(HandlerMappingIntrospector.java:267)
+yowyob-erp-backend  | 	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+yowyob-erp-backend  | 	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74)
+yowyob-erp-backend  | 	at org.springframework.security.config.annotation.web.configuration.WebMvcSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebMvcSecurityConfiguration.java:240)
+yowyob-erp-backend  | 	at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:362)
+yowyob-erp-backend  | 	at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:278)
+yowyob-erp-backend  | 	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+yowyob-erp-backend  | 	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+yowyob-erp-backend  | 	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100)
+yowyob-erp-backend  | 	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+yowyob-erp-backend  | 	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+yowyob-erp-backend  | 	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+yowyob-erp-backend  | 	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93)
+yowyob-erp-backend  | 	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+yowyob-erp-backend  | 	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+yowyob-erp-backend  | 	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+yowyob-erp-backend  | 	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201)
+yowyob-erp-backend  | 	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+yowyob-erp-backend  | 	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+yowyob-erp-backend  | 	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+yowyob-erp-backend  | 	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:167)
+yowyob-erp-backend  | 	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:90)
+yowyob-erp-backend  | 	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:483)
+yowyob-erp-backend  | 	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:116)
+yowyob-erp-backend  | 	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:93)
+yowyob-erp-backend  | 	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74)
+yowyob-erp-backend  | 	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:344)
+yowyob-erp-backend  | 	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:398)
+yowyob-erp-backend  | 	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63)
+yowyob-erp-backend  | 	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:903)
+yowyob-erp-backend  | 	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1769)
+yowyob-erp-backend  | 	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52)
+yowyob-erp-backend  | 	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1189)
+yowyob-erp-backend  | 	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:658)
+yowyob-erp-backend  | 	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63)
+yowyob-erp-backend  | 	at java.base/java.lang.Thread.run(Thread.java:1583)
+yowyob-erp-backend  | Caused by: com.fasterxml.jackson.databind.exc.InvalidFormatException: Cannot deserialize value of type `java.time.LocalDateTime` from String "2026-01-30": Failed to deserialize java.time.LocalDateTime: (java.time.format.DateTimeParseException) Text '2026-01-30' could not be parsed at index 10
+yowyob-erp-backend  |  at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 141] (through reference chain: com.yowyob.erp.accounting.dto.TauxChangeDto["date_effet"])
+yowyob-erp-backend  | 	at com.fasterxml.jackson.databind.exc.InvalidFormatException.from(InvalidFormatException.java:67)
+yowyob-erp-backend  | 	at com.fasterxml.jackson.databind.DeserializationContext.weirdStringException(DeserializationContext.java:1986)
+yowyob-erp-backend  | 	at com.fasterxml.jackson.databind.DeserializationContext.handleWeirdStringValue(DeserializationContext.java:1272)
+yowyob-erp-backend  | 	at com.fasterxml.jackson.datatype.jsr310.deser.JSR310DeserializerBase._handleDateTimeException(JSR310DeserializerBase.java:176)
+yowyob-erp-backend  | 	at com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer._fromString(LocalDateTimeDeserializer.java:257)
+yowyob-erp-backend  | 	at com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer.deserialize(LocalDateTimeDeserializer.java:154)
+yowyob-erp-backend  | 	at com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer.deserialize(LocalDateTimeDeserializer.java:44)
+yowyob-erp-backend  | 	at com.fasterxml.jackson.databind.deser.impl.MethodProperty.deserializeAndSet(MethodProperty.java:129)
+yowyob-erp-backend  | 	at com.fasterxml.jackson.databind.deser.BeanDeserializer.deserializeFromObject(BeanDeserializer.java:392)
+yowyob-erp-backend  | 	at com.fasterxml.jackson.databind.deser.BeanDeserializer.deserialize(BeanDeserializer.java:177)
+yowyob-erp-backend  | 	at com.fasterxml.jackson.databind.deser.DefaultDeserializationContext.readRootValue(DefaultDeserializationContext.java:342)
+yowyob-erp-backend  | 	at com.fasterxml.jackson.databind.ObjectReader._bindAndClose(ObjectReader.java:2130)
+yowyob-erp-backend  | 	at com.fasterxml.jackson.databind.ObjectReader.readValue(ObjectReader.java:1500)
+yowyob-erp-backend  | 	at org.springframework.http.converter.json.AbstractJackson2HttpMessageConverter.readJavaType(AbstractJackson2HttpMessageConverter.java:397)
+yowyob-erp-backend  | 	... 117 common frames omitted
+yowyob-erp-backend  | Caused by: java.time.format.DateTimeParseException: Text '2026-01-30' could not be parsed at index 10
+yowyob-erp-backend  | 	at java.base/java.time.format.DateTimeFormatter.parseResolved0(DateTimeFormatter.java:2108)
+yowyob-erp-backend  | 	at java.base/java.time.format.DateTimeFormatter.parse(DateTimeFormatter.java:2010)
+yowyob-erp-backend  | 	at java.base/java.time.LocalDateTime.parse(LocalDateTime.java:494)
+yowyob-erp-backend  | 	at com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer._fromString(LocalDateTimeDeserializer.java:255)
+yowyob-erp-backend  | 	... 126 common frames omitted
+yowyob-erp-backend  | 2026-01-30 17:25:35 - Init duration for springdoc-openapi is: 16149 ms
+yowyob-erp-backend  | 2026-01-30 17:25:38 - Tenant set: 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:25:38 - Searching for account 601100 with tenant 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:25:38 - Found account: 601100 (5f13169d-1be9-47cd-a6a1-ff6f56bd76ee)
+yowyob-erp-backend  | 2026-01-30 17:25:38 - Account 601100 not found for tenant 550e8400-e29b-41d4-a716-446655440000
+yowyob-erp-backend  | 2026-01-30 17:25:38 - Tenant set: 550e8400-e29b-41d4-a716-446655440000

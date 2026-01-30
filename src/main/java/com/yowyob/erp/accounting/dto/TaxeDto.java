@@ -39,7 +39,10 @@ public class TaxeDto {
     private String compte_collecte;
     private String compte_deductible;
     private String pays;
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate date_debut_validite;
+
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate date_fin_validite;
     private boolean actif;
     private LocalDateTime created_at;

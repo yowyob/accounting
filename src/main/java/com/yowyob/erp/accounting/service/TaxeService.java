@@ -56,6 +56,7 @@ public class TaxeService {
                                                                 }
 
                                                                 Taxe entity = Taxe.builder()
+                                                                                .id(UUID.randomUUID())
                                                                                 .tenantId(tenant_id)
                                                                                 .code(dto.getCode())
                                                                                 .libelle(dto.getLibelle())
@@ -71,6 +72,7 @@ public class TaxeService {
                                                                                                 .getDate_fin_validite())
                                                                                 .actif(true)
                                                                                 .created_at(LocalDateTime.now())
+                                                                                .isNew(true)
                                                                                 .build();
 
                                                                 return taxe_repository.save(entity)
@@ -129,6 +131,7 @@ public class TaxeService {
                                                                                 existing.setDate_fin_validite(dto
                                                                                                 .getDate_fin_validite());
                                                                                 existing.setActif(dto.isActif());
+                                                                                existing.setNotNew();
 
                                                                                 return taxe_repository.save(existing)
                                                                                                 .flatMap(saved -> ReactiveTenantContext

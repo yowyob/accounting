@@ -27,7 +27,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Taxe {
+public class Taxe implements com.yowyob.erp.common.persistence.SettablePersistable<UUID> {
 
     @Id
     private UUID id;
@@ -77,4 +77,19 @@ public class Taxe {
 
     @Transient
     private Tenant tenant;
+
+    @Transient
+    @Builder.Default
+    private boolean isNew = true;
+
+    @Override
+    @Transient
+    public boolean isNew() {
+        return isNew || id == null;
+    }
+
+    @Override
+    public void setNotNew() {
+        this.isNew = false;
+    }
 }
