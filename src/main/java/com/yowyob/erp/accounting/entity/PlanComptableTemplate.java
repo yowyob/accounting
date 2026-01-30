@@ -12,6 +12,10 @@ import org.springframework.data.relational.core.mapping.Column;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.springframework.data.domain.Persistable;
+import org.springframework.data.annotation.Transient;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * Entity representing an accounting account template (Plan Comptable Template)
  * for R2DBC.
@@ -22,9 +26,10 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PlanComptableTemplate {
+public class PlanComptableTemplate implements Persistable<UUID> {
 
     @Id
+    @Column("id")
     private UUID id;
 
     @Column("classe")
@@ -54,4 +59,15 @@ public class PlanComptableTemplate {
 
     @Column("updated_by")
     private String updated_by;
+
+    @Transient
+    @JsonIgnore
+    @Builder.Default
+    private boolean isNew = true;
+
+    @Override
+    @Transient
+    public boolean isNew() {
+        return this.isNew || id == null;
+    }
 }

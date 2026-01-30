@@ -81,6 +81,7 @@ public class PlanComptableTemplateInitializationService implements CommandLineRu
                     if (!exists) {
                         log.info("Creating account template: {} - {}", numero, libelle);
                         PlanComptableTemplate plan = PlanComptableTemplate.builder()
+                                .id(java.util.UUID.randomUUID())
                                 .numero(numero)
                                 .libelle(libelle)
                                 .classe(classe)
