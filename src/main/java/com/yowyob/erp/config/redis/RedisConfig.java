@@ -74,6 +74,28 @@ public class RedisConfig {
         }
 
         @Bean
+        public org.springframework.data.redis.core.ReactiveRedisTemplate<String, Object> reactiveRedisTemplate(
+                        org.springframework.data.redis.connection.ReactiveRedisConnectionFactory factory) {
+                ObjectMapper mapper = new ObjectMapper();
+                mapper.registerModule(new JavaTimeModule());
+
+                StringRedisSerializer keySerializer = new StringRedisSerializer();
+                GenericJackson2JsonRedisSerializer valueSerializer = new GenericJackson2JsonRedisSerializer(mapper);
+
+                org.springframework.data.redis.serializer.RedisSerializationContext.RedisSerializationContextBuilder<String, Object> builder = org.springframework.data.redis.serializer.RedisSerializationContext
+                                .newSerializationContext(keySerializer);
+
+                org.springframework.data.redis.serializer.RedisSerializationContext<String, Object> context = builder
+                                .value(valueSerializer)
+                                .hashKey(keySerializer)
+                                .hashValue(valueSerializer)
+                                .build();
+
+                log.info("⚡ ReactiveRedisTemplate configured");
+                return new org.springframework.data.redis.core.ReactiveRedisTemplate<>(factory, context);
+        }
+
+        @Bean
         public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
                 RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                                 .entryTtl(Duration.ofMinutes(10))

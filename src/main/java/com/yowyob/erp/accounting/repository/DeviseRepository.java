@@ -1,25 +1,22 @@
 package com.yowyob.erp.accounting.repository;
 
 import com.yowyob.erp.accounting.entity.Devise;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Repository for Devise entity.
- * 
- * @author ALD
- * @date 30.09.25
+ * Reactive R2DBC Repository for Devise entity.
  */
 @Repository
-public interface DeviseRepository extends JpaRepository<Devise, UUID> {
+public interface DeviseRepository extends R2dbcRepository<Devise, UUID> {
 
-    Optional<Devise> findByCode(String code);
+    Mono<Devise> findByCode(String code);
 
-    List<Devise> findByActifTrue();
+    Flux<Devise> findByActifTrue();
 
-    boolean existsByCode(String code);
+    Mono<Boolean> existsByCode(String code);
 }

@@ -1,64 +1,77 @@
 package com.yowyob.erp.accounting.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.domain.Persistable;
+import com.yowyob.erp.common.persistence.SettablePersistable;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Entity representing a Tenant (e.g. a specific company or subsidiary).
- * Belongs to an Organization.
- * 
- * @author ALD
- * @date 30.12.2025
+ * Entity representing a Tenant (e.g. a specific company or subsidiary) for
+ * R2DBC.
  */
-@Entity
 @Table(name = "tenants")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Tenant {
+public class Tenant implements SettablePersistable<UUID> {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organization_id")
-    private Organization organization;
+    @Column("organization_id")
+    private UUID organizationId;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column("code")
     private String code;
 
-    @Column(nullable = false, length = 255)
+    @Column("nom")
     private String nom;
 
-    @Column(length = 255)
+    @Column("description")
     private String description;
 
-    @Column(length = 255)
+    @Column("adresse")
     private String adresse;
 
-    @Column(length = 100)
+    @Column("email")
     private String email;
 
-    @Column(length = 50)
+    @Column("telephone")
     private String telephone;
 
+    @Column("created_at")
     private LocalDateTime created_at;
+
+    @Column("updated_at")
     private LocalDateTime updated_at;
 
-    @PrePersist
-    public void onCreate() {
-        this.created_at = LocalDateTime.now();
-        this.updated_at = LocalDateTime.now();
+    @Transient
+    private Organization organization;
+
+    @Transient
+    @Builder.Default
+    private boolean isNew = true;
+
+    @Override
+    @Transient
+    public boolean isNew() {
+        return isNew || id == null;
     }
 
-    @PreUpdate
-    public void onUpdate() {
-        this.updated_at = LocalDateTime.now();
+    public void setNotNew() {
+        this.isNew = false;
     }
 
     public Tenant(UUID tenantId) {

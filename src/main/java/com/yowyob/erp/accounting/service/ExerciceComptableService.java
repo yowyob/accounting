@@ -1,16 +1,13 @@
 package com.yowyob.erp.accounting.service;
 
 import com.yowyob.erp.accounting.dto.ExerciceComptableDto;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 
 /**
- * Service interface for managing Fiscal Years (Exercices Comptables).
- * 
- * @author ALD
- * @date 03.01.2026
+ * Reactive Service interface for managing Fiscal Years (Exercices Comptables).
  */
 public interface ExerciceComptableService {
 
@@ -20,7 +17,7 @@ public interface ExerciceComptableService {
      * @param exercice_dto the fiscal year data
      * @return the created fiscal year DTO
      */
-    ExerciceComptableDto createExercice(ExerciceComptableDto exercice_dto);
+    Mono<ExerciceComptableDto> createExercice(ExerciceComptableDto exercice_dto);
 
     /**
      * Retrieves a fiscal year by ID within the current tenant.
@@ -28,14 +25,14 @@ public interface ExerciceComptableService {
      * @param id the fiscal year ID
      * @return the fiscal year DTO
      */
-    ExerciceComptableDto getExercice(UUID id);
+    Mono<ExerciceComptableDto> getExercice(UUID id);
 
     /**
      * Retrieves all fiscal years for the current tenant.
      * 
      * @return a list of fiscal year DTOs
      */
-    List<ExerciceComptableDto> getAllExercices();
+    Mono<java.util.List<ExerciceComptableDto>> getAllExercices();
 
     /**
      * Finds the active fiscal year for a given date.
@@ -43,7 +40,7 @@ public interface ExerciceComptableService {
      * @param date the date to check
      * @return the active fiscal year DTO
      */
-    ExerciceComptableDto getActiveExerciceForDate(LocalDate date);
+    Mono<ExerciceComptableDto> getActiveExerciceForDate(LocalDate date);
 
     /**
      * Updates an existing fiscal year.
@@ -52,19 +49,19 @@ public interface ExerciceComptableService {
      * @param exercice_dto the new fiscal year data
      * @return the updated fiscal year DTO
      */
-    ExerciceComptableDto updateExercice(UUID id, ExerciceComptableDto exercice_dto);
+    Mono<ExerciceComptableDto> updateExercice(UUID id, ExerciceComptableDto exercice_dto);
 
     /**
      * Closes a fiscal year.
      * 
      * @param id the fiscal year ID
      */
-    void closeExercice(UUID id);
+    Mono<Void> closeExercice(UUID id);
 
     /**
      * Deletes a fiscal year.
      * 
      * @param id the fiscal year ID
      */
-    void deleteExercice(UUID id);
+    Mono<Void> deleteExercice(UUID id);
 }

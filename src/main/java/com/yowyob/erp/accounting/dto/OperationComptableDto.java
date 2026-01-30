@@ -44,10 +44,9 @@ public class OperationComptableDto {
     @JsonProperty("modeReglement")
     private String mode_reglement;
 
-    @NotBlank(message = "Main account cannot be empty")
-    @Size(max = 20, message = "Main account must not exceed 20 characters")
-    @JsonProperty("comptePrincipal")
-    private String compte_principal;
+    @NotNull(message = "Main account ID cannot be null")
+    @JsonProperty("comptePrincipalId")
+    private UUID compte_principal_id;
 
     @NotNull(message = "Static account status cannot be null")
     @JsonProperty("estCompteStatique")

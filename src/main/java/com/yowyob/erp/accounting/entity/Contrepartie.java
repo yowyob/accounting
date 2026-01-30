@@ -1,35 +1,22 @@
 package com.yowyob.erp.accounting.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.relational.core.mapping.Column;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Counterparty for an accounting operation (Phase 2 of configuration).
- * Models the accounts to be moved for an accounting operation.
- * Joins with JournalComptable and OperationComptable for relational integrity.
- * 
- * @author Leonel Delmat AZANGUE
- * @date 30.09.25
+ * Entity representing a counterparty for an accounting operation for R2DBC.
  */
-@Entity
 @Table(name = "contreparties")
 @Data
 @NoArgsConstructor
@@ -38,72 +25,55 @@ import java.util.UUID;
 public class Contrepartie {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tenant_id", nullable = false)
-    private Tenant tenant;
+    @Column("tenant_id")
+    private UUID tenantId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "operation_comptable_id", nullable = false)
-    private OperationComptable operation_comptable;
+    @Column("operation_comptable_id")
+    private UUID operation_comptable_id;
 
-    @Column(length = 20, nullable = false)
-    private String compte;
+    @Column("compte_id")
+    private UUID compte_id;
 
     @Builder.Default
-    @Column(name = "est_compte_tiers", nullable = false)
+    @Column("est_compte_tiers")
     private Boolean est_compte_tiers = false;
 
     @Pattern(regexp = "DEBIT|CREDIT", message = "Direction must be DEBIT or CREDIT")
-    @Column(length = 10, nullable = false)
+    @Column("sens")
     private String sens;
 
     @Pattern(regexp = "HT|TTC|TVA|PAU", message = "Type montant must be HT, TTC, TVA, or PAU")
-    @Column(name = "type_montant", length = 10, nullable = false)
+    @Column("type_montant")
     private String type_montant;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "journal_comptable_id", nullable = false)
-    private JournalComptable journal_comptable;
+    @Column("journal_comptable_id")
+    private UUID journal_comptable_id;
 
-    @Column(length = 255)
+    @Column("notes")
     private String notes;
 
-    /** Created at timestamp */
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column("created_at")
     private LocalDateTime created_at;
 
-    /** Last updated at timestamp */
-    @Column(name = "updated_at", nullable = false)
+    @Column("updated_at")
     private LocalDateTime updated_at;
 
-    /** Creator user */
     @Size(max = 255)
-    @Column(name = "created_by", length = 255, updatable = false)
+    @Column("created_by")
     private String created_by;
 
-    /** User who last modified the resource */
     @Size(max = 255)
-    @Column(name = "updated_by", length = 255)
+    @Column("updated_by")
     private String updated_by;
 
-    /**
-     * Initializes timestamps before persistence.
-     */
-    @PrePersist
-    public void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        this.created_at = now;
-        this.updated_at = now;
-    }
+    @Transient
+    private Tenant tenant;
 
-    /**
-     * Updates the timestamp before update.
-     */
-    @PreUpdate
-    public void onUpdate() {
-        this.updated_at = LocalDateTime.now();
-    }
+    @Transient
+    private OperationComptable operation_comptable;
+
+    @Transient
+    private JournalComptable journal_comptable;
 }

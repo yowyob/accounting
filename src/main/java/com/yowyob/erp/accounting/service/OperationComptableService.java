@@ -3,43 +3,39 @@ package com.yowyob.erp.accounting.service;
 import com.yowyob.erp.accounting.dto.ContrepartieDto;
 import com.yowyob.erp.accounting.dto.JournalAuditDto;
 import com.yowyob.erp.accounting.dto.OperationComptableDto;
+import com.yowyob.erp.accounting.entity.Compte;
 import com.yowyob.erp.accounting.entity.Contrepartie;
 import com.yowyob.erp.accounting.entity.JournalAudit;
 import com.yowyob.erp.accounting.entity.JournalComptable;
 import com.yowyob.erp.accounting.entity.OperationComptable;
 import com.yowyob.erp.accounting.entity.PlanComptable;
 import com.yowyob.erp.accounting.entity.Tenant;
+import com.yowyob.erp.accounting.repository.CompteRepository;
 import com.yowyob.erp.accounting.repository.ContrepartieRepository;
 import com.yowyob.erp.accounting.repository.JournalAuditRepository;
 import com.yowyob.erp.accounting.repository.JournalComptableRepository;
 import com.yowyob.erp.accounting.repository.OperationComptableRepository;
-import com.yowyob.erp.accounting.repository.PlanComptableRepository;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.config.kafka.KafkaMessageService;
 import com.yowyob.erp.config.redis.RedisService;
-import com.yowyob.erp.config.tenant.TenantContext;
+import com.yowyob.erp.config.tenant.ReactiveTenantContext;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
- * Service for managing accounting operations.
- * Handles CRUD operations with caching, auditing, and multi-tenant support.
- * Follows snake_case naming and English Javadoc as per development charter.
- *
- * @author ALD
- * @date 30.09.25
+ * Reactive Service for managing accounting operations.
  */
 @Service
 @RequiredArgsConstructor
@@ -49,7 +45,7 @@ public class OperationComptableService {
         private final OperationComptableRepository operation_repository;
         private final ContrepartieRepository contrepartie_repository;
         private final JournalComptableRepository journal_repository;
-        private final PlanComptableRepository plan_repository;
+        private final CompteRepository compte_repository;
         private final JournalAuditRepository audit_repository;
         private final Validator validator;
         private final KafkaMessageService kafka_service;
@@ -58,358 +54,351 @@ public class OperationComptableService {
         private static final String CACHE_OPERATIONS_ALL = "operations:all:";
         private static final String CACHE_OPERATION = "operation:";
 
-        /**
-         * Creates a new accounting operation and its associated counterparties.
-         * 
-         * @param dto the operation data
-         * @return the created operation DTO
-         * @throws IllegalArgumentException if validation or uniqueness check fails
-         */
         @Transactional
-        public OperationComptableDto createOperation(OperationComptableDto dto) {
-                UUID tenant_id = TenantContext.getCurrentTenant();
-                Tenant tenant = TenantContext.getCurrentTenantAsTenant();
-                String user = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
-                log.info("📝 Creating accounting operation [{} - {}] for tenant {}", dto.getType_operation(),
-                                dto.getMode_reglement(), tenant_id);
+        public Mono<OperationComptableDto> createOperation(OperationComptableDto dto) {
+                return ReactiveTenantContext.getTenantId()
+                                .flatMap(tenant_id -> ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                                                .flatMap(user -> {
+                                                        log.info("📝 Creating operation [{} - {}] for tenant {}",
+                                                                        dto.getType_operation(),
+                                                                        dto.getMode_reglement(), tenant_id);
 
-                validateOperationDto(dto);
+                                                        return validateOperationDto(dto)
+                                                                        .then(journal_repository.findByTenant_IdAndId(
+                                                                                        tenant_id,
+                                                                                        dto.getJournal_comptable_id())
+                                                                                        .filter(JournalComptable::getActif)
+                                                                                        .switchIfEmpty(Mono.error(
+                                                                                                        new IllegalArgumentException(
+                                                                                                                        "Invalid/inactive journal"))))
+                                                                        .then(compte_repository
+                                                                                        .findByTenant_IdAndId(
+                                                                                                        tenant_id,
+                                                                                                        dto.getCompte_principal_id())
+                                                                                        .filter(Compte::getActif)
+                                                                                        .switchIfEmpty(Mono.error(
+                                                                                                        new IllegalArgumentException(
+                                                                                                                        "Invalid/inactive account"))))
+                                                                        .then(operation_repository
+                                                                                        .findByTenant_IdAndType_operationAndMode_reglement(
+                                                                                                        tenant_id,
+                                                                                                        dto.getType_operation(),
+                                                                                                        dto.getMode_reglement())
+                                                                                        .flatMap(op -> Mono.error(
+                                                                                                        new IllegalArgumentException(
+                                                                                                                        "Existing operation"))))
+                                                                        .then(ReactiveTenantContext
+                                                                                        .getCurrentTenantAsTenant())
+                                                                        .flatMap(tenant -> {
+                                                                                OperationComptable entity = mapToEntity(
+                                                                                                dto, tenant);
+                                                                                entity.setCreated_by(user);
+                                                                                entity.setUpdated_by(user);
+                                                                                entity.setCreated_at(
+                                                                                                LocalDateTime.now());
+                                                                                entity.setUpdated_at(
+                                                                                                LocalDateTime.now());
 
-                // Validate journal and account
-                journal_repository.findByTenant_IdAndId(tenant_id, dto.getJournal_comptable_id())
-                                .filter(JournalComptable::getActif)
-                                .orElseThrow(() -> new IllegalArgumentException(
-                                                "Invalid or inactive journal: " + dto.getJournal_comptable_id()));
-
-                plan_repository.findByTenant_IdAndNo_compte(tenant_id, dto.getCompte_principal())
-                                .filter(PlanComptable::getActif)
-                                .orElseThrow(() -> new IllegalArgumentException(
-                                                "Invalid or inactive principal account: " + dto.getCompte_principal()));
-
-                // Check uniqueness of type + mode
-                if (operation_repository
-                                .findByTenant_IdAndType_operationAndMode_reglement(tenant_id, dto.getType_operation(),
-                                                dto.getMode_reglement())
-                                .isPresent()) {
-                        throw new IllegalArgumentException(
-                                        "Existing operation: " + dto.getType_operation() + " / "
-                                                        + dto.getMode_reglement());
-                }
-
-                OperationComptable entity = mapToEntity(dto, tenant);
-                entity.setCreated_at(LocalDateTime.now());
-                entity.setUpdated_at(LocalDateTime.now());
-                entity.setCreated_by(user);
-                entity.setUpdated_by(user);
-
-                OperationComptable saved = operation_repository.save(entity);
-
-                // Counterparties
-                if (dto.getContreparties() != null && !dto.getContreparties().isEmpty()) {
-                        List<Contrepartie> contreparties = dto.getContreparties()
-                                        .stream()
-                                        .map(cp_dto -> mapContrepartie(cp_dto, tenant, saved.getId(), user))
-                                        .collect(Collectors.toList());
-                        contrepartie_repository.saveAll(contreparties);
-                }
-
-                logAudit(tenant, user, "OPERATION_CREATED", "Creation of operation: " + dto.getType_operation());
-                OperationComptableDto savedDto = mapToDto(saved);
-                redis_service.delete(CACHE_OPERATIONS_ALL + tenant_id);
-
-                return savedDto;
+                                                                                return operation_repository.save(entity)
+                                                                                                .flatMap(saved -> {
+                                                                                                        if (dto.getContreparties() != null
+                                                                                                                        && !dto.getContreparties()
+                                                                                                                                        .isEmpty()) {
+                                                                                                                return Flux.fromIterable(
+                                                                                                                                dto.getContreparties())
+                                                                                                                                .flatMap(cpDto -> mapContrepartie(
+                                                                                                                                                cpDto,
+                                                                                                                                                tenant,
+                                                                                                                                                saved.getId(),
+                                                                                                                                                user))
+                                                                                                                                .collectList()
+                                                                                                                                .flatMap(cps -> contrepartie_repository
+                                                                                                                                                .saveAll(cps)
+                                                                                                                                                .collectList())
+                                                                                                                                .thenReturn(saved);
+                                                                                                        }
+                                                                                                        return Mono.just(
+                                                                                                                        saved);
+                                                                                                })
+                                                                                                .flatMap(saved -> logAudit(
+                                                                                                                tenant.getId(),
+                                                                                                                user,
+                                                                                                                "OPERATION_CREATED",
+                                                                                                                "Type: " + dto.getType_operation())
+                                                                                                                .then(redis_service
+                                                                                                                                .delete(CACHE_OPERATIONS_ALL
+                                                                                                                                                + tenant_id))
+                                                                                                                .thenReturn(saved))
+                                                                                                .flatMap(this::mapToDto);
+                                                                        });
+                                                }));
         }
 
-        /**
-         * Retrieves all accounting operations for the current tenant.
-         * 
-         * @return list of operation DTOs
-         */
         @SuppressWarnings("unchecked")
-        public List<OperationComptableDto> getAllOperations() {
-                UUID tenant_id = TenantContext.getCurrentTenant();
-                String cache_key = CACHE_OPERATIONS_ALL + tenant_id;
-
-                List<OperationComptableDto> cached = redis_service.get(cache_key, List.class);
-                if (cached != null)
-                        return cached;
-
-                List<OperationComptableDto> operations = operation_repository.findByTenant_Id(tenant_id)
-                                .stream().map(this::mapToDto).collect(Collectors.toList());
-
-                redis_service.save(cache_key, operations, Duration.ofMinutes(10));
-                return operations;
+        public Mono<List<OperationComptableDto>> getAllOperations() {
+                return ReactiveTenantContext.getTenantId()
+                                .flatMap(tenant_id -> {
+                                        String key = CACHE_OPERATIONS_ALL + tenant_id;
+                                        return redis_service.get(key, List.class)
+                                                        .map(list -> (List<OperationComptableDto>) list)
+                                                        .switchIfEmpty(operation_repository.findByTenant_Id(tenant_id)
+                                                                        .flatMap(this::mapToDto)
+                                                                        .collectList()
+                                                                        .flatMap(list -> redis_service
+                                                                                        .save(key, list, Duration
+                                                                                                        .ofMinutes(10))
+                                                                                        .thenReturn(list)));
+                                });
         }
 
-        /**
-         * Retrieves a specific accounting operation by ID.
-         * 
-         * @param id the operation ID
-         * @return the operation DTO
-         * @throws ResourceNotFoundException if no operation exists with the given ID
-         */
-        public Optional<OperationComptableDto> getOperation(UUID id) {
-                UUID tenant_id = TenantContext.getCurrentTenant();
-                String cache_key = CACHE_OPERATION + tenant_id + ":" + id;
-
-                OperationComptableDto cached = redis_service.get(cache_key, OperationComptableDto.class);
-                if (cached != null)
-                        return Optional.of(cached);
-
-                OperationComptable operation = operation_repository.findByTenant_IdAndId(tenant_id, id)
-                                .orElseThrow(() -> new ResourceNotFoundException("Accounting operation",
-                                                id.toString()));
-
-                OperationComptableDto dto = mapToDto(operation);
-                redis_service.save(cache_key, dto, Duration.ofMinutes(10));
-                return Optional.of(dto);
+        public Mono<OperationComptableDto> getOperation(UUID id) {
+                return ReactiveTenantContext.getTenantId()
+                                .flatMap(tenant_id -> {
+                                        String key = CACHE_OPERATION + tenant_id + ":" + id;
+                                        return redis_service.get(key, OperationComptableDto.class)
+                                                        .switchIfEmpty(operation_repository
+                                                                        .findByTenant_IdAndId(tenant_id, id)
+                                                                        .switchIfEmpty(Mono.error(
+                                                                                        new ResourceNotFoundException(
+                                                                                                        "Operation",
+                                                                                                        id.toString())))
+                                                                        .flatMap(this::mapToDto)
+                                                                        .flatMap(dto -> redis_service
+                                                                                        .save(key, dto, Duration
+                                                                                                        .ofMinutes(10))
+                                                                                        .thenReturn(dto)));
+                                });
         }
 
-        /**
-         * Retrieves operations associated with a specific principal account.
-         * 
-         * @param compte the account number
-         * @return list of operation DTOs
-         */
-        public List<OperationComptableDto> getOperationsByCompte(String compte) {
-                UUID tenant_id = TenantContext.getCurrentTenant();
-                return operation_repository.findByTenant_IdAndCompte_principal(tenant_id, compte)
-                                .stream().map(this::mapToDto).collect(Collectors.toList());
+        public Mono<List<OperationComptableDto>> getOperationsByCompteId(UUID compte_id) {
+                return ReactiveTenantContext.getTenantId()
+                                .flatMap(tenant_id -> operation_repository
+                                                .findByTenant_IdAndCompte_principal_id(tenant_id, compte_id)
+                                                .flatMap(this::mapToDto)
+                                                .collectList());
         }
 
-        /**
-         * Retrieves an operation by its type and settlement mode.
-         * 
-         * @param type the operation type
-         * @param mode the settlement mode
-         * @return the matching operation DTO if found
-         */
-        public Optional<OperationComptableDto> getByTypeAndMode(String type, String mode) {
-                UUID tenant_id = TenantContext.getCurrentTenant();
-                return operation_repository.findByTenant_IdAndType_operationAndMode_reglement(tenant_id, type, mode)
-                                .map(this::mapToDto);
+        public Mono<List<OperationComptableDto>> getOperationsByCompte(String no_compte) {
+                return ReactiveTenantContext.getTenantId()
+                                .flatMap(tenant_id -> compte_repository
+                                                .findByTenant_IdAndNo_compte(tenant_id, no_compte)
+                                                .flatMap(compte -> getOperationsByCompteId(compte.getId()))
+                                                .switchIfEmpty(Mono.error(
+                                                                new ResourceNotFoundException("Compte", no_compte))));
         }
 
-        /**
-         * Updates an existing accounting operation.
-         * 
-         * @param id  the operation ID to update
-         * @param dto the new operation data
-         * @return the updated operation DTO
-         */
+        public Mono<OperationComptableDto> getByTypeAndMode(String type, String mode) {
+                return ReactiveTenantContext.getTenantId()
+                                .flatMap(tenant_id -> operation_repository
+                                                .findByTenant_IdAndType_operationAndMode_reglement(tenant_id, type,
+                                                                mode)
+                                                .flatMap(this::mapToDto)
+                                                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Operation",
+                                                                "Type: " + type + ", Mode: " + mode))));
+        }
+
         @Transactional
-        public OperationComptableDto updateOperation(UUID id, OperationComptableDto dto) {
-                UUID tenant_id = TenantContext.getCurrentTenant();
-                Tenant tenant = TenantContext.getCurrentTenantAsTenant();
-                String user = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
+        public Mono<OperationComptableDto> updateOperation(UUID id, OperationComptableDto dto) {
+                return ReactiveTenantContext.getTenantId()
+                                .flatMap(tenant_id -> ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                                                .flatMap(user -> operation_repository
+                                                                .findByTenant_IdAndId(tenant_id, id)
+                                                                .switchIfEmpty(Mono.error(new ResourceNotFoundException(
+                                                                                "Operation", id.toString())))
+                                                                .flatMap(existing -> validateOperationDto(dto)
+                                                                                .then(journal_repository.findById(dto
+                                                                                                .getJournal_comptable_id())
+                                                                                                .switchIfEmpty(Mono
+                                                                                                                .error(new ResourceNotFoundException(
+                                                                                                                                "Journal",
+                                                                                                                                dto.getJournal_comptable_id()
+                                                                                                                                                .toString()))))
+                                                                                .flatMap(journal -> {
+                                                                                        existing.setType_operation(dto
+                                                                                                        .getType_operation());
+                                                                                        existing.setMode_reglement(dto
+                                                                                                        .getMode_reglement());
+                                                                                        existing.setCompte_principal_id(
+                                                                                                        dto
+                                                                                                                        .getCompte_principal_id());
+                                                                                        existing.setSens_principal(dto
+                                                                                                        .getSens_principal());
+                                                                                        existing.setJournal_comptable_id(
+                                                                                                        journal.getId());
+                                                                                        existing.setType_montant(dto
+                                                                                                        .getType_montant());
+                                                                                        existing.setPlafond_client(dto
+                                                                                                        .getPlafond_client());
+                                                                                        existing.setEst_compte_statique(
+                                                                                                        dto.getEst_compte_statique());
+                                                                                        existing.setActif(
+                                                                                                        dto.getActif());
+                                                                                        existing.setUpdated_by(user);
+                                                                                        existing.setUpdated_at(
+                                                                                                        LocalDateTime.now());
 
-                OperationComptable existing = operation_repository.findByTenant_IdAndId(tenant_id, id)
-                                .orElseThrow(() -> new ResourceNotFoundException("Accounting operation",
-                                                id.toString()));
-
-                validateOperationDto(dto);
-
-                existing.setType_operation(dto.getType_operation());
-                existing.setMode_reglement(dto.getMode_reglement());
-                existing.setCompte_principal(dto.getCompte_principal());
-                existing.setSens_principal(dto.getSens_principal());
-                existing.setJournal_comptable(journal_repository.findById(dto.getJournal_comptable_id())
-                                .orElseThrow(() -> new ResourceNotFoundException("Journal",
-                                                dto.getJournal_comptable_id().toString())));
-                existing.setType_montant(dto.getType_montant());
-                existing.setPlafond_client(dto.getPlafond_client());
-                existing.setEst_compte_statique(dto.getEst_compte_statique());
-                existing.setActif(dto.getActif());
-                existing.setUpdated_by(user);
-                existing.setUpdated_at(LocalDateTime.now());
-
-                OperationComptable saved = operation_repository.save(existing);
-
-                // Counterparties
-                contrepartie_repository.deleteByTenantIdAndOperationComptableId(tenant_id, id);
-                if (dto.getContreparties() != null && !dto.getContreparties().isEmpty()) {
-                        List<Contrepartie> contreparties = dto.getContreparties().stream()
-                                        .map(cp_dto -> mapContrepartie(cp_dto, tenant, id, user))
-                                        .collect(Collectors.toList());
-                        contrepartie_repository.saveAll(contreparties);
-                }
-
-                logAudit(tenant, user, "OPERATION_UPDATED", "Update of operation: " + dto.getType_operation());
-                OperationComptableDto savedDto = mapToDto(saved);
-                redis_service.delete(CACHE_OPERATIONS_ALL + tenant_id);
-                redis_service.delete(CACHE_OPERATION + tenant_id + ":" + id);
-
-                return savedDto;
+                                                                                        return operation_repository
+                                                                                                        .save(existing)
+                                                                                                        .flatMap(saved -> contrepartie_repository
+                                                                                                                        .deleteByTenantIdAndOperationComptableId(
+                                                                                                                                        tenant_id,
+                                                                                                                                        id)
+                                                                                                                        .then(ReactiveTenantContext
+                                                                                                                                        .getCurrentTenantAsTenant())
+                                                                                                                        .flatMap(tenant -> {
+                                                                                                                                if (dto.getContreparties() != null
+                                                                                                                                                && !dto.getContreparties()
+                                                                                                                                                                .isEmpty()) {
+                                                                                                                                        return Flux.fromIterable(
+                                                                                                                                                        dto.getContreparties())
+                                                                                                                                                        .flatMap(cpDto -> mapContrepartie(
+                                                                                                                                                                        cpDto,
+                                                                                                                                                                        tenant,
+                                                                                                                                                                        id,
+                                                                                                                                                                        user))
+                                                                                                                                                        .collectList()
+                                                                                                                                                        .flatMap(cps -> contrepartie_repository
+                                                                                                                                                                        .saveAll(cps)
+                                                                                                                                                                        .collectList()
+                                                                                                                                                                        .then());
+                                                                                                                                }
+                                                                                                                                return Mono.empty();
+                                                                                                                        })
+                                                                                                                        .then(logAudit(tenant_id,
+                                                                                                                                        user,
+                                                                                                                                        "OPERATION_UPDATED",
+                                                                                                                                        "ID: " + id))
+                                                                                                                        .then(redis_service
+                                                                                                                                        .delete(CACHE_OPERATIONS_ALL
+                                                                                                                                                        + tenant_id))
+                                                                                                                        .then(redis_service
+                                                                                                                                        .delete(CACHE_OPERATION
+                                                                                                                                                        + tenant_id
+                                                                                                                                                        + ":"
+                                                                                                                                                        + id))
+                                                                                                                        .thenReturn(saved))
+                                                                                                        .flatMap(this::mapToDto);
+                                                                                }))));
         }
 
-        /**
-         * Deletes an accounting operation and its counterparties.
-         * 
-         * @param id the operation ID to delete
-         */
         @Transactional
-        public void deleteOperation(UUID id) {
-                UUID tenant_id = TenantContext.getCurrentTenant();
-                Tenant tenant = TenantContext.getCurrentTenantAsTenant();
-                String user = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
-
-                OperationComptable operation = operation_repository.findByTenant_IdAndId(tenant_id, id)
-                                .orElseThrow(() -> new ResourceNotFoundException("Accounting operation",
-                                                id.toString()));
-
-                // Map to DTO before deletion for Kafka
-                OperationComptableDto operationDto = mapToDto(operation);
-
-                contrepartie_repository.deleteByTenantIdAndOperationComptableId(tenant_id, id);
-                operation_repository.delete(operation);
-
-                logAudit(tenant, user, "OPERATION_DELETED", "Deletion of operation: " + operation.getType_operation());
-                redis_service.delete(CACHE_OPERATIONS_ALL + tenant_id);
-                redis_service.delete(CACHE_OPERATION + tenant_id + ":" + id);
+        public Mono<Void> deleteOperation(UUID id) {
+                return ReactiveTenantContext.getTenantId()
+                                .flatMap(tenant_id -> ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                                                .flatMap(user -> operation_repository
+                                                                .findByTenant_IdAndId(tenant_id, id)
+                                                                .switchIfEmpty(Mono.error(new ResourceNotFoundException(
+                                                                                "Operation", id.toString())))
+                                                                .flatMap(op -> contrepartie_repository
+                                                                                .deleteByTenantIdAndOperationComptableId(
+                                                                                                tenant_id, id)
+                                                                                .then(operation_repository.delete(op))
+                                                                                .then(logAudit(tenant_id, user,
+                                                                                                "OPERATION_DELETED",
+                                                                                                "ID: " + id))
+                                                                                .then(redis_service.delete(
+                                                                                                CACHE_OPERATIONS_ALL
+                                                                                                                + tenant_id))
+                                                                                .then(redis_service.delete(
+                                                                                                CACHE_OPERATION + tenant_id
+                                                                                                                + ":"
+                                                                                                                + id))
+                                                                                .then())));
         }
 
-        /**
-         * Performs business validation on the operation DTO.
-         * 
-         * @param dto the DTO to validate
-         * @throws ConstraintViolationException if validation rules are violated
-         * @throws IllegalArgumentException     if enums are invalid
-         */
-        private void validateOperationDto(OperationComptableDto dto) {
-                var violations = validator.validate(dto);
-                if (!violations.isEmpty())
-                        throw new ConstraintViolationException(violations);
-                if (!("DEBIT".equals(dto.getSens_principal()) || "CREDIT".equals(dto.getSens_principal()))) {
-                        throw new IllegalArgumentException("Sens principal must be DEBIT or CREDIT");
-                }
-                if (!("HT".equals(dto.getType_montant()) || "TTC".equals(dto.getType_montant())
-                                || "TVA".equals(dto.getType_montant()) || "PAU".equals(dto.getType_montant()))) {
-                        throw new IllegalArgumentException("Type montant must be HT, TTC, TVA, or PAU");
-                }
+        private Mono<Void> validateOperationDto(OperationComptableDto dto) {
+                return Mono.defer(() -> {
+                        var violations = validator.validate(dto);
+                        if (!violations.isEmpty())
+                                return Mono.error(new ConstraintViolationException(violations));
+                        return Mono.empty();
+                });
         }
 
-        /**
-         * Maps a counterparty DTO to an entity.
-         */
-        private Contrepartie mapContrepartie(ContrepartieDto dto, Tenant tenant, UUID operation_id, String user) {
-                Contrepartie cp = new Contrepartie();
-                cp.setTenant(tenant);
-                cp.setOperation_comptable(operation_repository.findByTenant_IdAndId(tenant.getId(), operation_id)
-                                .orElseThrow(() -> new ResourceNotFoundException("Accounting operation",
-                                                operation_id.toString())));
-                cp.setJournal_comptable(journal_repository.findById(dto.getJournal_comptable_id())
-                                .orElseThrow(() -> new ResourceNotFoundException("Journal",
-                                                dto.getJournal_comptable_id().toString())));
-                cp.setCompte(dto.getCompte());
-                cp.setSens(dto.getSens());
-                cp.setType_montant(dto.getType_montant());
-                cp.setEst_compte_tiers(dto.getEst_compte_tiers());
-                cp.setNotes(dto.getNotes());
-                cp.setCreated_at(LocalDateTime.now());
-                cp.setUpdated_at(LocalDateTime.now());
-                cp.setCreated_by(user);
-                cp.setUpdated_by(user);
-                return cp;
+        private Mono<Contrepartie> mapContrepartie(ContrepartieDto dto, Tenant tenant, UUID opId, String user) {
+                return journal_repository.findById(dto.getJournal_comptable_id())
+                                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Journal",
+                                                dto.getJournal_comptable_id().toString())))
+                                .map(j -> {
+                                        Contrepartie cp = new Contrepartie();
+                                        cp.setTenantId(tenant.getId());
+                                        cp.setOperation_comptable_id(opId);
+                                        cp.setJournal_comptable_id(j.getId());
+                                        cp.setCompte_id(dto.getCompte_id());
+                                        cp.setSens(dto.getSens());
+                                        cp.setType_montant(dto.getType_montant());
+                                        cp.setEst_compte_tiers(dto.getEst_compte_tiers());
+                                        cp.setCreated_by(user);
+                                        cp.setUpdated_by(user);
+                                        cp.setCreated_at(LocalDateTime.now());
+                                        cp.setUpdated_at(LocalDateTime.now());
+                                        return cp;
+                                });
         }
 
-        /**
-         * Logs an action in the audit journal and sends a Kafka message.
-         */
-        private void logAudit(Tenant tenant, String utilisateur, String action, String details) {
+        private Mono<Void> logAudit(UUID tenant_id, String user, String action, String details) {
                 JournalAudit audit = JournalAudit.builder()
-                                .tenant(tenant)
+                                .id(UUID.randomUUID())
+                                .tenantId(tenant_id)
                                 .action(action)
-                                .utilisateur(utilisateur)
+                                .utilisateur(user)
                                 .details(details)
                                 .date_action(LocalDateTime.now())
+                                .created_by(user)
+                                .updated_by(user)
                                 .created_at(LocalDateTime.now())
                                 .updated_at(LocalDateTime.now())
-                                .created_by(utilisateur)
-                                .updated_by(utilisateur)
                                 .build();
-                JournalAudit savedAudit = audit_repository.save(audit);
-
-                // Convert to DTO to avoid Hibernate proxy serialization issues
-                JournalAuditDto auditDto = JournalAuditDto.builder()
-                                .id(savedAudit.getId())
-                                .action(savedAudit.getAction())
-                                .date_action(savedAudit.getDate_action())
-                                .utilisateur(savedAudit.getUtilisateur())
-                                .details(savedAudit.getDetails())
-                                .created_at(savedAudit.getCreated_at())
-                                .updated_at(savedAudit.getUpdated_at())
-                                .created_by(savedAudit.getCreated_by())
-                                .updated_by(savedAudit.getUpdated_by())
-                                .build();
-
-                kafka_service.sendAuditLog(auditDto, tenant.getId(), action);
+                return audit_repository.save(audit)
+                                .flatMap(saved -> kafka_service.sendAuditLog(JournalAuditDto.builder()
+                                                .id(saved.getId())
+                                                .action(saved.getAction())
+                                                .utilisateur(saved.getUtilisateur())
+                                                .details(saved.getDetails())
+                                                .date_action(saved.getDate_action())
+                                                .created_at(saved.getCreated_at())
+                                                .updated_at(saved.getUpdated_at())
+                                                .created_by(saved.getCreated_by())
+                                                .updated_by(saved.getUpdated_by())
+                                                .build(), tenant_id, action));
         }
 
-        /**
-         * Maps a DTO to an entity for creation.
-         */
         private OperationComptable mapToEntity(OperationComptableDto dto, Tenant tenant) {
                 OperationComptable op = new OperationComptable();
-                op.setTenant(tenant);
+                op.setTenantId(tenant.getId());
                 op.setType_operation(dto.getType_operation());
                 op.setMode_reglement(dto.getMode_reglement());
-                op.setCompte_principal(dto.getCompte_principal());
+                op.setCompte_principal_id(dto.getCompte_principal_id());
                 op.setEst_compte_statique(dto.getEst_compte_statique());
                 op.setSens_principal(dto.getSens_principal());
-                op.setJournal_comptable(journal_repository.findById(dto.getJournal_comptable_id())
-                                .orElseThrow(() -> new ResourceNotFoundException("Journal",
-                                                dto.getJournal_comptable_id().toString())));
+                op.setJournal_comptable_id(dto.getJournal_comptable_id());
                 op.setType_montant(dto.getType_montant());
                 op.setPlafond_client(dto.getPlafond_client() != null ? dto.getPlafond_client() : BigDecimal.ZERO);
                 op.setActif(dto.getActif());
-                op.setNotes(dto.getNotes());
                 return op;
         }
 
-        /**
-         * Maps an OperationComptable entity to its DTO representation.
-         *
-         * @param op the OperationComptable entity
-         * @return the corresponding OperationComptableDto
-         */
-        private OperationComptableDto mapToDto(OperationComptable op) {
-                List<ContrepartieDto> contrepartie_dtos = contrepartie_repository
-                                .findByTenant_IdAndOperation_comptable_Id(op.getTenant().getId(), op.getId())
-                                .stream()
-                                .map((Contrepartie cp) -> ContrepartieDto.builder()
+        private Mono<OperationComptableDto> mapToDto(OperationComptable op) {
+                return contrepartie_repository.findByTenant_IdAndOperation_comptable_Id(op.getTenantId(), op.getId())
+                                .map(cp -> ContrepartieDto.builder()
                                                 .id(cp.getId())
-                                                .operation_comptable_id(op.getId())
-                                                .compte(cp.getCompte())
+                                                .compte_id(cp.getCompte_id())
                                                 .sens(cp.getSens())
-                                                .est_compte_tiers(cp.getEst_compte_tiers())
                                                 .type_montant(cp.getType_montant())
-                                                .notes(cp.getNotes())
-                                                .journal_comptable_id(cp.getJournal_comptable().getId())
-                                                .created_at(cp.getCreated_at())
-                                                .updated_at(cp.getUpdated_at())
+                                                .est_compte_tiers(cp.getEst_compte_tiers())
+                                                .journal_comptable_id(cp.getJournal_comptable_id())
                                                 .build())
-                                .collect(Collectors.toList());
-
-                return OperationComptableDto.builder()
-                                .id(op.getId())
-                                .type_operation(op.getType_operation())
-                                .mode_reglement(op.getMode_reglement())
-                                .compte_principal(op.getCompte_principal())
-                                .est_compte_statique(op.getEst_compte_statique())
-                                .sens_principal(op.getSens_principal())
-                                .journal_comptable_id(
-                                                op.getJournal_comptable() != null ? op.getJournal_comptable().getId()
-                                                                : null)
-                                .type_montant(op.getType_montant())
-                                .plafond_client(op.getPlafond_client() != null ? op.getPlafond_client()
-                                                : BigDecimal.ZERO)
-                                .actif(op.getActif())
-                                .notes(op.getNotes())
-                                .created_at(op.getCreated_at())
-                                .updated_at(op.getUpdated_at())
-                                .created_by(op.getCreated_by())
-                                .updated_by(op.getUpdated_by())
-                                .contreparties(contrepartie_dtos)
-                                .build();
+                                .collectList()
+                                .map(cps -> OperationComptableDto.builder()
+                                                .id(op.getId())
+                                                .type_operation(op.getType_operation())
+                                                .mode_reglement(op.getMode_reglement())
+                                                .compte_principal_id(op.getCompte_principal_id())
+                                                .sens_principal(op.getSens_principal())
+                                                .journal_comptable_id(op.getJournal_comptable_id())
+                                                .type_montant(op.getType_montant())
+                                                .actif(op.getActif())
+                                                .contreparties(cps)
+                                                .build());
         }
 }

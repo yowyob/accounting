@@ -1,16 +1,14 @@
 package com.yowyob.erp.accounting.repository;
 
 import com.yowyob.erp.accounting.entity.Tenant;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
 
 /**
- * Repository interface for managing Tenant entities.
- * Provides basic CRUD operations via JpaRepository.
- *
- * @author ALD
- * @date 12/10/2025 06:18 AM WAT
+ * R2DBC Repository interface for managing Tenant entities.
  */
-public interface TenantRepository extends JpaRepository<Tenant, UUID> {
+@Repository
+public interface TenantRepository extends R2dbcRepository<Tenant, UUID> {
 }

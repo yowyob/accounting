@@ -1,63 +1,54 @@
 package com.yowyob.erp.accounting.repository;
 
 import com.yowyob.erp.accounting.entity.DetailEcriture;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 /**
- * Repository interface for managing DetailEcriture entities.
- * Handles granular accounting data and balance calculations.
- * 
- * @author ALD
- * @date 30.09.25
+ * R2DBC Repository for managing DetailEcriture entities.
  */
 @Repository
-public interface DetailEcritureRepository extends JpaRepository<DetailEcriture, UUID> {
+public interface DetailEcritureRepository extends R2dbcRepository<DetailEcriture, UUID> {
 
-  List<DetailEcriture> findByTenant_Id(UUID tenant_id);
+  Flux<DetailEcriture> findByTenantId(UUID tenant_id);
 
-  List<DetailEcriture> findByTenant_IdAndEcriture_Id(UUID tenant_id, UUID ecriture_id);
+  @Query("SELECT * FROM details_ecritures WHERE tenant_id = :tenant_id AND ecriture_id = :ecriture_id")
+  Flux<DetailEcriture> findByTenant_IdAndEcriture_Id(@Param("tenant_id") UUID tenant_id,
+      @Param("ecriture_id") UUID ecriture_id);
 
-  List<DetailEcriture> findByTenant_IdAndCompte_Id(UUID tenant_id, UUID compte_id);
+  @Query("SELECT * FROM details_ecritures WHERE tenant_id = :tenant_id AND compte_id = :compte_id")
+  Flux<DetailEcriture> findByTenant_IdAndCompte_Id(@Param("tenant_id") UUID tenant_id,
+      @Param("compte_id") UUID compte_id);
 
-  @Query("""
-      SELECT d FROM DetailEcriture d
-      WHERE d.tenant.id = :tenant_id
-      AND d.date_ecriture BETWEEN :start_date AND :end_date
-      """)
-  List<DetailEcriture> findByTenant_IdAndDateRange(@Param("tenant_id") UUID tenant_id,
+  @Query("SELECT * FROM details_ecritures WHERE tenant_id = :tenant_id AND date_ecriture BETWEEN :start_date AND :end_date")
+  Flux<DetailEcriture> findByTenant_IdAndDateRange(@Param("tenant_id") UUID tenant_id,
       @Param("start_date") LocalDateTime start_date,
       @Param("end_date") LocalDateTime end_date);
 
-  @Query("""
-      SELECT COALESCE(SUM(d.montant_debit - d.montant_credit), 0)
-      FROM DetailEcriture d
-      WHERE d.tenant.id = :tenant_id AND d.compte.id = :compte_id
-      """)
-  Double calculateAccountBalance(@Param("tenant_id") UUID tenant_id, @Param("compte_id") UUID compte_id);
+  @Query("SELECT COALESCE(SUM(montant_debit - montant_credit), 0) FROM details_ecritures WHERE tenant_id = :tenant_id AND compte_id = :compte_id")
+  Mono<Double> calculateAccountBalance(@Param("tenant_id") UUID tenant_id, @Param("compte_id") UUID compte_id);
 
-  @Query(value = """
-      SELECT de.* FROM details_ecritures de
-      WHERE de.tenant_id = :tenant_id
-        AND COALESCE(de.pointee, false) = false
-        AND (
-          (de.sens = 'DEBIT'  AND de.montant_debit  = :montant) OR
-          (de.sens = 'CREDIT' AND de.montant_credit = :montant)
-        )
-        AND de.date_ecriture BETWEEN :date_debut AND :date_fin
-        AND (LOWER(de.libelle) LIKE LOWER('%' || :libelle || '%') OR :libelle IS NULL)
-      ORDER BY ABS(EXTRACT(DAY FROM (de.date_ecriture - :date_operation)))
-      LIMIT 5
-      """, nativeQuery = true)
-  List<DetailEcriture> findCandidatesForPointage(
+  @Query("SELECT * FROM details_ecritures de " +
+      "WHERE de.tenant_id = :tenant_id " +
+      "AND COALESCE(de.pointee, false) = false " +
+      "AND ( " +
+      "(de.sens = 'DEBIT' AND de.montant_debit = :montant) OR " +
+      "(de.sens = 'CREDIT' AND de.montant_credit = :montant) " +
+      ") " +
+      "AND de.date_ecriture BETWEEN :date_debut AND :date_fin " +
+      "AND (LOWER(de.libelle) LIKE LOWER(CONCAT('%', :libelle, '%')) OR :libelle IS NULL) " +
+      "ORDER BY ABS(EXTRACT(DAY FROM (de.date_ecriture - :date_operation))) " +
+      "LIMIT 5")
+  Flux<DetailEcriture> findCandidatesForPointage(
       @Param("tenant_id") UUID tenant_id,
       @Param("montant") BigDecimal montant,
       @Param("date_debut") LocalDateTime date_debut,
@@ -65,19 +56,17 @@ public interface DetailEcritureRepository extends JpaRepository<DetailEcriture, 
       @Param("libelle") String libelle,
       @Param("date_operation") LocalDateTime date_operation);
 
-  @Query(value = """
-      SELECT de.* FROM details_ecritures de
-      WHERE de.tenant_id = :tenant_id
-        AND COALESCE(de.pointee, false) = false
-        AND (
-          (de.sens = 'DEBIT'  AND de.montant_debit  = :montant) OR
-          (de.sens = 'CREDIT' AND de.montant_credit = :montant)
-        )
-        AND de.date_ecriture BETWEEN :date_debut AND :date_fin
-      ORDER BY ABS(EXTRACT(DAY FROM (de.date_ecriture - :date_reference)))
-      LIMIT 3
-      """, nativeQuery = true)
-  List<DetailEcriture> findByTenantIdAndMontantAndDateProche(
+  @Query("SELECT * FROM details_ecritures de " +
+      "WHERE de.tenant_id = :tenant_id " +
+      "AND COALESCE(de.pointee, false) = false " +
+      "AND ( " +
+      "(de.sens = 'DEBIT' AND de.montant_debit = :montant) OR " +
+      "(de.sens = 'CREDIT' AND de.montant_credit = :montant) " +
+      ") " +
+      "AND de.date_ecriture BETWEEN :date_debut AND :date_fin " +
+      "ORDER BY ABS(EXTRACT(DAY FROM (de.date_ecriture - :date_reference))) " +
+      "LIMIT 3")
+  Flux<DetailEcriture> findByTenantIdAndMontantAndDateProche(
       @Param("tenant_id") UUID tenant_id,
       @Param("montant") BigDecimal montant,
       @Param("date_debut") LocalDate date_debut,

@@ -1,25 +1,24 @@
 package com.yowyob.erp.accounting.serviceInitialization;
 
 import com.yowyob.erp.accounting.entity.ExerciceComptable;
-import com.yowyob.erp.accounting.entity.Tenant;
 import com.yowyob.erp.accounting.repository.ExerciceComptableRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Service to initialize default Fiscal Years (Exercice Comptable).
- * 
- * @author ALD
- * @date 03.01.2026
+ * Reactive Service to initialize default Fiscal Years (Exercice Comptable).
  */
 @Service
 @Order(1)
+@Slf4j
 public class ExerciceComptableInitializationService implements CommandLineRunner {
 
     private final ExerciceComptableRepository exercice_repository;
@@ -33,23 +32,32 @@ public class ExerciceComptableInitializationService implements CommandLineRunner
     }
 
     @Override
-    @Transactional
     public void run(String... args) {
         createExerciceIfNotExists("2026", "Exercice 2026",
-                LocalDate.of(2026, 1, 4), LocalDate.of(2026, 12, 31));
+                LocalDate.of(2026, 1, 4), LocalDate.of(2026, 12, 31))
+                .subscribe(
+                        v -> log.info("✅ Initialization of fiscal year complete"),
+                        e -> log.error("❌ Error initializing fiscal year", e));
     }
 
-    private void createExerciceIfNotExists(String code, String libelle, LocalDate start, LocalDate end) {
-        if (exercice_repository.findByTenantAndCode(new Tenant(tenant_id), code).isEmpty()) {
-            ExerciceComptable exercice = ExerciceComptable.builder()
-                    .tenant(new Tenant(tenant_id))
-                    .code(code)
-                    .libelle(libelle)
-                    .date_debut(start)
-                    .date_fin(end)
-                    .cloture(false)
-                    .build();
-            exercice_repository.save(exercice);
-        }
+    private Mono<Void> createExerciceIfNotExists(String code, String libelle, LocalDate start, LocalDate end) {
+        return exercice_repository.findByTenantIdAndCode(tenant_id, code)
+                .switchIfEmpty(Mono.defer(() -> {
+                    log.info("Creating initial fiscal year '{}' for tenant {}", code, tenant_id);
+                    ExerciceComptable exercice = ExerciceComptable.builder()
+                            .tenantId(tenant_id)
+                            .code(code)
+                            .libelle(libelle)
+                            .date_debut(start)
+                            .date_fin(end)
+                            .cloture(false)
+                            .created_at(LocalDateTime.now())
+                            .updated_at(LocalDateTime.now())
+                            .created_by("system")
+                            .updated_by("system")
+                            .build();
+                    return exercice_repository.save(exercice);
+                }))
+                .then();
     }
 }

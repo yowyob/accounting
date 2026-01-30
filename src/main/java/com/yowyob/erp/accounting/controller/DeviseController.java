@@ -3,68 +3,87 @@ package com.yowyob.erp.accounting.controller;
 import com.yowyob.erp.accounting.dto.DeviseDto;
 import com.yowyob.erp.accounting.service.DeviseService;
 import com.yowyob.erp.common.dto.ApiResponseWrapper;
+import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.UUID;
 
 /**
- * REST Controller for managing currencies.
- * 
- * @author ALD
- * @date 30.09.25
+ * Reactive Controller for managing global currencies.
  */
 @RestController
 @RequestMapping("/api/accounting/currencies")
 @RequiredArgsConstructor
 @Tag(name = "Currency Management", description = "Endpoints for managing global currencies")
+@Slf4j
 public class DeviseController {
 
     private final DeviseService devise_service;
 
+    /**
+     * Creates a new currency.
+     */
     @PostMapping
     @Operation(summary = "Create a new currency")
-    public ResponseEntity<ApiResponseWrapper<DeviseDto>> createDevise(@Valid @RequestBody DeviseDto dto) {
-        DeviseDto created = devise_service.createDevise(dto);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponseWrapper.success(created, "Currency created successfully"));
+    public Mono<ResponseEntity<ApiResponseWrapper<DeviseDto>>> createDevise(@Valid @RequestBody DeviseDto dto) {
+        return devise_service.createDevise(dto)
+                .map(created -> ResponseEntity.status(HttpStatus.CREATED)
+                        .body(ApiResponseWrapper.success(created, "Currency created successfully")));
     }
 
-    @PutMapping("/{id}")
+    /**
+     * Updates an existing currency.
+     */
     @Operation(summary = "Update an existing currency")
-    public ResponseEntity<ApiResponseWrapper<DeviseDto>> updateDevise(@PathVariable UUID id,
+    @PutMapping("/{id}")
+    public Mono<ResponseEntity<ApiResponseWrapper<DeviseDto>>> updateDevise(@PathVariable UUID id,
             @Valid @RequestBody DeviseDto dto) {
-        DeviseDto updated = devise_service.updateDevise(id, dto);
-        return ResponseEntity.ok(ApiResponseWrapper.success(updated, "Currency updated successfully"));
+        return devise_service.updateDevise(id, dto)
+                .map(updated -> ResponseEntity
+                        .ok(ApiResponseWrapper.success(updated, "Currency updated successfully")));
     }
 
-    @GetMapping("/{id}")
+    /**
+     * Retrieves a currency by its ID.
+     */
     @Operation(summary = "Get currency by ID")
-    public ResponseEntity<ApiResponseWrapper<DeviseDto>> getDevise(@PathVariable UUID id) {
+    @GetMapping("/{id}")
+    public Mono<ResponseEntity<ApiResponseWrapper<DeviseDto>>> getDevise(@PathVariable UUID id) {
         return devise_service.getDevise(id)
                 .map(devise -> ResponseEntity.ok(ApiResponseWrapper.success(devise, "Currency found")))
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponseWrapper.error("Currency not found", 404)));
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Currency", id.toString())));
     }
 
-    @GetMapping
+    /**
+     * Lists all currencies.
+     */
     @Operation(summary = "List all currencies")
-    public ResponseEntity<ApiResponseWrapper<List<DeviseDto>>> getAllDevises(
+    @GetMapping
+    public Mono<ResponseEntity<ApiResponseWrapper<List<DeviseDto>>>> getAllDevises(
             @RequestParam(required = false, defaultValue = "false") boolean onlyActive) {
-        List<DeviseDto> devises = onlyActive ? devise_service.getActiveDevises() : devise_service.getAllDevises();
-        return ResponseEntity.ok(ApiResponseWrapper.success(devises, "Currencies list retrieved successfully"));
+        Mono<List<DeviseDto>> listMono = onlyActive ? devise_service.getActiveDevises()
+                : devise_service.getAllDevises();
+        return listMono.map(devises -> ResponseEntity
+                .ok(ApiResponseWrapper.success(devises, "Currencies list retrieved successfully")));
     }
 
-    @DeleteMapping("/{id}")
+    /**
+     * Deletes a currency by its ID.
+     */
     @Operation(summary = "Delete a currency")
-    public ResponseEntity<ApiResponseWrapper<Void>> deleteDevise(@PathVariable UUID id) {
-        devise_service.deleteDevise(id);
-        return ResponseEntity.ok(ApiResponseWrapper.success(null, "Currency deleted successfully"));
+    @DeleteMapping("/{id}")
+    public Mono<ResponseEntity<ApiResponseWrapper<Void>>> deleteDevise(@PathVariable UUID id) {
+        return devise_service.deleteDevise(id)
+                .then(Mono.fromCallable(
+                        () -> ResponseEntity.ok(ApiResponseWrapper.success(null, "Currency deleted successfully"))));
     }
 }

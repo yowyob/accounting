@@ -2,28 +2,24 @@ package com.yowyob.erp.accounting.service.impl;
 
 import com.yowyob.erp.accounting.dto.ExerciceComptableDto;
 import com.yowyob.erp.accounting.entity.ExerciceComptable;
-import com.yowyob.erp.accounting.entity.Tenant;
 import com.yowyob.erp.accounting.repository.ExerciceComptableRepository;
 import com.yowyob.erp.accounting.service.ExerciceComptableService;
 import com.yowyob.erp.common.exception.BusinessException;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
-import com.yowyob.erp.config.tenant.TenantContext;
+import com.yowyob.erp.config.tenant.ReactiveTenantContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
- * Implementation of ExerciceComptableService.
- * Handles fiscal year creation, range validation, and closure.
- * 
- * @author ALD
- * @date 03.01.2026
+ * Reactive Implementation of ExerciceComptableService.
  */
 @Slf4j
 @Service
@@ -34,138 +30,160 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
 
     @Override
     @Transactional
-    public ExerciceComptableDto createExercice(ExerciceComptableDto exercice_dto) {
-        UUID tenant_id = TenantContext.getCurrentTenant();
-        log.info("Creating new fiscal year '{}' for tenant {}", exercice_dto.getCode(), tenant_id);
+    public Mono<ExerciceComptableDto> createExercice(ExerciceComptableDto exercice_dto) {
+        return ReactiveTenantContext.getTenantId()
+                .flatMap(tenant_id -> ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                        .flatMap(user -> {
+                            log.info("Creating new fiscal year '{}' for tenant {}", exercice_dto.getCode(), tenant_id);
 
-        validateDates(exercice_dto, null);
-        checkOverlap(exercice_dto, tenant_id, null);
+                            return validateDates(exercice_dto)
+                                    .then(checkOverlap(exercice_dto, tenant_id, null))
+                                    .then(Mono.defer(() -> {
+                                        ExerciceComptable exercice = ExerciceComptable.builder()
+                                                .tenantId(tenant_id)
+                                                .code(exercice_dto.getCode())
+                                                .libelle(exercice_dto.getLibelle())
+                                                .date_debut(exercice_dto.getDate_debut())
+                                                .date_fin(exercice_dto.getDate_fin())
+                                                .cloture(false)
+                                                .created_at(LocalDateTime.now())
+                                                .updated_at(LocalDateTime.now())
+                                                .created_by(user)
+                                                .updated_by(user)
+                                                .build();
 
-        ExerciceComptable exercice = ExerciceComptable.builder()
-                .tenant(new Tenant(tenant_id))
-                .code(exercice_dto.getCode())
-                .libelle(exercice_dto.getLibelle())
-                .date_debut(exercice_dto.getDate_debut())
-                .date_fin(exercice_dto.getDate_fin())
-                .cloture(false)
-                .build();
-
-        ExerciceComptable saved = exercice_repository.save(exercice);
-        return mapToDto(saved);
+                                        return exercice_repository.save(exercice).map(this::mapToDto);
+                                    }));
+                        }));
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public ExerciceComptableDto getExercice(UUID id) {
-        UUID tenant_id = TenantContext.getCurrentTenant();
-        return exercice_repository.findById(id)
-                .filter(e -> e.getTenant().getId().equals(tenant_id))
-                .map(this::mapToDto)
-                .orElseThrow(() -> new ResourceNotFoundException("ExerciceComptable", id.toString()));
+    public Mono<ExerciceComptableDto> getExercice(UUID id) {
+        return ReactiveTenantContext.getTenantId()
+                .flatMap(tenant_id -> exercice_repository.findById(id)
+                        .filter(e -> tenant_id.equals(e.getTenantId()))
+                        .map(this::mapToDto)
+                        .switchIfEmpty(Mono.error(new ResourceNotFoundException("ExerciceComptable", id.toString()))));
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<ExerciceComptableDto> getAllExercices() {
-        UUID tenant_id = TenantContext.getCurrentTenant();
-        return exercice_repository.findByTenant(new Tenant(tenant_id)).stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+    public Mono<List<ExerciceComptableDto>> getAllExercices() {
+        return ReactiveTenantContext.getTenantId()
+                .flatMap(tenant_id -> exercice_repository.findByTenantId(tenant_id)
+                        .map(this::mapToDto)
+                        .collectList());
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public ExerciceComptableDto getActiveExerciceForDate(LocalDate date) {
-        UUID tenant_id = TenantContext.getCurrentTenant();
-        return exercice_repository.findActiveForDate(new Tenant(tenant_id), date)
-                .map(this::mapToDto)
-                .orElseThrow(() -> new BusinessException("No active fiscal year found for date " + date));
-    }
-
-    @Override
-    @Transactional
-    public ExerciceComptableDto updateExercice(UUID id, ExerciceComptableDto exercice_dto) {
-        UUID tenant_id = TenantContext.getCurrentTenant();
-        log.info("Updating fiscal year {} for tenant {}", id, tenant_id);
-
-        ExerciceComptable exercice = exercice_repository.findById(id)
-                .filter(e -> e.getTenant().getId().equals(tenant_id))
-                .orElseThrow(() -> new ResourceNotFoundException("ExerciceComptable", id.toString()));
-
-        if (exercice.getCloture()) {
-            throw new BusinessException("Cannot update a closed fiscal year.");
-        }
-
-        validateDates(exercice_dto, id);
-        checkOverlap(exercice_dto, tenant_id, id);
-
-        exercice.setCode(exercice_dto.getCode());
-        exercice.setLibelle(exercice_dto.getLibelle());
-        exercice.setDate_debut(exercice_dto.getDate_debut());
-        exercice.setDate_fin(exercice_dto.getDate_fin());
-
-        ExerciceComptable updated = exercice_repository.save(exercice);
-        return mapToDto(updated);
+    public Mono<ExerciceComptableDto> getActiveExerciceForDate(LocalDate date) {
+        return ReactiveTenantContext.getTenantId()
+                .flatMap(tenant_id -> exercice_repository.findActiveForDate(tenant_id, date)
+                        .map(this::mapToDto)
+                        .switchIfEmpty(
+                                Mono.error(new BusinessException("No active fiscal year found for date " + date))));
     }
 
     @Override
     @Transactional
-    public void closeExercice(UUID id) {
-        UUID tenant_id = TenantContext.getCurrentTenant();
-        log.info("Closing fiscal year {} for tenant {}", id, tenant_id);
+    public Mono<ExerciceComptableDto> updateExercice(UUID id, ExerciceComptableDto exercice_dto) {
+        return ReactiveTenantContext.getTenantId()
+                .flatMap(tenant_id -> ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                        .flatMap(user -> exercice_repository.findById(id)
+                                .filter(e -> tenant_id.equals(e.getTenantId()))
+                                .switchIfEmpty(
+                                        Mono.error(new ResourceNotFoundException("ExerciceComptable", id.toString())))
+                                .flatMap(exercice -> {
+                                    if (Boolean.TRUE.equals(exercice.getCloture())) {
+                                        return Mono.error(new BusinessException("Cannot update a closed fiscal year."));
+                                    }
 
-        ExerciceComptable exercice = exercice_repository.findById(id)
-                .filter(e -> e.getTenant().getId().equals(tenant_id))
-                .orElseThrow(() -> new ResourceNotFoundException("ExerciceComptable", id.toString()));
+                                    return validateDates(exercice_dto)
+                                            .then(checkOverlap(exercice_dto, tenant_id, id))
+                                            .then(Mono.defer(() -> {
+                                                exercice.setCode(exercice_dto.getCode());
+                                                exercice.setLibelle(exercice_dto.getLibelle());
+                                                exercice.setDate_debut(exercice_dto.getDate_debut());
+                                                exercice.setDate_fin(exercice_dto.getDate_fin());
+                                                exercice.setUpdated_at(LocalDateTime.now());
+                                                exercice.setUpdated_by(user);
 
-        exercice.setCloture(true);
-        exercice_repository.save(exercice);
+                                                return exercice_repository.save(exercice).map(this::mapToDto);
+                                            }));
+                                })));
     }
 
     @Override
     @Transactional
-    public void deleteExercice(UUID id) {
-        UUID tenant_id = TenantContext.getCurrentTenant();
-        log.warn("Deleting fiscal year {} for tenant {}", id, tenant_id);
-
-        ExerciceComptable exercice = exercice_repository.findById(id)
-                .filter(e -> e.getTenant().getId().equals(tenant_id))
-                .orElseThrow(() -> new ResourceNotFoundException("ExerciceComptable", id.toString()));
-
-        if (exercice.getCloture()) {
-            throw new BusinessException("Cannot delete a closed fiscal year.");
-        }
-
-        exercice_repository.delete(exercice);
+    public Mono<Void> closeExercice(UUID id) {
+        return ReactiveTenantContext.getTenantId()
+                .doOnSubscribe(s -> log.info("Service: closeExercice called for ID: {}", id))
+                .doOnNext(uuid -> log.info("Service: Content Tenant ID found: {}", uuid))
+                .switchIfEmpty(Mono.defer(() -> {
+                    log.error("Service: Tenant ID is EMPTY in Reactive Context!");
+                    return Mono.error(new BusinessException("Tenant ID missing in context"));
+                }))
+                .flatMap(tenant_id -> ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                        .flatMap(user -> exercice_repository.findById(id)
+                                .filter(e -> tenant_id.equals(e.getTenantId()))
+                                .switchIfEmpty(
+                                        Mono.error(new ResourceNotFoundException("ExerciceComptable", id.toString())))
+                                .flatMap(exercice -> {
+                                    log.info("Closing fiscal year: {} / Tenant: {}", id, tenant_id);
+                                    log.info("Before update - Cloture: {}", exercice.getCloture());
+                                    
+                                    exercice.setCloture(true);
+                                    exercice.setUpdated_at(LocalDateTime.now());
+                                    exercice.setUpdated_by(user);
+                                    
+                                    return exercice_repository.save(exercice)
+                                            .doOnSuccess(saved -> log.info("After save - Cloture: {}", saved.getCloture()))
+                                            .doOnError(e -> log.error("Error saving fiscal year", e))
+                                            .then();
+                                })));
     }
 
-    private void validateDates(ExerciceComptableDto dto, UUID current_id) {
+    @Override
+    @Transactional
+    public Mono<Void> deleteExercice(UUID id) {
+        return ReactiveTenantContext.getTenantId()
+                .doOnSubscribe(s -> log.info("Attempting to delete fiscal year {}", id))
+                .switchIfEmpty(Mono.defer(() -> {
+                     log.error("Tenant ID not found in context for delete operation");
+                     return Mono.error(new BusinessException("Tenant context missing"));
+                }))
+                .flatMap(tenant_id -> exercice_repository.findById(id)
+                        .filter(e -> tenant_id.equals(e.getTenantId()))
+                        .switchIfEmpty(Mono.error(new ResourceNotFoundException("ExerciceComptable", id.toString())))
+                        .flatMap(exercice -> {
+                            if (Boolean.TRUE.equals(exercice.getCloture())) {
+                                return Mono.error(new BusinessException("Cannot delete a closed fiscal year."));
+                            }
+                            return exercice_repository.delete(exercice);
+                        }));
+    }
+
+    private Mono<Void> validateDates(ExerciceComptableDto dto) {
         if (dto.getDate_debut().isAfter(dto.getDate_fin())) {
-            throw new BusinessException("Start date cannot be after end date.");
+            return Mono.error(new BusinessException("Start date cannot be after end date."));
         }
+        return Mono.empty();
     }
 
-    private void checkOverlap(ExerciceComptableDto dto, UUID tenant_id, UUID current_id) {
-        List<ExerciceComptable> existing = exercice_repository.findByTenant(new Tenant(tenant_id));
-        for (ExerciceComptable e : existing) {
-            if (current_id != null && e.getId().equals(current_id))
-                continue;
-
-            boolean overlap = (dto.getDate_debut().isBefore(e.getDate_fin())
-                    && dto.getDate_fin().isAfter(e.getDate_debut())) ||
-                    dto.getDate_debut().equals(e.getDate_debut()) || dto.getDate_fin().equals(e.getDate_fin());
-
-            if (overlap) {
-                throw new BusinessException(
-                        "The fiscal year dates overlap with an existing fiscal year: " + e.getCode());
-            }
-        }
+    private Mono<Void> checkOverlap(ExerciceComptableDto dto, UUID tenant_id, UUID current_id) {
+        return exercice_repository.findByTenantId(tenant_id)
+                .filter(e -> current_id == null || !e.getId().equals(current_id))
+                .filter(e -> (dto.getDate_debut().isBefore(e.getDate_fin())
+                        && dto.getDate_fin().isAfter(e.getDate_debut()))
+                        || dto.getDate_debut().equals(e.getDate_debut()) || dto.getDate_fin().equals(e.getDate_fin()))
+                .next()
+                .flatMap(e -> Mono.error(new BusinessException(
+                        "The fiscal year dates overlap with an existing fiscal year: " + e.getCode())));
     }
 
     private ExerciceComptableDto mapToDto(ExerciceComptable entity) {
         return ExerciceComptableDto.builder()
                 .id(entity.getId())
-                .tenant_id(entity.getTenant().getId())
+                .tenant_id(entity.getTenantId())
                 .code(entity.getCode())
                 .libelle(entity.getLibelle())
                 .date_debut(entity.getDate_debut())

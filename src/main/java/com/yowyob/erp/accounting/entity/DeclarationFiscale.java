@@ -1,16 +1,10 @@
 package com.yowyob.erp.accounting.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -32,8 +26,7 @@ import java.util.UUID;
  * @author Leonel Delmat AZANGUE
  * @date 30.09.25
  */
-@Entity
-@Table(name = "declaration_fiscale")
+@Table("declaration_fiscale")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -41,75 +34,63 @@ import java.util.UUID;
 public class DeclarationFiscale {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "declaration_id")
+    @Column("declaration_id")
     private UUID id;
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tenant_id", nullable = false)
+    @Column("tenant_id")
+    private UUID tenantId;
+
+    @Transient
     private Tenant tenant;
 
     @NotBlank
-    @Column(name = "type_declaration", length = 50, nullable = false)
+    @Column("type_declaration")
     private String type_declaration;
 
     @NotNull
-    @Column(name = "periode_debut", nullable = false)
+    @Column("periode_debut")
     private LocalDate periode_debut;
 
     @NotNull
-    @Column(name = "periode_fin", nullable = false)
+    @Column("periode_fin")
     private LocalDate periode_fin;
 
     @PositiveOrZero
     @Builder.Default
-    @Column(name = "montant_total", nullable = false)
+    @Column("montant_total")
     private Double montant_total = 0.0;
 
-    @Column(name = "date_generation")
+    @Column("date_generation")
     private LocalDate date_generation;
 
     @Pattern(regexp = "DRAFT|SUBMITTED|VALIDATED", message = "Statut must be DRAFT, SUBMITTED, or VALIDATED")
-    @Column(length = 50)
+    @Column("statut")
     private String statut;
 
-    @Column(name = "numero_declaration", length = 100)
+    @Column("numero_declaration")
     private String numero_declaration;
 
-    @Column(name = "donnees_declaration", columnDefinition = "TEXT")
+    @Column("donnees_declaration")
     private String donnees_declaration;
 
-    @Column(length = 255)
+    @Column("notes")
     private String notes;
 
     /** Created at timestamp */
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column("created_at")
     private LocalDateTime created_at;
 
     /** Last updated at timestamp */
-    @Column(name = "updated_at", nullable = false)
+    @Column("updated_at")
     private LocalDateTime updated_at;
 
     /** User who created the record */
     @Size(max = 255)
-    @Column(name = "created_by", length = 255)
+    @Column("created_by")
     private String created_by;
 
     /** User who last modified the resource */
     @Size(max = 255)
-    @Column(name = "updated_by", length = 255)
+    @Column("updated_by")
     private String updated_by;
-
-    @PrePersist
-    public void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        this.created_at = now;
-        this.updated_at = now;
-    }
-
-    @PreUpdate
-    public void onUpdate() {
-        this.updated_at = LocalDateTime.now();
-    }
 }

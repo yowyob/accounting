@@ -1,14 +1,15 @@
 package com.yowyob.erp.accounting.serviceInitialization;
 
 import com.yowyob.erp.accounting.entity.Agence;
-import com.yowyob.erp.accounting.entity.Tenant;
 import com.yowyob.erp.accounting.repository.AgenceRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -19,6 +20,7 @@ import java.util.UUID;
  */
 @Service
 @Order(1)
+@Slf4j
 public class AgenceInitializationService implements CommandLineRunner {
 
     private final AgenceRepository agence_repository;
@@ -32,22 +34,27 @@ public class AgenceInitializationService implements CommandLineRunner {
     }
 
     @Override
-    @Transactional
     public void run(String... args) {
-        createAgenceIfNotExists("HQ", "Headquarters", "Yaounde", "Cameroon");
+        createAgenceIfNotExists("HQ", "Headquarters", "Yaounde", "Cameroon")
+                .doOnSuccess(agence -> log.info("Default Agency initialized: {}", agence.getName()))
+                .doOnError(error -> log.error("Failed to initialize default agency: {}", error.getMessage()))
+                .block();
     }
 
-    private void createAgenceIfNotExists(String code, String name, String city, String country) {
-        if (agence_repository.findByTenantAndCode(new Tenant(tenant_id), code).isEmpty()) {
-            Agence agence = Agence.builder()
-                    .tenant(new Tenant(tenant_id))
-                    .code(code)
-                    .name(name)
-                    .city(city)
-                    .country(country)
-                    .address("Default Street")
-                    .build();
-            agence_repository.save(agence);
-        }
+    private Mono<Agence> createAgenceIfNotExists(String code, String name, String city, String country) {
+        return agence_repository.findByTenantIdAndCode(tenant_id, code)
+                .switchIfEmpty(Mono.defer(() -> {
+                    Agence agence = Agence.builder()
+                            .tenantId(tenant_id)
+                            .code(code)
+                            .name(name)
+                            .city(city)
+                            .country(country)
+                            .address("Default Street")
+                            .created_at(LocalDateTime.now())
+                            .updated_at(LocalDateTime.now())
+                            .build();
+                    return agence_repository.save(agence);
+                }));
     }
 }

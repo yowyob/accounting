@@ -19,6 +19,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -53,17 +54,18 @@ public class DeclarationFiscaleController {
             @ApiResponse(responseCode = "400", description = "Invalid data provided")
     })
     @PostMapping
-    public ResponseEntity<ApiResponseWrapper<DeclarationFiscaleDto>> saveDeclaration(
+    public Mono<ResponseEntity<ApiResponseWrapper<DeclarationFiscaleDto>>> saveDeclaration(
             @Valid @RequestBody DeclarationFiscaleDto dto) {
-        try {
-            DeclarationFiscaleDto saved = declaration_service.saveDeclaration(dto);
-            log.info("Tax declaration saved: {}", saved.getType_declaration());
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponseWrapper.success(saved, "Tax declaration saved successfully"));
-        } catch (Exception e) {
-            log.error("Error saving tax declaration: {}", e.getMessage());
-            throw new BusinessException("Error saving tax declaration: " + e.getMessage());
-        }
+        return declaration_service.saveDeclaration(dto)
+                .map(saved -> {
+                    log.info("Tax declaration saved: {}", saved.getType_declaration());
+                    return ResponseEntity.status(HttpStatus.CREATED)
+                            .body(ApiResponseWrapper.success(saved, "Tax declaration saved successfully"));
+                })
+                .onErrorResume(e -> {
+                    log.error("Error saving tax declaration: {}", e.getMessage());
+                    return Mono.error(new BusinessException("Error saving tax declaration: " + e.getMessage()));
+                });
     }
 
     /**
@@ -74,11 +76,11 @@ public class DeclarationFiscaleController {
      */
     @Operation(summary = "Get a tax declaration by ID")
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponseWrapper<DeclarationFiscaleDto>> getById(@PathVariable UUID id) {
+    public Mono<ResponseEntity<ApiResponseWrapper<DeclarationFiscaleDto>>> getById(@PathVariable UUID id) {
         log.info("Retrieving tax declaration by ID: {}", id);
         return declaration_service.getById(id)
                 .map(dto -> ResponseEntity.ok(ApiResponseWrapper.success(dto)))
-                .orElseThrow(() -> new ResourceNotFoundException("Tax declaration", id.toString()));
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Tax declaration", id.toString())));
     }
 
     /**
@@ -88,10 +90,11 @@ public class DeclarationFiscaleController {
      */
     @Operation(summary = "List all tax declarations")
     @GetMapping
-    public ResponseEntity<ApiResponseWrapper<List<DeclarationFiscaleDto>>> getAll() {
+    public Mono<ResponseEntity<ApiResponseWrapper<List<DeclarationFiscaleDto>>>> getAll() {
         log.info("Retrieving all tax declarations");
-        List<DeclarationFiscaleDto> list = declaration_service.getAll();
-        return ResponseEntity.ok(ApiResponseWrapper.success(list));
+        return declaration_service.getAll()
+                .collectList()
+                .map(list -> ResponseEntity.ok(ApiResponseWrapper.success(list)));
     }
 
     /**
@@ -102,10 +105,11 @@ public class DeclarationFiscaleController {
      */
     @Operation(summary = "Filter tax declarations by type")
     @GetMapping("/type/{type}")
-    public ResponseEntity<ApiResponseWrapper<List<DeclarationFiscaleDto>>> getByType(@PathVariable String type) {
+    public Mono<ResponseEntity<ApiResponseWrapper<List<DeclarationFiscaleDto>>>> getByType(@PathVariable String type) {
         log.info("Retrieving tax declarations of type: {}", type);
-        List<DeclarationFiscaleDto> list = declaration_service.getByType(type);
-        return ResponseEntity.ok(ApiResponseWrapper.success(list));
+        return declaration_service.getByType(type)
+                .collectList()
+                .map(list -> ResponseEntity.ok(ApiResponseWrapper.success(list)));
     }
 
     /**
@@ -117,16 +121,17 @@ public class DeclarationFiscaleController {
      */
     @Operation(summary = "Search tax declarations by period range")
     @GetMapping("/search")
-    public ResponseEntity<ApiResponseWrapper<List<DeclarationFiscaleDto>>> getByPeriodRange(
+    public Mono<ResponseEntity<ApiResponseWrapper<List<DeclarationFiscaleDto>>>> getByPeriodRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         if (start.isAfter(end)) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponseWrapper.error("Start date must be before end date"));
+            return Mono.just(ResponseEntity.badRequest()
+                    .body(ApiResponseWrapper.error("Start date must be before end date")));
         }
         log.info("Searching tax declarations between {} and {}", start, end);
-        List<DeclarationFiscaleDto> list = declaration_service.getByPeriodRange(start, end);
-        return ResponseEntity.ok(ApiResponseWrapper.success(list));
+        return declaration_service.getByPeriodRange(start, end)
+                .collectList()
+                .map(list -> ResponseEntity.ok(ApiResponseWrapper.success(list)));
     }
 
     /**
@@ -137,14 +142,15 @@ public class DeclarationFiscaleController {
      */
     @Operation(summary = "Delete a tax declaration")
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponseWrapper<Void>> delete(@PathVariable UUID id) {
-        try {
-            declaration_service.delete(id);
-            log.info("Tax declaration deleted: {}", id);
-            return ResponseEntity.ok(ApiResponseWrapper.success(null, "Tax declaration deleted successfully"));
-        } catch (Exception e) {
-            log.error("Error deleting tax declaration: {}", e.getMessage());
-            throw new ResourceNotFoundException("Tax declaration", id.toString());
-        }
+    public Mono<ResponseEntity<ApiResponseWrapper<Void>>> delete(@PathVariable UUID id) {
+        return declaration_service.delete(id)
+                .then(Mono.fromCallable(() -> {
+                    log.info("Tax declaration deleted: {}", id);
+                    return ResponseEntity.ok(ApiResponseWrapper.<Void>success(null, "Tax declaration deleted successfully"));
+                }))
+                .onErrorResume(e -> {
+                    log.error("Error deleting tax declaration: {}", e.getMessage());
+                    return Mono.error(new ResourceNotFoundException("Tax declaration", id.toString()));
+                });
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
@@ -30,7 +31,7 @@ public class KafkaProducerConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrap_servers;
 
-    @Value("${spring.kafka.producer.transaction-id-prefix}") // ADDITION: Transaction ID prefix injection
+    @Value("${spring.kafka.producer.transaction-id-prefix}")
     private String transaction_id_prefix;
 
     /**
@@ -42,34 +43,46 @@ public class KafkaProducerConfig {
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap_servers);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
-        props.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false); // Cleans useless headers
-        props.put(ProducerConfig.ACKS_CONFIG, "all"); // Delivery guarantee
+        props.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false);
+        props.put(ProducerConfig.ACKS_CONFIG, "all");
         props.put(ProducerConfig.RETRIES_CONFIG, 3);
         props.put(ProducerConfig.LINGER_MS_CONFIG, 5);
         props.put(ProducerConfig.BATCH_SIZE_CONFIG, 16_384);
         props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33_554_432);
 
-        // FIX: Adding transaction ID prefix to make ProducerFactory transactional
+        // Required for transactional ProducerFactory
         props.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transaction_id_prefix);
 
         return props;
     }
 
     /**
-     * Generic Kafka Producer Factory.
+     * Generic Kafka Producer Factory (Transactional).
      */
     @Bean
     public ProducerFactory<String, Object> producerFactory() {
-        // DefaultKafkaProducerFactory becomes transactional because
-        // TRANSACTIONAL_ID_CONFIG is included in producerConfigs()
         return new DefaultKafkaProducerFactory<>(producerConfigs());
     }
 
     /**
-     * KafkaTemplate used to publish events.
+     * Transactional KafkaTemplate.
      */
     @Bean
+    @Primary
     public KafkaTemplate<String, Object> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
+    }
+
+    /**
+     * Non-Transactional KafkaTemplate for audit logs and events
+     * that shouldn't block on Kafka transactions.
+     */
+    @Bean(name = "nonTransactionalKafkaTemplate")
+    public KafkaTemplate<String, Object> nonTransactionalKafkaTemplate() {
+        Map<String, Object> props = new HashMap<>(producerConfigs());
+        props.remove(ProducerConfig.TRANSACTIONAL_ID_CONFIG);
+
+        DefaultKafkaProducerFactory<String, Object> factory = new DefaultKafkaProducerFactory<>(props);
+        return new KafkaTemplate<>(factory);
     }
 }

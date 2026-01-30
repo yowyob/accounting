@@ -13,7 +13,7 @@ import com.yowyob.erp.accounting.repository.JournalAuditRepository;
 import com.yowyob.erp.common.entity.ComptableObject;
 import com.yowyob.erp.common.enums.Sens;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
-import com.yowyob.erp.config.tenant.TenantContext;
+import com.yowyob.erp.config.tenant.ReactiveTenantContext;
 import com.yowyob.erp.accounting.dto.DetailEcritureDto;
 import com.yowyob.erp.accounting.dto.JournalAuditDto;
 import com.yowyob.erp.config.kafka.KafkaMessageService;
@@ -23,20 +23,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Service for managing the creation, update, and deletion of accounting entry
+ * Reactive Service for managing the creation, update, and deletion of
+ * accounting entry
  * details.
- * Compatible with PostgreSQL + Kafka + Multi-tenant.
- *
- * @author ALD
- * @date 30.09.25
  */
 @Service
 @RequiredArgsConstructor
@@ -54,330 +51,389 @@ public class DetailEcritureService {
 
         /**
          * Manually creates a new accounting entry detail.
-         * 
-         * @param detail   the detail to create
-         * @param tenant   the tenant context
-         * @param ecriture the associated entry
-         * @return the created detail
          */
         @Transactional
-        public DetailEcriture createDetailEcriture(DetailEcriture detail, Tenant tenant, EcritureComptable ecriture) {
-                String current_user = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
+        public Mono<DetailEcriture> createDetailEcriture(DetailEcriture detail, Tenant tenant,
+                        EcritureComptable ecriture) {
+                return ReactiveTenantContext.getCurrentUser()
+                                .defaultIfEmpty("system")
+                                .flatMap(current_user -> {
+                                        return validateDetailEcriture(detail)
+                                                        .then(Mono.defer(() -> {
+                                                                detail.setTenantId(tenant.getId());
+                                                                detail.setEcriture_id(ecriture.getId());
+                                                                detail.setDate_ecriture(LocalDateTime.now());
+                                                                detail.setCreated_at(LocalDateTime.now());
+                                                                detail.setUpdated_at(LocalDateTime.now());
+                                                                detail.setCreated_by(current_user);
+                                                                detail.setUpdated_by(current_user);
 
-                validateDetailEcriture(detail);
-                detail.setTenant(tenant);
-                detail.setEcriture(ecriture);
-                detail.setDate_ecriture(LocalDateTime.now());
-                detail.setCreated_at(LocalDateTime.now());
-                detail.setUpdated_at(LocalDateTime.now());
-                detail.setCreated_by(current_user);
-                detail.setUpdated_by(current_user);
+                                                                // Set opposite amount to zero based on sens
+                                                                Sens sens = detail.getSens();
+                                                                if (sens == Sens.DEBIT) {
+                                                                        detail.setMontant_credit(BigDecimal.ZERO);
+                                                                } else if (sens == Sens.CREDIT) {
+                                                                        detail.setMontant_debit(BigDecimal.ZERO);
+                                                                }
 
-                // Set opposite amount to zero based on sens
-                Sens sens = detail.getSens();
-                if (sens == Sens.DEBIT) {
-                        detail.setMontant_credit(BigDecimal.ZERO);
-                } else if (sens == Sens.CREDIT) {
-                        detail.setMontant_debit(BigDecimal.ZERO);
-                }
-
-                DetailEcriture saved = detail_repository.save(detail);
-                logAudit(tenant, ecriture.getId(), current_user, "CREATE",
-                                "Creation of entry detail " + saved.getId());
-
-                DetailEcritureDto savedDto = mapToDto(saved);
-                kafka_message_service.sendAccountingEvent(savedDto, tenant.getId(), "DETAIL_CREATED");
-
-                log.info("✅ Entry detail created successfully: {}", saved.getId());
-                return saved;
+                                                                return detail_repository.save(detail)
+                                                                                .flatMap(saved -> logAudit(tenant,
+                                                                                                ecriture.getId(),
+                                                                                                current_user, "CREATE",
+                                                                                                "Creation of entry detail "
+                                                                                                                + saved.getId())
+                                                                                                .then(Mono.fromRunnable(
+                                                                                                                () -> {
+                                                                                                                        DetailEcritureDto savedDto = mapToDto(
+                                                                                                                                        saved);
+                                                                                                                        kafka_message_service
+                                                                                                                                        .sendAccountingEvent(
+                                                                                                                                                        savedDto,
+                                                                                                                                                        tenant.getId(),
+                                                                                                                                                        "DETAIL_CREATED");
+                                                                                                                }))
+                                                                                                .thenReturn(saved));
+                                                        }));
+                                });
         }
 
         /**
          * Generates accounting lines from a predefined operation and transaction.
-         * 
-         * @param ecriture    the entry
-         * @param operation   the accounting operation template
-         * @param transaction the source transaction
          */
-        public void generateDetailsFromOperation(EcritureComptable ecriture, OperationComptable operation,
+        public Mono<Void> generateDetailsFromOperation(EcritureComptable ecriture, OperationComptable operation,
                         Transaction transaction) {
                 Tenant tenant = ecriture.getTenant();
-                String current_user = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
+                if (tenant == null) {
+                        return Mono.error(new IllegalStateException("Tenant is required in entry"));
+                }
 
-                Compte principal_account = compte_repository
-                                .findByTenant_IdAndNo_compte(tenant.getId(), operation.getCompte_principal())
-                                .filter(Compte::getActif)
-                                .orElseThrow(() -> new ResourceNotFoundException("Main account",
-                                                operation.getCompte_principal()));
+                return Mono.zip(
+                                compte_repository
+                                                .findByTenant_IdAndId(tenant.getId(),
+                                                                operation.getCompte_principal_id())
+                                                .filter(Compte::getActif)
+                                                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Main account",
+                                                                operation.getCompte_principal_id().toString()))),
+                                Mono.just(operation.getEst_compte_statique() ? COMPTE_TVA_STATIQUE
+                                                : COMPTE_CLIENT_DYNAMIQUE)
+                                                .flatMap(no -> compte_repository
+                                                                .findByTenant_IdAndNo_compte(tenant.getId(), no)
+                                                                .filter(Compte::getActif)
+                                                                .switchIfEmpty(Mono.error(new ResourceNotFoundException(
+                                                                                "Counter account", no)))))
+                                .flatMap(tuple -> {
+                                        Compte principal_account = tuple.getT1();
+                                        Compte counter_account = tuple.getT2();
 
-                String counter_account_no = operation.getEst_compte_statique() ? COMPTE_TVA_STATIQUE
-                                : COMPTE_CLIENT_DYNAMIQUE;
-                Compte counter_account = compte_repository
-                                .findByTenant_IdAndNo_compte(tenant.getId(), counter_account_no)
-                                .filter(Compte::getActif)
-                                .orElseThrow(() -> new ResourceNotFoundException("Counter account",
-                                                counter_account_no));
+                                        LocalDateTime now = LocalDateTime.now();
+                                        String libelle = String.format("Transaction %s – Operation: %s",
+                                                        transaction.getNumero_recu(), operation.getType_operation());
 
-                LocalDateTime now = LocalDateTime.now();
-                String libelle = String.format("Transaction %s – Operation: %s",
-                                transaction.getNumero_recu(), operation.getType_operation());
+                                        return ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                                                        .flatMap(current_user -> {
+                                                                // Debit line
+                                                                DetailEcriture debit = DetailEcriture.builder()
+                                                                                .tenantId(tenant.getId())
+                                                                                .ecriture_id(ecriture.getId())
+                                                                                .compte_id(principal_account.getId())
+                                                                                .libelle(libelle)
+                                                                                .sens(Sens.DEBIT)
+                                                                                .montant_debit(transaction
+                                                                                                .getMontant_transaction())
+                                                                                .montant_credit(BigDecimal.ZERO)
+                                                                                .date_ecriture(now)
+                                                                                .created_at(now)
+                                                                                .updated_at(now)
+                                                                                .created_by(current_user)
+                                                                                .updated_by(current_user)
+                                                                                .build();
 
-                // Debit line
-                DetailEcriture debit = DetailEcriture.builder()
-                                .id(UUID.randomUUID())
-                                .tenant(tenant)
-                                .ecriture(ecriture)
-                                .compte(principal_account)
-                                .libelle(libelle)
-                                .sens(Sens.DEBIT)
-                                .montant_debit(transaction.getMontant_transaction())
-                                .montant_credit(BigDecimal.ZERO)
-                                .date_ecriture(now)
-                                .created_at(now)
-                                .updated_at(now)
-                                .created_by(current_user)
-                                .updated_by(current_user)
-                                .build();
+                                                                // Credit line
+                                                                DetailEcriture credit = DetailEcriture.builder()
+                                                                                .tenantId(tenant.getId())
+                                                                                .ecriture_id(ecriture.getId())
+                                                                                .compte_id(counter_account.getId())
+                                                                                .libelle(libelle)
+                                                                                .sens(Sens.CREDIT)
+                                                                                .montant_credit(transaction
+                                                                                                .getMontant_transaction())
+                                                                                .montant_debit(BigDecimal.ZERO)
+                                                                                .date_ecriture(now)
+                                                                                .created_at(now)
+                                                                                .updated_at(now)
+                                                                                .created_by(current_user)
+                                                                                .updated_by(current_user)
+                                                                                .build();
 
-                // Credit line
-                DetailEcriture credit = DetailEcriture.builder()
-                                .id(UUID.randomUUID())
-                                .tenant(tenant)
-                                .ecriture(ecriture)
-                                .compte(counter_account)
-                                .libelle(libelle)
-                                .sens(Sens.CREDIT)
-                                .montant_credit(transaction.getMontant_transaction())
-                                .montant_debit(BigDecimal.ZERO)
-                                .date_ecriture(now)
-                                .created_at(now)
-                                .updated_at(now)
-                                .created_by(current_user)
-                                .updated_by(current_user)
-                                .build();
-
-                createDetailEcriture(debit, tenant, ecriture);
-                createDetailEcriture(credit, tenant, ecriture);
-
-                log.info("💾 Details generated for entry [{}] : debit={}, credit={}",
-                                ecriture.getId(), debit.getMontant_debit(), credit.getMontant_credit());
+                                                                return createDetailEcriture(debit, tenant, ecriture)
+                                                                                .then(createDetailEcriture(credit,
+                                                                                                tenant, ecriture))
+                                                                                .doOnSuccess(v -> log.info(
+                                                                                                "💾 Details generated for entry [{}] : debit={}, credit={}",
+                                                                                                ecriture.getId(),
+                                                                                                debit.getMontant_debit(),
+                                                                                                credit.getMontant_credit()))
+                                                                                .then();
+                                                        });
+                                });
         }
 
         /**
          * Generates accounting lines from a generic accounting object.
-         * 
-         * @param ecriture the entry
-         * @param object   the accounting object
          */
-        public void generateDetailsFromComptableObject(EcritureComptable ecriture, ComptableObject object) {
+        public Mono<Void> generateDetailsFromComptableObject(EcritureComptable ecriture, ComptableObject object) {
                 Tenant tenant = ecriture.getTenant();
-                String current_user = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
-                LocalDateTime now = LocalDateTime.now();
+                if (tenant == null) {
+                        return Mono.error(new IllegalStateException("Tenant is required in entry"));
+                }
 
-                Compte debit_account = compte_repository
-                                .findByTenant_IdAndNo_compte(tenant.getId(), object.get_debit_account())
-                                .orElseThrow(() -> new ResourceNotFoundException("Debit account",
-                                                object.get_debit_account()));
+                return Mono.zip(
+                                compte_repository
+                                                .findByTenant_IdAndNo_compte(tenant.getId(), object.get_debit_account())
+                                                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Debit account",
+                                                                object.get_debit_account()))),
+                                compte_repository
+                                                .findByTenant_IdAndNo_compte(tenant.getId(),
+                                                                object.get_credit_account())
+                                                .switchIfEmpty(Mono.error(new ResourceNotFoundException(
+                                                                "Credit account", object.get_credit_account()))))
+                                .flatMap(tuple -> {
+                                        Compte debit_account = tuple.getT1();
+                                        Compte credit_account = tuple.getT2();
 
-                Compte credit_account = compte_repository
-                                .findByTenant_IdAndNo_compte(tenant.getId(), object.get_credit_account())
-                                .orElseThrow(() -> new ResourceNotFoundException("Credit account",
-                                                object.get_credit_account()));
+                                        LocalDateTime now = LocalDateTime.now();
+                                        BigDecimal montant = object.get_montant();
+                                        String libelle = object.get_description() != null ? object.get_description()
+                                                        : "Auto entry " + object.get_source_type();
 
-                BigDecimal montant = object.get_montant();
-                String libelle = object.get_description() != null ? object.get_description()
-                                : "Auto entry " + object.get_source_type();
+                                        return ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                                                        .flatMap(current_user -> {
+                                                                // Debit
+                                                                DetailEcriture debit = DetailEcriture.builder()
+                                                                                .tenantId(tenant.getId())
+                                                                                .ecriture_id(ecriture.getId())
+                                                                                .compte_id(debit_account.getId())
+                                                                                .libelle(libelle)
+                                                                                .sens(Sens.DEBIT)
+                                                                                .montant_debit(montant)
+                                                                                .montant_credit(BigDecimal.ZERO)
+                                                                                .date_ecriture(now)
+                                                                                .created_at(now)
+                                                                                .updated_at(now)
+                                                                                .created_by(current_user)
+                                                                                .updated_by(current_user)
+                                                                                .build();
 
-                // Debit
-                DetailEcriture debit = DetailEcriture.builder()
-                                .id(UUID.randomUUID())
-                                .tenant(tenant)
-                                .ecriture(ecriture)
-                                .compte(debit_account)
-                                .libelle(libelle)
-                                .sens(Sens.DEBIT)
-                                .montant_debit(montant)
-                                .montant_credit(BigDecimal.ZERO)
-                                .date_ecriture(now)
-                                .created_at(now)
-                                .updated_at(now)
-                                .created_by(current_user)
-                                .updated_by(current_user)
-                                .build();
+                                                                // Credit
+                                                                DetailEcriture credit = DetailEcriture.builder()
+                                                                                .tenantId(tenant.getId())
+                                                                                .ecriture_id(ecriture.getId())
+                                                                                .compte_id(credit_account.getId())
+                                                                                .libelle(libelle)
+                                                                                .sens(Sens.CREDIT)
+                                                                                .montant_credit(montant)
+                                                                                .montant_debit(BigDecimal.ZERO)
+                                                                                .date_ecriture(now)
+                                                                                .created_at(now)
+                                                                                .updated_at(now)
+                                                                                .created_by(current_user)
+                                                                                .updated_by(current_user)
+                                                                                .build();
 
-                // Credit
-                DetailEcriture credit = DetailEcriture.builder()
-                                .id(UUID.randomUUID())
-                                .tenant(tenant)
-                                .ecriture(ecriture)
-                                .compte(credit_account)
-                                .libelle(libelle)
-                                .sens(Sens.CREDIT)
-                                .montant_credit(montant)
-                                .montant_debit(BigDecimal.ZERO)
-                                .date_ecriture(now)
-                                .created_at(now)
-                                .updated_at(now)
-                                .created_by(current_user)
-                                .updated_by(current_user)
-                                .build();
-
-                createDetailEcriture(debit, tenant, ecriture);
-                createDetailEcriture(credit, tenant, ecriture);
-
-                log.info("⚙️ Details generated from accounting object [{}] : {} → {} ({} F)",
-                                object.get_source_type(), debit_account.getNo_compte(), credit_account.getNo_compte(),
-                                montant);
+                                                                return createDetailEcriture(debit, tenant, ecriture)
+                                                                                .then(createDetailEcriture(credit,
+                                                                                                tenant, ecriture))
+                                                                                .doOnSuccess(v -> log.info(
+                                                                                                "⚙️ Details generated from accounting object [{}] : {} → {} ({} F)",
+                                                                                                object.get_source_type(),
+                                                                                                debit_account.getNo_compte(),
+                                                                                                credit_account.getNo_compte(),
+                                                                                                montant))
+                                                                                .then();
+                                                        });
+                                });
         }
 
         /**
          * Retrieves an entry detail by ID and tenant.
-         * 
-         * @param id     the detail ID
-         * @param tenant the tenant
-         * @return optional detail
          */
-        public Optional<DetailEcriture> getDetailEcriture(UUID id, Tenant tenant) {
-                validateTenantAccess();
-                return detail_repository.findById(id)
-                                .filter(d -> d.getTenant().equals(tenant));
+        public Mono<DetailEcriture> getDetailEcriture(UUID id, Tenant tenant) {
+                return validateTenantAccess()
+                                .then(detail_repository.findById(id))
+                                .filter(d -> tenant.getId().equals(d.getTenantId()));
         }
 
         /**
          * Lists all details for a tenant.
-         * 
-         * @param tenant the tenant
-         * @return list of details
          */
-        public List<DetailEcriture> getAllDetailsEcriture(Tenant tenant) {
-                validateTenantAccess();
-                return detail_repository.findByTenant_Id(tenant.getId());
+        public Flux<DetailEcriture> getAllDetailsEcriture(Tenant tenant) {
+                return validateTenantAccess()
+                                .thenMany(detail_repository.findByTenantId(tenant.getId()));
         }
 
         /**
          * Lists details for a specific entry.
-         * 
-         * @param tenant   the tenant
-         * @param ecriture the entry
-         * @return list of details
          */
-        public List<DetailEcriture> getDetailsByEcriture(Tenant tenant, EcritureComptable ecriture) {
-                validateTenantAccess();
-                return detail_repository.findByTenant_IdAndEcriture_Id(tenant.getId(), ecriture.getId());
+        public Flux<DetailEcriture> getDetailsByEcriture(Tenant tenant, EcritureComptable ecriture) {
+                return validateTenantAccess()
+                                .thenMany(detail_repository.findByTenant_IdAndEcriture_Id(tenant.getId(),
+                                                ecriture.getId()));
         }
 
         /**
          * Updates an existing entry detail.
-         * 
-         * @param id             the detail ID
-         * @param updated_detail the updated data
-         * @param tenant         the tenant context
-         * @param ecriture       the associated entry
-         * @return the updated detail
          */
         @Transactional
-        public DetailEcriture updateDetailEcriture(UUID id, DetailEcriture updated_detail, Tenant tenant,
+        public Mono<DetailEcriture> updateDetailEcriture(UUID id, DetailEcriture updated_detail, Tenant tenant,
                         EcritureComptable ecriture) {
-                String current_user = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
-                validateTenantAccess();
+                return validateTenantAccess()
+                                .then(ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system"))
+                                .flatMap(current_user -> {
+                                        return detail_repository.findById(id)
+                                                        .filter(d -> tenant.getId().equals(d.getTenantId()))
+                                                        .switchIfEmpty(Mono.error(new IllegalArgumentException(
+                                                                        "Entry detail not found: " + id)))
+                                                        .flatMap(existing -> {
+                                                                return validateDetailEcriture(updated_detail)
+                                                                                .then(Mono.defer(() -> {
+                                                                                        existing.setLibelle(
+                                                                                                        updated_detail.getLibelle());
+                                                                                        existing.setSens(updated_detail
+                                                                                                        .getSens());
+                                                                                        existing.setMontant_debit(
+                                                                                                        updated_detail.getMontant_debit());
+                                                                                        existing.setMontant_credit(
+                                                                                                        updated_detail.getMontant_credit());
+                                                                                        existing.setNotes(updated_detail
+                                                                                                        .getNotes());
+                                                                                        existing.setUpdated_at(
+                                                                                                        LocalDateTime.now());
+                                                                                        existing.setUpdated_by(
+                                                                                                        current_user);
 
-                DetailEcriture existing = detail_repository.findById(id)
-                                .filter(d -> d.getTenant().equals(tenant))
-                                .orElseThrow(() -> new IllegalArgumentException("Entry detail not found: " + id));
+                                                                                        // Set opposite amount to zero
+                                                                                        // based on sens
+                                                                                        Sens sens = existing.getSens();
+                                                                                        if (sens == Sens.DEBIT) {
+                                                                                                existing.setMontant_credit(
+                                                                                                                BigDecimal.ZERO);
+                                                                                        } else if (sens == Sens.CREDIT) {
+                                                                                                existing.setMontant_debit(
+                                                                                                                BigDecimal.ZERO);
+                                                                                        }
 
-                validateDetailEcriture(updated_detail);
-
-                existing.setLibelle(updated_detail.getLibelle());
-                existing.setSens(updated_detail.getSens());
-                existing.setMontant_debit(updated_detail.getMontant_debit());
-                existing.setMontant_credit(updated_detail.getMontant_credit());
-                existing.setNotes(updated_detail.getNotes());
-                existing.setUpdated_at(LocalDateTime.now());
-                existing.setUpdated_by(current_user);
-
-                // Set opposite amount to zero based on sens
-                Sens sens = existing.getSens();
-                if (sens == Sens.DEBIT) {
-                        existing.setMontant_credit(BigDecimal.ZERO);
-                } else if (sens == Sens.CREDIT) {
-                        existing.setMontant_debit(BigDecimal.ZERO);
-                }
-
-                DetailEcriture saved = detail_repository.save(existing);
-                logAudit(tenant, ecriture.getId(), current_user, "UPDATE",
-                                "Update of entry detail " + saved.getId());
-
-                DetailEcritureDto savedDto = mapToDto(saved);
-                kafka_message_service.sendAccountingEvent(savedDto, tenant.getId(), "DETAIL_UPDATED");
-
-                log.info("✏️ Entry detail updated: {}", saved.getId());
-                return saved;
+                                                                                        return detail_repository
+                                                                                                        .save(existing)
+                                                                                                        .flatMap(saved -> logAudit(
+                                                                                                                        tenant,
+                                                                                                                        ecriture.getId(),
+                                                                                                                        current_user,
+                                                                                                                        "UPDATE",
+                                                                                                                        "Update of entry detail "
+                                                                                                                                        + saved.getId())
+                                                                                                                        .then(Mono.fromRunnable(
+                                                                                                                                        () -> {
+                                                                                                                                                DetailEcritureDto savedDto = mapToDto(
+                                                                                                                                                                saved);
+                                                                                                                                                kafka_message_service
+                                                                                                                                                                .sendAccountingEvent(
+                                                                                                                                                                                savedDto,
+                                                                                                                                                                                tenant.getId(),
+                                                                                                                                                                                "DETAIL_UPDATED");
+                                                                                                                                        }))
+                                                                                                                        .thenReturn(saved));
+                                                                                }));
+                                                        });
+                                });
         }
 
         /**
          * Deletes an entry detail.
-         * 
-         * @param id       the detail ID
-         * @param tenant   the tenant context
-         * @param ecriture the associated entry
          */
         @Transactional
-        public void deleteDetailEcriture(UUID id, Tenant tenant, EcritureComptable ecriture) {
-                validateTenantAccess();
-                String current_user = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
-
-                DetailEcriture detail = detail_repository.findById(id)
-                                .filter(d -> d.getTenant().equals(tenant))
-                                .orElseThrow(() -> new IllegalArgumentException("Entry detail not found: " + id));
-
-                detail_repository.delete(detail);
-                logAudit(tenant, ecriture.getId(), current_user, "DELETE",
-                                "Deletion of entry detail " + id);
-                kafka_message_service.sendAccountingEvent(id, tenant.getId(), "DETAIL_DELETED");
-
-                log.info("🗑️ Entry detail deleted: {}", id);
+        public Mono<Void> deleteDetailEcriture(UUID id, Tenant tenant, EcritureComptable ecriture) {
+                return validateTenantAccess()
+                                .then(ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system"))
+                                .flatMap(current_user -> {
+                                        return detail_repository.findById(id)
+                                                        .filter(d -> tenant.getId().equals(d.getTenantId()))
+                                                        .switchIfEmpty(Mono.error(new IllegalArgumentException(
+                                                                        "Entry detail not found: " + id)))
+                                                        .flatMap(detail -> {
+                                                                return detail_repository.delete(detail)
+                                                                                .then(logAudit(tenant, ecriture.getId(),
+                                                                                                current_user, "DELETE",
+                                                                                                "Deletion of entry detail "
+                                                                                                                + id))
+                                                                                .then(kafka_message_service
+                                                                                                .sendAccountingEvent(
+                                                                                                                id,
+                                                                                                                tenant.getId(),
+                                                                                                                "DETAIL_DELETED"))
+                                                                                .doOnSuccess(v -> log.info(
+                                                                                                "🗑️ Entry detail deleted: {}",
+                                                                                                id));
+                                                        });
+                                });
         }
 
         /**
          * Validates the data of an entry detail.
-         * 
-         * @param detail the detail to validate
          */
-        private void validateDetailEcriture(DetailEcriture detail) {
-                var violations = validator.validate(detail);
-                if (!violations.isEmpty())
-                        throw new ConstraintViolationException(violations);
+        private Mono<Void> validateDetailEcriture(DetailEcriture detail) {
+                return Mono.defer(() -> {
+                        var violations = validator.validate(detail);
+                        if (!violations.isEmpty())
+                                return Mono.error(new ConstraintViolationException(violations));
 
-                Tenant tenant = TenantContext.getCurrentTenantAsTenant();
-                Compte plan = compte_repository
-                                .findById(detail.getCompte().getId())
-                                .filter(p -> p.getTenant().equals(tenant))
-                                .orElseThrow(() -> new IllegalArgumentException(
-                                                "Accounting account not found: " + detail.getCompte().getId()));
+                        if (detail.getCompte_id() == null) {
+                                return Mono.error(new IllegalArgumentException("Compte ID is required"));
+                        }
 
-                if (!Boolean.TRUE.equals(plan.getActif()))
-                        throw new IllegalArgumentException("Inactive account: " + plan.getNo_compte());
+                        return ReactiveTenantContext.getTenantId()
+                                        .flatMap(tenant_id -> {
+                                                return compte_repository.findById(detail.getCompte_id())
+                                                                .filter(p -> tenant_id.equals(p.getTenantId()))
+                                                                .switchIfEmpty(Mono.error(new IllegalArgumentException(
+                                                                                "Accounting account not found: "
+                                                                                                + detail.getCompte_id())))
+                                                                .flatMap(plan -> {
+                                                                        if (!Boolean.TRUE.equals(plan.getActif()))
+                                                                                return Mono.error(
+                                                                                                new IllegalArgumentException(
+                                                                                                                "Inactive account: "
+                                                                                                                                + plan.getNo_compte()));
 
-                if (detail.getSens() == Sens.DEBIT && detail.getMontant_debit().compareTo(BigDecimal.ZERO) <= 0)
-                        throw new IllegalArgumentException("Debit amount must be positive");
+                                                                        if (detail.getSens() == Sens.DEBIT && (detail
+                                                                                        .getMontant_debit() == null
+                                                                                        || detail.getMontant_debit()
+                                                                                                        .compareTo(BigDecimal.ZERO) <= 0))
+                                                                                return Mono.error(
+                                                                                                new IllegalArgumentException(
+                                                                                                                "Debit amount must be positive"));
 
-                if (detail.getSens() == Sens.CREDIT && detail.getMontant_credit().compareTo(BigDecimal.ZERO) <= 0)
-                        throw new IllegalArgumentException("Credit amount must be positive");
+                                                                        if (detail.getSens() == Sens.CREDIT && (detail
+                                                                                        .getMontant_credit() == null
+                                                                                        || detail.getMontant_credit()
+                                                                                                        .compareTo(BigDecimal.ZERO) <= 0))
+                                                                                return Mono.error(
+                                                                                                new IllegalArgumentException(
+                                                                                                                "Credit amount must be positive"));
+
+                                                                        return Mono.empty();
+                                                                });
+                                        }).then();
+                });
         }
 
         /**
          * Logs an audit action for an entry detail change.
-         * 
-         * @param tenant                the tenant context
-         * @param ecriture_comptable_id the entry ID
-         * @param utilisateur           the user performing the action
-         * @param action                the action name
-         * @param details               descriptive details of the action
          */
-        private void logAudit(Tenant tenant, UUID ecriture_comptable_id, String utilisateur, String action,
+        private Mono<Void> logAudit(Tenant tenant, UUID ecriture_comptable_id, String utilisateur, String action,
                         String details) {
                 JournalAudit audit = JournalAudit.builder()
-                                .tenant(tenant)
+                                .id(UUID.randomUUID())
+                                .tenantId(tenant.getId())
                                 .ecriture_comptable_id(ecriture_comptable_id)
                                 .utilisateur(utilisateur)
                                 .action(action)
@@ -389,35 +445,37 @@ public class DetailEcritureService {
                                 .updated_by(utilisateur)
                                 .build();
 
-                journal_audit_repository.save(audit);
+                return journal_audit_repository.save(audit)
+                                .flatMap(saved -> {
+                                        JournalAuditDto auditDto = JournalAuditDto.builder()
+                                                        .id(saved.getId())
+                                                        .action(action)
+                                                        .utilisateur(utilisateur)
+                                                        .details(details)
+                                                        .date_action(saved.getDate_action())
+                                                        .ecriture_comptable_id(ecriture_comptable_id)
+                                                        .build();
 
-                // Publish to Kafka via standardized service
-                JournalAuditDto auditDto = JournalAuditDto.builder()
-                                .id(audit.getId())
-                                .action(action)
-                                .utilisateur(utilisateur)
-                                .details(details)
-                                .date_action(audit.getDate_action())
-                                .ecriture_comptable_id(ecriture_comptable_id)
-                                .build();
-
-                kafka_message_service.sendAuditLog(auditDto, tenant.getId(), action);
+                                        kafka_message_service.sendAuditLog(auditDto, tenant.getId(), action);
+                                        return Mono.empty();
+                                });
         }
 
         /**
          * Ensures that a tenant context is defined.
          */
-        private void validateTenantAccess() {
-                if (TenantContext.getCurrentTenant() == null)
-                        throw new SecurityException("Access denied: Tenant ID not defined");
+        private Mono<Void> validateTenantAccess() {
+                return ReactiveTenantContext.getTenantId()
+                                .switchIfEmpty(Mono
+                                                .error(new SecurityException("Access denied: Tenant ID not defined")))
+                                .then();
         }
 
         private DetailEcritureDto mapToDto(DetailEcriture entity) {
                 return DetailEcritureDto.builder()
                                 .id(entity.getId())
-                                .ecriture_comptable_id(
-                                                entity.getEcriture() != null ? entity.getEcriture().getId() : null)
-                                .compte_comptable_id(entity.getCompte() != null ? entity.getCompte().getId() : null)
+                                .ecriture_comptable_id(entity.getEcriture_id())
+                                .compte_comptable_id(entity.getCompte_id())
                                 .libelle(entity.getLibelle())
                                 .sens(entity.getSens() != null ? entity.getSens().name() : null)
                                 .montant_debit(entity.getMontant_debit())

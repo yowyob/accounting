@@ -46,15 +46,14 @@ public class LettrageController {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Non authentifié"),
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Accès refusé")
         })
-        public ResponseEntity<ApiResponseWrapper<Integer>> lancerLettrageAutomatique() {
+        public reactor.core.publisher.Mono<ResponseEntity<ApiResponseWrapper<Integer>>> lancerLettrageAutomatique() {
                 UUID tenant_id = TenantContext.getCurrentTenant();
                 log.info("🔗 Launching automatic reconciliation for tenant {}", tenant_id);
 
-                int paires_lettrees = lettrage_service.lettrerToutLeTenant(tenant_id);
-
-                return ResponseEntity.ok(ApiResponseWrapper.success(
-                                paires_lettrees,
-                                paires_lettrees + " paires d'écritures lettrées automatiquement"));
+                return lettrage_service.lettrerToutLeTenant(tenant_id)
+                                .map(paires_lettrees -> ResponseEntity.ok(ApiResponseWrapper.success(
+                                                paires_lettrees,
+                                                paires_lettrees + " paires d'écritures lettrées automatiquement")));
         }
 
         /**

@@ -1,10 +1,10 @@
 package com.yowyob.erp.accounting.service;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
 
 import java.util.*;
 
@@ -13,13 +13,12 @@ import java.util.*;
  */
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class LettrageAutomatiqueService {
 
-    private final EntityManager em;
+    private final DatabaseClient databaseClient;
 
     @Transactional
-    public int lettrerToutLeTenant(UUID tenantId) {
+    public Mono<Integer> lettrerToutLeTenant(UUID tenantId) {
         String sql = """
                 WITH candidats AS (
                     SELECT
@@ -43,12 +42,13 @@ public class LettrageAutomatiqueService {
                 SET lettree = true,
                     date_lettrage = CURRENT_DATE
                 FROM candidats c
-                WHERE d.id = c.id_debit OR d.id = c.id_credit;
+                WHERE d.id = c.id_debit OR d.id = c.id_credit
                 """;
 
-        Query q = em.createNativeQuery(sql);
-        q.setParameter("tenantId", tenantId);
-        int lignes = q.executeUpdate();
-        return lignes / 2;
+        return databaseClient.sql(sql)
+                .bind("tenantId", tenantId)
+                .fetch()
+                .rowsUpdated()
+                .map(lignes -> lignes.intValue() / 2);
     }
 }

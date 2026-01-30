@@ -8,17 +8,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
 
 /**
- * Service to initialize default Organizations and link existing Tenants.
- * 
- * @author ALD
- * @date 03.01.2026
+ * Reactive Service to initialize default Organizations and link existing
+ * Tenants.
  */
 @Slf4j
 @Service
-@Order(0) // Run before other initializers
+@Order(0)
 @RequiredArgsConstructor
 public class OrganizationInitializationService implements CommandLineRunner {
 
@@ -26,12 +24,11 @@ public class OrganizationInitializationService implements CommandLineRunner {
     private final TenantRepository tenant_repository;
 
     @Override
-    @Transactional
     public void run(String... args) {
-        log.info("Initializing default organizations...");
+        log.info("Initializing default organizations (reactive)...");
 
-        Organization default_org = organization_repository.findByName("YOWYOB Group")
-                .orElseGet(() -> {
+        organization_repository.findByName("YOWYOB Group")
+                .switchIfEmpty(Mono.defer(() -> {
                     log.info("Creating default organization: YOWYOB Group");
                     Organization org = Organization.builder()
                             .name("YOWYOB Group")
@@ -40,15 +37,20 @@ public class OrganizationInitializationService implements CommandLineRunner {
                             .tax_id("TAX-001")
                             .build();
                     return organization_repository.save(org);
-                });
-
-        // Link all orphans tenants to the default organization
-        tenant_repository.findAll().stream()
-                .filter(t -> t.getOrganization() == null)
-                .forEach(t -> {
-                    log.info("Linking tenant {} to organization {}", t.getCode(), default_org.getName());
-                    t.setOrganization(default_org);
-                    tenant_repository.save(t);
-                });
+                }))
+                .flatMap(default_org -> {
+                    // Link all orphans tenants to the default organization
+                    return tenant_repository.findAll()
+                            .filter(t -> t.getOrganization() == null)
+                            .flatMap(t -> {
+                                log.info("Linking tenant {} to organization {}", t.getCode(), default_org.getName());
+                                t.setOrganization(default_org);
+                                return tenant_repository.save(t);
+                            })
+                            .then();
+                })
+                .doOnSuccess(v -> log.info("Organization initialization completed."))
+                .doOnError(e -> log.error("Error during organization initialization: {}", e.getMessage()))
+                .subscribe();
     }
 }

@@ -1,22 +1,23 @@
 package com.yowyob.erp.accounting.entity;
 
-import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.relational.core.mapping.Column;
 import jakarta.validation.constraints.NotNull;
-import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Entity representing an Exchange Rate (Taux de Change).
- * Rates are tenant-specific and define the conversion from source to target
- * currency.
- * 
- * @author ALD
- * @date 30.09.25
+ * Entity representing an Exchange Rate (Taux de Change) for R2DBC.
  */
-@Entity
 @Table(name = "taux_change")
 @Getter
 @Setter
@@ -26,35 +27,41 @@ import java.util.UUID;
 public class TauxChange {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @NotNull
-    @ManyToOne
-    @JoinColumn(name = "tenant_id", nullable = false)
-    private Tenant tenant;
+    @Column("tenant_id")
+    private UUID tenantId;
 
     @NotNull
-    @ManyToOne
-    @JoinColumn(name = "devise_source_id", nullable = false)
-    private Devise devise_source;
+    @Column("devise_source_id")
+    private UUID devise_source_id;
 
     @NotNull
-    @ManyToOne
-    @JoinColumn(name = "devise_cible_id", nullable = false)
-    private Devise devise_cible;
+    @Column("devise_cible_id")
+    private UUID devise_cible_id;
 
     @NotNull
-    @Column(precision = 18, scale = 6, nullable = false)
+    @Column("taux")
     private BigDecimal taux;
 
     @NotNull
-    @Column(name = "date_effet", nullable = false)
+    @Column("date_effet")
     private LocalDateTime date_effet;
 
+    @Column("notes")
     private String notes;
 
     @Builder.Default
-    @Column(name = "created_at")
+    @Column("created_at")
     private LocalDateTime created_at = LocalDateTime.now();
+
+    @Transient
+    private Tenant tenant;
+
+    @Transient
+    private Devise devise_source;
+
+    @Transient
+    private Devise devise_cible;
 }

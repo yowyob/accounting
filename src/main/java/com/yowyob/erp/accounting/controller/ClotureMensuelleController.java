@@ -2,7 +2,7 @@ package com.yowyob.erp.accounting.controller;
 
 import com.yowyob.erp.accounting.service.ClotureMensuelleService;
 import com.yowyob.erp.common.dto.ApiResponseWrapper;
-import com.yowyob.erp.config.tenant.TenantContext;
+import com.yowyob.erp.config.tenant.ReactiveTenantContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 import java.util.Map;
 import java.util.UUID;
@@ -36,7 +37,7 @@ public class ClotureMensuelleController {
          * Closes a monthly accounting period.
          * Validates all entries and generates closing entries.
          * 
-         * @param periode_id the period ID to close
+         * @param periodeId the period ID to close
          * @return closure result with generated entries
          */
         @PostMapping("/mensuelle/{periodeId}")
@@ -49,22 +50,28 @@ public class ClotureMensuelleController {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Accès refusé"),
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Période non trouvée")
         })
-        public ResponseEntity<ApiResponseWrapper<Map<String, Object>>> cloturerPeriode(@PathVariable UUID periodeId) {
-                UUID tenant_id = TenantContext.getCurrentTenant();
-                String user = TenantContext.getCurrentUser();
-                log.info("🔒 Closing period {} for tenant {} by user {}", periodeId, tenant_id, user);
+        public Mono<ResponseEntity<ApiResponseWrapper<Map<String, Object>>>> cloturerPeriode(
+                        @PathVariable UUID periodeId) {
+                return ReactiveTenantContext.getTenantId()
+                                .zipWith(ReactiveTenantContext.getCurrentUser())
+                                .flatMap(tuple -> {
+                                        UUID tenant_id = tuple.getT1();
+                                        String user = tuple.getT2();
+                                        log.info("🔒 Closing period {} for tenant {} by user {}", periodeId, tenant_id,
+                                                        user);
 
-                Map<String, Object> resultat = cloture_service.cloturerPeriode(periodeId, user);
-
-                return ResponseEntity.ok(ApiResponseWrapper.success(
-                                resultat,
-                                "Période clôturée avec succès"));
+                                        return cloture_service.cloturerPeriode(periodeId, user)
+                                                        .map(resultat -> ResponseEntity.ok(ApiResponseWrapper.success(
+                                                                        resultat,
+                                                                        "Période clôturée avec succès")))
+                                                        .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                });
         }
 
         /**
          * Checks if a period is eligible for closure.
          * 
-         * @param periode_id the period ID to check
+         * @param periodeId the period ID to check
          * @return eligibility status and validation details
          */
         @GetMapping("/status/{periodeId}")
@@ -75,22 +82,24 @@ public class ClotureMensuelleController {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Non authentifié"),
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Période non trouvée")
         })
-        public ResponseEntity<ApiResponseWrapper<Map<String, Object>>> verifierEligibilite(
+        public Mono<ResponseEntity<ApiResponseWrapper<Map<String, Object>>>> verifierEligibilite(
                         @PathVariable UUID periodeId) {
-                UUID tenant_id = TenantContext.getCurrentTenant();
-                log.info("🔍 Checking closure eligibility for period {} of tenant {}", periodeId, tenant_id);
-
-                Map<String, Object> statut = cloture_service.verifierEligibiliteCloture(periodeId);
-
-                return ResponseEntity.ok(ApiResponseWrapper.success(
-                                statut,
-                                "Statut de clôture vérifié"));
+                return ReactiveTenantContext.getTenantId()
+                                .flatMap(tenant_id -> {
+                                        log.info("🔍 Checking closure eligibility for period {} of tenant {}",
+                                                        periodeId, tenant_id);
+                                        return cloture_service.verifierEligibiliteCloture(periodeId)
+                                                        .map(statut -> ResponseEntity.ok(ApiResponseWrapper.success(
+                                                                        statut,
+                                                                        "Statut de clôture vérifié")))
+                                                        .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                });
         }
 
         /**
          * Cancels a period closure (admin only).
          * 
-         * @param periode_id the period ID to reopen
+         * @param periodeId the period ID to reopen
          * @return cancellation result
          */
         @PostMapping("/annuler/{periodeId}")
@@ -102,15 +111,15 @@ public class ClotureMensuelleController {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Accès refusé - Admin uniquement"),
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Période non trouvée")
         })
-        public ResponseEntity<ApiResponseWrapper<String>> annulerCloture(@PathVariable UUID periodeId) {
-                UUID tenant_id = TenantContext.getCurrentTenant();
-                String user = TenantContext.getCurrentUser();
-                log.warn("⚠️ Cancelling closure for period {} by admin {}", periodeId, user);
-
-                cloture_service.annulerCloture(periodeId, user);
-
-                return ResponseEntity.ok(ApiResponseWrapper.success(
-                                "Clôture annulée",
-                                "La période a été réouverte avec succès"));
+        public Mono<ResponseEntity<ApiResponseWrapper<String>>> annulerCloture(@PathVariable UUID periodeId) {
+                return ReactiveTenantContext.getCurrentUser()
+                                .flatMap(user -> {
+                                        log.warn("⚠️ Cancelling closure for period {} by admin {}", periodeId, user);
+                                        return cloture_service.annulerCloture(periodeId, user)
+                                                        .then(Mono.just(ResponseEntity.ok(ApiResponseWrapper.success(
+                                                                        "Clôture annulée",
+                                                                        "La période a été réouverte avec succès"))))
+                                                        .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                });
         }
 }

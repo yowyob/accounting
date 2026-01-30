@@ -1,29 +1,33 @@
 package com.yowyob.erp.accounting.repository;
 
 import com.yowyob.erp.accounting.entity.Taxe;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Repository for Taxe entity.
- * 
- * @author ALD
- * @date 30.09.25
+ * Reactive R2DBC Repository for Taxe entity.
  */
 @Repository
-public interface TaxeRepository extends JpaRepository<Taxe, UUID> {
+public interface TaxeRepository extends R2dbcRepository<Taxe, UUID> {
 
-    List<Taxe> findByTenant_Id(UUID tenant_id);
+    @Query("SELECT * FROM taxes WHERE tenant_id = :tenant_id")
+    Flux<Taxe> findByTenant_Id(@Param("tenant_id") UUID tenant_id);
 
-    List<Taxe> findByTenant_IdAndActifTrue(UUID tenant_id);
+    @Query("SELECT * FROM taxes WHERE tenant_id = :tenant_id AND actif = true")
+    Flux<Taxe> findByTenant_IdAndActifTrue(@Param("tenant_id") UUID tenant_id);
 
-    Optional<Taxe> findByTenant_IdAndId(UUID tenant_id, UUID id);
+    @Query("SELECT * FROM taxes WHERE tenant_id = :tenant_id AND id = :id")
+    Mono<Taxe> findByTenant_IdAndId(@Param("tenant_id") UUID tenant_id, @Param("id") UUID id);
 
-    Optional<Taxe> findByTenant_IdAndCode(UUID tenant_id, String code);
+    @Query("SELECT * FROM taxes WHERE tenant_id = :tenant_id AND code = :code")
+    Mono<Taxe> findByTenant_IdAndCode(@Param("tenant_id") UUID tenant_id, @Param("code") String code);
 
-    boolean existsByTenant_IdAndCode(UUID tenant_id, String code);
+    @Query("SELECT COUNT(*) > 0 FROM taxes WHERE tenant_id = :tenant_id AND code = :code")
+    Mono<Boolean> existsByTenant_IdAndCode(@Param("tenant_id") UUID tenant_id, @Param("code") String code);
 }

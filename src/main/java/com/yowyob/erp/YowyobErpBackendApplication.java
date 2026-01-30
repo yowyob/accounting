@@ -25,8 +25,10 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
  * * Auteur : AZANGUE LEONEL DELMAT
  * Licence : Interne - © 2025 Yowyob Technologies
  * * NOTE SUR LES TRANSACTIONS :
- * La présence de KafkaTransactionManager et JpaTransactionManager causait un conflit.
- * Ce conflit est résolu par la classe com.yowyob.erp.config.PrimaryTransactionManagerConfig 
+ * La présence de KafkaTransactionManager et JpaTransactionManager causait un
+ * conflit.
+ * Ce conflit est résolu par la classe
+ * com.yowyob.erp.config.PrimaryTransactionManagerConfig
  * qui désigne explicitement le JpaTransactionManager comme @Primary.
  */
 @SpringBootApplication
@@ -34,7 +36,6 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableKafka
 @EnableAsync
 @EnableTransactionManagement
-@EnableJpaRepositories // Supprime basePackages pour scanner tous les packages sous com.yowyob.erp
 public class YowyobErpBackendApplication {
 
     public static void main(String[] args) {

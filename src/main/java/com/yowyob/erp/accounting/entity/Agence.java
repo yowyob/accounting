@@ -1,6 +1,8 @@
 package com.yowyob.erp.accounting.entity;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 import lombok.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -12,8 +14,7 @@ import java.util.UUID;
  * @author ALD
  * @date 30.12.2025
  */
-@Entity
-@Table(name = "agences")
+@Table("agences")
 @Getter
 @Setter
 @Builder
@@ -22,17 +23,13 @@ import java.util.UUID;
 public class Agence {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tenant_id", nullable = false)
-    private Tenant tenant;
+    @Column("tenant_id")
+    private UUID tenantId;
 
-    @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false, unique = true)
     private String code;
 
     private String address;
@@ -41,15 +38,4 @@ public class Agence {
 
     private LocalDateTime created_at;
     private LocalDateTime updated_at;
-
-    @PrePersist
-    public void onCreate() {
-        this.created_at = LocalDateTime.now();
-        this.updated_at = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    public void onUpdate() {
-        this.updated_at = LocalDateTime.now();
-    }
 }

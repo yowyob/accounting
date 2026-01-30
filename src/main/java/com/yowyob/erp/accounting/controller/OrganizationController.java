@@ -7,17 +7,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
- * REST Controller for managing Organizations.
- * 
- * @author ALD
- * @date 03.01.2026
+ * Reactive REST Controller for managing Organizations.
  */
 @RestController
 @RequestMapping("/api/accounting/organizations")
@@ -29,39 +25,40 @@ public class OrganizationController {
 
     @PostMapping
     @Operation(summary = "Create a new organization")
-    public ResponseEntity<ApiResponseWrapper<OrganizationDto>> createOrganization(
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<ApiResponseWrapper<OrganizationDto>> createOrganization(
             @RequestBody OrganizationDto organization_dto) {
-        OrganizationDto created = organization_service.createOrganization(organization_dto);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponseWrapper.success(created, "Organization created successfully"));
+        return organization_service.createOrganization(organization_dto)
+                .map(created -> ApiResponseWrapper.success(created, "Organization created successfully"));
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get organization by ID")
-    public ResponseEntity<ApiResponseWrapper<OrganizationDto>> getOrganization(@PathVariable UUID id) {
-        OrganizationDto organization = organization_service.getOrganization(id);
-        return ResponseEntity.ok(ApiResponseWrapper.success(organization, "Organization found"));
+    public Mono<ApiResponseWrapper<OrganizationDto>> getOrganization(@PathVariable UUID id) {
+        return organization_service.getOrganization(id)
+                .map(organization -> ApiResponseWrapper.success(organization, "Organization found"));
     }
 
     @GetMapping
     @Operation(summary = "Get all organizations")
-    public ResponseEntity<ApiResponseWrapper<List<OrganizationDto>>> getAllOrganizations() {
-        List<OrganizationDto> organizations = organization_service.getAllOrganizations();
-        return ResponseEntity.ok(ApiResponseWrapper.success(organizations, "Organizations list retrieved"));
+    public Mono<ApiResponseWrapper<java.util.List<OrganizationDto>>> getAllOrganizations() {
+        return organization_service.getAllOrganizations()
+                .collectList()
+                .map(organizations -> ApiResponseWrapper.success(organizations, "Organizations list retrieved"));
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Update an organization")
-    public ResponseEntity<ApiResponseWrapper<OrganizationDto>> updateOrganization(@PathVariable UUID id,
+    public Mono<ApiResponseWrapper<OrganizationDto>> updateOrganization(@PathVariable UUID id,
             @RequestBody OrganizationDto organization_dto) {
-        OrganizationDto updated = organization_service.updateOrganization(id, organization_dto);
-        return ResponseEntity.ok(ApiResponseWrapper.success(updated, "Organization updated successfully"));
+        return organization_service.updateOrganization(id, organization_dto)
+                .map(updated -> ApiResponseWrapper.success(updated, "Organization updated successfully"));
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete an organization")
-    public ResponseEntity<ApiResponseWrapper<Void>> deleteOrganization(@PathVariable UUID id) {
-        organization_service.deleteOrganization(id);
-        return ResponseEntity.ok(ApiResponseWrapper.success(null, "Organization deleted successfully"));
+    public Mono<ApiResponseWrapper<Void>> deleteOrganization(@PathVariable UUID id) {
+        return organization_service.deleteOrganization(id)
+                .thenReturn(ApiResponseWrapper.success(null, "Organization deleted successfully"));
     }
 }

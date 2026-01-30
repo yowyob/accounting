@@ -1,131 +1,112 @@
 package com.yowyob.erp.accounting.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.relational.core.mapping.Column;
+import com.yowyob.erp.common.persistence.SettablePersistable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
-import com.yowyob.erp.config.tenant.TenantContext;
 
 /**
- * Parametrable accounting operation (Phase 1 of OHADA configuration).
- * Joined with Tenant and JournalComptable for relational integrity.
- * 
- * @author ALD
- * @date 30.09.25
+ * Parametrable accounting operation (Phase 1 of OHADA configuration) for R2DBC.
  */
-@Entity
 @Table(name = "operation_comptable")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class OperationComptable {
+public class OperationComptable implements SettablePersistable<UUID> {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "operation_id")
+    @Column("operation_id")
     private UUID id;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tenant_id", nullable = false)
-    private Tenant tenant;
+    @Column("tenant_id")
+    private UUID tenantId;
 
     @NotBlank
-    @Column(name = "type_operation", length = 50, nullable = false)
+    @Column("type_operation")
     private String type_operation;
 
     @NotBlank
-    @Column(name = "mode_reglement", length = 50, nullable = false)
+    @Column("mode_reglement")
     private String mode_reglement;
 
-    @NotBlank
-    @Column(name = "compte_principal", length = 20, nullable = false)
-    private String compte_principal;
+    @NotNull
+    @Column("compte_principal_id")
+    private UUID compte_principal_id;
 
     @Builder.Default
-    @Column(name = "est_compte_statique", nullable = false)
+    @Column("est_compte_statique")
     private Boolean est_compte_statique = false;
 
     @Pattern(regexp = "DEBIT|CREDIT", message = "Sens principal must be DEBIT or CREDIT")
-    @Column(name = "sens_principal", length = 10)
+    @Column("sens_principal")
     private String sens_principal;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "journal_comptable_id")
-    private JournalComptable journal_comptable;
+    @Column("journal_comptable_id")
+    private UUID journal_comptable_id;
 
     @Pattern(regexp = "HT|TTC|TVA|PAU", message = "Type montant must be HT, TTC, TVA, or PAU")
-    @Column(name = "type_montant", length = 10)
+    @Column("type_montant")
     private String type_montant;
 
     @PositiveOrZero
     @Builder.Default
-    @Column(name = "plafond_client")
+    @Column("plafond_client")
     private BigDecimal plafond_client = BigDecimal.ZERO;
 
     @Builder.Default
-    @Column(nullable = false)
+    @Column("actif")
     private Boolean actif = true;
 
-    @Column(length = 255)
+    @Column("notes")
     private String notes;
 
-    /** Created at timestamp */
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column("created_at")
     private LocalDateTime created_at;
 
-    /** Last updated at timestamp */
-    @Column(name = "updated_at", nullable = false)
+    @Column("updated_at")
     private LocalDateTime updated_at;
 
-    /** Creator user */
     @Size(max = 255)
-    @Column(name = "created_by", length = 255)
+    @Column("created_by")
     private String created_by;
 
-    /** User who last modified the resource */
     @Size(max = 255)
-    @Column(name = "updated_by", length = 255)
+    @Column("updated_by")
     private String updated_by;
 
-    /**
-     * Initializes timestamps and creator before persistence.
-     */
-    @PrePersist
-    public void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        this.created_at = now;
-        this.updated_at = now;
-        this.created_by = TenantContext.getCurrentUser() != null ? TenantContext.getCurrentUser() : "system";
+    @Transient
+    private Tenant tenant;
+
+    @Transient
+    private JournalComptable journal_comptable;
+
+    @Transient
+    @Builder.Default
+    private boolean isNew = true;
+
+    @Override
+    @Transient
+    public boolean isNew() {
+        return isNew || id == null;
     }
 
-    /**
-     * Updates the timestamp and modifier before update.
-     */
-    @PreUpdate
-    public void onUpdate() {
-        this.updated_at = LocalDateTime.now();
-        this.updated_by = TenantContext.getCurrentUser() != null ? TenantContext.getCurrentUser() : "system";
+    public void setNotNew() {
+        this.isNew = false;
     }
 }

@@ -1,10 +1,6 @@
 package com.yowyob.erp.accounting.service;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,20 +8,16 @@ import com.yowyob.erp.accounting.dto.PlanComptableTemplateDto;
 import com.yowyob.erp.accounting.entity.PlanComptableTemplate;
 import com.yowyob.erp.accounting.repository.PlanComptableTemplateRepository;
 import com.yowyob.erp.common.service.ValidationService;
-import com.yowyob.erp.config.tenant.TenantContext;
+import com.yowyob.erp.config.tenant.ReactiveTenantContext;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * Service for managing the accounting plan templates (official OHADA
  * references).
- * Provides functionality to create and retrieve template accounts used across
- * all tenants.
- * Follows snake_case naming and English Javadoc as per development charter.
- * 
- * @author ALD
- * @date 30.09.25
  */
 @Service
 @RequiredArgsConstructor
@@ -37,54 +29,49 @@ public class PlanComptableTemplateService {
 
     /**
      * Creates a new accounting account template.
-     * 
-     * @param dto the template data
-     * @return the created template DTO
      */
     @Transactional
-    public PlanComptableTemplateDto createAccount(PlanComptableTemplateDto dto) {
-        String current_user = Optional.ofNullable(TenantContext.getCurrentUser()).orElse("system");
-        log.info("Creating accounting template account {}", dto.getNumero());
+    public Mono<PlanComptableTemplateDto> createAccount(PlanComptableTemplateDto dto) {
+        return ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                .flatMap(current_user -> {
+                    log.info("Creating accounting template account {}", dto.getNumero());
 
-        validation_service.validateAccountNumber(dto.getNumero());
+                    try {
+                        validation_service.validateAccountNumber(dto.getNumero());
+                    } catch (Exception e) {
+                        return Mono.error(e);
+                    }
 
-        PlanComptableTemplate account = PlanComptableTemplate.builder()
-                .numero(dto.getNumero())
-                .classe(Character.getNumericValue(dto.getNumero().charAt(0)))
-                .libelle(dto.getLibelle())
-                .notes(dto.getNotes())
-                .actif(true)
-                .created_at(LocalDateTime.now())
-                .updated_at(LocalDateTime.now())
-                .created_by(current_user)
-                .updated_by(current_user)
-                .build();
+                    PlanComptableTemplate account = PlanComptableTemplate.builder()
+                            .numero(dto.getNumero())
+                            .classe(Character.getNumericValue(dto.getNumero().charAt(0)))
+                            .libelle(dto.getLibelle())
+                            .notes(dto.getNotes())
+                            .actif(true)
+                            .created_at(LocalDateTime.now())
+                            .updated_at(LocalDateTime.now())
+                            .created_by(current_user)
+                            .updated_by(current_user)
+                            .build();
 
-        PlanComptableTemplate saved = template_repository.save(account);
-        PlanComptableTemplateDto result = mapToDto(saved);
-
-        log.info("✅ Template account created: {} - {}", saved.getNumero(), saved.getLibelle());
-
-        return result;
+                    return template_repository.save(account)
+                            .map(saved -> {
+                                log.info("✅ Template account created: {} - {}", saved.getNumero(), saved.getLibelle());
+                                return mapToDto(saved);
+                            });
+                });
     }
 
     /**
      * Retrieves all account templates.
-     * 
-     * @return list of template DTOs
      */
-    public List<PlanComptableTemplateDto> getAllAccounts() {
+    public Flux<PlanComptableTemplateDto> getAllAccounts() {
         return template_repository.findAll()
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .map(this::mapToDto);
     }
 
     /**
      * Maps an entity to its DTO.
-     * 
-     * @param entity the entity to map
-     * @return the mapped DTO
      */
     private PlanComptableTemplateDto mapToDto(PlanComptableTemplate entity) {
         return PlanComptableTemplateDto.builder()

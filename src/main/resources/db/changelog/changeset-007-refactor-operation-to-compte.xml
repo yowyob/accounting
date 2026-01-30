@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <changeSet id="007-refactor-operation-to-compte" author="yowyob-system">
+        <comment>Refactor operation_comptable and contreparties to use UUID links to comptes instead of strings.</comment>
+
+        <!-- Operation Comptable -->
+        <addColumn tableName="operation_comptable">
+            <column name="compte_principal_id" type="UUID" />
+        </addColumn>
+        
+        <!-- Migration logic would go here if there was data to preserve, 
+             but for now we drop the old column and add FK -->
+        <dropColumn tableName="operation_comptable" columnName="compte_principal" />
+        
+        <addForeignKeyConstraint baseTableName="operation_comptable" 
+                                 baseColumnNames="compte_principal_id" 
+                                 constraintName="fk_op_compte_principal" 
+                                 referencedTableName="comptes" 
+                                 referencedColumnNames="id"/>
+
+        <!-- Contreparties -->
+        <addColumn tableName="contreparties">
+            <column name="compte_id" type="UUID" />
+        </addColumn>
+        
+        <dropColumn tableName="contreparties" columnName="compte" />
+        
+        <addForeignKeyConstraint baseTableName="contreparties" 
+                                 baseColumnNames="compte_id" 
+                                 constraintName="fk_cp_compte" 
+                                 referencedTableName="comptes" 
+                                 referencedColumnNames="id"/>
+    </changeSet>
+
+</databaseChangeLog>

@@ -4,7 +4,7 @@ numero|libelle|classe|sens|lettrable|collectif|niveau|compte_mere|actif
 101|Capital social ou personnel|1|C|false|false|2|10|true
 101000|Capital social|1|C|false|false|3|101|true
 102|Primes liées au capital|1|C|false|false|2|10|true
-102000|Primes d'émission| de fusion| d'apport|1|C|false|false|3|102|true
+102000|Primes d'émission, de fusion, d'apport|1|C|false|false|3|102|true
 108|Compte de l'exploitant|1|C|false|false|2|10|true
 108000|Compte de l'exploitant|1|C|false|false|3|108|true
 109|Actionnaires capital souscrit non appelé|1|C|false|false|2|10|true
@@ -26,8 +26,8 @@ numero|libelle|classe|sens|lettrable|collectif|niveau|compte_mere|actif
 202000|Frais d'augmentation de capital|2|D|true|false|3|202|true
 203|Frais de recherche et développement|2|D|true|false|2|20|true
 203000|Frais de recherche et développement|2|D|true|false|3|203|true
-205|Concessions| brevets| licences| marques|2|D|true|false|2|20|true
-205000|Concessions| brevets| licences| marques|2|D|true|false|3|205|true
+205|Concessions, brevets, licences, marques|2|D|true|false|2|20|true
+205000|Concessions, brevets, licences, marques|2|D|true|false|3|205|true
 207|Fonds commercial|2|D|true|false|2|20|true
 207000|Fonds commercial|2|D|true|false|3|207|true
 208|Autres immobilisations incorporelles|2|D|true|false|2|20|true
@@ -37,8 +37,8 @@ numero|libelle|classe|sens|lettrable|collectif|niveau|compte_mere|actif
 211000|Terrains|2|D|true|false|3|211|true
 213|Constructions|2|D|true|false|2|21|true
 213000|Constructions|2|D|true|false|3|213|true
-214|Installations techniques| matériel et outillage|2|D|true|false|2|21|true
-214000|Installations techniques| matériel et outillage|2|D|true|false|3|214|true
+214|Installations techniques, matériel et outillage|2|D|true|false|2|21|true
+214000|Installations techniques, matériel et outillage|2|D|true|false|3|214|true
 215|Matériel industriel|2|D|true|false|2|21|true
 215000|Matériel industriel|2|D|true|false|3|215|true
 218|Autres immobilisations corporelles|2|D|true|false|2|21|true
@@ -82,7 +82,7 @@ numero|libelle|classe|sens|lettrable|collectif|niveau|compte_mere|actif
 49|Dépréciations des comptes de tiers|4|C|false|false|1|4|true
 
 5|FINANCIERS|5|D/C|false|false|0||true
-51|Banques| CCP| caisses|5|D|true|true|1|5|true
+51|Banques, CCP, caisses|5|D|true|true|1|5|true
 512|Banques|5|D|true|true|2|51|true
 512000|Banques|5|D|true|true|3|512|true
 514|Caisses|5|D|true|true|2|51|true
@@ -109,7 +109,7 @@ numero|libelle|classe|sens|lettrable|collectif|niveau|compte_mere|actif
 70|Ventes|7|C|true|false|1|7|true
 701|Ventes de produits finis|7|C|true|false|2|70|true
 703|Ventes de marchandises|7|C|true|false|2|70|true
-708|Rabais| remises| ristournes accordés|7|D|true|false|2|70|true
+708|Rabais, remises, ristournes accordés|7|D|true|false|2|70|true
 71|Production stockée et immobilisée|7|C|true|false|1|7|true
 72|Production immobilisée|7|C|true|false|1|7|true
 74|Subventions d'exploitation|7|C|true|false|1|7|true

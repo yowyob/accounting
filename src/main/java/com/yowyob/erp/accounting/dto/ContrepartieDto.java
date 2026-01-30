@@ -29,8 +29,9 @@ public class ContrepartieDto {
     @JsonProperty("operationComptableId")
     private UUID operation_comptable_id;
 
-    @NotBlank(message = "Account number is required")
-    private String compte;
+    @NotNull(message = "Account ID is required")
+    @JsonProperty("compteId")
+    private UUID compte_id;
 
     @Builder.Default
     @NotNull(message = "Third-party account status is required")

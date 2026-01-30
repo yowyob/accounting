@@ -1,12 +1,13 @@
 package com.yowyob.erp.accounting.repository;
 
 import com.yowyob.erp.accounting.entity.Agence;
-import com.yowyob.erp.accounting.entity.Tenant;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -16,30 +17,14 @@ import java.util.UUID;
  * @date 03.01.2026
  */
 @Repository
-public interface AgenceRepository extends JpaRepository<Agence, UUID> {
+public interface AgenceRepository extends R2dbcRepository<Agence, UUID> {
 
-    /**
-     * Finds all agencies for a given tenant.
-     * 
-     * @param tenant the tenant entity
-     * @return a list of Agences
-     */
-    List<Agence> findByTenant(Tenant tenant);
+    @Query("SELECT * FROM agences WHERE tenant_id = :tenantId")
+    Flux<Agence> findByTenantId(@Param("tenantId") UUID tenantId);
 
-    /**
-     * Finds an agency by its code.
-     * 
-     * @param code the agency code
-     * @return an Optional containing the Agence if found
-     */
-    Optional<Agence> findByCode(String code);
+    @Query("SELECT * FROM agences WHERE code = :code")
+    Mono<Agence> findByCode(@Param("code") String code);
 
-    /**
-     * Finds an agency by tenant and code.
-     * 
-     * @param tenant the tenant entity
-     * @param code   the agency code
-     * @return an Optional containing the Agence if found
-     */
-    Optional<Agence> findByTenantAndCode(Tenant tenant, String code);
+    @Query("SELECT * FROM agences WHERE tenant_id = :tenantId AND code = :code")
+    Mono<Agence> findByTenantIdAndCode(@Param("tenantId") UUID tenantId, @Param("code") String code);
 }

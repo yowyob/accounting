@@ -1,32 +1,21 @@
 package com.yowyob.erp.accounting.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.relational.core.mapping.Column;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Entity representing an accounting account (Plan Comptable).
- * Follows snake_case naming as per Development Charter.
- * 
- * @author ALD
- * @date 30.09.25
+ * Entity representing an accounting account (Plan Comptable) for R2DBC.
  */
-@Entity
 @Table(name = "plans_comptables")
 @Getter
 @Setter
@@ -36,47 +25,39 @@ import java.util.UUID;
 public class PlanComptable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne
-    @JoinColumn(name = "tenant_id", nullable = false)
-    private Tenant tenant;
+    @Column("tenant_id")
+    private UUID tenantId;
 
-    @Column(nullable = false)
+    @Column("classe")
     private Integer classe;
 
-    @Column(nullable = false, unique = true, length = 20)
+    @Column("no_compte")
     private String no_compte;
 
-    @Column(nullable = false, length = 255)
+    @Column("libelle")
     private String libelle;
 
-    @Column(length = 255)
+    @Column("notes")
     private String notes;
 
     @Builder.Default
+    @Column("actif")
     private Boolean actif = true;
 
+    @Column("created_at")
     private LocalDateTime created_at;
+
+    @Column("updated_at")
     private LocalDateTime updated_at;
 
-    @Size(max = 255)
-    @Column(name = "created_by", length = 255)
+    @Column("created_by")
     private String created_by;
 
-    @Size(max = 255)
-    @Column(name = "updated_by", length = 255)
+    @Column("updated_by")
     private String updated_by;
 
-    @PrePersist
-    public void onCreate() {
-        this.created_at = LocalDateTime.now();
-        this.updated_at = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    public void onUpdate() {
-        this.updated_at = LocalDateTime.now();
-    }
+    @Transient
+    private Tenant tenant;
 }

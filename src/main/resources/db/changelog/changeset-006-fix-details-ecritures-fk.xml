@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="006-fix-details-ecritures-fk" author="system">
+        <comment>Fix foreign key constraint to reference comptes instead of plans_comptables</comment>
+        
+        <!-- Drop the incorrect foreign key constraint -->
+        <dropForeignKeyConstraint
+            baseTableName="details_ecritures"
+            constraintName="fk_details_ecritures_compte"/>
+        
+        <!-- Add the correct foreign key constraint pointing to comptes -->
+        <addForeignKeyConstraint
+            baseTableName="details_ecritures"
+            baseColumnNames="compte_id"
+            constraintName="fk_details_ecritures_compte"
+            referencedTableName="comptes"
+            referencedColumnNames="id"/>
+    </changeSet>
+
+</databaseChangeLog>

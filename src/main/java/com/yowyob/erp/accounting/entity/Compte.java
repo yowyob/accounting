@@ -1,93 +1,88 @@
 package com.yowyob.erp.accounting.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import com.yowyob.erp.common.persistence.SettablePersistable;
+import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.relational.core.mapping.Column;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Entity representing an accounting account (Compte).
+ * Entity representing an accounting account (Compte) for R2DBC.
  * Follows snake_case naming as per Development Charter.
- * 
- * @author ALD
- * @date 30.09.25
  */
-@Entity
-@Table(name = "comptes", uniqueConstraints = {
-        @jakarta.persistence.UniqueConstraint(name = "uk_comptes_tenant_no_compte", columnNames = { "tenant_id",
-                "no_compte" })
-})
+@Table(name = "comptes")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Compte {
+public class Compte implements SettablePersistable<UUID> {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne
-    @JoinColumn(name = "tenant_id", nullable = false)
-    private Tenant tenant;
+    @Column("tenant_id")
+    private UUID tenantId;
 
-    @Column(name = "no_compte", nullable = false, unique = true, length = 20)
+    @Column("no_compte")
     private String no_compte;
 
-    @Column(nullable = false, length = 255)
+    @Column("libelle")
     private String libelle;
 
-    @Column(length = 500)
+    @Column("notes")
     private String notes;
 
     @Builder.Default
-    @Column(precision = 18, scale = 2)
+    @Column("solde")
     private BigDecimal solde = BigDecimal.ZERO;
 
-    @Column(nullable = false)
+    @Column("classe")
     private Integer classe; // OHADA class (1 to 7)
 
-    @Column(name = "type_compte", nullable = false, length = 50)
+    @Column("type_compte")
     private String type_compte; // ACTIF, PASSIF, CHARGE, PRODUIT
 
     @Builder.Default
-    @Column(nullable = false)
+    @Column("actif")
     private Boolean actif = true;
 
-    @Column(name = "created_by", nullable = false, length = 50)
+    @Column("created_by")
     private String created_by;
 
-    @Column(name = "updated_by", nullable = false, length = 50)
+    @Column("updated_by")
     private String updated_by;
 
+    @Column("created_at")
     private LocalDateTime created_at;
+
+    @Column("updated_at")
     private LocalDateTime updated_at;
 
-    @PrePersist
-    public void onCreate() {
-        this.created_at = LocalDateTime.now();
-        this.updated_at = LocalDateTime.now();
+    @Transient
+    private Tenant tenant; // Kept as transient for DTO mapping if needed
+
+    @Transient
+    @Builder.Default
+    private boolean isNew = true;
+
+    @Override
+    @Transient
+    public boolean isNew() {
+        return isNew || id == null;
     }
 
-    @PreUpdate
-    public void onUpdate() {
-        this.updated_at = LocalDateTime.now();
+    public void setNotNew() {
+        this.isNew = false;
     }
 
     public void updateSolde(BigDecimal new_solde) {

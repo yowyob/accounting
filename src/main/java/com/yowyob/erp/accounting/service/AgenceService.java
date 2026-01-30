@@ -1,8 +1,9 @@
 package com.yowyob.erp.accounting.service;
 
 import com.yowyob.erp.accounting.dto.AgenceDto;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -19,7 +20,7 @@ public interface AgenceService {
      * @param agence_dto the agency data
      * @return the created agency DTO
      */
-    AgenceDto createAgence(AgenceDto agence_dto);
+    Mono<AgenceDto> createAgence(AgenceDto agence_dto);
 
     /**
      * Retrieves an agency by ID within the current tenant.
@@ -27,14 +28,14 @@ public interface AgenceService {
      * @param id the agency ID
      * @return the agency DTO
      */
-    AgenceDto getAgence(UUID id);
+    Mono<AgenceDto> getAgence(UUID id);
 
     /**
      * Retrieves all agencies for the current tenant.
      * 
      * @return a list of agency DTOs
      */
-    List<AgenceDto> getAllAgences();
+    Flux<AgenceDto> getAllAgences();
 
     /**
      * Updates an existing agency within the current tenant.
@@ -43,12 +44,13 @@ public interface AgenceService {
      * @param agence_dto the new agency data
      * @return the updated agency DTO
      */
-    AgenceDto updateAgence(UUID id, AgenceDto agence_dto);
+    Mono<AgenceDto> updateAgence(UUID id, AgenceDto agence_dto);
 
     /**
      * Deletes an agency from the current tenant.
      * 
      * @param id the agency ID
+     * @return Mono<Void>
      */
-    void deleteAgence(UUID id);
+    Mono<Void> deleteAgence(UUID id);
 }

@@ -1,20 +1,21 @@
 package com.yowyob.erp.accounting.entity;
 
-import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.relational.core.mapping.Column;
 import jakarta.validation.constraints.NotBlank;
-import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Entity representing a Currency (Devise).
- * Currencies are global to the system.
- * 
- * @author ALD
- * @date 30.09.25
+ * Entity representing a Currency (Devise) for R2DBC.
  */
-@Entity
 @Table(name = "devises")
 @Getter
 @Setter
@@ -24,29 +25,28 @@ import java.util.UUID;
 public class Devise {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @NotBlank
-    @Column(nullable = false, unique = true, length = 10)
-    private String code; // ISO code: EUR, USD, XAF
+    @Column("code")
+    private String code;
 
     @NotBlank
-    @Column(nullable = false, length = 100)
+    @Column("nom")
     private String nom;
 
-    @Column(length = 10)
+    @Column("symbole")
     private String symbole;
 
     @Builder.Default
-    @Column(nullable = false)
+    @Column("est_nationale")
     private boolean est_nationale = false;
 
     @Builder.Default
-    @Column(nullable = false)
+    @Column("actif")
     private boolean actif = true;
 
     @Builder.Default
-    @Column(name = "created_at")
+    @Column("created_at")
     private LocalDateTime created_at = LocalDateTime.now();
 }

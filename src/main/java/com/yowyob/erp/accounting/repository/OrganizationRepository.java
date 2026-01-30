@@ -1,26 +1,17 @@
 package com.yowyob.erp.accounting.repository;
 
 import com.yowyob.erp.accounting.entity.Organization;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Mono;
 
-import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Repository interface for managing Organization entities.
- * 
- * @author ALD
- * @date 03.01.2026
+ * Reactive R2DBC Repository for Organization entity.
  */
 @Repository
-public interface OrganizationRepository extends JpaRepository<Organization, UUID> {
+public interface OrganizationRepository extends R2dbcRepository<Organization, UUID> {
 
-    /**
-     * Finds an organization by name.
-     * 
-     * @param name the organization name
-     * @return an Optional containing the Organization if found
-     */
-    Optional<Organization> findByName(String name);
+    Mono<Organization> findByName(String name);
 }

@@ -3,26 +3,26 @@ package com.yowyob.erp.accounting.serviceInitialization;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
 import com.yowyob.erp.accounting.dto.PeriodeComptableDto;
-import com.yowyob.erp.accounting.entity.ExerciceComptable;
-import com.yowyob.erp.accounting.entity.Tenant;
 import com.yowyob.erp.accounting.service.PeriodeComptableService;
-import com.yowyob.erp.config.tenant.TenantContext;
+import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
- * Service for initializing default accounting periods for the default tenant.
+ * Reactive Service for initializing default accounting periods for the default
+ * tenant.
  * Runs on application startup.
- * 
- * @author ALD
- * @date 30.09.25
  */
 @Service
 @Order(2)
+@Slf4j
 public class PeriodeComptableInitializationService implements CommandLineRunner {
 
     private final PeriodeComptableService periode_service;
@@ -35,34 +35,38 @@ public class PeriodeComptableInitializationService implements CommandLineRunner 
         this.periode_service = periode_service;
         this.exercice_repository = exercice_repository;
         this.tenant_id = UUID.fromString(tenant_id_str);
-        TenantContext.setCurrentTenant(this.tenant_id);
     }
 
     @Override
     public void run(String... args) {
-        ExerciceComptable exercice = exercice_repository
-                .findByTenantAndCode(new Tenant(tenant_id), "2026")
-                .orElseThrow(() -> new RuntimeException("L'exercice 2026 n'a pas été trouvé. Initialisation avortée."));
+        exercice_repository.findByTenantIdAndCode(tenant_id, "2026")
+                .flatMapMany(exercice -> {
+                    UUID exercice_id = exercice.getId();
+                    return Flux.range(1, 12)
+                            .flatMap(month -> {
+                                String code = String.format("2026-%02d", month);
+                                LocalDate start_date = LocalDate.of(2026, month, 1);
+                                LocalDate end_date = start_date.withDayOfMonth(start_date.lengthOfMonth());
 
-        UUID exercice_id = exercice.getId();
-        // Run for 2026
-        for (int month = 1; month <= 12; month++) {
-            String code = String.format("2026-%02d", month);
-            LocalDate start_date = LocalDate.of(2026, month, 1);
-            LocalDate end_date = start_date.withDayOfMonth(start_date.lengthOfMonth());
+                                PeriodeComptableDto dto = PeriodeComptableDto.builder()
+                                        .exercice_id(exercice_id)
+                                        .code(code)
+                                        .date_debut(start_date)
+                                        .date_fin(end_date)
+                                        .cloturee(false)
+                                        .build();
 
-            PeriodeComptableDto dto = PeriodeComptableDto.builder()
-                    .exercice_id(exercice_id)
-                    .code(code)
-                    .date_debut(start_date)
-                    .date_fin(end_date)
-                    .cloturee(false)
-                    .build();
-            try {
-                periode_service.createPeriode(dto);
-            } catch (Exception e) {
-                System.err.println("Erreur création période " + code + ": " + e.getMessage());
-            }
-        }
+                                return periode_service.createPeriode(dto)
+                                        .onErrorResume(e -> {
+                                            log.warn("Error creating period {}: {}", code, e.getMessage());
+                                            return Mono.empty();
+                                        });
+                            });
+                })
+                .contextWrite(ReactiveTenantContext.withTenantId(tenant_id))
+                .subscribe(
+                        v -> log.debug("Period iteration check: {}", v.getCode()),
+                        e -> log.error("❌ Error initializing periods", e),
+                        () -> log.info("✅ Initialization of accounting periods complete"));
     }
 }

@@ -85,6 +85,46 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles IllegalArgumentException.
+     * 
+     * @param ex the illegal argument exception
+     * @return bad request response with error message
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponseWrapper<Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        log.error("Illegal argument: {}", ex.getMessage());
+        return ResponseEntity.badRequest()
+                .body(ApiResponseWrapper.error(ex.getMessage()));
+    }
+
+    /**
+     * Handles IllegalStateException.
+     * 
+     * @param ex the illegal state exception
+     * @return conflict or bad request response with error message
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiResponseWrapper<Object>> handleIllegalStateException(IllegalStateException ex) {
+        log.error("Illegal state: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponseWrapper.error(ex.getMessage(), 409));
+    }
+
+    /**
+     * Handles DataIntegrityViolationException.
+     * 
+     * @param ex the data integrity violation exception
+     * @return conflict response with error message
+     */
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponseWrapper<Object>> handleDataIntegrityViolationException(
+            org.springframework.dao.DataIntegrityViolationException ex) {
+        log.error("Data integrity violation: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponseWrapper.error("Database error: " + ex.getRootCause().getMessage()));
+    }
+
+    /**
      * Handles any other unexpected exceptions.
      * 
      * @param ex the exception
