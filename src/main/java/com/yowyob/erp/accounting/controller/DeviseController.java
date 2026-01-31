@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.yowyob.erp.config.tenant.ReactiveTenantContext;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -37,7 +38,8 @@ public class DeviseController {
     public Mono<ResponseEntity<ApiResponseWrapper<DeviseDto>>> createDevise(@Valid @RequestBody DeviseDto dto) {
         return devise_service.createDevise(dto)
                 .map(created -> ResponseEntity.status(HttpStatus.CREATED)
-                        .body(ApiResponseWrapper.success(created, "Currency created successfully")));
+                        .body(ApiResponseWrapper.success(created, "Currency created successfully")))
+                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
     }
 
     /**
@@ -49,7 +51,8 @@ public class DeviseController {
             @Valid @RequestBody DeviseDto dto) {
         return devise_service.updateDevise(id, dto)
                 .map(updated -> ResponseEntity
-                        .ok(ApiResponseWrapper.success(updated, "Currency updated successfully")));
+                        .ok(ApiResponseWrapper.success(updated, "Currency updated successfully")))
+                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
     }
 
     /**
@@ -60,7 +63,8 @@ public class DeviseController {
     public Mono<ResponseEntity<ApiResponseWrapper<DeviseDto>>> getDevise(@PathVariable UUID id) {
         return devise_service.getDevise(id)
                 .map(devise -> ResponseEntity.ok(ApiResponseWrapper.success(devise, "Currency found")))
-                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Currency", id.toString())));
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Currency", id.toString())))
+                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
     }
 
     /**
@@ -73,7 +77,8 @@ public class DeviseController {
         Mono<List<DeviseDto>> listMono = onlyActive ? devise_service.getActiveDevises()
                 : devise_service.getAllDevises();
         return listMono.map(devises -> ResponseEntity
-                .ok(ApiResponseWrapper.success(devises, "Currencies list retrieved successfully")));
+                .ok(ApiResponseWrapper.success(devises, "Currencies list retrieved successfully")))
+                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
     }
 
     /**
@@ -81,9 +86,10 @@ public class DeviseController {
      */
     @Operation(summary = "Delete a currency")
     @DeleteMapping("/{id}")
-    public Mono<ResponseEntity<ApiResponseWrapper<Void>>> deleteDevise(@PathVariable UUID id) {
+    public Mono<ResponseEntity<ApiResponseWrapper<Object>>> deleteDevise(@PathVariable UUID id) {
         return devise_service.deleteDevise(id)
                 .then(Mono.fromCallable(
-                        () -> ResponseEntity.ok(ApiResponseWrapper.success(null, "Currency deleted successfully"))));
+                        () -> ResponseEntity.ok(ApiResponseWrapper.success(null, "Currency deleted successfully"))))
+                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
     }
 }

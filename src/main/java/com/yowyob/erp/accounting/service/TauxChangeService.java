@@ -63,6 +63,7 @@ public class TauxChangeService {
                                                                                 .flatMap(tuple -> {
                                                                                         TauxChange entity = TauxChange
                                                                                                         .builder()
+                                                                                                        .id(UUID.randomUUID())
                                                                                                         .tenantId(tenant_id)
                                                                                                         .devise_source_id(
                                                                                                                         tuple.getT1().getId())
@@ -73,10 +74,16 @@ public class TauxChangeService {
                                                                                                         .notes(dto.getNotes())
                                                                                                         .created_at(LocalDateTime
                                                                                                                         .now())
+                                                                                                        .isNew(true)
                                                                                                         .build();
 
                                                                                         return taux_repository
                                                                                                         .save(entity)
+                                                                                                        .doOnSubscribe(s -> log
+                                                                                                                        .info("Saving new exchange rate"))
+                                                                                                        .doOnSuccess(s -> log
+                                                                                                                        .info("Exchange rate saved: {}",
+                                                                                                                                        s.getId()))
                                                                                                         .flatMap(saved -> logAudit(
                                                                                                                         tenant,
                                                                                                                         user,

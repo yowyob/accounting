@@ -47,6 +47,10 @@ public class TaxeService {
                                         Tenant tenant = tuple.getT2();
 
                                         return taxe_repository.existsByTenant_IdAndCode(tenant_id, dto.getCode())
+                                                        .doOnSubscribe(s -> log.info("Checking existence for tax {}",
+                                                                        dto.getCode()))
+                                                        .defaultIfEmpty(false)
+                                                        .doOnNext(ex -> log.info("Tax existence check: {}", ex))
                                                         .flatMap(exists -> {
                                                                 if (Boolean.TRUE.equals(exists)) {
                                                                         return Mono.error(

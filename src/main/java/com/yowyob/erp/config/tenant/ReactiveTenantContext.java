@@ -28,6 +28,7 @@ public class ReactiveTenantContext {
             if (threadLocalTenantId != null) {
                 return Mono.just(threadLocalTenantId);
             }
+            System.err.println("CRITICAL: Tenant ID not found in Context or ThreadLocal!");
             return Mono.empty();
         });
     }
@@ -66,13 +67,14 @@ public class ReactiveTenantContext {
     }
 
     /**
-     * Captures the current tenant and user from the ThreadLocal context (TenantContext)
+     * Captures the current tenant and user from the ThreadLocal context
+     * (TenantContext)
      * and returns a Reactor Context.
      */
     public static Context captureFromThreadLocal() {
         UUID tenantId = TenantContext.getCurrentTenant();
         String user = TenantContext.getCurrentUser();
-        
+
         Context ctx = Context.empty();
         if (tenantId != null) {
             ctx = ctx.put(TENANT_ID_KEY, tenantId);

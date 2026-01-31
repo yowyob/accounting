@@ -24,7 +24,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TauxChange {
+public class TauxChange implements com.yowyob.erp.common.persistence.SettablePersistable<UUID> {
 
     @Id
     private UUID id;
@@ -64,4 +64,19 @@ public class TauxChange {
 
     @Transient
     private Devise devise_cible;
+
+    @Transient
+    @Builder.Default
+    private boolean isNew = true;
+
+    @Override
+    @Transient
+    public boolean isNew() {
+        return isNew || id == null;
+    }
+
+    @Override
+    public void setNotNew() {
+        this.isNew = false;
+    }
 }

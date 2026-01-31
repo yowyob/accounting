@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.yowyob.erp.config.tenant.ReactiveTenantContext;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -31,7 +32,8 @@ public class TaxeController {
     public Mono<ResponseEntity<ApiResponseWrapper<TaxeDto>>> createTaxe(@Valid @RequestBody TaxeDto dto) {
         return taxe_service.createTaxe(dto)
                 .map(created -> ResponseEntity.status(HttpStatus.CREATED)
-                        .body(ApiResponseWrapper.success(created, "Tax created successfully")));
+                        .body(ApiResponseWrapper.success(created, "Tax created successfully")))
+                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
     }
 
     @PutMapping("/{id}")
@@ -39,7 +41,8 @@ public class TaxeController {
     public Mono<ResponseEntity<ApiResponseWrapper<TaxeDto>>> updateTaxe(@PathVariable UUID id,
             @Valid @RequestBody TaxeDto dto) {
         return taxe_service.updateTaxe(id, dto)
-                .map(updated -> ResponseEntity.ok(ApiResponseWrapper.success(updated, "Tax updated successfully")));
+                .map(updated -> ResponseEntity.ok(ApiResponseWrapper.success(updated, "Tax updated successfully")))
+                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
     }
 
     @GetMapping("/{id}")
@@ -48,7 +51,8 @@ public class TaxeController {
         return taxe_service.getTaxe(id)
                 .map(taxe -> ResponseEntity.ok(ApiResponseWrapper.success(taxe, "Tax found")))
                 .defaultIfEmpty(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponseWrapper.error("Tax not found", 404)));
+                        .body(ApiResponseWrapper.error("Tax not found", 404)))
+                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
     }
 
     @GetMapping
@@ -57,14 +61,16 @@ public class TaxeController {
             @RequestParam(required = false, defaultValue = "false") boolean onlyActive) {
         Mono<List<TaxeDto>> taxesMono = onlyActive ? taxe_service.getActiveTaxes() : taxe_service.getAllTaxes();
         return taxesMono.map(
-                taxes -> ResponseEntity.ok(ApiResponseWrapper.success(taxes, "Taxes list retrieved successfully")));
+                taxes -> ResponseEntity.ok(ApiResponseWrapper.success(taxes, "Taxes list retrieved successfully")))
+                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete a tax")
-    public Mono<ResponseEntity<ApiResponseWrapper<Void>>> deleteTaxe(@PathVariable UUID id) {
+    public Mono<ResponseEntity<ApiResponseWrapper<Object>>> deleteTaxe(@PathVariable UUID id) {
         return taxe_service.deleteTaxe(id)
                 .then(Mono.fromCallable(
-                        () -> ResponseEntity.ok(ApiResponseWrapper.success(null, "Tax deleted successfully"))));
+                        () -> ResponseEntity.ok(ApiResponseWrapper.success(null, "Tax deleted successfully"))))
+                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
     }
 }
