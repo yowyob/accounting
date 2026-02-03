@@ -58,6 +58,16 @@ public class JournalComptableController {
                                 .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
         }
 
+        @GetMapping("/{id}/comptes")
+        @Operation(summary = "Get distinct accounts used in a journal")
+        public Mono<ResponseEntity<ApiResponseWrapper<List<com.yowyob.erp.accounting.dto.CompteDto>>>> getComptes(
+                        @PathVariable UUID id) {
+                return journal_service.getComptesByJournal(id)
+                                .map(comptes -> ResponseEntity
+                                                .ok(ApiResponseWrapper.success(comptes, "Accounts retrieved")))
+                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+        }
+
         @GetMapping
         @Operation(summary = "List all journals for the current tenant")
         public Mono<ResponseEntity<ApiResponseWrapper<List<JournalComptableDto>>>> getAllJournals() {

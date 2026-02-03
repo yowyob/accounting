@@ -5,7 +5,7 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
     http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
-    <changeSet id="006-fix-details-ecritures-fk" author="system">
+    <changeSet id="006-fix-details-ecritures-fk" author="yowyob-system">
         <comment>Fix foreign key constraint to reference comptes instead of plans_comptables</comment>
         
         <!-- Drop the incorrect foreign key constraint -->

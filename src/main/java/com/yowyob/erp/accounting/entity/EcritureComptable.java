@@ -63,6 +63,14 @@ public class EcritureComptable implements SettablePersistable<UUID> {
     @Column("validee")
     private Boolean validee = false;
 
+    @Builder.Default
+    @Column("statut")
+    private EcritureStatut statut = EcritureStatut.BROUILLON;
+
+    @Builder.Default
+    @Column("actif")
+    private Boolean actif = true;
+
     @Column("date_validation")
     private LocalDateTime date_validation;
 

@@ -5,7 +5,7 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
 
-     <changeSet id="001-create-accounting-tables" author="yowyob-system">
+     <changeSet id="001-create-accounting-tables" author="yowyob-system" context="prod">
         <comment>Création des tables principales du module comptabilité (OHADA) et ajout des champs d'audit.</comment>
 
         <createTable tableName="organizations">

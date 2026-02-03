@@ -136,4 +136,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponseWrapper.error("An unexpected error occurred on the server"));
     }
+    /**
+     * Handles NoResourceFoundException (404).
+     * 
+     * @param ex the no resource found exception
+     * @return not found response
+     */
+    @ExceptionHandler(org.springframework.web.reactive.resource.NoResourceFoundException.class)
+    public ResponseEntity<ApiResponseWrapper<Object>> handleNoResourceFoundException(
+            org.springframework.web.reactive.resource.NoResourceFoundException ex) {
+        log.warn("Resource not found: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponseWrapper.error("Resource not found"));
+    }
 }

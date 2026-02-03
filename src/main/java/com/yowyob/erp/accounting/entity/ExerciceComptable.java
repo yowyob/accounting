@@ -49,6 +49,14 @@ public class ExerciceComptable implements SettablePersistable<UUID> {
     @Column("cloture")
     private Boolean cloture = false;
 
+    @Builder.Default
+    @Column("statut")
+    private ExerciceStatut statut = ExerciceStatut.OUVERT;
+
+    @Builder.Default
+    @Column("actif")
+    private Boolean actif = true;
+
     @Column("created_at")
     private LocalDateTime created_at;
 

@@ -51,6 +51,15 @@ public interface CompteRepository extends R2dbcRepository<Compte, UUID> {
                         @Param("prefix") String prefix);
 
         /** All accounts for a tenant (including inactive ones) */
+        /** All accounts for a tenant (including inactive ones) */
         @Query("SELECT * FROM comptes WHERE tenant_id = :tenant_id")
         Flux<Compte> findAllByTenant_Id(@Param("tenant_id") UUID tenant_id);
+
+        /** Finds distinct accounts used in a specific journal */
+        @Query("SELECT DISTINCT c.* FROM comptes c " +
+                        "JOIN details_ecritures de ON c.id = de.compte_id " +
+                        "JOIN ecritures_comptables ec ON de.ecriture_id = ec.id " +
+                        "WHERE ec.tenant_id = :tenant_id AND ec.journal_id = :journal_id")
+        Flux<Compte> findDistinctComptesByJournalId(@Param("tenant_id") UUID tenant_id,
+                        @Param("journal_id") UUID journal_id);
 }

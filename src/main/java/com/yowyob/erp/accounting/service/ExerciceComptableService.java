@@ -64,4 +64,19 @@ public interface ExerciceComptableService {
      * @param id the fiscal year ID
      */
     Mono<Void> deleteExercice(UUID id);
+
+    /**
+     * Deactivates a fiscal year (soft delete).
+     * 
+     * @param id the fiscal year ID
+     */
+    Mono<Void> deactivateExercice(UUID id);
+
+    /**
+     * Retrieves all periods for a given fiscal year.
+     * 
+     * @param exerciceId the fiscal year ID
+     * @return a list of period DTOs
+     */
+    Mono<java.util.List<com.yowyob.erp.accounting.dto.PeriodeComptableDto>> getPeriodesByExercice(UUID exerciceId);
 }

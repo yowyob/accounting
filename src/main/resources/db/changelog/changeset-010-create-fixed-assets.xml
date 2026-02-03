@@ -6,13 +6,13 @@
                         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
 
     <changeSet id="010-create-fixed-assets" author="yowyob-system">
-        <comment>Création des tables pour la gestion des immobilisations et des amortissements.</comment>
-
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="immobilisations" />
             </not>
         </preConditions>
+
+        <comment>Création des tables pour la gestion des immobilisations et des amortissements.</comment>
 
         <createTable tableName="immobilisations">
             <column name="id" type="UUID">

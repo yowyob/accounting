@@ -6,13 +6,13 @@
                         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
 
     <changeSet id="007-refactor-operation-to-compte" author="yowyob-system">
-        <comment>Refactor operation_comptable and contreparties to use UUID links to comptes instead of strings.</comment>
-
         <preConditions onFail="MARK_RAN">
             <not>
                 <columnExists tableName="operation_comptable" columnName="compte_principal_id" />
             </not>
         </preConditions>
+
+        <comment>Refactor operation_comptable and contreparties to use UUID links to comptes instead of strings.</comment>
 
         <!-- Operation Comptable -->
         <addColumn tableName="operation_comptable">

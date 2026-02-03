@@ -1,20 +1,17 @@
-
 package com.yowyob.erp.config.auth;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
+import org.springframework.web.server.WebFilterChain;
+import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,57 +19,48 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter implements WebFilter {
 
     private final AuthService authService;
 
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request,
-                                  @NonNull HttpServletResponse response,
-                                  @NonNull FilterChain filterChain) throws ServletException, IOException {
+    @NonNull
+    public Mono<Void> filter(@NonNull ServerWebExchange exchange, @NonNull WebFilterChain chain) {
+        String token = extractToken(exchange);
 
-        String token = extractToken(request);
-        
         if (token != null) {
-            authService.validateToken(token)
-                    .subscribe(
-                            authResponse -> {
-                                if (authResponse.isValid()) {
-                                    setAuthentication(authResponse);
-                                }
-                            },
-                            error -> log.error("Erreur lors de la validation du token", error)
-                    );
+            return authService.validateToken(token)
+                    .flatMap(authResponse -> {
+                        if (authResponse.isValid()) {
+                            UsernamePasswordAuthenticationToken authentication = createAuthentication(authResponse);
+                            return chain.filter(exchange)
+                                    .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
+                        } else {
+                            return chain.filter(exchange);
+                        }
+                    })
+                    .onErrorResume(error -> {
+                         log.error("Error validating token", error);
+                         return chain.filter(exchange);
+                    });
         }
 
-        filterChain.doFilter(request, response);
+        return chain.filter(exchange);
     }
 
-    private String extractToken(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
+    private String extractToken(ServerWebExchange exchange) {
+        String bearerToken = exchange.getRequest().getHeaders().getFirst("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
-        return null;
+        return null; // Return null if not found or invalid format
     }
 
-    private void setAuthentication(AuthValidationResponse authResponse) {
+    private UsernamePasswordAuthenticationToken createAuthentication(AuthValidationResponse authResponse) {
         List<SimpleGrantedAuthority> authorities = Arrays.stream(authResponse.getRoles())
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
                 .collect(Collectors.toList());
 
-        UsernamePasswordAuthenticationToken authentication = 
-                new UsernamePasswordAuthenticationToken(authResponse.getUserId(), null, authorities);
-        
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-    }
-
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI();
-        return path.startsWith("/swagger-ui") || 
-               path.startsWith("/api-docs") || 
-               path.startsWith("/actuator") ||
-               path.startsWith("/api/auth");
+        return new UsernamePasswordAuthenticationToken(authResponse.getUserId(), null, authorities);
     }
 }

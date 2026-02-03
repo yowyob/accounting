@@ -1,5 +1,6 @@
 package com.yowyob.erp.accounting.entity;
 
+import com.yowyob.erp.common.persistence.SettablePersistable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,7 +24,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Transaction {
+public class Transaction implements SettablePersistable<UUID> {
 
     @Id
     private UUID id;
@@ -94,4 +95,19 @@ public class Transaction {
 
     @Transient
     private Tenant tenant;
+
+    @Transient
+    @Builder.Default
+    private boolean isNew = true;
+
+    @Override
+    @Transient
+    public boolean isNew() {
+        return isNew || id == null;
+    }
+
+    @Override
+    public void setNotNew() {
+        this.isNew = false;
+    }
 }

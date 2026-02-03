@@ -6,6 +6,7 @@ import com.yowyob.erp.accounting.repository.TenantRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -18,6 +19,7 @@ import reactor.core.publisher.Mono;
 @Service
 @Order(0)
 @RequiredArgsConstructor
+@DependsOn("liquibase")
 public class OrganizationInitializationService implements CommandLineRunner {
 
     private final OrganizationRepository organization_repository;

@@ -1,66 +1,68 @@
-// Security configuration with JWT
+// Security configuration with JWT for WebFlux
 package com.yowyob.erp.config.auth;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.filter.CorsFilter;
+import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
+import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
+import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
+import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.web.server.SecurityWebFilterChain;
 
 /**
- * Security configuration class.
- * Configures JWT filter, CORS, and request authorization.
+ * Reactive Security configuration class.
+ * Configures JWT filter, CORS, and request authorization for WebFlux.
  * 
  * @author ALD
  * @date 30.09.25
  */
 @Configuration
-@EnableWebSecurity
-@EnableMethodSecurity
+@EnableWebFluxSecurity
+@EnableReactiveMethodSecurity
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final CorsFilter corsFilter;
 
     /**
      * Constructor for SecurityConfig.
      * 
-     * @param jwtAuthenticationFilter the JWT filter
-     * @param corsFilter              the CORS filter
+     * @param jwtAuthenticationFilter the JWT filter (must be a WebFilter)
      */
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, CorsFilter corsFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.corsFilter = corsFilter;
     }
 
     /**
-     * Configures the security filter chain.
+     * Configures the reactive security filter chain.
      * 
-     * @param http the HttpSecurity object
-     * @return the SecurityFilterChain
-     * @throws Exception if an error occurs
+     * @param http the ServerHttpSecurity object
+     * @return the SecurityWebFilterChain
      */
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.addFilterBefore(corsFilter, UsernamePasswordAuthenticationFilter.class)
-                .cors(cors -> cors.configure(http))
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/swagger-ui/**", "/api-docs/**", "/actuator/**",
-                                "/api/public/**", "/api/accounting/**", "/api/info", "/api/health")
-                        .permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/business/**").hasAnyRole("BusinessActor", "SuperAdmin")
-                        .requestMatchers("/api/**").authenticated()
-                        .anyRequest().permitAll())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
-        return http.build();
+    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+        return http
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                // CORS is handled by the CorsWebFilter bean defined in CorsConfig
+                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
+                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
+                .logout(ServerHttpSecurity.LogoutSpec::disable)
+                .authorizeExchange(exchanges -> exchanges
+                        .pathMatchers("/api/auth/**", 
+                                      "/swagger-ui/**", 
+                                      "/swagger-ui.html",
+                                      "/webjars/**", 
+                                      "/v3/api-docs/**", 
+                                      "/actuator/**",
+                                      "/api/public/**", 
+                                      "/api/health",
+                                      "/favicon.ico").permitAll()
+                        .pathMatchers("/api/admin/**").hasRole("ADMIN")
+                        .pathMatchers("/api/business/**").hasAnyRole("BusinessActor", "SuperAdmin")
+                        // TEMP: Allow detailed testing of accounting without token
+                        .pathMatchers("/api/accounting/**").permitAll()
+                        .pathMatchers("/api/**").authenticated()
+                        .anyExchange().permitAll())
+                .addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION)
+                .build();
     }
 }

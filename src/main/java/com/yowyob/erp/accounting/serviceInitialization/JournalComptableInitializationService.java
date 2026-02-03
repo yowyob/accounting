@@ -6,6 +6,7 @@ import com.yowyob.erp.accounting.repository.JournalComptableRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -20,6 +21,7 @@ import java.util.UUID;
 @Service
 @Order(1)
 @Slf4j
+@DependsOn("liquibase")
 public class JournalComptableInitializationService implements CommandLineRunner {
 
     private final JournalComptableRepository journal_repository;

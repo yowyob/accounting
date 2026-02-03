@@ -1,5 +1,6 @@
 package com.yowyob.erp.accounting.service;
 
+import com.yowyob.erp.accounting.dto.CompteDto;
 import com.yowyob.erp.accounting.dto.EcritureComptableDto;
 import com.yowyob.erp.accounting.dto.JournalAuditDto;
 import com.yowyob.erp.accounting.dto.JournalComptableDto;
@@ -7,6 +8,8 @@ import com.yowyob.erp.accounting.entity.EcritureComptable;
 import com.yowyob.erp.accounting.entity.JournalAudit;
 import com.yowyob.erp.accounting.entity.JournalComptable;
 import com.yowyob.erp.accounting.entity.Tenant;
+import com.yowyob.erp.accounting.repository.CompteRepository;
+import com.yowyob.erp.accounting.repository.DetailEcritureRepository;
 import com.yowyob.erp.accounting.repository.EcritureComptableRepository;
 import com.yowyob.erp.accounting.repository.JournalAuditRepository;
 import com.yowyob.erp.accounting.repository.JournalComptableRepository;
@@ -38,6 +41,8 @@ public class JournalComptableService {
 
         private final JournalComptableRepository journal_repository;
         private final EcritureComptableRepository ecriture_repository;
+        private final DetailEcritureRepository detail_repository;
+        private final CompteRepository compte_repository;
         private final JournalAuditRepository audit_repository;
         private final Validator validator;
         private final KafkaMessageService kafka_service;
@@ -382,5 +387,24 @@ public class JournalComptableService {
                                 .created_at(e.getCreated_at())
                                 .updated_at(e.getUpdated_at())
                                 .build();
+        }
+
+        /**
+         * Retrieves unique ledger accounts used in a specific journal.
+         */
+        public Mono<List<com.yowyob.erp.accounting.dto.CompteDto>> getComptesByJournal(UUID journalId) {
+                return ReactiveTenantContext.getTenantId()
+                                .flatMap(tenant_id -> journal_repository.findByTenant_IdAndId(tenant_id, journalId)
+                                                .switchIfEmpty(Mono.error(new ResourceNotFoundException(
+                                                                "JournalComptable", journalId.toString())))
+                                                .thenMany(compte_repository.findDistinctComptesByJournalId(tenant_id,
+                                                                journalId))
+                                                .map(c -> com.yowyob.erp.accounting.dto.CompteDto.builder()
+                                                                .id(c.getId())
+                                                                .no_compte(c.getNo_compte())
+                                                                .libelle(c.getLibelle())
+                                                                .type_compte(c.getType_compte())
+                                                                .build())
+                                                .collectList());
         }
 }

@@ -6,13 +6,13 @@
                         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
 
     <changeSet id="009-fix-releve-bancaire" author="yowyob-system">
-        <comment>Amélioration de la table releve_bancaire pour le rapprochement.</comment>
-        
         <preConditions onFail="MARK_RAN">
             <not>
                 <columnExists tableName="releve_bancaire" columnName="compte_id" />
             </not>
         </preConditions>
+
+        <comment>Amélioration de la table releve_bancaire pour le rapprochement.</comment>
 
         <addColumn tableName="releve_bancaire">
             <column name="compte_id" type="UUID">

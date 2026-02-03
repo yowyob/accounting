@@ -62,6 +62,8 @@ public class EcritureComptableDto {
     private BigDecimal montant_total_credit;
 
     private Boolean validee;
+    private String statut;
+    private Boolean actif;
 
     @JsonProperty("dateValidation")
     private LocalDateTime date_validation;

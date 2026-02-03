@@ -4,6 +4,7 @@ import com.yowyob.erp.accounting.dto.EcritureComptableDto;
 import com.yowyob.erp.accounting.dto.JournalAuditDto;
 import com.yowyob.erp.accounting.entity.DetailEcriture;
 import com.yowyob.erp.accounting.entity.EcritureComptable;
+import com.yowyob.erp.accounting.entity.EcritureStatut;
 import com.yowyob.erp.accounting.entity.JournalAudit;
 import com.yowyob.erp.accounting.entity.Tenant;
 import com.yowyob.erp.accounting.repository.EcritureComptableRepository;
@@ -100,6 +101,9 @@ public class EcritureComptableService {
                                                                                 ecriture.setCreated_by(current_user);
                                                                                 ecriture.setUpdated_by(current_user);
                                                                                 ecriture.setValidee(false);
+                                                                                ecriture.setStatut(
+                                                                                                EcritureStatut.BROUILLON);
+                                                                                ecriture.setActif(true);
 
                                                                                 return ecriture_repository
                                                                                                 .save(ecriture)
@@ -217,6 +221,8 @@ public class EcritureComptableService {
                                                                                 .flatMap(this::validateBalance)
                                                                                 .then(Mono.defer(() -> {
                                                                                         ecriture.setValidee(true);
+                                                                                        ecriture.setStatut(
+                                                                                                        EcritureStatut.VALIDE);
                                                                                         ecriture.setDate_validation(
                                                                                                         LocalDateTime.now());
                                                                                         ecriture.setValidated_by(
@@ -225,6 +231,7 @@ public class EcritureComptableService {
                                                                                                         LocalDateTime.now());
                                                                                         ecriture.setUpdated_by(
                                                                                                         current_user);
+                                                                                        ecriture.setNotNew();
 
                                                                                         return ecriture_repository
                                                                                                         .save(ecriture)
@@ -485,6 +492,70 @@ public class EcritureComptableService {
                                                 }));
         }
 
+        /**
+         * Cancels an accounting entry.
+         */
+        @Transactional
+        public Mono<EcritureComptableDto> cancelEcriture(UUID id, String user) {
+                return ReactiveTenantContext.getTenantId()
+                                .flatMap(tenant_id -> {
+                                        String current_user = user != null ? user : "system";
+                                        return ecriture_repository.findByTenant_IdAndId(tenant_id, id)
+                                                        .switchIfEmpty(Mono.error(new ResourceNotFoundException("Entry",
+                                                                        id.toString())))
+                                                        .flatMap(ecriture -> {
+                                                                if (ecriture.getStatut() == EcritureStatut.ANNULE) {
+                                                                        return Mono.error(new BusinessException(
+                                                                                        "Entry already canceled"));
+                                                                }
+
+                                                                ecriture.setStatut(EcritureStatut.ANNULE);
+                                                                ecriture.setUpdated_at(LocalDateTime.now());
+                                                                ecriture.setUpdated_by(current_user);
+                                                                ecriture.setNotNew();
+
+                                                                return ecriture_repository.save(ecriture)
+                                                                                .flatMap(saved -> ReactiveTenantContext
+                                                                                                .getCurrentTenantAsTenant()
+                                                                                                .flatMap(tenant -> logAuditAndSendKafka(
+                                                                                                                tenant,
+                                                                                                                id,
+                                                                                                                current_user,
+                                                                                                                "ECRITURE_CANCELED",
+                                                                                                                "Entry canceled"))
+                                                                                                .then(redis_service
+                                                                                                                .delete(CACHE_ALL
+                                                                                                                                + tenant_id))
+                                                                                                .thenReturn(mapToDto(
+                                                                                                                saved)));
+                                                        });
+                                });
+        }
+
+        /**
+         * Deactivates an accounting entry (soft delete).
+         */
+        @Transactional
+        public Mono<Void> deactivateEcriture(UUID id) {
+                return ReactiveTenantContext.getTenantId()
+                                .flatMap(tenant_id -> ecriture_repository.findByTenant_IdAndId(tenant_id, id)
+                                                .switchIfEmpty(Mono.error(
+                                                                new ResourceNotFoundException("Entry", id.toString())))
+                                                .flatMap(ecriture -> {
+                                                        ecriture.setActif(false);
+                                                        ecriture.setUpdated_at(LocalDateTime.now());
+                                                        return ReactiveTenantContext.getCurrentUser()
+                                                                        .defaultIfEmpty("system")
+                                                                        .flatMap(user -> {
+                                                                                ecriture.setUpdated_by(user);
+                                                                                ecriture.setNotNew();
+                                                                                return ecriture_repository
+                                                                                                .save(ecriture);
+                                                                        });
+                                                }))
+                                .then();
+        }
+
         private Mono<Void> logAuditAndSendKafka(Tenant tenant, UUID ecriture_id, String user, String action,
                         String details) {
                 JournalAudit audit = JournalAudit.builder()
@@ -544,6 +615,8 @@ public class EcritureComptableService {
                                 .montant_total_debit(dto.getMontant_total_debit())
                                 .montant_total_credit(dto.getMontant_total_credit())
                                 .validee(dto.getValidee())
+                                .statut(dto.getStatut() != null ? EcritureStatut.valueOf(dto.getStatut()) : null)
+                                .actif(dto.getActif() != null ? dto.getActif() : true)
                                 .reference_externe(dto.getReference_externe())
                                 .notes(dto.getNotes())
                                 .build();
@@ -560,6 +633,8 @@ public class EcritureComptableService {
                                 .montant_total_debit(e.getMontant_total_debit())
                                 .montant_total_credit(e.getMontant_total_credit())
                                 .validee(e.getValidee())
+                                .statut(e.getStatut() != null ? e.getStatut().name() : null)
+                                .actif(e.getActif())
                                 .reference_externe(e.getReference_externe())
                                 .notes(e.getNotes())
                                 .created_at(e.getCreated_at())

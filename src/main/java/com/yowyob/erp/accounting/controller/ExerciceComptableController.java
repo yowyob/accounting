@@ -11,6 +11,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
@@ -43,6 +44,14 @@ public class ExerciceComptableController {
     public Mono<ResponseEntity<ApiResponseWrapper<ExerciceComptableDto>>> getExercice(@PathVariable UUID id) {
         return exercice_service.getExercice(id)
                 .map(exercice -> ResponseEntity.ok(ApiResponseWrapper.success(exercice, "Fiscal year found")));
+    }
+
+    @GetMapping("/{id}/periodes")
+    @Operation(summary = "Get all periods for a fiscal year")
+    public Mono<ResponseEntity<ApiResponseWrapper<List<com.yowyob.erp.accounting.dto.PeriodeComptableDto>>>> getPeriodes(
+            @PathVariable UUID id) {
+        return exercice_service.getPeriodesByExercice(id)
+                .map(periodes -> ResponseEntity.ok(ApiResponseWrapper.success(periodes, "Periods retrieved")));
     }
 
     @GetMapping
@@ -86,5 +95,13 @@ public class ExerciceComptableController {
         return exercice_service.deleteExercice(id)
                 .then(Mono.fromCallable(
                         () -> ResponseEntity.ok(ApiResponseWrapper.success(null, "Fiscal year deleted successfully"))));
+    }
+
+    @PatchMapping("/{id}/deactivate")
+    @Operation(summary = "Deactivate a fiscal year (soft delete)")
+    public Mono<ResponseEntity<ApiResponseWrapper<Object>>> deactivateExercice(@PathVariable UUID id) {
+        return exercice_service.deactivateExercice(id)
+                .then(Mono.fromCallable(
+                        () -> ResponseEntity.ok(ApiResponseWrapper.success(null, "Fiscal year deactivated successfully"))));
     }
 }
