@@ -32,4 +32,9 @@ public interface OperationComptableRepository extends R2dbcRepository<OperationC
                         @Param("tenant_id") UUID tenant_id,
                         @Param("type_operation") String type_operation,
                         @Param("mode_reglement") String mode_reglement);
+
+        @Query("SELECT * FROM operation_comptable WHERE tenant_id = :tenant_id AND type_operation = :type_operation")
+        Flux<OperationComptable> findByTenantIdAndTypeOperation(
+                        @Param("tenant_id") UUID tenant_id,
+                        @Param("type_operation") String type_operation);
 }
