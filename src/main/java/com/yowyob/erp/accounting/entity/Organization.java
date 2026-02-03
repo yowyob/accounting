@@ -26,7 +26,8 @@ import java.util.UUID;
 public class Organization implements SettablePersistable<UUID> {
 
     @Id
-    private UUID id;
+    @Builder.Default
+    private UUID id = UUID.randomUUID();
 
     @Column("name")
     private String name;

@@ -1,5 +1,6 @@
 package com.yowyob.erp.accounting.entity;
 
+import com.yowyob.erp.common.persistence.SettablePersistable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,10 +23,11 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PlanComptable {
+public class PlanComptable implements SettablePersistable<UUID> {
 
     @Id
-    private UUID id;
+    @Builder.Default
+    private UUID id = UUID.randomUUID();
 
     @Column("tenant_id")
     private UUID tenantId;
@@ -60,4 +62,19 @@ public class PlanComptable {
 
     @Transient
     private Tenant tenant;
+
+    @Transient
+    @Builder.Default
+    private boolean isNew = true;
+
+    @Override
+    @Transient
+    public boolean isNew() {
+        return isNew || id == null;
+    }
+
+    @Override
+    public void setNotNew() {
+        this.isNew = false;
+    }
 }

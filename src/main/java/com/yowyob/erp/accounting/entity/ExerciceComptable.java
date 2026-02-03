@@ -28,7 +28,8 @@ import java.util.List;
 public class ExerciceComptable implements SettablePersistable<UUID> {
 
     @Id
-    private UUID id;
+    @Builder.Default
+    private UUID id = UUID.randomUUID();
 
     @Column("tenant_id")
     private UUID tenantId;

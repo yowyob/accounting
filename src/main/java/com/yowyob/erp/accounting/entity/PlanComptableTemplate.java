@@ -15,6 +15,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.annotation.Transient;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.yowyob.erp.common.persistence.SettablePersistable;
 
 /**
  * Entity representing an accounting account template (Plan Comptable Template)
@@ -26,11 +27,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PlanComptableTemplate implements Persistable<UUID> {
+public class PlanComptableTemplate implements SettablePersistable<UUID> {
 
     @Id
     @Column("id")
-    private UUID id;
+    @Builder.Default
+    private UUID id = UUID.randomUUID();
 
     @Column("classe")
     private Integer classe;
@@ -69,5 +71,10 @@ public class PlanComptableTemplate implements Persistable<UUID> {
     @Transient
     public boolean isNew() {
         return this.isNew || id == null;
+    }
+
+    @Override
+    public void setNotNew() {
+        this.isNew = false;
     }
 }
