@@ -61,7 +61,6 @@ public class CompteService {
                                                         compte.setUpdated_at(LocalDateTime.now());
                                                         compte.setCreated_by("system");
                                                         compte.setUpdated_by("system");
-                                                        compte.setSolde(BigDecimal.ZERO);
                                                         compte.setActif(true);
 
                                                         return compte_repository.save(compte)

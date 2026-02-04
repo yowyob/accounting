@@ -3,6 +3,7 @@ package com.yowyob.erp.accounting.serviceInitialization;
 import com.yowyob.erp.accounting.entity.JournalComptable;
 import com.yowyob.erp.accounting.entity.Tenant;
 import com.yowyob.erp.accounting.repository.JournalComptableRepository;
+import com.yowyob.erp.common.constants.AppConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -39,10 +40,11 @@ public class JournalComptableInitializationService implements CommandLineRunner 
         log.info("Starting accounting journals initialization...");
 
         Flux.concat(
-                createJournalIfNotExists("AN", "Journal des Achats", "ACHAT"),
-                createJournalIfNotExists("VE", "Journal des Ventes", "VENTE"),
-                createJournalIfNotExists("TR", "Journal de Trésorerie", "TRESORERIE"),
-                createJournalIfNotExists("OD", "Journal des Opérations Diverses", "DIVERS"))
+                createJournalIfNotExists("AN", "Journal des Achats", AppConstants.JournalTypes.PURCHASES),
+                createJournalIfNotExists("VE", "Journal des Ventes", AppConstants.JournalTypes.SALES),
+                createJournalIfNotExists("CA", "Journal de Caisse", AppConstants.JournalTypes.CASH),
+                createJournalIfNotExists("BQ", "Journal de Banque", AppConstants.JournalTypes.BANK),
+                createJournalIfNotExists("OD", "Journal des Opérations Diverses", AppConstants.JournalTypes.GENERAL))
                 .then()
                 .doOnSuccess(v -> log.info("Accounting journals initialization completed successfully."))
                 .doOnError(e -> log.error("Error during journals initialization: {}", e.getMessage()))

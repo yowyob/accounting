@@ -2,7 +2,7 @@
 package com.yowyob.erp.common.constants;
 
 public class AppConstants {
-    
+
     // Codes de comptes OHADA
     public static final class AccountCodes {
         public static final String CASH_ACCOUNT_PREFIX = "57"; // Comptes de caisse
@@ -13,7 +13,7 @@ public class AppConstants {
         public static final String INVENTORY_ACCOUNT_PREFIX = "31"; // Stocks
         public static final String VAT_ACCOUNT_PREFIX = "443"; // TVA
     }
-    
+
     // Types d'opérations comptables
     public static final class OperationTypes {
         public static final String SALE = "SALE";
@@ -22,7 +22,7 @@ public class AppConstants {
         public static final String RECEIPT = "RECEIPT";
         public static final String TRANSFER = "TRANSFER";
     }
-    
+
     // Modes de règlement
     public static final class PaymentMethods {
         public static final String CASH = "CASH";
@@ -31,7 +31,7 @@ public class AppConstants {
         public static final String CHECK = "CHECK";
         public static final String MOBILE_MONEY = "MOBILE_MONEY";
     }
-    
+
     // Types de montant
     public static final class AmountTypes {
         public static final String HT = "HT"; // Hors Taxes
@@ -39,22 +39,22 @@ public class AppConstants {
         public static final String TVA = "TVA"; // Taxe sur la Valeur Ajoutée
         public static final String PAU = "PAU"; // Prix d'Achat Unitaire
     }
-    
+
     // Sens comptable
     public static final class AccountingSense {
         public static final String DEBIT = "DEBIT";
         public static final String CREDIT = "CREDIT";
     }
-    
+
     // Types de journaux
     public static final class JournalTypes {
-        public static final String SALES = "SALES";
-        public static final String PURCHASES = "PURCHASES";
-        public static final String CASH = "CASH";
-        public static final String BANK = "BANK";
-        public static final String GENERAL = "GENERAL";
+        public static final String SALES = "VENTE";
+        public static final String PURCHASES = "ACHAT";
+        public static final String CASH = "CAISSE";
+        public static final String BANK = "BANQUE";
+        public static final String GENERAL = "DIVERS";
     }
-    
+
     // Événements Kafka
     public static final class KafkaEvents {
         public static final String ACCOUNTING_ENTRY_CREATED = "ACCOUNTING_ENTRY_CREATED";
@@ -63,7 +63,7 @@ public class AppConstants {
         public static final String INVOICE_PAID = "INVOICE_PAID";
         public static final String PERIOD_CLOSED = "PERIOD_CLOSED";
     }
-    
+
     // Rôles utilisateur
     public static final class Roles {
         public static final String ADMIN = "ADMIN";
@@ -72,6 +72,3 @@ public class AppConstants {
         public static final String AUDITOR = "AUDITOR";
     }
 }
-
-
-
