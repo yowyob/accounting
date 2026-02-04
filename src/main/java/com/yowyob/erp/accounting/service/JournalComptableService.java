@@ -28,6 +28,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -131,7 +132,7 @@ public class JournalComptableService {
                                                                 return ecriture_repository
                                                                                 .findByTenant_IdAndJournal_Id(tenant_id,
                                                                                                 journal_id)
-                                                                                .map(this::mapEcritureToDto)
+                                                                                .flatMap(this::getFullEcritureDto)
                                                                                 .collectList()
                                                                                 .map(ecritures -> {
                                                                                         dto.setEcriture_comptable(
@@ -153,7 +154,21 @@ public class JournalComptableService {
                                         return redis_service.get(cache_key, java.util.List.class)
                                                         .map(list -> (java.util.List<JournalComptableDto>) list)
                                                         .switchIfEmpty(journal_repository.findByTenant_Id(tenant_id)
-                                                                        .map(this::mapToDto)
+                                                                        .flatMap(journal -> {
+                                                                                JournalComptableDto dto = mapToDto(
+                                                                                                journal);
+                                                                                return ecriture_repository
+                                                                                                .findByTenant_IdAndJournal_Id(
+                                                                                                                tenant_id,
+                                                                                                                journal.getId())
+                                                                                                .flatMap(this::getFullEcritureDto)
+                                                                                                .collectList()
+                                                                                                .map(ecritures -> {
+                                                                                                        dto.setEcriture_comptable(
+                                                                                                                        ecritures);
+                                                                                                        return dto;
+                                                                                                });
+                                                                        })
                                                                         .collectList()
                                                                         .flatMap(list -> redis_service
                                                                                         .save(cache_key, list, Duration
@@ -171,7 +186,21 @@ public class JournalComptableService {
                                                         .map(list -> (java.util.List<JournalComptableDto>) list)
                                                         .switchIfEmpty(journal_repository
                                                                         .findByTenant_IdAndActifTrue(tenant_id)
-                                                                        .map(this::mapToDto)
+                                                                        .flatMap(journal -> {
+                                                                                JournalComptableDto dto = mapToDto(
+                                                                                                journal);
+                                                                                return ecriture_repository
+                                                                                                .findByTenant_IdAndJournal_Id(
+                                                                                                                tenant_id,
+                                                                                                                journal.getId())
+                                                                                                .flatMap(this::getFullEcritureDto)
+                                                                                                .collectList()
+                                                                                                .map(ecritures -> {
+                                                                                                        dto.setEcriture_comptable(
+                                                                                                                        ecritures);
+                                                                                                        return dto;
+                                                                                                });
+                                                                        })
                                                                         .collectList()
                                                                         .flatMap(list -> redis_service
                                                                                         .save(cache_key, list, Duration
@@ -386,6 +415,40 @@ public class JournalComptableService {
                                 .notes(e.getNotes())
                                 .created_at(e.getCreated_at())
                                 .updated_at(e.getUpdated_at())
+                                .details_ecriture(new ArrayList<>())
+                                .build();
+        }
+
+        /**
+         * Fetches an entry and its details, returning a complete DTO.
+         */
+        private Mono<EcritureComptableDto> getFullEcritureDto(EcritureComptable e) {
+                EcritureComptableDto dto = mapEcritureToDto(e);
+                return detail_repository.findByTenant_IdAndEcriture_Id(e.getTenantId(), e.getId())
+                                .map(this::mapDetailToDto)
+                                .collectList()
+                                .map(details -> {
+                                        dto.setDetails_ecriture(details);
+                                        return dto;
+                                });
+        }
+
+        private com.yowyob.erp.accounting.dto.DetailEcritureDto mapDetailToDto(
+                        com.yowyob.erp.accounting.entity.DetailEcriture d) {
+                return com.yowyob.erp.accounting.dto.DetailEcritureDto.builder()
+                                .id(d.getId())
+                                .ecriture_comptable_id(d.getEcriture_id())
+                                .compte_comptable_id(d.getCompte_id())
+                                .libelle(d.getLibelle())
+                                .sens(d.getSens() != null ? d.getSens().name() : null)
+                                .montant_debit(d.getMontant_debit())
+                                .montant_credit(d.getMontant_credit())
+                                .notes(d.getNotes())
+                                .lettree(d.getLettree())
+                                .date_lettrage(d.getDate_lettrage())
+                                .pointee(d.getPointee())
+                                .reference_bancaire(d.getReference_bancaire())
+                                .date_ecriture(d.getDate_ecriture())
                                 .build();
         }
 

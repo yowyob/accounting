@@ -48,11 +48,11 @@ public class AppConstants {
 
     // Types de journaux
     public static final class JournalTypes {
-        public static final String SALES = "VENTE";
-        public static final String PURCHASES = "ACHAT";
-        public static final String CASH = "CAISSE";
-        public static final String BANK = "BANQUE";
-        public static final String GENERAL = "DIVERS";
+        public static final String SALES = "SALES";
+        public static final String PURCHASES = "PURCHASES";
+        public static final String CASH = "CASH";
+        public static final String BANK = "BANK";
+        public static final String GENERAL = "GENERAL";
     }
 
     // Événements Kafka

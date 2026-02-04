@@ -33,6 +33,9 @@ public class Compte implements SettablePersistable<UUID> {
     @Column("tenant_id")
     private UUID tenantId;
 
+    @Column("external_id")
+    private UUID external_id;
+
     @Column("no_compte")
     private String no_compte;
 

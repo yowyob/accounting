@@ -23,5 +23,6 @@
     <include file="changeset-009-fix-releve-bancaire.xml" relativeToChangelogFile="true"/>
     <include file="changeset-010-create-fixed-assets.xml" relativeToChangelogFile="true"/>
     <include file="changeset-011-add-states-and-active-flags.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-012-add-external-id-to-comptes.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

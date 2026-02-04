@@ -30,6 +30,11 @@ public interface CompteRepository extends R2dbcRepository<Compte, UUID> {
         @Query("SELECT * FROM comptes WHERE tenant_id = :tenant_id AND actif = true")
         Flux<Compte> findByTenant_IdAndActifTrue(@Param("tenant_id") UUID tenant_id);
 
+        /** Finds an account by tenant and external ID */
+        @Query("SELECT * FROM comptes WHERE tenant_id = :tenant_id AND external_id = :external_id")
+        Mono<Compte> findByTenant_IdAndExternal_id(@Param("tenant_id") UUID tenant_id,
+                        @Param("external_id") UUID external_id);
+
         /** Lists accounts for a tenant by OHADA class */
         @Query("SELECT * FROM comptes WHERE tenant_id = :tenant_id AND classe = :classe")
         Flux<Compte> findByTenant_IdAndClasse(@Param("tenant_id") UUID tenant_id, @Param("classe") Integer classe);
