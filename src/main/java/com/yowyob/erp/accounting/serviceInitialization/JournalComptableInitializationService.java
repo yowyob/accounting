@@ -57,6 +57,8 @@ public class JournalComptableInitializationService implements CommandLineRunner 
                     if (!exists) {
                         log.info("Creating journal: {} - {}", code_journal, libelle);
                         JournalComptable journal = JournalComptable.builder()
+                                .id(UUID.randomUUID())
+                                .tenantId(tenant_id)
                                 .tenant(new Tenant(tenant_id))
                                 .code_journal(code_journal)
                                 .libelle(libelle)
