@@ -159,7 +159,20 @@ public class AccountingKafkaListener {
                                             .updated_by("KAFKA_CONSUMER")
                                             .build();
 
-                                    return journalAuditRepository.save(auditEntry);
+                                    return journalAuditRepository.save(auditEntry)
+                                            .onErrorResume(
+                                                    org.springframework.dao.DataIntegrityViolationException.class,
+                                                    e -> {
+                                                        log.debug(
+                                                                "⏭️ Audit log already exists (race condition), skipping: {}",
+                                                                auditId);
+                                                        return Mono.empty();
+                                                    })
+                                            .onErrorResume(org.springframework.dao.DuplicateKeyException.class, e -> {
+                                                log.debug("⏭️ Audit log duplicate key (race condition), skipping: {}",
+                                                        auditId);
+                                                return Mono.empty();
+                                            });
                                 });
                     })
                     .doOnSuccess(v -> acknowledgment.acknowledge())

@@ -330,6 +330,7 @@ public class OperationComptableService {
                                                 dto.getJournal_comptable_id().toString())))
                                 .map(j -> {
                                         Contrepartie cp = new Contrepartie();
+                                        cp.setId(dto.getId() != null ? dto.getId() : UUID.randomUUID());
                                         cp.setTenantId(tenant.getId());
                                         cp.setOperation_comptable_id(opId);
                                         cp.setJournal_comptable_id(j.getId());
@@ -374,6 +375,7 @@ public class OperationComptableService {
 
         private OperationComptable mapToEntity(OperationComptableDto dto, Tenant tenant) {
                 OperationComptable op = new OperationComptable();
+                op.setId(dto.getId() != null ? dto.getId() : UUID.randomUUID());
                 op.setTenantId(tenant.getId());
                 op.setType_operation(dto.getType_operation());
                 op.setMode_reglement(dto.getMode_reglement());

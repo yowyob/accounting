@@ -368,6 +368,7 @@ public class JournalComptableService {
          */
         private JournalComptable mapToEntity(JournalComptableDto dto, Tenant tenant) {
                 JournalComptable j = new JournalComptable();
+                j.setId(dto.getId() != null ? dto.getId() : UUID.randomUUID());
                 j.setTenantId(tenant.getId());
                 j.setCode_journal(dto.getCode_journal());
                 j.setLibelle(dto.getLibelle());

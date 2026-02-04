@@ -66,6 +66,9 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
                                                                                 log.info("Building entity...");
                                                                                 ExerciceComptable exercice = ExerciceComptable
                                                                                                 .builder()
+                                                                                                .id(exercice_dto.getId() != null
+                                                                                                                ? exercice_dto.getId()
+                                                                                                                : UUID.randomUUID())
                                                                                                 .tenantId(tenant_id)
                                                                                                 .code(exercice_dto
                                                                                                                 .getCode())

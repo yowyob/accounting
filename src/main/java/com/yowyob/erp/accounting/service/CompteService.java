@@ -109,7 +109,15 @@ public class CompteService {
                                         String cache_key = CACHE_PREFIX + tenant_id + ":" + id;
                                         return redis_template.opsForValue().get(cache_key)
                                                         .map(cached -> {
-                                                                compte.setSolde((BigDecimal) cached);
+                                                                if (cached instanceof BigDecimal) {
+                                                                        compte.setSolde((BigDecimal) cached);
+                                                                } else if (cached instanceof Number) {
+                                                                        compte.setSolde(new BigDecimal(
+                                                                                        cached.toString()));
+                                                                } else if (cached instanceof String) {
+                                                                        compte.setSolde(new BigDecimal(
+                                                                                        (String) cached));
+                                                                }
                                                                 return mapToDto(compte);
                                                         })
                                                         .switchIfEmpty(
@@ -356,6 +364,20 @@ public class CompteService {
                                                         prefix = "311";
                                                         classe = 3;
                                                         typeCompte = "ACTIF";
+                                                        break;
+                                                case "SALES":
+                                                        prefix = "701";
+                                                        classe = 7;
+                                                        typeCompte = "PASSIF"; // OHADA: Sales are usually passive
+                                                                               // (credits) but in terms of structure
+                                                                               // it's a class 7 (Results)
+                                                        break;
+                                                case "PURCHASE":
+                                                        prefix = "601";
+                                                        classe = 6;
+                                                        typeCompte = "ACTIF"; // OHADA: Purchases are usually active
+                                                                              // (debits) but in terms of structure it's
+                                                                              // a class 6 (Results)
                                                         break;
                                                 default:
                                                         return Mono.error(new BusinessException(

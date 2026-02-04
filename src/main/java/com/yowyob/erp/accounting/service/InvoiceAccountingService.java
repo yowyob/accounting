@@ -47,13 +47,17 @@ public class InvoiceAccountingService {
                 .flatMap(tenant_id -> {
                     log.info("Accounting supplier invoice: {} for tenant: {}", invoice.getNumeroFacture(), tenant_id);
 
-                    return findOrCreateAccount(tenant_id, invoice.getIdFournisseur(), invoice.getNomFournisseru(), "SUPPLIER")
+                    return findOrCreateAccount(tenant_id, invoice.getIdFournisseur(), invoice.getNomFournisseru(),
+                            "SUPPLIER")
                             .flatMap(supplier_account -> findJournal(tenant_id, AppConstants.JournalTypes.PURCHASES)
                                     .flatMap(journal -> findPeriode(tenant_id, invoice.getDateFacturation())
                                             .flatMap(periode -> {
-                                                
+
                                                 List<DetailEcritureDto> details = new ArrayList<>();
-                                                String libelle = "Facture Fournisseur " + (invoice.getNumeroFacture() != null ? invoice.getNumeroFacture() : invoice.getIdFacture());
+                                                String libelle = "Facture Fournisseur "
+                                                        + (invoice.getNumeroFacture() != null
+                                                                ? invoice.getNumeroFacture()
+                                                                : invoice.getIdFacture());
 
                                                 // 1. Debit Expense/Purchase account (HT)
                                                 details.add(DetailEcritureDto.builder()
@@ -64,9 +68,13 @@ public class InvoiceAccountingService {
                                                         .build());
 
                                                 // 2. Debit VAT account (if applicable)
-                                                if (invoice.getMontantTVA() != null && invoice.getMontantTVA().compareTo(BigDecimal.ZERO) > 0) {
+                                                if (invoice.getMontantTVA() != null
+                                                        && invoice.getMontantTVA().compareTo(BigDecimal.ZERO) > 0) {
                                                     details.add(DetailEcritureDto.builder()
-                                                            .libelle("TVA sur Achats - " + (invoice.getNumeroFacture() != null ? invoice.getNumeroFacture() : invoice.getIdFacture()))
+                                                            .libelle("TVA sur Achats - "
+                                                                    + (invoice.getNumeroFacture() != null
+                                                                            ? invoice.getNumeroFacture()
+                                                                            : invoice.getIdFacture()))
                                                             .sens(AppConstants.AccountingSense.DEBIT)
                                                             .montant_debit(invoice.getMontantTVA())
                                                             .montant_credit(BigDecimal.ZERO)
@@ -84,7 +92,8 @@ public class InvoiceAccountingService {
 
                                                 return resolveAccountIds(tenant_id, details, "PURCHASE")
                                                         .flatMap(finalDetails -> {
-                                                            EcritureComptableDto ecritureDto = EcritureComptableDto.builder()
+                                                            EcritureComptableDto ecritureDto = EcritureComptableDto
+                                                                    .builder()
                                                                     .libelle(libelle)
                                                                     .date_ecriture(invoice.getDateFacturation())
                                                                     .journal_comptable_id(journal.getId())
@@ -121,72 +130,84 @@ public class InvoiceAccountingService {
                     return findOrCreateAccount(tenant_id, clientId, invoice.getNomClient(), "CLIENT")
                             .flatMap(client_account -> findJournal(tenant_id, AppConstants.JournalTypes.SALES)
                                     .flatMap(journal -> {
-                                        LocalDate date_facture = invoice.getDateFacturation() != null 
-                                            ? invoice.getDateFacturation().toLocalDate() 
-                                            : LocalDate.now();
-                                            
+                                        LocalDate date_facture = invoice.getDateFacturation() != null
+                                                ? invoice.getDateFacturation().toLocalDate()
+                                                : LocalDate.now();
+
                                         return findPeriode(tenant_id, date_facture)
-                                            .flatMap(periode -> {
-                                                
-                                                List<DetailEcritureDto> details = new ArrayList<>();
-                                                String libelle = "Facture Client " + (invoice.getNumeroFacture() != null ? invoice.getNumeroFacture() : invoice.getIdFacture());
+                                                .flatMap(periode -> {
 
-                                                // 1. Debit Client account (TTC)
-                                                details.add(DetailEcritureDto.builder()
-                                                        .compte_comptable_id(client_account.getId())
-                                                        .libelle(libelle)
-                                                        .sens(AppConstants.AccountingSense.DEBIT)
-                                                        .montant_debit(invoice.getMontantTTC())
-                                                        .montant_credit(BigDecimal.ZERO)
-                                                        .build());
+                                                    List<DetailEcritureDto> details = new ArrayList<>();
+                                                    String libelle = "Facture Client "
+                                                            + (invoice.getNumeroFacture() != null
+                                                                    ? invoice.getNumeroFacture()
+                                                                    : invoice.getIdFacture());
 
-                                                // 2. Credit Sales account (HT)
-                                                details.add(DetailEcritureDto.builder()
-                                                        .libelle(libelle)
-                                                        .sens(AppConstants.AccountingSense.CREDIT)
-                                                        .montant_debit(BigDecimal.ZERO)
-                                                        .montant_credit(invoice.getMontantHT())
-                                                        .build());
-
-                                                // 3. Credit VAT account (if applicable)
-                                                if (invoice.getMontantTVA() != null && invoice.getMontantTVA().compareTo(BigDecimal.ZERO) > 0) {
+                                                    // 1. Debit Client account (TTC)
                                                     details.add(DetailEcritureDto.builder()
-                                                            .libelle("TVA collectée - " + (invoice.getNumeroFacture() != null ? invoice.getNumeroFacture() : invoice.getIdFacture()))
+                                                            .compte_comptable_id(client_account.getId())
+                                                            .libelle(libelle)
+                                                            .sens(AppConstants.AccountingSense.DEBIT)
+                                                            .montant_debit(invoice.getMontantTTC())
+                                                            .montant_credit(BigDecimal.ZERO)
+                                                            .build());
+
+                                                    // 2. Credit Sales account (HT)
+                                                    details.add(DetailEcritureDto.builder()
+                                                            .libelle(libelle)
                                                             .sens(AppConstants.AccountingSense.CREDIT)
                                                             .montant_debit(BigDecimal.ZERO)
-                                                            .montant_credit(invoice.getMontantTVA())
+                                                            .montant_credit(invoice.getMontantHT())
                                                             .build());
-                                                }
 
-                                                return resolveAccountIds(tenant_id, details, "SALE")
-                                                        .flatMap(finalDetails -> {
-                                                            EcritureComptableDto ecritureDto = EcritureComptableDto.builder()
-                                                                    .libelle(libelle)
-                                                                    .date_ecriture(date_facture)
-                                                                    .journal_comptable_id(journal.getId())
-                                                                    .periode_comptable_id(periode.getId())
-                                                                    .montant_total_debit(invoice.getMontantTTC())
-                                                                    .montant_total_credit(invoice.getMontantTTC())
-                                                                    .reference_externe(invoice.getNumeroFacture())
-                                                                    .details_ecriture(finalDetails)
-                                                                    .build();
+                                                    // 3. Credit VAT account (if applicable)
+                                                    if (invoice.getMontantTVA() != null
+                                                            && invoice.getMontantTVA().compareTo(BigDecimal.ZERO) > 0) {
+                                                        details.add(DetailEcritureDto.builder()
+                                                                .libelle("TVA collectée - "
+                                                                        + (invoice.getNumeroFacture() != null
+                                                                                ? invoice.getNumeroFacture()
+                                                                                : invoice.getIdFacture()))
+                                                                .sens(AppConstants.AccountingSense.CREDIT)
+                                                                .montant_debit(BigDecimal.ZERO)
+                                                                .montant_credit(invoice.getMontantTVA())
+                                                                .build());
+                                                    }
 
-                                                            return ecriture_service.createEcriture(ecritureDto);
-                                                        });
-                                            });
+                                                    return resolveAccountIds(tenant_id, details, "SALE")
+                                                            .flatMap(finalDetails -> {
+                                                                EcritureComptableDto ecritureDto = EcritureComptableDto
+                                                                        .builder()
+                                                                        .libelle(libelle)
+                                                                        .date_ecriture(date_facture)
+                                                                        .journal_comptable_id(journal.getId())
+                                                                        .periode_comptable_id(periode.getId())
+                                                                        .montant_total_debit(invoice.getMontantTTC())
+                                                                        .montant_total_credit(invoice.getMontantTTC())
+                                                                        .reference_externe(invoice.getNumeroFacture())
+                                                                        .details_ecriture(finalDetails)
+                                                                        .build();
+
+                                                                return ecriture_service.createEcriture(ecritureDto);
+                                                            });
+                                                });
                                     }));
                 });
     }
 
     private Mono<Compte> findOrCreateAccount(UUID tenant_id, UUID external_id, String name, String type) {
         if (external_id == null) {
-             return Mono.error(new BusinessException("External ID is required to find or create the accounting account for the " + type));
+            return Mono.error(new BusinessException(
+                    "External ID is required to find or create the accounting account for the " + type));
         }
-        
+
         return compte_repository.findByTenant_IdAndExternal_id(tenant_id, external_id)
                 .switchIfEmpty(Mono.defer(() -> {
-                    log.info("Account not found for {} with external ID {}, creating auto-generated account...", type, external_id);
-                    return compte_service.createAutoGeneratedAccount(name, type, "Auto-created from invoice integration", external_id)
+                    log.info("Account not found for {} with external ID {}, creating auto-generated account...", type,
+                            external_id);
+                    return compte_service
+                            .createAutoGeneratedAccount(name, type, "Auto-created from invoice integration",
+                                    external_id)
                             .flatMap(dto -> compte_repository.findById(dto.getId()));
                 }));
     }
@@ -195,36 +216,44 @@ public class InvoiceAccountingService {
         return journal_repository.findByTenant_IdAndType_journal(tenant_id, type)
                 .filter(j -> Boolean.TRUE.equals(j.getActif()))
                 .next()
-                .switchIfEmpty(Mono.error(new BusinessException("No active journal of type " + type + " found for this tenant")));
+                .switchIfEmpty(Mono
+                        .error(new BusinessException("No active journal of type " + type + " found for this tenant")));
     }
 
     private Mono<com.yowyob.erp.accounting.entity.PeriodeComptable> findPeriode(UUID tenant_id, LocalDate date) {
         return periode_repository.findByTenant_IdAndDateInRange(tenant_id, date)
-                .switchIfEmpty(Mono.error(new BusinessException("No open accounting period found for the date " + date)));
+                .switchIfEmpty(
+                        Mono.error(new BusinessException("No open accounting period found for the date " + date)));
     }
 
-    private Mono<List<DetailEcritureDto>> resolveAccountIds(UUID tenant_id, List<DetailEcritureDto> details, String context) {
+    private Mono<List<DetailEcritureDto>> resolveAccountIds(UUID tenant_id, List<DetailEcritureDto> details,
+            String context) {
         List<Mono<DetailEcritureDto>> monos = details.stream().map(d -> {
             if (d.getCompte_comptable_id() == null) {
                 String prefix;
+                String type;
+                String name;
+
                 if (d.getLibelle().toLowerCase().contains("tva")) {
-                    prefix = context.equals("SALE") ? AppConstants.AccountCodes.VAT_ACCOUNT_PREFIX : "445"; 
+                    prefix = context.equals("SALE") ? AppConstants.AccountCodes.VAT_ACCOUNT_PREFIX : "445";
+                    type = context.equals("SALE") ? "VAT_COLLECTED" : "VAT_DEDUCTIBLE";
+                    name = context.equals("SALE") ? "TVA Collectée" : "TVA Déductible";
                 } else {
                     prefix = context.equals("SALE") ? AppConstants.AccountCodes.SALES_ACCOUNT_PREFIX : "601";
+                    type = context.equals("SALE") ? "SALES" : "PURCHASE";
+                    name = context.equals("SALE") ? "Ventes de Marchandises" : "Achats de Marchandises";
                 }
-                
-                return compte_repository.findByTenant_IdAndNo_compteStartingWith(tenant_id, prefix)
-                        .next()
+
+                return findOrCreateStandardAccount(tenant_id, prefix, type, name)
                         .map(c -> {
                             d.setCompte_comptable_id(c.getId());
                             return d;
-                        })
-                        .switchIfEmpty(Mono.error(new BusinessException("Default account with prefix " + prefix + " not found for this tenant. Please create it first.")));
+                        });
             } else {
                 return Mono.just(d);
             }
         }).collect(Collectors.toList());
-        
+
         return Mono.zip(monos, objects -> {
             List<DetailEcritureDto> result = new ArrayList<>();
             for (Object o : objects) {
@@ -232,5 +261,17 @@ public class InvoiceAccountingService {
             }
             return result;
         });
+    }
+
+    private Mono<Compte> findOrCreateStandardAccount(UUID tenant_id, String prefix, String type, String name) {
+        return compte_repository.findByTenant_IdAndNo_compteStartingWith(tenant_id, prefix)
+                .next()
+                .switchIfEmpty(Mono.defer(() -> {
+                    log.info(
+                            "Standard account with prefix {} not found for tenant {}, creating auto-generated account of type {}...",
+                            prefix, tenant_id, type);
+                    return compte_service.createAutoGeneratedAccount(name, type, "Auto-created standard account", null)
+                            .flatMap(dto -> compte_repository.findById(dto.getId()));
+                }));
     }
 }
