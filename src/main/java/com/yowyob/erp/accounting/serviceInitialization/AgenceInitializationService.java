@@ -28,7 +28,7 @@ public class AgenceInitializationService implements CommandLineRunner {
 
     public AgenceInitializationService(
             AgenceRepository agence_repository,
-            @Value("${app.organization.default-organization:550e8400-e29b-41d4-a716-446655440000}") String organization_id_str) {
+            @Value("${app.organization.default-organization:4e177ff2-89b8-4d24-926a-5763dfa1b19a}") String organization_id_str) {
         this.agence_repository = agence_repository;
         this.organization_id = UUID.fromString(organization_id_str);
     }
@@ -42,7 +42,7 @@ public class AgenceInitializationService implements CommandLineRunner {
     }
 
     private Mono<Agence> createAgenceIfNotExists(String code, String name, String city, String country) {
-        return agence_repository.findByOrganizationIdAndCode(organization_id, code)
+        return agence_repository.findByCode(code)
                 .switchIfEmpty(Mono.defer(() -> {
                     Agence agence = Agence.builder()
                             .organizationId(organization_id)

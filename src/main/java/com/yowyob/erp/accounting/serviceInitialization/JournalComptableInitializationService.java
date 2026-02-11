@@ -30,7 +30,7 @@ public class JournalComptableInitializationService implements CommandLineRunner 
 
     public JournalComptableInitializationService(
             JournalComptableRepository journal_repository,
-            @Value("${app.organization.default-organization:550e8400-e29b-41d4-a716-446655440000}") String organization_id_str) {
+            @Value("${app.organization.default-organization:4e177ff2-89b8-4d24-926a-5763dfa1b19a}") String organization_id_str) {
         this.journal_repository = journal_repository;
         this.organization_id = UUID.fromString(organization_id_str);
     }
@@ -48,7 +48,7 @@ public class JournalComptableInitializationService implements CommandLineRunner 
                 .then()
                 .doOnSuccess(v -> log.info("Accounting journals initialization completed successfully."))
                 .doOnError(e -> log.error("Error during journals initialization: {}", e.getMessage()))
-                .subscribe();
+                .block();
     }
 
     private Mono<Void> createJournalIfNotExists(String code_journal, String libelle, String type_journal) {

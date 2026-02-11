@@ -26,7 +26,7 @@ public class ExerciceComptableInitializationService implements CommandLineRunner
 
     public ExerciceComptableInitializationService(
             ExerciceComptableRepository exercice_repository,
-            @Value("${app.organization.default-organization:550e8400-e29b-41d4-a716-446655440000}") String organization_id_str) {
+            @Value("${app.organization.default-organization:4e177ff2-89b8-4d24-926a-5763dfa1b19a}") String organization_id_str) {
         this.exercice_repository = exercice_repository;
         this.organization_id = UUID.fromString(organization_id_str);
     }
@@ -35,9 +35,9 @@ public class ExerciceComptableInitializationService implements CommandLineRunner
     public void run(String... args) {
         createExerciceIfNotExists("2026", "Exercice 2026",
                 LocalDate.of(2026, 1, 4), LocalDate.of(2026, 12, 31))
-                .subscribe(
-                        v -> log.info("✅ Initialization of fiscal year complete"),
-                        e -> log.error("❌ Error initializing fiscal year", e));
+                .doOnSuccess(v -> log.info("✅ Initialization of fiscal year complete"))
+                .doOnError(e -> log.error("❌ Error initializing fiscal year", e))
+                .block();
     }
 
     private Mono<Void> createExerciceIfNotExists(String code, String libelle, LocalDate start, LocalDate end) {

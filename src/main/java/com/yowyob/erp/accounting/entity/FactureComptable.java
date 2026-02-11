@@ -45,6 +45,7 @@ public class FactureComptable implements ComptableObject {
     private UUID id;
     private UUID organization_id;
     private BigDecimal montant_ht;
+    @Builder.Default
     private BigDecimal taux_tva = TAUX_TVA_DEFAUT;
     private LocalDate date;
     private String libelle;
@@ -120,8 +121,8 @@ public class FactureComptable implements ComptableObject {
     /**
      * Generates OHADA accounting lines for the invoice.
      * 
-     * @param organization   the current organization
-     * @param ecriture the associated accounting entry
+     * @param organization the current organization
+     * @param ecriture     the associated accounting entry
      * @return list of accounting details
      */
     @Override

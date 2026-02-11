@@ -72,7 +72,7 @@ public class PlanComptableTemplateInitializationService implements CommandLineRu
                 .then()
                 .doOnSuccess(v -> log.info("Accounting plan template initialization completed."))
                 .doOnError(e -> log.error("Error during accounting plan template initialization: {}", e.getMessage()))
-                .subscribe();
+                .block();
     }
 
     private Mono<Void> createAccountIfNotExists(String numero, String libelle, Integer classe) {

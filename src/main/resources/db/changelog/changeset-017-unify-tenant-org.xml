@@ -42,7 +42,7 @@
         <renameColumn tableName="transaction" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
         <renameColumn tableName="releve_bancaire" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
         <renameColumn tableName="taxes" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
-        <renameColumn tableName="devises_taux_change" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
+        <renameColumn tableName="taux_change" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
         <renameColumn tableName="immobilisations" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
         <renameColumn tableName="accounting_settings" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
         <renameColumn tableName="brouillards_comptables" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>

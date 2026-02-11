@@ -31,7 +31,7 @@ public class PeriodeComptableInitializationService implements CommandLineRunner 
 
     public PeriodeComptableInitializationService(PeriodeComptableService periode_service,
             com.yowyob.erp.accounting.repository.ExerciceComptableRepository exercice_repository,
-            @Value("${app.organization.default-organization:550e8400-e29b-41d4-a716-446655440000}") String organization_id_str) {
+            @Value("${app.organization.default-organization:4e177ff2-89b8-4d24-926a-5763dfa1b19a}") String organization_id_str) {
         this.periode_service = periode_service;
         this.exercice_repository = exercice_repository;
         this.organization_id = UUID.fromString(organization_id_str);
@@ -64,9 +64,9 @@ public class PeriodeComptableInitializationService implements CommandLineRunner 
                             });
                 })
                 .contextWrite(ReactiveOrganizationContext.withOrganizationId(organization_id))
-                .subscribe(
-                        v -> log.debug("Period iteration check: {}", v.getCode()),
-                        e -> log.error("❌ Error initializing periods", e),
-                        () -> log.info("✅ Initialization of accounting periods complete"));
+                .collectList()
+                .doOnSuccess(v -> log.info("✅ Initialization of accounting periods complete"))
+                .doOnError(e -> log.error("❌ Error initializing periods", e))
+                .block();
     }
 }

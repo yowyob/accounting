@@ -35,7 +35,7 @@ public class DefaultOrganizationSetupInitializationService implements CommandLin
     private final CompteRepository compteRepository;
     private final OrganizationRepository organizationRepository;
 
-    @Value("${app.organization.default-organization:550e8400-e29b-41d4-a716-446655440000}")
+    @Value("${app.organization.default-organization}")
     private String defaultOrganizationIdStr;
 
     @Override
@@ -53,7 +53,8 @@ public class DefaultOrganizationSetupInitializationService implements CommandLin
                             .flatMap(plans -> {
                                 if (plans.isEmpty()) {
                                     log.info("Initializing Plan Comptable for default organization...");
-                                    return planComptableService.initializePlanComptableForOrganization(organizationId).then();
+                                    return planComptableService.initializePlanComptableForOrganization(organizationId)
+                                            .then();
                                 }
                                 return Mono.empty();
                             });
