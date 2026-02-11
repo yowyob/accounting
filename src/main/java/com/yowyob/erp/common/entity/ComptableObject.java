@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.yowyob.erp.accounting.entity.DetailEcriture;
 import com.yowyob.erp.accounting.entity.EcritureComptable;
 import com.yowyob.erp.accounting.entity.Tenant;
@@ -91,6 +92,15 @@ public interface ComptableObject {
      * @return the source type
      */
     SourceType get_source_type();
+
+    /**
+     * Proof or attachments.
+     * 
+     * @return the attachments as JSON
+     */
+    default JsonNode get_attachment_ids() {
+        return null;
+    }
 
     /**
      * Generates the accounting entry detail lines associated with this object.

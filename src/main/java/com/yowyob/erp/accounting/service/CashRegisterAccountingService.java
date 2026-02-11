@@ -1,5 +1,6 @@
 package com.yowyob.erp.accounting.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yowyob.erp.accounting.dto.CashRegisterAccountingResponse;
 import com.yowyob.erp.accounting.dto.CashRegisterMovementDto;
 import com.yowyob.erp.accounting.dto.DetailEcritureDto;
@@ -28,6 +29,7 @@ public class CashRegisterAccountingService {
         private final CompteRepository compteRepository;
         private final PeriodeComptableService periodeService;
         private final JournalComptableService journalService;
+        private final ObjectMapper objectMapper;
 
         @Transactional
         public Mono<CashRegisterAccountingResponse> accountMovement(CashRegisterMovementDto movement) {
@@ -105,6 +107,7 @@ public class CashRegisterAccountingService {
                                                                                                 movement.getAmount())
                                                                                 .validee(false)
                                                                                 .reference_externe(movement.getId())
+                                                                                .attachment_ids(objectMapper.valueToTree(movement.getAttachmentIds()))
                                                                                 .build();
 
                                                                 // Recipient Account is always DEBITED (receives money)

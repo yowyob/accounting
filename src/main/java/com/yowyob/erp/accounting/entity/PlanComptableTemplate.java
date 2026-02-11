@@ -12,7 +12,6 @@ import org.springframework.data.relational.core.mapping.Column;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import org.springframework.data.domain.Persistable;
 import org.springframework.data.annotation.Transient;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.yowyob.erp.common.persistence.SettablePersistable;

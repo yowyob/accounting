@@ -50,5 +50,6 @@ public class SupplierInvoiceDto {
     private String referenceCommande;
     private UUID idGRN;
     private String numeroGRN;
+    private List<UUID> attachmentIds;
     private List<InvoiceLineDto> lignesFacture;
 }

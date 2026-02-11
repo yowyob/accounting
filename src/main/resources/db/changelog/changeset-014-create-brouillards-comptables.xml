@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <changeSet id="014-create-brouillards-comptables" author="yowyob-system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="brouillards_comptables" />
+            </not>
+        </preConditions>
+
+        <comment>Création de la table des brouillards comptables (drafts).</comment>
+
+        <createTable tableName="brouillards_comptables">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_brouillards_comptables" nullable="false"/>
+            </column>
+            <column name="tenant_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="statut" type="VARCHAR(50)" defaultValue="BROUILLON">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="source_id" type="VARCHAR(255)"/>
+            <column name="source_type" type="VARCHAR(50)"/>
+            
+            <column name="numero_piece" type="VARCHAR(100)"/>
+            <column name="date_piece" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libelle" type="TEXT"/>
+            
+            <column name="montant_total" type="NUMERIC(19, 4)"/>
+            <column name="devise" type="VARCHAR(10)"/>
+            
+            <column name="journal_id" type="UUID"/>
+            <column name="periode_id" type="UUID"/>
+            
+            <column name="data_json" type="JSONB">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="ecriture_id" type="UUID"/>
+            <column name="notes" type="TEXT"/>
+            
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(255)"/>
+            <column name="validated_by" type="VARCHAR(255)"/>
+            <column name="validated_at" type="TIMESTAMP WITHOUT TIME ZONE"/>
+            <column name="rejected_by" type="VARCHAR(255)"/>
+            <column name="rejected_at" type="TIMESTAMP WITHOUT TIME ZONE"/>
+            <column name="rejection_reason" type="TEXT"/>
+        </createTable>
+
+        <createIndex tableName="brouillards_comptables" indexName="idx_brouillards_tenant">
+            <column name="tenant_id"/>
+        </createIndex>
+        <createIndex tableName="brouillards_comptables" indexName="idx_brouillards_statut">
+            <column name="statut"/>
+        </createIndex>
+        <createIndex tableName="brouillards_comptables" indexName="idx_brouillards_type">
+            <column name="type"/>
+        </createIndex>
+        <createIndex tableName="brouillards_comptables" indexName="idx_brouillards_date">
+            <column name="date_piece"/>
+        </createIndex>
+        <createIndex tableName="brouillards_comptables" indexName="idx_brouillards_source">
+            <column name="source_id"/>
+            <column name="source_type"/>
+        </createIndex>
+
+    </changeSet>
+
+</databaseChangeLog>

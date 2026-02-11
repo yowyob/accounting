@@ -33,27 +33,27 @@ public class InvoiceAccountingController {
 
         @PostMapping("/purchase")
         @Operation(summary = "Account a supplier invoice (purchase)")
-        public Mono<ResponseEntity<ApiResponseWrapper<EcritureComptableDto>>> accountSupplierInvoice(
+        public Mono<ResponseEntity<ApiResponseWrapper<Object>>> accountSupplierInvoice(
                         @Valid @RequestBody SupplierInvoiceDto supplier_invoice_dto) {
 
                 log.info("Request to account supplier invoice: {}", supplier_invoice_dto.getNumeroFacture());
                 return invoice_accounting_service.accountSupplierInvoice(supplier_invoice_dto)
-                                .map(ecriture -> ResponseEntity
-                                                .ok(ApiResponseWrapper.success(ecriture,
-                                                                "Supplier invoice accounted successfully")))
+                                .map(result -> ResponseEntity
+                                                .ok(ApiResponseWrapper.success(result,
+                                                                "Supplier invoice processed successfully")))
                                 .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
         }
 
         @PostMapping("/sale")
         @Operation(summary = "Account a customer invoice (sale)")
-        public Mono<ResponseEntity<ApiResponseWrapper<EcritureComptableDto>>> accountCustomerInvoice(
+        public Mono<ResponseEntity<ApiResponseWrapper<Object>>> accountCustomerInvoice(
                         @Valid @RequestBody CustomerInvoiceDto customer_invoice_dto) {
 
                 log.info("Request to account customer invoice: {}", customer_invoice_dto.getNumeroFacture());
                 return invoice_accounting_service.accountCustomerInvoice(customer_invoice_dto)
-                                .map(ecriture -> ResponseEntity
-                                                .ok(ApiResponseWrapper.success(ecriture,
-                                                                "Customer invoice accounted successfully")))
+                                .map(result -> ResponseEntity
+                                                .ok(ApiResponseWrapper.success(result,
+                                                                "Customer invoice processed successfully")))
                                 .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
         }
 }

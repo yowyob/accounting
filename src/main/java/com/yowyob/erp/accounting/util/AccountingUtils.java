@@ -56,16 +56,17 @@ public class AccountingUtils {
                             "Amount, main account, counterpart, and accounting period ID are required for a transaction");
                 }
 
-                TransactionComptable transaction = new TransactionComptable(
-                        request.getId() != null ? request.getId() : UUID.randomUUID(),
-                        tenant_id,
-                        request.getMontant() != null ? request.getMontant() : BigDecimal.ZERO,
-                        date,
-                        request.getLibelle(),
-                        journal_comptable_id,
-                        periode_comptable_id,
-                        request.getComptePrincipal(),
-                        request.getContrepartie());
+                TransactionComptable transaction = TransactionComptable.builder()
+                        .id(request.getId() != null ? request.getId() : UUID.randomUUID())
+                        .tenant_id(tenant_id)
+                        .montant(request.getMontant() != null ? request.getMontant() : BigDecimal.ZERO)
+                        .date(date)
+                        .libelle(request.getLibelle())
+                        .journal_comptable_id(journal_comptable_id)
+                        .periode_comptable_id(periode_comptable_id)
+                        .compte_principal(request.getComptePrincipal())
+                        .contrepartie(request.getContrepartie())
+                        .build();
                 return transaction;
             }
 
@@ -81,15 +82,17 @@ public class AccountingUtils {
                             "Amount HT, client ID, and accounting period ID are required for an invoice");
                 }
 
-                FactureComptable facture = new FactureComptable(
-                        request.getId() != null ? request.getId() : UUID.randomUUID(),
-                        request.getMontantHT(),
-                        date,
-                        request.getLibelle(),
-                        journal_comptable_id,
-                        periode_comptable_id,
-                        request.getClientId(),
-                        Boolean.TRUE.equals(request.getIsAchat()));
+                FactureComptable facture = FactureComptable.builder()
+                        .id(request.getId() != null ? request.getId() : UUID.randomUUID())
+                        .tenant_id(tenant_id)
+                        .montant_ht(request.getMontantHT())
+                        .date(date)
+                        .libelle(request.getLibelle())
+                        .journal_comptable_id(journal_comptable_id)
+                        .periode_comptable_id(periode_comptable_id)
+                        .client_id(request.getClientId())
+                        .is_achat(Boolean.TRUE.equals(request.getIsAchat()))
+                        .build();
                 facture.setTenant_id(tenant_id);
                 return facture;
             }
@@ -106,17 +109,18 @@ public class AccountingUtils {
                             "Quantity, unit cost, and accounting period ID are required for a stock movement");
                 }
 
-                MouvementStockComptable mouvement = new MouvementStockComptable(
-                        request.getId() != null ? request.getId() : UUID.randomUUID(),
-                        tenant_id,
-                        request.getQuantite(),
-                        request.getCoutUnitaire(),
-                        date,
-                        request.getLibelle(),
-                        journal_comptable_id,
-                        periode_comptable_id,
-                        Boolean.TRUE.equals(request.getIsEntree()),
-                        request.getFournisseurId());
+                MouvementStockComptable mouvement = MouvementStockComptable.builder()
+                        .id(request.getId() != null ? request.getId() : UUID.randomUUID())
+                        .tenant_id(tenant_id)
+                        .quantite(request.getQuantite())
+                        .cout_unitaire(request.getCoutUnitaire())
+                        .date(date)
+                        .libelle(request.getLibelle())
+                        .journal_comptable_id(journal_comptable_id)
+                        .periode_comptable_id(periode_comptable_id)
+                        .is_entree(Boolean.TRUE.equals(request.getIsEntree()))
+                        .fournisseur_id(request.getFournisseurId())
+                        .build();
                 return mouvement;
             }
 

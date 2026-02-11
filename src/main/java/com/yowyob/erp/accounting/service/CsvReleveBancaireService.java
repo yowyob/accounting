@@ -1,7 +1,6 @@
 package com.yowyob.erp.accounting.service;
 
 import com.yowyob.erp.accounting.entity.ReleveBancaire;
-import com.yowyob.erp.accounting.entity.Tenant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;

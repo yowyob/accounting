@@ -27,5 +27,6 @@ public class CashRegisterMovementDto {
     private String create_by;
     private String emitter_accounting_account;
     private String recipient_accounting_account;
+    private java.util.List<java.util.UUID> attachmentIds;
     private Boolean is_deleted;
 }

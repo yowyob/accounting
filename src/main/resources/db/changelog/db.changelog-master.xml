@@ -24,5 +24,10 @@
     <include file="changeset-010-create-fixed-assets.xml" relativeToChangelogFile="true"/>
     <include file="changeset-011-add-states-and-active-flags.xml" relativeToChangelogFile="true"/>
     <include file="changeset-012-add-external-id-to-comptes.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-013-create-accounting-settings.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-014-create-brouillards-comptables.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-015-create-notifications.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-016-add-attachments.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-017-unify-tenant-org.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

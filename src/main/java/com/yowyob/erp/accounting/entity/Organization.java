@@ -29,6 +29,9 @@ public class Organization implements SettablePersistable<UUID> {
     @Builder.Default
     private UUID id = UUID.randomUUID();
 
+    @Column("code")
+    private String code;
+
     @Column("name")
     private String name;
 
@@ -40,6 +43,12 @@ public class Organization implements SettablePersistable<UUID> {
 
     @Column("tax_id")
     private String tax_id;
+
+    @Column("email")
+    private String email;
+
+    @Column("telephone")
+    private String telephone;
 
     @Column("created_at")
     private LocalDateTime created_at;
@@ -59,5 +68,9 @@ public class Organization implements SettablePersistable<UUID> {
 
     public void setNotNew() {
         this.isNew = false;
+    }
+
+    public Organization(UUID id) {
+        this.id = id;
     }
 }

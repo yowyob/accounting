@@ -7,9 +7,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.UUID;
+
 
 /**
  * Service for interacting with external authentication API
@@ -72,5 +75,19 @@ public class AuthService {
                 .bodyToMono(UserInfo.class)
                 .timeout(Duration.ofMillis(timeout))
                 .doOnError(error -> log.error("Error retrieving user info", error));
+    }
+
+    /**
+     * Retrieves all employees (members) of the organization
+     */
+    public Flux<OrganizationMember> getOrganizationMembers(UUID tenantId) {
+        return webClient
+                .get()
+                .uri(authApiUrl + "/employees")
+                .header("X-Tenant-ID", tenantId.toString())
+                .retrieve()
+                .bodyToFlux(OrganizationMember.class)
+                .timeout(Duration.ofMillis(timeout))
+                .doOnError(error -> log.error("Error retrieving members for tenant {}", tenantId, error));
     }
 }

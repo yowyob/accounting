@@ -1,0 +1,167 @@
+package com.yowyob.erp.accounting.controller;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.yowyob.erp.accounting.dto.BrouillardComptableDto;
+import com.yowyob.erp.accounting.dto.BrouillardRejectionRequest;
+import com.yowyob.erp.accounting.dto.BrouillardValidationRequest;
+import com.yowyob.erp.accounting.dto.EcritureComptableDto;
+import com.yowyob.erp.accounting.dto.invoice.CustomerInvoiceDto;
+import com.yowyob.erp.accounting.dto.invoice.SupplierInvoiceDto;
+import com.yowyob.erp.accounting.entity.BrouillardComptable;
+import com.yowyob.erp.accounting.entity.BrouillardStatut;
+import com.yowyob.erp.accounting.entity.BrouillardType;
+import com.yowyob.erp.accounting.service.BrouillardComptableService;
+import com.yowyob.erp.accounting.service.InvoiceAccountingService;
+import com.yowyob.erp.common.dto.ApiResponseWrapper;
+import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import jakarta.validation.Valid;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/accounting/brouillards")
+@RequiredArgsConstructor
+@Slf4j
+@Tag(name = "Draft Accounting", description = "Endpoints for managing draft accounting entries (brouillards)")
+public class BrouillardComptableController {
+
+    private final BrouillardComptableService brouillardService;
+    private final InvoiceAccountingService invoiceAccountingService;
+    private final ObjectMapper objectMapper;
+
+    @GetMapping
+    @Operation(summary = "Get all draft entries")
+    public Mono<ResponseEntity<Flux<BrouillardComptableDto>>> getAllBrouillards(
+            @RequestParam(required = false) BrouillardStatut statut,
+            @RequestParam(required = false) BrouillardType type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        
+        return ReactiveTenantContext.getTenantId()
+                .flatMapMany(tenantId -> {
+                    PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+                    if (statut != null) {
+                        return brouillardService.getBrouillardsByStatut(tenantId, statut, pageable);
+                    } else if (type != null) {
+                        return brouillardService.getBrouillardsByType(tenantId, type, pageable);
+                    } else {
+                        return brouillardService.getAllBrouillards(tenantId, pageable);
+                    }
+                })
+                .map(this::mapToDto)
+                .collectList()
+                .map(list -> ResponseEntity.ok(Flux.fromIterable(list)));
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Get a draft entry by ID")
+    public Mono<ResponseEntity<BrouillardComptableDto>> getBrouillardById(@PathVariable UUID id) {
+        return brouillardService.getBrouillardById(id)
+                .map(this::mapToDto)
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{id}/validate")
+    @Operation(summary = "Validate a draft entry and create accounting entry")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
+    public Mono<ResponseEntity<ApiResponseWrapper<BrouillardComptableDto>>> validateBrouillard(
+            @PathVariable UUID id,
+            @RequestBody(required = false) BrouillardValidationRequest request,
+            Authentication authentication) {
+        
+        String username = authentication != null ? authentication.getName() : "system"; // Should retrieve user from context
+        
+        // This logic is tricky because we need to know HOW to process the JSON based on TYPE.
+        // And `InvoiceAccountingService` methods currently take DTOs, not JSON.
+        // We need to deserialize inside the lambda passed to `validateBrouillard`.
+        
+        return brouillardService.getBrouillardById(id)
+            .flatMap(b -> {
+                return brouillardService.validateBrouillard(id, username, request != null ? request : new BrouillardValidationRequest(), 
+                    jsonNode -> {
+                       try {
+                           if (b.getType() == BrouillardType.FACTURE_FOURNISSEUR) {
+                               SupplierInvoiceDto dto = objectMapper.treeToValue(jsonNode, SupplierInvoiceDto.class);
+                               return invoiceAccountingService.createDirectSupplierInvoiceEntry(dto);
+                           } else if (b.getType() == BrouillardType.FACTURE_CLIENT) {
+                               CustomerInvoiceDto dto = objectMapper.treeToValue(jsonNode, CustomerInvoiceDto.class);
+                               return invoiceAccountingService.createDirectCustomerInvoiceEntry(dto);
+                           }
+                           return Mono.error(new IllegalArgumentException("Unsupported type for validation: " + b.getType()));
+                       } catch (JsonProcessingException e) {
+                           return Mono.error(new IllegalArgumentException("Invalid JSON data in draft", e));
+                       }
+                    });
+            })
+            .map(this::mapToDto)
+            .map(dto -> ResponseEntity.ok(ApiResponseWrapper.success(dto, "Draft validated successfully")))
+            .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().body(ApiResponseWrapper.error(e.getMessage(), null))));
+    }
+
+    @PostMapping("/{id}/reject")
+    @Operation(summary = "Reject a draft entry")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
+    public Mono<ResponseEntity<ApiResponseWrapper<BrouillardComptableDto>>> rejectBrouillard(
+            @PathVariable UUID id,
+            @Valid @RequestBody BrouillardRejectionRequest request,
+            Authentication authentication) {
+        
+        String username = authentication != null ? authentication.getName() : "system";
+        return brouillardService.rejectBrouillard(id, username, request)
+                .map(this::mapToDto)
+                .map(dto -> ResponseEntity.ok(ApiResponseWrapper.success(dto, "Draft rejected")))
+                .defaultIfEmpty(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete a draft entry")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Mono<ResponseEntity<Void>> deleteBrouillard(@PathVariable UUID id) {
+        return brouillardService.deleteBrouillard(id)
+                .then(Mono.just(ResponseEntity.noContent().build()));
+    }
+
+    private BrouillardComptableDto mapToDto(BrouillardComptable entity) {
+        return BrouillardComptableDto.builder()
+                .id(entity.getId())
+                .type(entity.getType())
+                .statut(entity.getStatut())
+                .sourceId(entity.getSourceId())
+                .sourceType(entity.getSourceType())
+                .numeroPiece(entity.getNumeroPiece())
+                .datePiece(entity.getDatePiece())
+                .libelle(entity.getLibelle())
+                .montantTotal(entity.getMontantTotal())
+                .devise(entity.getDevise())
+                .journalId(entity.getJournalId())
+                .periodeId(entity.getPeriodeId())
+                .dataJson(entity.getDataJson())
+                .ecritureId(entity.getEcritureId())
+                .attachmentIds(entity.getAttachmentIds())
+                .notes(entity.getNotes())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .createdBy(entity.getCreatedBy())
+                .validatedBy(entity.getValidatedBy())
+                .validatedAt(entity.getValidatedAt())
+                .rejectedBy(entity.getRejectedBy())
+                .rejectedAt(entity.getRejectedAt())
+                .rejectionReason(entity.getRejectionReason())
+                .build();
+    }
+}

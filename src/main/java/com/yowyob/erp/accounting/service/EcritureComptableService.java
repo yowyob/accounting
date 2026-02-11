@@ -423,6 +423,7 @@ public class EcritureComptableService {
                                                                                                                 .now())
                                                                                                 .created_by(current_user)
                                                                                                 .updated_by(current_user)
+                                                                                                .attachment_ids(object.get_attachment_ids())
                                                                                                 .build();
 
                                                                                 return ecriture_repository
@@ -619,6 +620,7 @@ public class EcritureComptableService {
                                 .actif(dto.getActif() != null ? dto.getActif() : true)
                                 .reference_externe(dto.getReference_externe())
                                 .notes(dto.getNotes())
+                                .attachment_ids(dto.getAttachment_ids())
                                 .build();
         }
 
@@ -639,6 +641,7 @@ public class EcritureComptableService {
                                 .notes(e.getNotes())
                                 .created_at(e.getCreated_at())
                                 .updated_at(e.getUpdated_at())
+                                .attachment_ids(e.getAttachment_ids())
                                 .details_ecriture(e.getDetails() != null
                                                 ? e.getDetails().stream().map(this::mapDetailToDto)
                                                                 .collect(java.util.stream.Collectors.toList())

@@ -55,6 +55,7 @@ public class StockMovementService {
                             .periode_id(periodeDto.getId())
                             .validee(true)
                             .numero_ecriture("MVT-" + UUID.randomUUID().toString().substring(0, 8))
+                            .attachment_ids(mouvement.get_attachment_ids())
                             .build();
 
                     return ecritureRepository.save(ecriture)

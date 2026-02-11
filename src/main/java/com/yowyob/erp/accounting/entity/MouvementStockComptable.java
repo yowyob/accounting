@@ -1,9 +1,11 @@
 package com.yowyob.erp.accounting.entity;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.yowyob.erp.common.entity.ComptableObject;
 import com.yowyob.erp.common.enums.SourceType;
 import com.yowyob.erp.common.enums.Sens;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -29,6 +31,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class MouvementStockComptable implements ComptableObject {
 
     // Account numbers should be injected or looked up, not hardcoded
@@ -46,6 +49,7 @@ public class MouvementStockComptable implements ComptableObject {
     private UUID periode_comptable_id;
     private boolean is_entree; // true = entry, false = exit
     private UUID fournisseur_id; // or bank_id depending on case
+    private JsonNode attachment_ids;
 
     /* Implementation of ComptableObject */
     @Override
@@ -96,6 +100,11 @@ public class MouvementStockComptable implements ComptableObject {
     @Override
     public SourceType get_source_type() {
         return SourceType.STOCK;
+    }
+
+    @Override
+    public JsonNode get_attachment_ids() {
+        return attachment_ids;
     }
 
     /* Generate accounting lines (2 lines) */

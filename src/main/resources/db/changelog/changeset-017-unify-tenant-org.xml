@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <changeSet id="017-unify-tenant-org" author="yowyob-system">
+        <comment>Unification des entités Tenant et Organization. Renommage de la table tenants en organizations et mise à jour des colonnes tenant_id.</comment>
+
+        <!-- 1. Supprimer l'ancienne table organizations qui est redondante -->
+        <dropTable tableName="organizations" cascadeConstraints="true"/>
+
+        <!-- 2. Renommer la table tenants en organizations -->
+        <renameTable oldTableName="tenants" newTableName="organizations"/>
+
+        <!-- 3. Supprimer la colonne organization_id de la nouvelle table organizations (anciennement tenants) -->
+        <dropColumn tableName="organizations" columnName="organization_id"/>
+
+        <!-- 4. Ajouter la colonne tax_id à la table organizations (donnée qui était dans l'ancienne table) -->
+        <addColumn tableName="organizations">
+            <column name="tax_id" type="VARCHAR(100)"/>
+        </addColumn>
+
+        <!-- 4b. Uniformiser les colonnes (nom -> name, adresse -> address) -->
+        <renameColumn tableName="organizations" oldColumnName="nom" newColumnName="name" columnDataType="VARCHAR(255)"/>
+        <renameColumn tableName="organizations" oldColumnName="adresse" newColumnName="address" columnDataType="VARCHAR(255)"/>
+
+        <!-- 5. Renommer les colonnes tenant_id en organization_id dans toutes les tables -->
+        <renameColumn tableName="agences" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
+        <renameColumn tableName="plans_comptables" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
+        <renameColumn tableName="comptes" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
+        <renameColumn tableName="journaux_comptables" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
+        <renameColumn tableName="exercices_comptables" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
+        <renameColumn tableName="periodes_comptables" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
+        <renameColumn tableName="declaration_fiscale" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
+        <renameColumn tableName="contreparties" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
+        <renameColumn tableName="ecritures_comptables" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
+        <renameColumn tableName="details_ecritures" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
+        <renameColumn tableName="journal_audit" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
+        <renameColumn tableName="operation_comptable" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
+        <renameColumn tableName="transaction" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
+        <renameColumn tableName="releve_bancaire" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
+        <renameColumn tableName="taxes" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
+        <renameColumn tableName="devises_taux_change" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
+        <renameColumn tableName="immobilisations" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
+        <renameColumn tableName="accounting_settings" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
+        <renameColumn tableName="brouillards_comptables" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
+        <renameColumn tableName="notifications" oldColumnName="tenant_id" newColumnName="organization_id" columnDataType="UUID"/>
+
+    </changeSet>
+</databaseChangeLog>

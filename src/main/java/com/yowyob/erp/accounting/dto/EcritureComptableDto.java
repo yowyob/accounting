@@ -1,6 +1,7 @@
 package com.yowyob.erp.accounting.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -73,6 +74,9 @@ public class EcritureComptableDto {
 
     @JsonProperty("referenceExterne")
     private String reference_externe;
+
+    @JsonProperty("attachmentIds")
+    private JsonNode attachment_ids;
 
     private String notes;
 

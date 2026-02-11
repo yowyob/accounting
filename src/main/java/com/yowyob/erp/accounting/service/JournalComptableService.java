@@ -1,6 +1,5 @@
 package com.yowyob.erp.accounting.service;
 
-import com.yowyob.erp.accounting.dto.CompteDto;
 import com.yowyob.erp.accounting.dto.EcritureComptableDto;
 import com.yowyob.erp.accounting.dto.JournalAuditDto;
 import com.yowyob.erp.accounting.dto.JournalComptableDto;

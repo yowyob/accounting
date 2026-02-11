@@ -1,5 +1,6 @@
 package com.yowyob.erp.accounting.entity;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
@@ -49,6 +50,9 @@ public class EcritureComptable implements SettablePersistable<UUID> {
 
     @Column("notes")
     private String notes;
+
+    @Column("attachment_ids")
+    private JsonNode attachment_ids;
 
     @Column("date_ecriture")
     private LocalDate date_ecriture;

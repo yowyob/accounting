@@ -49,6 +49,7 @@ public class CustomerInvoiceDto {
     private List<InvoiceLineDto> lignesFacture;
     private String notes;
     private String pdfPath;
+    private List<UUID> attachmentIds;
     private Boolean envoyeParEmail;
     private LocalDateTime dateEnvoiEmail;
     private UUID referalClientId;

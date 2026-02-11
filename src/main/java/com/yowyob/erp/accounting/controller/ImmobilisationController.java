@@ -1,6 +1,5 @@
 package com.yowyob.erp.accounting.controller;
 
-import com.yowyob.erp.accounting.entity.Immobilisation;
 import com.yowyob.erp.accounting.service.ImmobilisationService;
 import com.yowyob.erp.common.dto.ApiResponseWrapper;
 import io.swagger.v3.oas.annotations.Operation;

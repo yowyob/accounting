@@ -1,43 +1,43 @@
 package com.yowyob.erp.config.tenant;
 
-import com.yowyob.erp.accounting.entity.Tenant;
+import com.yowyob.erp.accounting.entity.Organization;
 import reactor.core.publisher.Mono;
 import reactor.util.context.Context;
 
 import java.util.UUID;
 
 /**
- * Reactive tenant context to isolate data per tenant in WebFlux.
+ * Reactive organization context to isolate data per organization in WebFlux.
  * Uses Reactor Context instead of ThreadLocal.
  */
-public class ReactiveTenantContext {
+public class ReactiveOrganizationContext {
 
-    public static final String TENANT_ID_KEY = "tenantId";
+    public static final String ORGANIZATION_ID_KEY = "organizationId";
     public static final String USER_ID_KEY = "userId";
 
     /**
-     * Gets the tenant ID from the Reactor Context.
+     * Gets the organization ID from the Reactor Context.
      */
-    public static Mono<UUID> getTenantId() {
+    public static Mono<UUID> getOrganizationId() {
         return Mono.deferContextual(ctx -> {
-            if (ctx.hasKey(TENANT_ID_KEY)) {
-                return Mono.just(ctx.get(TENANT_ID_KEY));
+            if (ctx.hasKey(ORGANIZATION_ID_KEY)) {
+                return Mono.just(ctx.get(ORGANIZATION_ID_KEY));
             }
             // Fallback for hybrid Servlet/Reactive environments
-            UUID threadLocalTenantId = TenantContext.getCurrentTenant();
-            if (threadLocalTenantId != null) {
-                return Mono.just(threadLocalTenantId);
+            UUID threadLocalOrganizationId = TenantContext.getCurrentTenant();
+            if (threadLocalOrganizationId != null) {
+                return Mono.just(threadLocalOrganizationId);
             }
-            System.err.println("CRITICAL: Tenant ID not found in Context or ThreadLocal!");
+            System.err.println("CRITICAL: Organization ID not found in Context or ThreadLocal!");
             return Mono.empty();
         });
     }
 
     /**
-     * Gets the current tenant as a Tenant entity instance.
+     * Gets the current organization as an Organization entity instance.
      */
-    public static Mono<Tenant> getCurrentTenantAsTenant() {
-        return getTenantId().map(Tenant::new);
+    public static Mono<Organization> getCurrentOrganization() {
+        return getOrganizationId().map(Organization::new);
     }
 
     /**
@@ -53,31 +53,31 @@ public class ReactiveTenantContext {
     }
 
     /**
-     * Creates a Reactor Context with the given tenant ID.
+     * Creates a Reactor Context with the given organization ID.
      */
-    public static Context withTenantId(UUID tenantId) {
-        return Context.of(TENANT_ID_KEY, tenantId);
+    public static Context withOrganizationId(UUID organizationId) {
+        return Context.of(ORGANIZATION_ID_KEY, organizationId);
     }
 
     /**
-     * Creates a Reactor Context with the given tenant ID and user.
+     * Creates a Reactor Context with the given organization ID and user.
      */
-    public static Context withTenantAndUser(UUID tenantId, String user) {
-        return Context.of(TENANT_ID_KEY, tenantId, USER_ID_KEY, user);
+    public static Context withOrganizationAndUser(UUID organizationId, String user) {
+        return Context.of(ORGANIZATION_ID_KEY, organizationId, USER_ID_KEY, user);
     }
 
     /**
-     * Captures the current tenant and user from the ThreadLocal context
+     * Captures the current organization and user from the ThreadLocal context
      * (TenantContext)
      * and returns a Reactor Context.
      */
     public static Context captureFromThreadLocal() {
-        UUID tenantId = TenantContext.getCurrentTenant();
+        UUID organizationId = TenantContext.getCurrentTenant();
         String user = TenantContext.getCurrentUser();
 
         Context ctx = Context.empty();
-        if (tenantId != null) {
-            ctx = ctx.put(TENANT_ID_KEY, tenantId);
+        if (organizationId != null) {
+            ctx = ctx.put(ORGANIZATION_ID_KEY, organizationId);
         }
         if (user != null) {
             ctx = ctx.put(USER_ID_KEY, user);
