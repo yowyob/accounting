@@ -16,18 +16,18 @@ import java.util.UUID;
 @Repository
 public interface TaxeRepository extends R2dbcRepository<Taxe, UUID> {
 
-    @Query("SELECT * FROM taxes WHERE tenant_id = :tenant_id")
-    Flux<Taxe> findByTenant_Id(@Param("tenant_id") UUID tenant_id);
+    @Query("SELECT * FROM taxes WHERE organization_id = :organization_id")
+    Flux<Taxe> findByTenant_Id(@Param("organization_id") UUID organization_id);
 
-    @Query("SELECT * FROM taxes WHERE tenant_id = :tenant_id AND actif = true")
-    Flux<Taxe> findByTenant_IdAndActifTrue(@Param("tenant_id") UUID tenant_id);
+    @Query("SELECT * FROM taxes WHERE organization_id = :organization_id AND actif = true")
+    Flux<Taxe> findByTenant_IdAndActifTrue(@Param("organization_id") UUID organization_id);
 
-    @Query("SELECT * FROM taxes WHERE tenant_id = :tenant_id AND id = :id")
-    Mono<Taxe> findByTenant_IdAndId(@Param("tenant_id") UUID tenant_id, @Param("id") UUID id);
+    @Query("SELECT * FROM taxes WHERE organization_id = :organization_id AND id = :id")
+    Mono<Taxe> findByTenant_IdAndId(@Param("organization_id") UUID organization_id, @Param("id") UUID id);
 
-    @Query("SELECT * FROM taxes WHERE tenant_id = :tenant_id AND code = :code")
-    Mono<Taxe> findByTenant_IdAndCode(@Param("tenant_id") UUID tenant_id, @Param("code") String code);
+    @Query("SELECT * FROM taxes WHERE organization_id = :organization_id AND code = :code")
+    Mono<Taxe> findByTenant_IdAndCode(@Param("organization_id") UUID organization_id, @Param("code") String code);
 
-    @Query("SELECT COUNT(*) > 0 FROM taxes WHERE tenant_id = :tenant_id AND code = :code")
-    Mono<Boolean> existsByTenant_IdAndCode(@Param("tenant_id") UUID tenant_id, @Param("code") String code);
+    @Query("SELECT COUNT(*) > 0 FROM taxes WHERE organization_id = :organization_id AND code = :code")
+    Mono<Boolean> existsByTenant_IdAndCode(@Param("organization_id") UUID organization_id, @Param("code") String code);
 }

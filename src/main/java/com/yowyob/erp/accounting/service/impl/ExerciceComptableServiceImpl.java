@@ -9,7 +9,7 @@ import com.yowyob.erp.common.exception.BusinessException;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.accounting.entity.ExerciceStatut;
 import com.yowyob.erp.accounting.repository.PeriodeComptableRepository;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -37,17 +37,17 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
         @Transactional
         public Mono<ExerciceComptableDto> createExercice(ExerciceComptableDto exercice_dto) {
                 log.info("Starting createExercice for code: {}", exercice_dto.getCode());
-                return ReactiveTenantContext.getTenantId()
+                return ReactiveOrganizationContext.getOrganizationId()
                                 .doOnNext(tid -> log.info("TenantId resolved: {}", tid))
                                 .switchIfEmpty(Mono.defer(() -> {
-                                        log.error("Tenant ID NOT RESOLVED in createExercice");
+                                        log.error("Organization ID NOT RESOLVED in createExercice");
                                         return Mono.empty();
                                 }))
-                                .flatMap(tenant_id -> ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                                 .doOnNext(u -> log.info("User resolved: {}", u))
                                                 .flatMap(user -> {
                                                         log.info("Creating new fiscal year '{}' for tenant {}",
-                                                                        exercice_dto.getCode(), tenant_id);
+                                                                        exercice_dto.getCode(), organization_id);
 
                                                         return validateDates(exercice_dto)
                                                                         .doOnSuccess(v -> log
@@ -55,7 +55,7 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
                                                                         .doOnError(e -> log.error(
                                                                                         "Date validation failed: {}",
                                                                                         e.getMessage()))
-                                                                        .then(checkOverlap(exercice_dto, tenant_id,
+                                                                        .then(checkOverlap(exercice_dto, organization_id,
                                                                                         null))
                                                                         .doOnSuccess(v -> log
                                                                                         .info("Overlap check passed"))
@@ -69,7 +69,7 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
                                                                                                 .id(exercice_dto.getId() != null
                                                                                                                 ? exercice_dto.getId()
                                                                                                                 : UUID.randomUUID())
-                                                                                                .tenantId(tenant_id)
+                                                                                                .organizationId(organization_id)
                                                                                                 .code(exercice_dto
                                                                                                                 .getCode())
                                                                                                 .libelle(exercice_dto
@@ -101,9 +101,9 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
 
         @Override
         public Mono<ExerciceComptableDto> getExercice(UUID id) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> exercice_repository.findById(id)
-                                                .filter(e -> tenant_id.equals(e.getTenantId()))
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> exercice_repository.findById(id)
+                                                .filter(e -> organization_id.equals(e.getOrganizationId()))
                                                 .map(this::mapToDto)
                                                 .switchIfEmpty(Mono.error(new ResourceNotFoundException(
                                                                 "ExerciceComptable", id.toString()))));
@@ -111,16 +111,16 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
 
         @Override
         public Mono<List<ExerciceComptableDto>> getAllExercices() {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> exercice_repository.findByTenantId(tenant_id)
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> exercice_repository.findByTenantId(organization_id)
                                                 .map(this::mapToDto)
                                                 .collectList());
         }
 
         @Override
         public Mono<ExerciceComptableDto> getActiveExerciceForDate(LocalDate date) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> exercice_repository.findActiveForDate(tenant_id, date)
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> exercice_repository.findActiveForDate(organization_id, date)
                                                 .map(this::mapToDto)
                                                 .switchIfEmpty(
                                                                 Mono.error(new BusinessException(
@@ -131,10 +131,10 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
         @Override
         @Transactional
         public Mono<ExerciceComptableDto> updateExercice(UUID id, ExerciceComptableDto exercice_dto) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                                 .flatMap(user -> exercice_repository.findById(id)
-                                                                .filter(e -> tenant_id.equals(e.getTenantId()))
+                                                                .filter(e -> organization_id.equals(e.getOrganizationId()))
                                                                 .switchIfEmpty(
                                                                                 Mono.error(new ResourceNotFoundException(
                                                                                                 "ExerciceComptable",
@@ -148,7 +148,7 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
 
                                                                         return validateDates(exercice_dto)
                                                                                         .then(checkOverlap(exercice_dto,
-                                                                                                        tenant_id, id))
+                                                                                                        organization_id, id))
                                                                                         .then(Mono.defer(() -> {
                                                                                                 exercice.setCode(
                                                                                                                 exercice_dto.getCode());
@@ -174,23 +174,23 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
         @Override
         @Transactional
         public Mono<Void> closeExercice(UUID id) {
-                return ReactiveTenantContext.getTenantId()
+                return ReactiveOrganizationContext.getOrganizationId()
                                 .doOnSubscribe(s -> log.info("Service: closeExercice called for ID: {}", id))
-                                .doOnNext(uuid -> log.info("Service: Content Tenant ID found: {}", uuid))
+                                .doOnNext(uuid -> log.info("Service: Content Organization ID found: {}", uuid))
                                 .switchIfEmpty(Mono.defer(() -> {
-                                        log.error("Service: Tenant ID is EMPTY in Reactive Context!");
-                                        return Mono.error(new BusinessException("Tenant ID missing in context"));
+                                        log.error("Service: Organization ID is EMPTY in Reactive Context!");
+                                        return Mono.error(new BusinessException("Organization ID missing in context"));
                                 }))
-                                .flatMap(tenant_id -> ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                                 .flatMap(user -> exercice_repository.findById(id)
-                                                                .filter(e -> tenant_id.equals(e.getTenantId()))
+                                                                .filter(e -> organization_id.equals(e.getOrganizationId()))
                                                                 .switchIfEmpty(
                                                                                 Mono.error(new ResourceNotFoundException(
                                                                                                 "ExerciceComptable",
                                                                                                 id.toString())))
                                                                 .flatMap(exercice -> {
-                                                                        log.info("Closing fiscal year: {} / Tenant: {}",
-                                                                                        id, tenant_id);
+                                                                        log.info("Closing fiscal year: {} / Organization: {}",
+                                                                                        id, organization_id);
                                                                         log.info("Before update - Cloture: {}",
                                                                                         exercice.getCloture());
 
@@ -216,14 +216,14 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
         @Override
         @Transactional
         public Mono<Void> deleteExercice(UUID id) {
-                return ReactiveTenantContext.getTenantId()
+                return ReactiveOrganizationContext.getOrganizationId()
                                 .doOnSubscribe(s -> log.info("Attempting to delete fiscal year {}", id))
                                 .switchIfEmpty(Mono.defer(() -> {
-                                        log.error("Tenant ID not found in context for delete operation");
-                                        return Mono.error(new BusinessException("Tenant context missing"));
+                                        log.error("Organization ID not found in context for delete operation");
+                                        return Mono.error(new BusinessException("Organization context missing"));
                                 }))
-                                .flatMap(tenant_id -> exercice_repository.findById(id)
-                                                .filter(e -> tenant_id.equals(e.getTenantId()))
+                                .flatMap(organization_id -> exercice_repository.findById(id)
+                                                .filter(e -> organization_id.equals(e.getOrganizationId()))
                                                 .switchIfEmpty(Mono.error(new ResourceNotFoundException(
                                                                 "ExerciceComptable", id.toString())))
                                                 .flatMap(exercice -> {
@@ -238,15 +238,15 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
         @Override
         @Transactional
         public Mono<Void> deactivateExercice(UUID id) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> exercice_repository.findById(id)
-                                                .filter(e -> tenant_id.equals(e.getTenantId()))
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> exercice_repository.findById(id)
+                                                .filter(e -> organization_id.equals(e.getOrganizationId()))
                                                 .switchIfEmpty(Mono.error(new ResourceNotFoundException(
                                                                 "ExerciceComptable", id.toString())))
                                                 .flatMap(exercice -> {
                                                         exercice.setActif(false);
                                                         exercice.setUpdated_at(LocalDateTime.now());
-                                                        return ReactiveTenantContext.getCurrentUser()
+                                                        return ReactiveOrganizationContext.getCurrentUser()
                                                                         .defaultIfEmpty("system")
                                                                         .flatMap(user -> {
                                                                                 exercice.setUpdated_by(user);
@@ -260,9 +260,9 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
 
         @Override
         public Mono<List<com.yowyob.erp.accounting.dto.PeriodeComptableDto>> getPeriodesByExercice(UUID exerciceId) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> exercice_repository.findById(exerciceId)
-                                                .filter(e -> tenant_id.equals(e.getTenantId()))
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> exercice_repository.findById(exerciceId)
+                                                .filter(e -> organization_id.equals(e.getOrganizationId()))
                                                 .switchIfEmpty(Mono.error(new ResourceNotFoundException(
                                                                 "ExerciceComptable", exerciceId.toString())))
                                                 .thenMany(periode_repository.findByExerciceId(exerciceId))
@@ -289,8 +289,8 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
                 return Mono.empty();
         }
 
-        private Mono<Void> checkOverlap(ExerciceComptableDto dto, UUID tenant_id, UUID current_id) {
-                return exercice_repository.findByTenantId(tenant_id)
+        private Mono<Void> checkOverlap(ExerciceComptableDto dto, UUID organization_id, UUID current_id) {
+                return exercice_repository.findByTenantId(organization_id)
                                 .filter(e -> current_id == null || !e.getId().equals(current_id))
                                 .filter(e -> (dto.getDate_debut().isBefore(e.getDate_fin())
                                                 && dto.getDate_fin().isAfter(e.getDate_debut()))
@@ -306,7 +306,7 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
         private ExerciceComptableDto mapToDto(ExerciceComptable entity) {
                 return ExerciceComptableDto.builder()
                                 .id(entity.getId())
-                                .tenant_id(entity.getTenantId())
+                                .organization_id(entity.getOrganizationId())
                                 .code(entity.getCode())
                                 .libelle(entity.getLibelle())
                                 .date_debut(entity.getDate_debut())

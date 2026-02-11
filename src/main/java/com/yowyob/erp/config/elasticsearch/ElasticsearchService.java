@@ -38,7 +38,7 @@ public class ElasticsearchService {
                 CreateIndexRequest create_request = CreateIndexRequest.of(c -> c
                         .index(index_name)
                         .mappings(m -> m
-                                .properties("tenantId", Property.of(p -> p.keyword(KeywordProperty.of(k -> k))))
+                                .properties("organizationId", Property.of(p -> p.keyword(KeywordProperty.of(k -> k))))
                                 .properties("id", Property.of(p -> p.keyword(KeywordProperty.of(k -> k))))
                                 .properties("createdAt", Property.of(p -> p.date(DateProperty.of(d -> d))))
                                 .properties("updatedAt", Property.of(p -> p.date(DateProperty.of(d -> d))))
@@ -76,7 +76,7 @@ public class ElasticsearchService {
     /**
      * Search documents
      */
-    public <T> List<T> searchDocuments(String index_name, String query, Class<T> clazz, String tenant_id) {
+    public <T> List<T> searchDocuments(String index_name, String query, Class<T> clazz, String organization_id) {
         try {
             SearchRequest search_request = SearchRequest.of(s -> s
                     .index(index_name)
@@ -88,8 +88,8 @@ public class ElasticsearchService {
                                                     .fields("searchText", "libelle", "description")))
                                     .filter(f -> f
                                             .term(t -> t
-                                                    .field("tenantId")
-                                                    .value(tenant_id)))))
+                                                    .field("organizationId")
+                                                    .value(organization_id)))))
                     .size(100));
 
             SearchResponse<T> response = client.search(search_request, clazz);
@@ -140,8 +140,8 @@ public class ElasticsearchService {
     /**
      * Indexes accounting entries for search
      */
-    public void indexAccountingEntry(Object entry, String tenant_id) {
-        String index_name = "accounting-entries-" + tenant_id.toLowerCase();
+    public void indexAccountingEntry(Object entry, String organization_id) {
+        String index_name = "accounting-entries-" + organization_id.toLowerCase();
         String document_id = extractId(entry);
         indexDocument(index_name, document_id, entry);
     }
@@ -149,16 +149,16 @@ public class ElasticsearchService {
     /**
      * Search accounting entries
      */
-    public <T> List<T> searchAccountingEntries(String query, Class<T> clazz, String tenant_id) {
-        String index_name = "accounting-entries-" + tenant_id.toLowerCase();
-        return searchDocuments(index_name, query, clazz, tenant_id);
+    public <T> List<T> searchAccountingEntries(String query, Class<T> clazz, String organization_id) {
+        String index_name = "accounting-entries-" + organization_id.toLowerCase();
+        return searchDocuments(index_name, query, clazz, organization_id);
     }
 
     /**
      * Indexes clients/suppliers
      */
-    public void indexThirdParty(Object third_party, String tenant_id, String type) {
-        String index_name = String.format("%s-%s", type.toLowerCase(), tenant_id.toLowerCase());
+    public void indexThirdParty(Object third_party, String organization_id, String type) {
+        String index_name = String.format("%s-%s", type.toLowerCase(), organization_id.toLowerCase());
         String document_id = extractId(third_party);
         indexDocument(index_name, document_id, third_party);
     }
@@ -166,9 +166,9 @@ public class ElasticsearchService {
     /**
      * Search third parties (clients/suppliers)
      */
-    public <T> List<T> searchThirdParties(String query, String type, Class<T> clazz, String tenant_id) {
-        String index_name = String.format("%s-%s", type.toLowerCase(), tenant_id.toLowerCase());
-        return searchDocuments(index_name, query, clazz, tenant_id);
+    public <T> List<T> searchThirdParties(String query, String type, Class<T> clazz, String organization_id) {
+        String index_name = String.format("%s-%s", type.toLowerCase(), organization_id.toLowerCase());
+        return searchDocuments(index_name, query, clazz, organization_id);
     }
 
     private String extractId(Object obj) {

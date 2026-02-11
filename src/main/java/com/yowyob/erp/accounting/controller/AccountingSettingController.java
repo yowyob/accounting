@@ -5,7 +5,7 @@ import com.yowyob.erp.accounting.entity.AccountingSetting;
 import com.yowyob.erp.accounting.entity.BrouillardType;
 import com.yowyob.erp.accounting.service.AccountingSettingService;
 import com.yowyob.erp.common.dto.ApiResponseWrapper;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -31,9 +31,9 @@ public class AccountingSettingController {
     @GetMapping
     @Operation(summary = "Get all accounting settings")
     public Mono<ResponseEntity<Flux<AccountingSettingDto>>> getAllSettings() {
-        return ReactiveTenantContext.getTenantId()
-                .map(tenantId -> ResponseEntity.ok(
-                        settingService.getAllSettings(tenantId)
+        return ReactiveOrganizationContext.getOrganizationId()
+                .map(organizationId -> ResponseEntity.ok(
+                        settingService.getAllSettings(organizationId)
                                 .map(this::mapToDto)
                 ));
         // Note: getAllSettings in service currently returns empty. 
@@ -46,8 +46,8 @@ public class AccountingSettingController {
             @PathVariable BrouillardType type,
             @RequestParam(required = false) UUID journalId) {
         
-        return ReactiveTenantContext.getTenantId()
-                .flatMap(tenantId -> settingService.getSetting(tenantId, type, journalId))
+        return ReactiveOrganizationContext.getOrganizationId()
+                .flatMap(organizationId -> settingService.getSetting(organizationId, type, journalId))
                 .map(this::mapToDto)
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
@@ -59,8 +59,8 @@ public class AccountingSettingController {
     public Mono<ResponseEntity<ApiResponseWrapper<AccountingSettingDto>>> updateSetting(
             @Valid @RequestBody AccountingSettingDto dto) {
         
-        return ReactiveTenantContext.getTenantId()
-                .flatMap(tenantId -> settingService.updateSetting(tenantId, dto))
+        return ReactiveOrganizationContext.getOrganizationId()
+                .flatMap(organizationId -> settingService.updateSetting(organizationId, dto))
                 .map(this::mapToDto)
                 .map(result -> ResponseEntity.ok(ApiResponseWrapper.success(result, "Setting updated successfully")));
     }

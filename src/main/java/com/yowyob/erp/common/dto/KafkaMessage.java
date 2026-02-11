@@ -16,7 +16,7 @@ import java.util.UUID;
  * Used to encapsulate inter-module exchanges in the ERP.
  * 
  * Standardized structure according to Yowyob Charter:
- * - Tenant identity
+ * - Organization identity
  * - Business event type
  * - Serialized business payload (object)
  * - Traceability metadata (timestamp, source, correlationId)
@@ -47,8 +47,8 @@ public class KafkaMessage implements Serializable {
     private Object payload;
 
     /** Unique tenant identifier (multi-tenant ERP) */
-    @JsonProperty("tenant_id")
-    private UUID tenantId;
+    @JsonProperty("organization_id")
+    private UUID organizationId;
 
     /** Event type (INVOICE_CREATED, ACCOUNTING_ENTRY_VALIDATED, etc.) */
     @JsonProperty("event_type")

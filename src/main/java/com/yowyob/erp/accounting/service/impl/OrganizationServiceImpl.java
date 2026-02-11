@@ -9,7 +9,7 @@ import com.yowyob.erp.accounting.repository.OrganizationRepository;
 import com.yowyob.erp.accounting.service.OrganizationService;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.config.kafka.KafkaMessageService;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -114,19 +114,19 @@ public class OrganizationServiceImpl implements OrganizationService {
                 // global
                 // We do our best to log. If tenant context is available we use it.
                 // For Organization management, it might be system admin level.
-                return ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
-                                .flatMap(user -> ReactiveTenantContext.getTenantId()
-                                                // If no tenant context, we might use a null tenantId or handle global
+                return ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
+                                .flatMap(user -> ReactiveOrganizationContext.getOrganizationId()
+                                                // If no tenant context, we might use a null organizationId or handle global
                                                 // events
                                                 // differently
                                                 // For now assuming organization mgmt happens within a context or we
                                                 // pass null
                                                 .defaultIfEmpty(organizationId) // Fallback to org ID as context if
                                                                                 // possible or null
-                                                .flatMap(tenantId -> {
+                                                .flatMap(organizationId -> {
                                                         JournalAudit audit = JournalAudit.builder()
                                                                         .id(UUID.randomUUID())
-                                                                        .tenantId(tenantId) // May be organization ID
+                                                                        .organizationId(organizationId) // May be organization ID
                                                                                             // itself if it's the root
                                                                                             // context
                                                                         .action(action)
@@ -152,7 +152,7 @@ public class OrganizationServiceImpl implements OrganizationService {
                                                                                                 .build();
 
                                                                                 return kafka_service.sendAuditLog(
-                                                                                                auditDto, tenantId,
+                                                                                                auditDto, organizationId,
                                                                                                 action);
                                                                         });
                                                 }));

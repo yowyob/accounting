@@ -27,8 +27,8 @@ public class Contrepartie implements com.yowyob.erp.common.persistence.SettableP
     @Id
     private UUID id;
 
-    @Column("tenant_id")
-    private UUID tenantId;
+    @Column("organization_id")
+    private UUID organizationId;
 
     @Column("operation_comptable_id")
     private UUID operation_comptable_id;
@@ -69,7 +69,7 @@ public class Contrepartie implements com.yowyob.erp.common.persistence.SettableP
     private String updated_by;
 
     @Transient
-    private Tenant tenant;
+    private Organization tenant;
 
     @Transient
     private OperationComptable operation_comptable;

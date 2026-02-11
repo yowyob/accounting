@@ -20,7 +20,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class AgenceDto {
     private UUID id;
-    private UUID tenant_id;
+    private UUID organization_id;
     private String name;
     private String code;
     private String address;

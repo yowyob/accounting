@@ -39,7 +39,7 @@ public class PointageController {
     @PostMapping("/import")
     @Operation(summary = "Import and point bank statement")
     public Mono<ResponseEntity<String>> importerReleve(MultipartFile file) {
-        // Assuming TenantContext.getCurrentTenant() works in reactive context if
+        // Assuming OrganizationContext.getCurrentTenant() works in reactive context if
         // configured
         // Otherwise, it should be retrieved from ReactiveSecurityContext or through the
         // service layer.

@@ -30,8 +30,8 @@ public class TauxChange implements com.yowyob.erp.common.persistence.SettablePer
     private UUID id;
 
     @NotNull
-    @Column("tenant_id")
-    private UUID tenantId;
+    @Column("organization_id")
+    private UUID organizationId;
 
     @NotNull
     @Column("devise_source_id")
@@ -57,7 +57,7 @@ public class TauxChange implements com.yowyob.erp.common.persistence.SettablePer
     private LocalDateTime created_at = LocalDateTime.now();
 
     @Transient
-    private Tenant tenant;
+    private Organization tenant;
 
     @Transient
     private Devise devise_source;

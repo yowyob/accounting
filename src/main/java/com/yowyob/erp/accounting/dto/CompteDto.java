@@ -48,8 +48,8 @@ public class CompteDto {
     @Builder.Default
     private Boolean actif = true;
 
-    @JsonProperty("tenantId")
-    private UUID tenant_id;
+    @JsonProperty("organizationId")
+    private UUID organization_id;
 
     @JsonProperty("createdAt")
     private LocalDateTime created_at;

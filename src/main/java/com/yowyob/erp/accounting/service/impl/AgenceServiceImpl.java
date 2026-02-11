@@ -5,7 +5,7 @@ import com.yowyob.erp.accounting.entity.Agence;
 import com.yowyob.erp.accounting.repository.AgenceRepository;
 import com.yowyob.erp.accounting.service.AgenceService;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,12 +33,12 @@ public class AgenceServiceImpl implements AgenceService {
         @Override
         @Transactional
         public Mono<AgenceDto> createAgence(AgenceDto agence_dto) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> {
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
                                         log.info("Creating new agency '{}' for tenant {}", agence_dto.getName(),
-                                                        tenant_id);
+                                                        organization_id);
                                         Agence agence = Agence.builder()
-                                                        .tenantId(tenant_id)
+                                                        .organizationId(organization_id)
                                                         .name(agence_dto.getName())
                                                         .code(agence_dto.getCode())
                                                         .address(agence_dto.getAddress())
@@ -55,9 +55,9 @@ public class AgenceServiceImpl implements AgenceService {
 
         @Override
         public Mono<AgenceDto> getAgence(UUID id) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> agence_repository.findById(id)
-                                                .filter(a -> a.getTenantId().equals(tenant_id))
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> agence_repository.findById(id)
+                                                .filter(a -> a.getOrganizationId().equals(organization_id))
                                                 .switchIfEmpty(Mono.error(
                                                                 new ResourceNotFoundException("Agence", id.toString())))
                                                 .map(this::mapToDto));
@@ -65,10 +65,10 @@ public class AgenceServiceImpl implements AgenceService {
 
         @Override
         public Flux<AgenceDto> getAllAgences() {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMapMany(tenant_id -> {
-                                        log.info("Retrieving all agencies for tenant: {}", tenant_id);
-                                        return agence_repository.findByTenantId(tenant_id)
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMapMany(organization_id -> {
+                                        log.info("Retrieving all agencies for tenant: {}", organization_id);
+                                        return agence_repository.findByTenantId(organization_id)
                                                         .map(this::mapToDto);
                                 })
                                 .switchIfEmpty(Flux.defer(() -> {
@@ -80,13 +80,13 @@ public class AgenceServiceImpl implements AgenceService {
         @Override
         @Transactional
         public Mono<AgenceDto> updateAgence(UUID id, AgenceDto agence_dto) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> agence_repository.findById(id)
-                                                .filter(a -> a.getTenantId().equals(tenant_id))
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> agence_repository.findById(id)
+                                                .filter(a -> a.getOrganizationId().equals(organization_id))
                                                 .switchIfEmpty(Mono.error(
                                                                 new ResourceNotFoundException("Agence", id.toString())))
                                                 .flatMap(agence -> {
-                                                        log.info("Updating agency {} for tenant {}", id, tenant_id);
+                                                        log.info("Updating agency {} for tenant {}", id, organization_id);
                                                         agence.setName(agence_dto.getName());
                                                         agence.setCode(agence_dto.getCode());
                                                         agence.setAddress(agence_dto.getAddress());
@@ -102,13 +102,13 @@ public class AgenceServiceImpl implements AgenceService {
         @Override
         @Transactional
         public Mono<Void> deleteAgence(UUID id) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> agence_repository.findById(id)
-                                                .filter(a -> a.getTenantId().equals(tenant_id))
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> agence_repository.findById(id)
+                                                .filter(a -> a.getOrganizationId().equals(organization_id))
                                                 .switchIfEmpty(Mono.error(
                                                                 new ResourceNotFoundException("Agence", id.toString())))
                                                 .flatMap(agence -> {
-                                                        log.warn("Deleting agency {} for tenant {}", id, tenant_id);
+                                                        log.warn("Deleting agency {} for tenant {}", id, organization_id);
                                                         return agence_repository.delete(agence);
                                                 }));
         }
@@ -122,7 +122,7 @@ public class AgenceServiceImpl implements AgenceService {
         private AgenceDto mapToDto(Agence agence) {
                 return AgenceDto.builder()
                                 .id(agence.getId())
-                                .tenant_id(agence.getTenantId())
+                                .organization_id(agence.getOrganizationId())
                                 .name(agence.getName())
                                 .code(agence.getCode())
                                 .address(agence.getAddress())

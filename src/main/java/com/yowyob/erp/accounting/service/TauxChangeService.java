@@ -11,7 +11,7 @@ import com.yowyob.erp.accounting.repository.TauxChangeRepository;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.config.kafka.KafkaMessageService;
 import com.yowyob.erp.config.redis.RedisService;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,9 +41,9 @@ public class TauxChangeService {
 
         @Transactional
         public Mono<TauxChangeDto> createTauxChange(TauxChangeDto dto) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> ReactiveTenantContext.getCurrentTenantAsTenant()
-                                                .flatMap(tenant -> ReactiveTenantContext.getCurrentUser()
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentTenantAsTenant()
+                                                .flatMap(tenant -> ReactiveOrganizationContext.getCurrentUser()
                                                                 .defaultIfEmpty("system")
                                                                 .flatMap(user -> Mono.zip(
                                                                                 devise_repository.findById(dto
@@ -64,7 +64,7 @@ public class TauxChangeService {
                                                                                         TauxChange entity = TauxChange
                                                                                                         .builder()
                                                                                                         .id(UUID.randomUUID())
-                                                                                                        .tenantId(tenant_id)
+                                                                                                        .organizationId(organization_id)
                                                                                                         .devise_source_id(
                                                                                                                         tuple.getT1().getId())
                                                                                                         .devise_cible_id(
@@ -93,19 +93,19 @@ public class TauxChangeService {
                                                                                                                                         tuple.getT2().getCode(),
                                                                                                                                         dto.getTaux()))
                                                                                                                         .then(invalidateCache(
-                                                                                                                                        tenant_id))
+                                                                                                                                        organization_id))
                                                                                                                         .then(mapToDto(saved)));
                                                                                 }))));
         }
 
         @SuppressWarnings("unchecked")
         public Mono<List<TauxChangeDto>> getTenantRates() {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> {
-                                        String cache_key = CACHE_TAUX_TENANT + tenant_id;
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
+                                        String cache_key = CACHE_TAUX_TENANT + organization_id;
                                         return redis_service.get(cache_key, List.class)
                                                         .map(list -> (List<TauxChangeDto>) list)
-                                                        .switchIfEmpty(taux_repository.findByTenant_Id(tenant_id)
+                                                        .switchIfEmpty(taux_repository.findByTenant_Id(organization_id)
                                                                         .flatMap(this::mapToDto)
                                                                         .collectList()
                                                                         .flatMap(rates -> redis_service
@@ -116,21 +116,21 @@ public class TauxChangeService {
         }
 
         public Mono<TauxChangeDto> getLatestRate(UUID sourceId, UUID targetId, LocalDateTime date) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> taux_repository
-                                                .findMostRecentRate(tenant_id, sourceId, targetId, date)
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> taux_repository
+                                                .findMostRecentRate(organization_id, sourceId, targetId, date)
                                                 .flatMap(this::mapToDto));
         }
 
         @Transactional
         public Mono<Void> deleteTauxChange(UUID id) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> ReactiveTenantContext.getCurrentTenantAsTenant()
-                                                .flatMap(tenant -> ReactiveTenantContext.getCurrentUser()
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentTenantAsTenant()
+                                                .flatMap(tenant -> ReactiveOrganizationContext.getCurrentUser()
                                                                 .defaultIfEmpty("system")
                                                                 .flatMap(user -> taux_repository.findById(id)
-                                                                                .filter(r -> tenant_id.equals(
-                                                                                                r.getTenantId()))
+                                                                                .filter(r -> organization_id.equals(
+                                                                                                r.getOrganizationId()))
                                                                                 .switchIfEmpty(Mono.error(
                                                                                                 new ResourceNotFoundException(
                                                                                                                 "TauxChange",
@@ -142,11 +142,11 @@ public class TauxChangeService {
                                                                                                                 "TAUX_CHANGE_DELETED",
                                                                                                                 "Deletion of rate"))
                                                                                                 .then(invalidateCache(
-                                                                                                                tenant_id))))));
+                                                                                                                organization_id))))));
         }
 
-        private Mono<Void> invalidateCache(UUID tenant_id) {
-                return redis_service.delete(CACHE_TAUX_TENANT + tenant_id).then();
+        private Mono<Void> invalidateCache(UUID organization_id) {
+                return redis_service.delete(CACHE_TAUX_TENANT + organization_id).then();
         }
 
         private Mono<TauxChangeDto> mapToDto(TauxChange entity) {
@@ -166,10 +166,10 @@ public class TauxChangeService {
                                                 .build());
         }
 
-        private Mono<Void> logAudit(Tenant tenant, String utilisateur, String action, String details) {
+        private Mono<Void> logAudit(Organization tenant, String utilisateur, String action, String details) {
                 JournalAudit audit = JournalAudit.builder()
                                 .id(UUID.randomUUID())
-                                .tenantId(tenant.getId())
+                                .organizationId(tenant.getId())
                                 .action(action)
                                 .utilisateur(utilisateur)
                                 .details(details)

@@ -17,17 +17,17 @@ import java.util.UUID;
 @Repository
 public interface TauxChangeRepository extends R2dbcRepository<TauxChange, UUID> {
 
-    @Query("SELECT * FROM taux_change WHERE tenant_id = :tenant_id")
-    Flux<TauxChange> findByTenant_Id(@Param("tenant_id") UUID tenant_id);
+    @Query("SELECT * FROM taux_change WHERE organization_id = :organization_id")
+    Flux<TauxChange> findByTenant_Id(@Param("organization_id") UUID organization_id);
 
     /**
      * Finds the most recent exchange rate for a pair of currencies at or before a
      * specific date.
      */
-    @Query("SELECT * FROM taux_change WHERE tenant_id = :tenant_id " +
+    @Query("SELECT * FROM taux_change WHERE organization_id = :organization_id " +
             "AND devise_source_id = :source_id AND devise_cible_id = :target_id " +
             "AND date_effet <= :date ORDER BY date_effet DESC LIMIT 1")
-    Mono<TauxChange> findMostRecentRate(@Param("tenant_id") UUID tenant_id,
+    Mono<TauxChange> findMostRecentRate(@Param("organization_id") UUID organization_id,
             @Param("source_id") UUID source_id,
             @Param("target_id") UUID target_id,
             @Param("date") LocalDateTime date);

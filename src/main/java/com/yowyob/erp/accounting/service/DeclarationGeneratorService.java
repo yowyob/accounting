@@ -35,13 +35,13 @@ public class DeclarationGeneratorService {
     private final CompteRepository compte_repository;
     private final ObjectMapper object_mapper;
 
-    public Mono<DeclarationFiscale> generateVatDeclaration(UUID tenant_id, LocalDate start_date, LocalDate end_date) {
-        log.info("Generating VAT declaration for tenant {} from {} to {}", tenant_id, start_date, end_date);
+    public Mono<DeclarationFiscale> generateVatDeclaration(UUID organization_id, LocalDate start_date, LocalDate end_date) {
+        log.info("Generating VAT declaration for tenant {} from {} to {}", organization_id, start_date, end_date);
 
         LocalDateTime start = start_date.atStartOfDay();
         LocalDateTime end = end_date.atTime(LocalTime.MAX);
 
-        return taxe_repository.findByTenant_IdAndActifTrue(tenant_id)
+        return taxe_repository.findByTenant_IdAndActifTrue(organization_id)
                 .collectList()
                 .flatMap(taxes -> {
                     if (taxes.isEmpty()) {
@@ -67,12 +67,12 @@ public class DeclarationGeneratorService {
                     }
 
                     // First, we need to map compte_id to no_compte
-                    return compte_repository.findAllByTenant_Id(tenant_id)
+                    return compte_repository.findAllByTenant_Id(organization_id)
                             .filter(c -> all_tax_accounts.contains(c.getNo_compte()))
                             .collectMap(Compte::getId, Compte::getNo_compte)
                             .flatMap(id_to_no -> {
                                 return detail_repository
-                                        .findByAccountNumbersAndDateRange(tenant_id, all_tax_accounts, start, end)
+                                        .findByAccountNumbersAndDateRange(organization_id, all_tax_accounts, start, end)
                                         .collectList()
                                         .map(details -> {
                                             BigDecimal total_collecte = BigDecimal.ZERO;
@@ -114,7 +114,7 @@ public class DeclarationGeneratorService {
                                             }
 
                                             return DeclarationFiscale.builder()
-                                                    .tenantId(tenant_id)
+                                                    .organizationId(organization_id)
                                                     .type_declaration("TVA")
                                                     .periode_debut(start_date)
                                                     .periode_fin(end_date)

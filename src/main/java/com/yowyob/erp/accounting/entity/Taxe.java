@@ -33,8 +33,8 @@ public class Taxe implements com.yowyob.erp.common.persistence.SettablePersistab
     private UUID id;
 
     @NotNull
-    @Column("tenant_id")
-    private UUID tenantId;
+    @Column("organization_id")
+    private UUID organizationId;
 
     @NotBlank
     @Column("code")
@@ -76,7 +76,7 @@ public class Taxe implements com.yowyob.erp.common.persistence.SettablePersistab
     private LocalDateTime created_at = LocalDateTime.now();
 
     @Transient
-    private Tenant tenant;
+    private Organization tenant;
 
     @Transient
     @Builder.Default

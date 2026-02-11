@@ -34,13 +34,13 @@ public class BrouillardNotificationService {
                 brouillard.getLibelle(), brouillard.getMontantTotal(), brouillard.getDevise());
 
         // Notify both ADMIN and ACCOUNTANT roles
-        return authService.getOrganizationMembers(brouillard.getTenantId())
+        return authService.getOrganizationMembers(brouillard.getOrganizationId())
                 .filter(member -> member.isActive() && 
                         ("ADMIN".equalsIgnoreCase(member.getRoleName()) || "ACCOUNTANT".equalsIgnoreCase(member.getRoleName())))
                 .collectList()
                 .flatMap(members -> {
                     if (members.isEmpty()) {
-                        log.warn("No admins or accountants found for tenant {}", brouillard.getTenantId());
+                        log.warn("No admins or accountants found for tenant {}", brouillard.getOrganizationId());
                         return Mono.empty();
                     }
 
@@ -49,7 +49,7 @@ public class BrouillardNotificationService {
                     for (com.yowyob.erp.config.auth.OrganizationMember member : members) {
                         // 1. In-App
                         notificationTasks.add(inAppService.createNotification(
-                                brouillard.getTenantId(),
+                                brouillard.getOrganizationId(),
                                 member.getUserId().toString(),
                                 title,
                                 message,

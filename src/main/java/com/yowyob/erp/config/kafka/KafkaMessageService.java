@@ -60,10 +60,10 @@ public class KafkaMessageService {
     @Value("${app.kafka.topics.organization-events:organization.events}")
     private String organizationEventsTopic;
 
-    public Mono<Void> sendMessage(String topic, String key, Object payload, String eventType, UUID tenantId) {
+    public Mono<Void> sendMessage(String topic, String key, Object payload, String eventType, UUID organizationId) {
         return Mono.defer(() -> {
             KafkaMessage message = KafkaMessage.builder()
-                    .tenantId(tenantId)
+                    .organizationId(organizationId)
                     .eventType(eventType)
                     .payload(payload)
                     .timestamp(LocalDateTime.now())
@@ -77,51 +77,51 @@ public class KafkaMessageService {
         });
     }
 
-    public Mono<Void> sendAccountingEvent(Object payload, UUID tenantId, String type) {
-        return sendMessage(accountingEntriesTopic, tenantId.toString(), payload, type, tenantId);
+    public Mono<Void> sendAccountingEvent(Object payload, UUID organizationId, String type) {
+        return sendMessage(accountingEntriesTopic, organizationId.toString(), payload, type, organizationId);
     }
 
-    public Mono<Void> sendInvoiceEvent(Object payload, UUID tenantId, String type) {
-        return sendMessage(invoiceEventsTopic, tenantId.toString(), payload, type, tenantId);
+    public Mono<Void> sendInvoiceEvent(Object payload, UUID organizationId, String type) {
+        return sendMessage(invoiceEventsTopic, organizationId.toString(), payload, type, organizationId);
     }
 
-    public Mono<Void> sendTransactionEvent(Object payload, UUID tenantId, String type) {
-        return sendMessage(transactionEventsTopic, tenantId.toString(), payload, type, tenantId);
+    public Mono<Void> sendTransactionEvent(Object payload, UUID organizationId, String type) {
+        return sendMessage(transactionEventsTopic, organizationId.toString(), payload, type, organizationId);
     }
 
-    public Mono<Void> sendAuditLog(Object payload, UUID tenantId, String action) {
-        return sendMessage(auditLogsTopic, tenantId.toString(), payload, action, tenantId);
+    public Mono<Void> sendAuditLog(Object payload, UUID organizationId, String action) {
+        return sendMessage(auditLogsTopic, organizationId.toString(), payload, action, organizationId);
     }
 
-    public Mono<Void> sendNotification(Object payload, UUID tenantId, String type) {
-        return sendMessage(notificationsTopic, tenantId.toString(), payload, type, tenantId);
+    public Mono<Void> sendNotification(Object payload, UUID organizationId, String type) {
+        return sendMessage(notificationsTopic, organizationId.toString(), payload, type, organizationId);
     }
 
-    public Mono<Void> sendTenantCreated(Object payload, UUID tenantId) {
-        return sendMessage(tenantCreatedTopic, tenantId.toString(), payload, "TENANT_CREATED", tenantId);
+    public Mono<Void> sendTenantCreated(Object payload, UUID organizationId) {
+        return sendMessage(tenantCreatedTopic, organizationId.toString(), payload, "TENANT_CREATED", organizationId);
     }
 
-    public Mono<Void> sendTenantUpdated(Object payload, UUID tenantId) {
-        return sendMessage(tenantUpdatedTopic, tenantId.toString(), payload, "TENANT_UPDATED", tenantId);
+    public Mono<Void> sendTenantUpdated(Object payload, UUID organizationId) {
+        return sendMessage(tenantUpdatedTopic, organizationId.toString(), payload, "TENANT_UPDATED", organizationId);
     }
 
-    public Mono<Void> sendTenantDeleted(Object payload, UUID tenantId) {
-        return sendMessage(tenantDeletedTopic, tenantId.toString(), payload, "TENANT_DELETED", tenantId);
+    public Mono<Void> sendTenantDeleted(Object payload, UUID organizationId) {
+        return sendMessage(tenantDeletedTopic, organizationId.toString(), payload, "TENANT_DELETED", organizationId);
     }
 
-    public Mono<Void> sendTreasurySync(Object payload, UUID tenantId, String type) {
-        return sendMessage(treasurySyncTopic, tenantId.toString(), payload, type, tenantId);
+    public Mono<Void> sendTreasurySync(Object payload, UUID organizationId, String type) {
+        return sendMessage(treasurySyncTopic, organizationId.toString(), payload, type, organizationId);
     }
 
-    public Mono<Void> sendStockEvent(Object payload, UUID tenantId, String type) {
-        return sendMessage(stockEventsTopic, tenantId.toString(), payload, type, tenantId);
+    public Mono<Void> sendStockEvent(Object payload, UUID organizationId, String type) {
+        return sendMessage(stockEventsTopic, organizationId.toString(), payload, type, organizationId);
     }
 
-    public Mono<Void> sendThirdPartyEvent(Object payload, UUID tenantId, String type) {
-        return sendMessage(thirdPartyEventsTopic, tenantId.toString(), payload, type, tenantId);
+    public Mono<Void> sendThirdPartyEvent(Object payload, UUID organizationId, String type) {
+        return sendMessage(thirdPartyEventsTopic, organizationId.toString(), payload, type, organizationId);
     }
 
-    public Mono<Void> sendOrganizationEvent(Object payload, UUID tenantId, String type) {
-        return sendMessage(organizationEventsTopic, tenantId.toString(), payload, type, tenantId);
+    public Mono<Void> sendOrganizationEvent(Object payload, UUID organizationId, String type) {
+        return sendMessage(organizationEventsTopic, organizationId.toString(), payload, type, organizationId);
     }
 }

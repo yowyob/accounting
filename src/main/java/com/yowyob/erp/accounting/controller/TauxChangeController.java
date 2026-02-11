@@ -13,7 +13,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
@@ -47,7 +47,7 @@ public class TauxChangeController {
                                 .switchIfEmpty(Mono.error(new RuntimeException(
                                                 "Service returned empty result (possibly missing tenant context)")))
                                 .doOnError(e -> log.error("Error creating exchange rate", e))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**

@@ -11,7 +11,7 @@ import com.yowyob.erp.accounting.entity.BrouillardComptable;
 import com.yowyob.erp.accounting.entity.BrouillardStatut;
 import com.yowyob.erp.accounting.entity.BrouillardType;
 import com.yowyob.erp.accounting.repository.BrouillardComptableRepository;
-import com.yowyob.erp.config.tenant.TenantContext;
+import com.yowyob.erp.config.organization.OrganizationContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -67,11 +67,11 @@ public class BrouillardComptableService {
      * OR: "processAndGetResult" which returns a wrapper.
      */
 
-    public Mono<Boolean> shouldCreateDraft(UUID tenantId, BrouillardType type, BigDecimal amount, UUID journalId) {
-        return settingService.shouldUseBrouillard(tenantId, type, amount, journalId);
+    public Mono<Boolean> shouldCreateDraft(UUID organizationId, BrouillardType type, BigDecimal amount, UUID journalId) {
+        return settingService.shouldUseBrouillard(organizationId, type, amount, journalId);
     }
     
-    public Mono<BrouillardComptable> createDraft(UUID tenantId, BrouillardType type, Object sourceDto, 
+    public Mono<BrouillardComptable> createDraft(UUID organizationId, BrouillardType type, Object sourceDto, 
                                                  String sourceId, String sourceType, 
                                                  String numeroPiece, LocalDate datePiece, String libelle,
                                                  BigDecimal montantTotal, String devise,
@@ -81,7 +81,7 @@ public class BrouillardComptableService {
         JsonNode jsonNode = objectMapper.valueToTree(sourceDto);
 
         BrouillardComptable draft = BrouillardComptable.builder()
-                .tenantId(tenantId)
+                .organizationId(organizationId)
                 .type(type)
                 .statut(BrouillardStatut.BROUILLON)
                 .sourceId(sourceId)
@@ -105,16 +105,16 @@ public class BrouillardComptableService {
                 .flatMap(savedDraft -> notificationService.notifyNewBrouillard(savedDraft).thenReturn(savedDraft));
     }
 
-    public Flux<BrouillardComptable> getAllBrouillards(UUID tenantId, Pageable pageable) {
-        return repository.findAllByTenantId(tenantId, pageable);
+    public Flux<BrouillardComptable> getAllBrouillards(UUID organizationId, Pageable pageable) {
+        return repository.findAllByTenantId(organizationId, pageable);
     }
     
-    public Flux<BrouillardComptable> getBrouillardsByStatut(UUID tenantId, BrouillardStatut statut, Pageable pageable) {
-        return repository.findAllByTenantIdAndStatut(tenantId, statut, pageable);
+    public Flux<BrouillardComptable> getBrouillardsByStatut(UUID organizationId, BrouillardStatut statut, Pageable pageable) {
+        return repository.findAllByTenantIdAndStatut(organizationId, statut, pageable);
     }
     
-    public Flux<BrouillardComptable> getBrouillardsByType(UUID tenantId, BrouillardType type, Pageable pageable) {
-        return repository.findAllByTenantIdAndType(tenantId, type, pageable);
+    public Flux<BrouillardComptable> getBrouillardsByType(UUID organizationId, BrouillardType type, Pageable pageable) {
+        return repository.findAllByTenantIdAndType(organizationId, type, pageable);
     }
 
     public Mono<BrouillardComptable> getBrouillardById(UUID id) {

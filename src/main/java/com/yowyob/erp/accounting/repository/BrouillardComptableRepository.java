@@ -14,15 +14,15 @@ import java.util.UUID;
 @Repository
 public interface BrouillardComptableRepository extends R2dbcRepository<BrouillardComptable, UUID> {
 
-    Flux<BrouillardComptable> findAllByTenantIdAndStatut(UUID tenantId, BrouillardStatut statut, Pageable pageable);
+    Flux<BrouillardComptable> findAllByTenantIdAndStatut(UUID organizationId, BrouillardStatut statut, Pageable pageable);
 
-    Flux<BrouillardComptable> findAllByTenantIdAndType(UUID tenantId, BrouillardType type, Pageable pageable);
+    Flux<BrouillardComptable> findAllByTenantIdAndType(UUID organizationId, BrouillardType type, Pageable pageable);
 
-    Mono<BrouillardComptable> findByTenantIdAndSourceIdAndSourceType(UUID tenantId, String sourceId, String sourceType);
+    Mono<BrouillardComptable> findByTenantIdAndSourceIdAndSourceType(UUID organizationId, String sourceId, String sourceType);
 
-    Mono<Long> countByTenantIdAndStatut(UUID tenantId, BrouillardStatut statut);
+    Mono<Long> countByTenantIdAndStatut(UUID organizationId, BrouillardStatut statut);
 
-    Flux<BrouillardComptable> findAllByTenantId(UUID tenantId, Pageable pageable);
+    Flux<BrouillardComptable> findAllByTenantId(UUID organizationId, Pageable pageable);
 
-    Mono<Long> countByTenantId(UUID tenantId);
+    Mono<Long> countByTenantId(UUID organizationId);
 }

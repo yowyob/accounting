@@ -3,7 +3,7 @@ package com.yowyob.erp.accounting.controller;
 import com.yowyob.erp.accounting.dto.JournalComptableDto;
 import com.yowyob.erp.accounting.service.JournalComptableService;
 import com.yowyob.erp.common.dto.ApiResponseWrapper;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -35,7 +35,7 @@ public class JournalComptableController {
                                 .map(created -> ResponseEntity.status(HttpStatus.CREATED)
                                                 .body(ApiResponseWrapper.success(created,
                                                                 "Journal created successfully")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         @PutMapping("/{id}")
@@ -45,7 +45,7 @@ public class JournalComptableController {
                 return journal_service.updateJournalComptable(id, dto)
                                 .map(updated -> ResponseEntity.ok(
                                                 ApiResponseWrapper.success(updated, "Journal updated successfully")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         @GetMapping("/{id}")
@@ -55,7 +55,7 @@ public class JournalComptableController {
                                 .map(journal -> ResponseEntity.ok(ApiResponseWrapper.success(journal, "Journal found")))
                                 .defaultIfEmpty(ResponseEntity.status(HttpStatus.NOT_FOUND)
                                                 .body(ApiResponseWrapper.error("Journal not found", 404)))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         @GetMapping("/{id}/comptes")
@@ -65,7 +65,7 @@ public class JournalComptableController {
                 return journal_service.getComptesByJournal(id)
                                 .map(comptes -> ResponseEntity
                                                 .ok(ApiResponseWrapper.success(comptes, "Accounts retrieved")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         @GetMapping
@@ -74,7 +74,7 @@ public class JournalComptableController {
                 return journal_service.getAllJournaux()
                                 .map(list -> ResponseEntity
                                                 .ok(ApiResponseWrapper.success(list, "Journals list retrieved")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         @GetMapping("/active")
@@ -83,7 +83,7 @@ public class JournalComptableController {
                 return journal_service.getActiveJournaux()
                                 .map(list -> ResponseEntity
                                                 .ok(ApiResponseWrapper.success(list, "Active journals list retrieved")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         @DeleteMapping("/{id}")
@@ -93,6 +93,6 @@ public class JournalComptableController {
                                 .then(Mono.fromCallable(
                                                 () -> ResponseEntity.ok(ApiResponseWrapper.success(null,
                                                                 "Journal deleted successfully"))))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 }

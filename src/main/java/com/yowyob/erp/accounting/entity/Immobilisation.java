@@ -27,8 +27,8 @@ public class Immobilisation implements SettablePersistable<UUID> {
     @Id
     private UUID id;
 
-    @Column("tenant_id")
-    private UUID tenantId;
+    @Column("organization_id")
+    private UUID organizationId;
 
     private String code;
     private String libelle;

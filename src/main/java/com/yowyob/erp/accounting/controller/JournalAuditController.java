@@ -31,13 +31,13 @@ public class JournalAuditController {
     /**
      * Retrieves all audits for a tenant (last N actions).
      */
-    @GetMapping("/tenant/{tenantId}")
+    @GetMapping("/tenant/{organizationId}")
     @Operation(summary = "Get all audits for a tenant")
     public Mono<ResponseEntity<ApiResponseWrapper<List<JournalAuditDto>>>> getAllByTenant(
-            @PathVariable(name = "tenantId") UUID tenant_id,
+            @PathVariable(name = "organizationId") UUID organization_id,
             @RequestParam(defaultValue = "100") int limit) {
 
-        return audit_service.getAllByTenant(tenant_id, limit)
+        return audit_service.getAllByTenant(organization_id, limit)
                 .collectList()
                 .map(list -> ResponseEntity.ok(ApiResponseWrapper.success(list, "Audit logs retrieved successfully")));
     }
@@ -45,14 +45,14 @@ public class JournalAuditController {
     /**
      * Retrieves audits for a tenant within a specific time period.
      */
-    @GetMapping("/tenant/{tenantId}/periode")
+    @GetMapping("/tenant/{organizationId}/periode")
     @Operation(summary = "Get audits by time period")
     public Mono<ResponseEntity<ApiResponseWrapper<List<JournalAuditDto>>>> getByPeriode(
-            @PathVariable(name = "tenantId") UUID tenant_id,
+            @PathVariable(name = "organizationId") UUID organization_id,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime debut,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fin) {
 
-        return audit_service.getByPeriode(tenant_id, debut, fin)
+        return audit_service.getByPeriode(organization_id, debut, fin)
                 .collectList()
                 .map(list -> ResponseEntity
                         .ok(ApiResponseWrapper.success(list, "Audit logs for period retrieved successfully")));
@@ -61,13 +61,13 @@ public class JournalAuditController {
     /**
      * Retrieves audits for a tenant filtered by user.
      */
-    @GetMapping("/tenant/{tenantId}/utilisateur/{utilisateur}")
+    @GetMapping("/tenant/{organizationId}/utilisateur/{utilisateur}")
     @Operation(summary = "Get audits by user")
     public Mono<ResponseEntity<ApiResponseWrapper<List<JournalAuditDto>>>> getByUtilisateur(
-            @PathVariable(name = "tenantId") UUID tenant_id,
+            @PathVariable(name = "organizationId") UUID organization_id,
             @PathVariable String utilisateur) {
 
-        return audit_service.getByUtilisateur(tenant_id, utilisateur)
+        return audit_service.getByUtilisateur(organization_id, utilisateur)
                 .collectList()
                 .map(list -> ResponseEntity.ok(ApiResponseWrapper.success(list,
                         "Audit logs for user " + utilisateur + " retrieved successfully")));
@@ -76,13 +76,13 @@ public class JournalAuditController {
     /**
      * Retrieves audits for a tenant filtered by action type.
      */
-    @GetMapping("/tenant/{tenantId}/action/{action}")
+    @GetMapping("/tenant/{organizationId}/action/{action}")
     @Operation(summary = "Get audits by action type")
     public Mono<ResponseEntity<ApiResponseWrapper<List<JournalAuditDto>>>> getByAction(
-            @PathVariable(name = "tenantId") UUID tenant_id,
+            @PathVariable(name = "organizationId") UUID organization_id,
             @PathVariable String action) {
 
-        return audit_service.getByAction(tenant_id, action)
+        return audit_service.getByAction(organization_id, action)
                 .collectList()
                 .map(list -> ResponseEntity.ok(ApiResponseWrapper.success(list,
                         "Audit logs for action " + action + " retrieved successfully")));
@@ -91,13 +91,13 @@ public class JournalAuditController {
     /**
      * Retrieves audits related to a specific accounting entry ID.
      */
-    @GetMapping("/tenant/{tenantId}/ecriture/{ecritureId}")
+    @GetMapping("/tenant/{organizationId}/ecriture/{ecritureId}")
     @Operation(summary = "Get audits by accounting entry ID")
     public Mono<ResponseEntity<ApiResponseWrapper<List<JournalAuditDto>>>> getByEcriture(
-            @PathVariable(name = "tenantId") UUID tenant_id,
+            @PathVariable(name = "organizationId") UUID organization_id,
             @PathVariable(name = "ecritureId") UUID ecriture_id) {
 
-        return audit_service.getByEcriture(tenant_id, ecriture_id)
+        return audit_service.getByEcriture(organization_id, ecriture_id)
                 .collectList()
                 .map(list -> ResponseEntity.ok(ApiResponseWrapper.success(list,
                         "Audit logs for entry " + ecriture_id + " retrieved successfully")));
@@ -109,7 +109,7 @@ public class JournalAuditController {
     @GetMapping("/rechercher")
     @Operation(summary = "Advanced search for audit logs")
     public Mono<ResponseEntity<ApiResponseWrapper<List<JournalAuditDto>>>> rechercher(
-            @RequestParam(name = "tenantId") UUID tenant_id,
+            @RequestParam(name = "organizationId") UUID organization_id,
             @RequestParam(required = false) String utilisateur,
             @RequestParam(required = false) String action,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime debut,
@@ -117,13 +117,13 @@ public class JournalAuditController {
 
         Mono<List<JournalAuditDto>> resultMono;
         if (debut != null && fin != null) {
-            resultMono = audit_service.getByPeriode(tenant_id, debut, fin).collectList();
+            resultMono = audit_service.getByPeriode(organization_id, debut, fin).collectList();
         } else if (utilisateur != null && !utilisateur.isBlank()) {
-            resultMono = audit_service.getByUtilisateur(tenant_id, utilisateur).collectList();
+            resultMono = audit_service.getByUtilisateur(organization_id, utilisateur).collectList();
         } else if (action != null && !action.isBlank()) {
-            resultMono = audit_service.getByAction(tenant_id, action).collectList();
+            resultMono = audit_service.getByAction(organization_id, action).collectList();
         } else {
-            resultMono = audit_service.getAllByTenant(tenant_id, 200).collectList();
+            resultMono = audit_service.getAllByTenant(organization_id, 200).collectList();
         }
 
         return resultMono

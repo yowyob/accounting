@@ -55,7 +55,7 @@ public class AuthService {
             return AuthValidationResponse.builder()
                     .valid(true)
                     .userId(response.get("userId").asText())
-                    .tenantId(response.get("tenantId").asText())
+                    .organizationId(response.get("organizationId").asText())
                     .roles(response.get("roles").asText().split(","))
                     .build();
         }
@@ -80,14 +80,14 @@ public class AuthService {
     /**
      * Retrieves all employees (members) of the organization
      */
-    public Flux<OrganizationMember> getOrganizationMembers(UUID tenantId) {
+    public Flux<OrganizationMember> getOrganizationMembers(UUID organizationId) {
         return webClient
                 .get()
                 .uri(authApiUrl + "/employees")
-                .header("X-Tenant-ID", tenantId.toString())
+                .header("X-Tenant-ID", organizationId.toString())
                 .retrieve()
                 .bodyToFlux(OrganizationMember.class)
                 .timeout(Duration.ofMillis(timeout))
-                .doOnError(error -> log.error("Error retrieving members for tenant {}", tenantId, error));
+                .doOnError(error -> log.error("Error retrieving members for tenant {}", organizationId, error));
     }
 }

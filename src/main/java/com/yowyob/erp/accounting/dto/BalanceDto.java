@@ -15,7 +15,7 @@ import java.util.List;
 @AllArgsConstructor
 public class BalanceDto {
 
-    private String tenantId;
+    private String organizationId;
     private LocalDate dateDebut;
     private LocalDate dateFin;
     private Double totalDebit;

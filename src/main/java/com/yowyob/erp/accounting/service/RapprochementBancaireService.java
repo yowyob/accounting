@@ -52,7 +52,7 @@ public class RapprochementBancaireService {
                     LocalDateTime end = releve.getDateOperation().plusDays(15);
 
                     return detail_repository.findCandidatesForPointage(
-                            releve.getTenantId(),
+                            releve.getOrganizationId(),
                             releve.getMontant().abs(),
                             start,
                             end,

@@ -48,6 +48,6 @@ public class OpenApiConfig {
                                                                                 .type(Type.APIKEY)
                                                                                 .in(SecurityScheme.In.HEADER)
                                                                                 .name("X-Tenant-ID")
-                                                                                .description("Tenant ID for multi-tenancy (UUID format)")));
+                                                                                .description("Organization ID for multi-tenancy (UUID format)")));
         }
 }

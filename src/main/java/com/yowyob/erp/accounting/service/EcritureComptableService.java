@@ -17,7 +17,7 @@ import com.yowyob.erp.common.exception.BusinessException;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.config.kafka.KafkaMessageService;
 import com.yowyob.erp.config.redis.RedisService;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,11 +62,11 @@ public class EcritureComptableService {
          */
         @Transactional
         public Mono<EcritureComptableDto> createEcriture(EcritureComptableDto dto) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                                 .flatMap(current_user -> {
                                                         log.info("➡️ Creating accounting entry for tenant: {}",
-                                                                        tenant_id);
+                                                                        organization_id);
                                                         validator_ref.validate(dto);
 
                                                         return journal_service
@@ -83,7 +83,7 @@ public class EcritureComptableService {
                                                                                                 }
                                                                                                 return Mono.just(p);
                                                                                         }))
-                                                                        .then(ReactiveTenantContext
+                                                                        .then(ReactiveOrganizationContext
                                                                                         .getCurrentTenantAsTenant())
                                                                         .flatMap(tenant -> {
                                                                                 EcritureComptable ecriture = mapToEntity(
@@ -124,7 +124,7 @@ public class EcritureComptableService {
                                                                                                                                         detail.setId(UUID
                                                                                                                                                         .randomUUID());
                                                                                                                                         detail.setTenantId(
-                                                                                                                                                        tenant_id);
+                                                                                                                                                        organization_id);
                                                                                                                                         detail.setEcriture_id(
                                                                                                                                                         saved.getId());
                                                                                                                                         detail.setCompte_id(
@@ -188,7 +188,7 @@ public class EcritureComptableService {
                                                                                                                                                                 "Entry created"))
                                                                                                                                                 .then(redis_service
                                                                                                                                                                 .delete(CACHE_ALL
-                                                                                                                                                                                + tenant_id))
+                                                                                                                                                                                + organization_id))
                                                                                                                                                 .thenReturn(mapToDto(
                                                                                                                                                                 saved));
                                                                                                                         });
@@ -202,10 +202,10 @@ public class EcritureComptableService {
          */
         @Transactional
         public Mono<EcritureComptableDto> validateEcriture(UUID id, String user) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> {
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
                                         String current_user = user != null ? user : "system";
-                                        return ecriture_repository.findByTenant_IdAndId(tenant_id, id)
+                                        return ecriture_repository.findByTenant_IdAndId(organization_id, id)
                                                         .switchIfEmpty(Mono.error(new ResourceNotFoundException("Entry",
                                                                         id.toString())))
                                                         .flatMap(ecriture -> {
@@ -216,7 +216,7 @@ public class EcritureComptableService {
 
                                                                 return detail_repository
                                                                                 .findByTenant_IdAndEcriture_Id(
-                                                                                                tenant_id, id)
+                                                                                                organization_id, id)
                                                                                 .collectList()
                                                                                 .flatMap(this::validateBalance)
                                                                                 .then(Mono.defer(() -> {
@@ -236,7 +236,7 @@ public class EcritureComptableService {
                                                                                         return ecriture_repository
                                                                                                         .save(ecriture)
                                                                                                         .flatMap(validated -> {
-                                                                                                                return ReactiveTenantContext
+                                                                                                                return ReactiveOrganizationContext
                                                                                                                                 .getCurrentTenantAsTenant()
                                                                                                                                 .flatMap(tenant -> logAuditAndSendKafka(
                                                                                                                                                 tenant,
@@ -246,7 +246,7 @@ public class EcritureComptableService {
                                                                                                                                                 "Entry validated"))
                                                                                                                                 .then(redis_service
                                                                                                                                                 .delete(CACHE_NON_VALIDATED
-                                                                                                                                                                + tenant_id))
+                                                                                                                                                                + organization_id))
                                                                                                                                 .thenReturn(mapToDto(
                                                                                                                                                 validated));
                                                                                                         });
@@ -260,15 +260,15 @@ public class EcritureComptableService {
          */
         @SuppressWarnings("unchecked")
         public Mono<java.util.List<EcritureComptableDto>> getAll() {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> {
-                                        String key = CACHE_ALL + tenant_id;
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
+                                        String key = CACHE_ALL + organization_id;
                                         return redis_service.get(key, java.util.List.class)
                                                         .map(list -> (java.util.List<EcritureComptableDto>) list)
-                                                        .switchIfEmpty(ecriture_repository.findByTenant_Id(tenant_id)
+                                                        .switchIfEmpty(ecriture_repository.findByTenant_Id(organization_id)
                                                                         .flatMap(ecriture -> detail_repository
                                                                                         .findByTenant_IdAndEcriture_Id(
-                                                                                                        tenant_id,
+                                                                                                        organization_id,
                                                                                                         ecriture.getId())
                                                                                         .collectList()
                                                                                         .map(details -> {
@@ -290,13 +290,13 @@ public class EcritureComptableService {
          */
         @SuppressWarnings("unchecked")
         public Mono<java.util.List<EcritureComptableDto>> getNonValidated() {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> {
-                                        String key = CACHE_NON_VALIDATED + tenant_id;
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
+                                        String key = CACHE_NON_VALIDATED + organization_id;
                                         return redis_service.get(key, java.util.List.class)
                                                         .map(list -> (java.util.List<EcritureComptableDto>) list)
                                                         .switchIfEmpty(ecriture_repository
-                                                                        .findByTenant_IdAndValideeFalse(tenant_id)
+                                                                        .findByTenant_IdAndValideeFalse(organization_id)
                                                                         .map(this::mapToDto)
                                                                         .collectList()
                                                                         .flatMap(list -> redis_service
@@ -310,10 +310,10 @@ public class EcritureComptableService {
          * Retrieves an entry by its ID.
          */
         public Mono<EcritureComptableDto> getById(UUID id) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> ecriture_repository.findByTenant_IdAndId(tenant_id, id)
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> ecriture_repository.findByTenant_IdAndId(organization_id, id)
                                                 .flatMap(ecriture -> detail_repository
-                                                                .findByTenant_IdAndEcriture_Id(tenant_id,
+                                                                .findByTenant_IdAndEcriture_Id(organization_id,
                                                                                 ecriture.getId())
                                                                 .collectList()
                                                                 .map(details -> {
@@ -330,13 +330,13 @@ public class EcritureComptableService {
         public Mono<java.util.List<EcritureComptableDto>> searchEcritures(LocalDateTime start_date,
                         LocalDateTime end_date,
                         UUID journal_id) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> {
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
                                         if (start_date != null && end_date != null && start_date.isAfter(end_date)) {
                                                 return Mono.error(new BusinessException(
                                                                 "Start date must be before end date"));
                                         }
-                                        String cache_key = CACHE_SEARCH + tenant_id + ":"
+                                        String cache_key = CACHE_SEARCH + organization_id + ":"
                                                         + (start_date != null ? start_date : "all")
                                                         + ":" + (end_date != null ? end_date : "all")
                                                         + ":" + (journal_id != null ? journal_id : "all");
@@ -349,24 +349,24 @@ public class EcritureComptableService {
                                                                                 && journal_id != null) {
                                                                         results = ecriture_repository
                                                                                         .findByTenant_IdAndJournal_IdAndDate_ecritureBetween(
-                                                                                                        tenant_id,
+                                                                                                        organization_id,
                                                                                                         journal_id,
                                                                                                         start_date.toLocalDate(),
                                                                                                         end_date.toLocalDate());
                                                                 } else if (start_date != null && end_date != null) {
                                                                         results = ecriture_repository
                                                                                         .findByTenant_IdAndDate_ecritureBetween(
-                                                                                                        tenant_id,
+                                                                                                        organization_id,
                                                                                                         start_date.toLocalDate(),
                                                                                                         end_date.toLocalDate());
                                                                 } else if (journal_id != null) {
                                                                         results = ecriture_repository
                                                                                         .findByTenant_IdAndJournal_Id(
-                                                                                                        tenant_id,
+                                                                                                        organization_id,
                                                                                                         journal_id);
                                                                 } else {
                                                                         results = ecriture_repository
-                                                                                        .findByTenant_Id(tenant_id);
+                                                                                        .findByTenant_Id(organization_id);
                                                                 }
 
                                                                 return results.map(this::mapToDto).collectList()
@@ -383,8 +383,8 @@ public class EcritureComptableService {
          */
         @Transactional
         public Mono<EcritureComptableDto> generateFromComptableObject(ComptableObject object) {
-                return ReactiveTenantContext.getCurrentTenantAsTenant()
-                                .flatMap(tenant -> ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                return ReactiveOrganizationContext.getCurrentTenantAsTenant()
+                                .flatMap(tenant -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                                 .flatMap(current_user -> {
                                                         if (object.get_montant() == null
                                                                         || object.get_montant().doubleValue() <= 0)
@@ -400,7 +400,7 @@ public class EcritureComptableService {
                                                                                 EcritureComptable ecriture = EcritureComptable
                                                                                                 .builder()
                                                                                                 .id(UUID.randomUUID())
-                                                                                                .tenantId(tenant.getId())
+                                                                                                .organizationId(tenant.getId())
                                                                                                 .numero_ecriture("ECR-"
                                                                                                                 + UUID.randomUUID()
                                                                                                                                 .toString()
@@ -462,8 +462,8 @@ public class EcritureComptableService {
          */
         @Transactional
         public Mono<Void> deleteEcriture(UUID id) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> ecriture_repository.findByTenant_IdAndId(tenant_id, id)
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> ecriture_repository.findByTenant_IdAndId(organization_id, id)
                                                 .switchIfEmpty(Mono.error(
                                                                 new ResourceNotFoundException("Entry", id.toString())))
                                                 .flatMap(ecriture -> {
@@ -471,9 +471,9 @@ public class EcritureComptableService {
                                                                 return Mono.error(new BusinessException(
                                                                                 "Cannot delete a validated entry"));
 
-                                                        return ReactiveTenantContext.getCurrentUser()
+                                                        return ReactiveOrganizationContext.getCurrentUser()
                                                                         .defaultIfEmpty("system")
-                                                                        .flatMap(current_user -> ReactiveTenantContext
+                                                                        .flatMap(current_user -> ReactiveOrganizationContext
                                                                                         .getCurrentTenantAsTenant()
                                                                                         .flatMap(tenant -> logAuditAndSendKafka(
                                                                                                         tenant,
@@ -485,7 +485,7 @@ public class EcritureComptableService {
                                                                                         .then(ecriture_repository
                                                                                                         .delete(ecriture))
                                                                                         .then(redis_service.delete(
-                                                                                                        CACHE_ALL + tenant_id))
+                                                                                                        CACHE_ALL + organization_id))
                                                                                         .doOnSuccess(v -> log.info(
                                                                                                         "🗑️ Entry {} deleted",
                                                                                                         id))
@@ -498,10 +498,10 @@ public class EcritureComptableService {
          */
         @Transactional
         public Mono<EcritureComptableDto> cancelEcriture(UUID id, String user) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> {
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
                                         String current_user = user != null ? user : "system";
-                                        return ecriture_repository.findByTenant_IdAndId(tenant_id, id)
+                                        return ecriture_repository.findByTenant_IdAndId(organization_id, id)
                                                         .switchIfEmpty(Mono.error(new ResourceNotFoundException("Entry",
                                                                         id.toString())))
                                                         .flatMap(ecriture -> {
@@ -516,7 +516,7 @@ public class EcritureComptableService {
                                                                 ecriture.setNotNew();
 
                                                                 return ecriture_repository.save(ecriture)
-                                                                                .flatMap(saved -> ReactiveTenantContext
+                                                                                .flatMap(saved -> ReactiveOrganizationContext
                                                                                                 .getCurrentTenantAsTenant()
                                                                                                 .flatMap(tenant -> logAuditAndSendKafka(
                                                                                                                 tenant,
@@ -526,7 +526,7 @@ public class EcritureComptableService {
                                                                                                                 "Entry canceled"))
                                                                                                 .then(redis_service
                                                                                                                 .delete(CACHE_ALL
-                                                                                                                                + tenant_id))
+                                                                                                                                + organization_id))
                                                                                                 .thenReturn(mapToDto(
                                                                                                                 saved)));
                                                         });
@@ -538,14 +538,14 @@ public class EcritureComptableService {
          */
         @Transactional
         public Mono<Void> deactivateEcriture(UUID id) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> ecriture_repository.findByTenant_IdAndId(tenant_id, id)
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> ecriture_repository.findByTenant_IdAndId(organization_id, id)
                                                 .switchIfEmpty(Mono.error(
                                                                 new ResourceNotFoundException("Entry", id.toString())))
                                                 .flatMap(ecriture -> {
                                                         ecriture.setActif(false);
                                                         ecriture.setUpdated_at(LocalDateTime.now());
-                                                        return ReactiveTenantContext.getCurrentUser()
+                                                        return ReactiveOrganizationContext.getCurrentUser()
                                                                         .defaultIfEmpty("system")
                                                                         .flatMap(user -> {
                                                                                 ecriture.setUpdated_by(user);
@@ -557,11 +557,11 @@ public class EcritureComptableService {
                                 .then();
         }
 
-        private Mono<Void> logAuditAndSendKafka(Tenant tenant, UUID ecriture_id, String user, String action,
+        private Mono<Void> logAuditAndSendKafka(Organization tenant, UUID ecriture_id, String user, String action,
                         String details) {
                 JournalAudit audit = JournalAudit.builder()
                                 .id(UUID.randomUUID())
-                                .tenantId(tenant.getId())
+                                .organizationId(tenant.getId())
                                 .ecriture_comptable_id(ecriture_id)
                                 .utilisateur(user)
                                 .action(action)
@@ -604,10 +604,10 @@ public class EcritureComptableService {
                 return Mono.empty();
         }
 
-        private EcritureComptable mapToEntity(EcritureComptableDto dto, Tenant tenant) {
+        private EcritureComptable mapToEntity(EcritureComptableDto dto, Organization tenant) {
                 return EcritureComptable.builder()
                                 .id(dto.getId())
-                                .tenantId(tenant.getId())
+                                .organizationId(tenant.getId())
                                 .numero_ecriture(dto.getNumero_ecriture())
                                 .libelle(dto.getLibelle())
                                 .date_ecriture(dto.getDate_ecriture())

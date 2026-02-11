@@ -31,8 +31,8 @@ public class ExerciceComptable implements SettablePersistable<UUID> {
     @Builder.Default
     private UUID id = UUID.randomUUID();
 
-    @Column("tenant_id")
-    private UUID tenantId;
+    @Column("organization_id")
+    private UUID organizationId;
 
     @Column("code")
     private String code;
@@ -71,7 +71,7 @@ public class ExerciceComptable implements SettablePersistable<UUID> {
     private String updated_by;
 
     @Transient
-    private Tenant tenant;
+    private Organization tenant;
 
     @Transient
     private List<PeriodeComptable> periodes;

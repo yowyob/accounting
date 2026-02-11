@@ -23,12 +23,12 @@ public class SynchronizationService {
     /**
      * Synchronizes offline data with the central server.
      * 
-     * @param tenant_id the tenant ID
+     * @param organization_id the tenant ID
      * @return a CompletableFuture representing the async operation
      */
     @Async("taskExecutor")
-    public CompletableFuture<Void> synchronizeOfflineData(UUID tenant_id) {
-        log.info("Starting offline synchronization for tenant: {}", tenant_id);
+    public CompletableFuture<Void> synchronizeOfflineData(UUID organization_id) {
+        log.info("Starting offline synchronization for tenant: {}", organization_id);
 
         try {
             // Implementation steps:
@@ -40,10 +40,10 @@ public class SynchronizationService {
 
             Thread.sleep(2000); // Simulation of processing
 
-            log.info("Synchronization completed successfully for tenant: {}", tenant_id);
+            log.info("Synchronization completed successfully for tenant: {}", organization_id);
 
         } catch (Exception e) {
-            log.error("Error during synchronization for tenant: {}", tenant_id, e);
+            log.error("Error during synchronization for tenant: {}", organization_id, e);
             throw new RuntimeException("Synchronization failed", e);
         }
 
@@ -53,14 +53,14 @@ public class SynchronizationService {
     /**
      * Checks network connectivity and triggers synchronization.
      * 
-     * @param tenant_id the tenant ID
+     * @param organization_id the tenant ID
      */
-    public void checkAndSync(UUID tenant_id) {
+    public void checkAndSync(UUID organization_id) {
         // Check network connectivity
         boolean is_online = true; // Simulation
 
         if (is_online) {
-            synchronizeOfflineData(tenant_id);
+            synchronizeOfflineData(organization_id);
         } else {
             log.warn("No network connectivity - synchronization postponed");
         }
@@ -69,16 +69,16 @@ public class SynchronizationService {
     /**
      * Force la synchronisation Elasticsearch pour un tenant.
      * 
-     * @param tenant_id ID du tenant
+     * @param organization_id ID du tenant
      * @return résultat de la synchronisation
      */
-    public java.util.Map<String, Object> synchroniserElasticsearch(UUID tenant_id) {
-        log.info("Forcing Elasticsearch synchronization for tenant: {}", tenant_id);
+    public java.util.Map<String, Object> synchroniserElasticsearch(UUID organization_id) {
+        log.info("Forcing Elasticsearch synchronization for tenant: {}", organization_id);
 
         // Cette méthode nécessiterait une intégration complète avec Elasticsearch
         // Pour l'instant, retourne un résultat basique
         return java.util.Map.of(
-                "tenant_id", tenant_id,
+                "organization_id", organization_id,
                 "documents_indexes", 0,
                 "message", "Synchronisation Elasticsearch - implémentation partielle");
     }
@@ -86,10 +86,10 @@ public class SynchronizationService {
     /**
      * Vide le cache Redis pour un tenant.
      * 
-     * @param tenant_id ID du tenant
+     * @param organization_id ID du tenant
      */
-    public void viderCacheRedis(UUID tenant_id) {
-        log.warn("Clearing Redis cache for tenant: {}", tenant_id);
+    public void viderCacheRedis(UUID organization_id) {
+        log.warn("Clearing Redis cache for tenant: {}", organization_id);
 
         // Cette méthode nécessiterait une intégration avec RedisService
         // Pour l'instant, ne fait rien
@@ -98,12 +98,12 @@ public class SynchronizationService {
     /**
      * Récupère le statut de synchronisation.
      * 
-     * @param tenant_id ID du tenant
+     * @param organization_id ID du tenant
      * @return statut de synchronisation
      */
-    public java.util.Map<String, Object> getStatutSynchronisation(UUID tenant_id) {
+    public java.util.Map<String, Object> getStatutSynchronisation(UUID organization_id) {
         return java.util.Map.of(
-                "tenant_id", tenant_id,
+                "organization_id", organization_id,
                 "elasticsearch_synced", true,
                 "redis_cache_size", 0,
                 "last_sync", java.time.LocalDateTime.now(),

@@ -2,7 +2,7 @@ package com.yowyob.erp.accounting.controller;
 
 import com.yowyob.erp.accounting.service.ClotureMensuelleService;
 import com.yowyob.erp.common.dto.ApiResponseWrapper;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -52,19 +52,19 @@ public class ClotureMensuelleController {
         })
         public Mono<ResponseEntity<ApiResponseWrapper<Map<String, Object>>>> cloturerPeriode(
                         @PathVariable UUID periodeId) {
-                return ReactiveTenantContext.getTenantId()
-                                .zipWith(ReactiveTenantContext.getCurrentUser())
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .zipWith(ReactiveOrganizationContext.getCurrentUser())
                                 .flatMap(tuple -> {
-                                        UUID tenant_id = tuple.getT1();
+                                        UUID organization_id = tuple.getT1();
                                         String user = tuple.getT2();
-                                        log.info("🔒 Closing period {} for tenant {} by user {}", periodeId, tenant_id,
+                                        log.info("🔒 Closing period {} for tenant {} by user {}", periodeId, organization_id,
                                                         user);
 
                                         return cloture_service.cloturerPeriode(periodeId, user)
                                                         .map(resultat -> ResponseEntity.ok(ApiResponseWrapper.success(
                                                                         resultat,
                                                                         "Période clôturée avec succès")))
-                                                        .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                                        .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
                                 });
         }
 
@@ -84,15 +84,15 @@ public class ClotureMensuelleController {
         })
         public Mono<ResponseEntity<ApiResponseWrapper<Map<String, Object>>>> verifierEligibilite(
                         @PathVariable UUID periodeId) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> {
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
                                         log.info("🔍 Checking closure eligibility for period {} of tenant {}",
-                                                        periodeId, tenant_id);
+                                                        periodeId, organization_id);
                                         return cloture_service.verifierEligibiliteCloture(periodeId)
                                                         .map(statut -> ResponseEntity.ok(ApiResponseWrapper.success(
                                                                         statut,
                                                                         "Statut de clôture vérifié")))
-                                                        .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                                        .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
                                 });
         }
 
@@ -112,14 +112,14 @@ public class ClotureMensuelleController {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Période non trouvée")
         })
         public Mono<ResponseEntity<ApiResponseWrapper<String>>> annulerCloture(@PathVariable UUID periodeId) {
-                return ReactiveTenantContext.getCurrentUser()
+                return ReactiveOrganizationContext.getCurrentUser()
                                 .flatMap(user -> {
                                         log.warn("⚠️ Cancelling closure for period {} by admin {}", periodeId, user);
                                         return cloture_service.annulerCloture(periodeId, user)
                                                         .then(Mono.just(ResponseEntity.ok(ApiResponseWrapper.success(
                                                                         "Clôture annulée",
                                                                         "La période a été réouverte avec succès"))))
-                                                        .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                                        .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
                                 });
         }
 }

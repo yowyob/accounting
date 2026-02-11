@@ -10,7 +10,7 @@ import com.yowyob.erp.common.exception.BusinessException;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.config.kafka.KafkaMessageService;
 import com.yowyob.erp.config.redis.RedisService;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -52,19 +52,19 @@ public class DeclarationFiscaleService {
          */
         @Transactional
         public Mono<DeclarationFiscaleDto> saveDeclaration(DeclarationFiscaleDto dto) {
-                return ReactiveTenantContext.getTenantId()
-                                .zipWith(ReactiveTenantContext.getCurrentTenantAsTenant())
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .zipWith(ReactiveOrganizationContext.getCurrentTenantAsTenant())
                                 .flatMap(tuple -> {
-                                        UUID tenant_id = tuple.getT1();
-                                        Tenant tenant = tuple.getT2();
+                                        UUID organization_id = tuple.getT1();
+                                        Organization tenant = tuple.getT2();
                                         String current_user = Optional
-                                                        .ofNullable(ReactiveTenantContext.getCurrentUser().block())
+                                                        .ofNullable(ReactiveOrganizationContext.getCurrentUser().block())
                                                         .orElse("system"); // TODO: fully reactive user retrieval
 
                                         Mono<DeclarationFiscale> entityMono;
                                         if (dto.getId() != null) {
                                                 entityMono = declaration_repository
-                                                                .findByTenantIdAndId(tenant_id, dto.getId())
+                                                                .findByTenantIdAndId(organization_id, dto.getId())
                                                                 .switchIfEmpty(
                                                                                 Mono.error(new ResourceNotFoundException(
                                                                                                 "Tax declaration",
@@ -72,12 +72,12 @@ public class DeclarationFiscaleService {
                                                                 .doOnNext(e -> log.info(
                                                                                 "Updating tax declaration {} for tenant {}",
                                                                                 dto.getId(),
-                                                                                tenant_id));
+                                                                                organization_id));
                                         } else {
                                                 DeclarationFiscale newEntity = new DeclarationFiscale();
-                                                newEntity.setTenantId(tenant_id);
+                                                newEntity.setTenantId(organization_id);
                                                 newEntity.setCreated_by(current_user);
-                                                log.info("Creating new tax declaration for tenant {}", tenant_id);
+                                                log.info("Creating new tax declaration for tenant {}", organization_id);
                                                 entityMono = Mono.just(newEntity);
                                         }
 
@@ -109,7 +109,7 @@ public class DeclarationFiscaleService {
                                                                                                         : saved.getId());
 
                                                                         return redis_service.delete(CACHE_KEY_PREFIX
-                                                                                        + "all:" + tenant_id)
+                                                                                        + "all:" + organization_id)
                                                                                         .then(logAudit(tenant,
                                                                                                         current_user,
                                                                                                         auditAction,
@@ -127,8 +127,8 @@ public class DeclarationFiscaleService {
          * @return an optional containing the declaration DTO
          */
         public Mono<DeclarationFiscaleDto> getById(UUID id) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> declaration_repository.findByTenantIdAndId(tenant_id, id)
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> declaration_repository.findByTenantIdAndId(organization_id, id)
                                                 .map(this::mapToDto));
         }
 
@@ -139,9 +139,9 @@ public class DeclarationFiscaleService {
          */
         @SuppressWarnings("unchecked")
         public Flux<DeclarationFiscaleDto> getAll() {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMapMany(tenant_id -> {
-                                        String cache_key = CACHE_KEY_PREFIX + "all:" + tenant_id;
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMapMany(organization_id -> {
+                                        String cache_key = CACHE_KEY_PREFIX + "all:" + organization_id;
 
                                         return redis_service.get(cache_key, java.util.List.class)
                                                         .flatMapMany(list -> Flux.fromIterable(
@@ -149,7 +149,7 @@ public class DeclarationFiscaleService {
                                                         .switchIfEmpty(
                                                                         declaration_repository
                                                                                         .findByTenantIdOrderByDateGenerationDesc(
-                                                                                                        tenant_id)
+                                                                                                        organization_id)
                                                                                         .map(this::mapToDto)
                                                                                         .collectList()
                                                                                         .flatMap(list -> redis_service
@@ -168,9 +168,9 @@ public class DeclarationFiscaleService {
          * @return list of declaration DTOs
          */
         public Flux<DeclarationFiscaleDto> getByType(String type) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMapMany(tenant_id -> declaration_repository
-                                                .findByTenantIdAndTypeDeclaration(tenant_id, type)
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMapMany(organization_id -> declaration_repository
+                                                .findByTenantIdAndTypeDeclaration(organization_id, type)
                                                 .map(this::mapToDto));
         }
 
@@ -182,9 +182,9 @@ public class DeclarationFiscaleService {
          * @return list of declaration DTOs
          */
         public Flux<DeclarationFiscaleDto> getByPeriodRange(LocalDate start, LocalDate end) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMapMany(tenant_id -> declaration_repository
-                                                .findByTenantIdAndPeriodRange(tenant_id, start, end)
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMapMany(organization_id -> declaration_repository
+                                                .findByTenantIdAndPeriodRange(organization_id, start, end)
                                                 .map(this::mapToDto));
         }
 
@@ -195,16 +195,16 @@ public class DeclarationFiscaleService {
          */
         @Transactional
         public Mono<Void> delete(UUID id) {
-                return ReactiveTenantContext.getTenantId()
-                                .zipWith(ReactiveTenantContext.getCurrentTenantAsTenant())
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .zipWith(ReactiveOrganizationContext.getCurrentTenantAsTenant())
                                 .flatMap(tuple -> {
-                                        UUID tenant_id = tuple.getT1();
-                                        Tenant tenant = tuple.getT2();
+                                        UUID organization_id = tuple.getT1();
+                                        Organization tenant = tuple.getT2();
                                         String current_user = Optional
-                                                        .ofNullable(ReactiveTenantContext.getCurrentUser().block())
+                                                        .ofNullable(ReactiveOrganizationContext.getCurrentUser().block())
                                                         .orElse("system"); // TODO: reactive
 
-                                        return declaration_repository.findByTenantIdAndId(tenant_id, id)
+                                        return declaration_repository.findByTenantIdAndId(organization_id, id)
                                                         .switchIfEmpty(
                                                                         Mono.error(new ResourceNotFoundException(
                                                                                         "Tax declaration",
@@ -215,7 +215,7 @@ public class DeclarationFiscaleService {
                                                                                 .then(redis_service
                                                                                                 .delete(CACHE_KEY_PREFIX
                                                                                                                 + "all:"
-                                                                                                                + tenant_id))
+                                                                                                                + organization_id))
                                                                                 .then(logAudit(tenant, current_user,
                                                                                                 "TAX_DECLARATION_DELETED",
                                                                                                 "Deleted tax declaration: "
@@ -225,7 +225,7 @@ public class DeclarationFiscaleService {
                                                         })
                                                         .doOnSuccess(v -> log.info(
                                                                         "Deleted tax declaration {} for tenant {}", id,
-                                                                        tenant_id));
+                                                                        organization_id));
                                 });
         }
 
@@ -250,7 +250,7 @@ public class DeclarationFiscaleService {
                                 .build();
         }
 
-        private Mono<Void> logAudit(Tenant tenant, String utilisateur, String action, String details) {
+        private Mono<Void> logAudit(Organization tenant, String utilisateur, String action, String details) {
                 // NOTE: Does KafkaService.sendAuditLog return void/future? Assuming I can wrap
                 // it or it needs update.
                 // Assuming wrapping in fromRunnable or similar if it's void, but check
@@ -276,10 +276,10 @@ public class DeclarationFiscaleService {
          */
         @Transactional
         public Mono<DeclarationFiscaleDto> generateDeclaration(String type, LocalDate start, LocalDate end) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> {
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
                                         if ("TVA".equalsIgnoreCase(type)) {
-                                                return generator_service.generateVatDeclaration(tenant_id, start, end)
+                                                return generator_service.generateVatDeclaration(organization_id, start, end)
                                                                 .flatMap(generated -> saveDeclaration(
                                                                                 mapToDto(generated)));
                                         }

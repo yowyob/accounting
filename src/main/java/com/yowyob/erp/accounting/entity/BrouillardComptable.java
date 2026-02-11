@@ -29,8 +29,8 @@ public class BrouillardComptable implements SettablePersistable<UUID> {
     @Id
     private UUID id;
 
-    @Column("tenant_id")
-    private UUID tenantId;
+    @Column("organization_id")
+    private UUID organizationId;
 
     @Column("type")
     private BrouillardType type;

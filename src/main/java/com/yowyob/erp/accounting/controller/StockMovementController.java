@@ -51,14 +51,14 @@ public class StockMovementController {
         public reactor.core.publisher.Mono<ResponseEntity<ApiResponseWrapper<Map<String, Object>>>> creerMouvement(
                         @RequestBody Map<String, Object> mouvement) {
 
-                return com.yowyob.erp.config.tenant.ReactiveTenantContext.getCurrentUser()
+                return com.yowyob.erp.config.organization.ReactiveOrganizationContext.getCurrentUser()
                                 .defaultIfEmpty("system")
                                 .flatMap(user -> stock_service.creerMouvementStock(mouvement, user)
                                                 .map(resultat -> ResponseEntity.status(HttpStatus.CREATED)
                                                                 .body(ApiResponseWrapper.success(
                                                                                 resultat,
                                                                                 "Mouvement de stock créé avec succès")))
-                                                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext.captureFromThreadLocal()));
+                                                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext.captureFromThreadLocal()));
         }
 
         /**
@@ -77,15 +77,15 @@ public class StockMovementController {
                         @RequestParam(required = false) String type,
                         @RequestParam(required = false) String produit_id) {
 
-                return com.yowyob.erp.config.tenant.ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> {
-                                        log.info("📋 Getting stock movements for tenant {}", tenant_id);
-                                        return stock_service.getMouvements(tenant_id, type, produit_id)
+                return com.yowyob.erp.config.organization.ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
+                                        log.info("📋 Getting stock movements for tenant {}", organization_id);
+                                        return stock_service.getMouvements(organization_id, type, produit_id)
                                                         .collectList()
                                                         .map(mouvements -> ResponseEntity.ok(ApiResponseWrapper.success(
                                                                         mouvements,
                                                                         "Liste des mouvements récupérée")))
-                                                        .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext.captureFromThreadLocal());
+                                                        .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext.captureFromThreadLocal());
                                 });
         }
 
@@ -105,15 +105,15 @@ public class StockMovementController {
         })
         public reactor.core.publisher.Mono<ResponseEntity<ApiResponseWrapper<Map<String, Object>>>> getImpactComptable(
                         @PathVariable UUID mouvementId) {
-                return com.yowyob.erp.config.tenant.ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> {
+                return com.yowyob.erp.config.organization.ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
                                         log.info("💰 Getting accounting impact for stock movement {} of tenant {}",
-                                                        mouvementId, tenant_id);
+                                                        mouvementId, organization_id);
                                         return stock_service.getImpactComptable(mouvementId)
                                                         .map(impact -> ResponseEntity.ok(ApiResponseWrapper.success(
                                                                         impact,
                                                                         "Impact comptable récupéré")))
-                                                        .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext.captureFromThreadLocal());
+                                                        .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext.captureFromThreadLocal());
                                 });
         }
 }

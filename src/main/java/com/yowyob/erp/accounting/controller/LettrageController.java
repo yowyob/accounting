@@ -2,7 +2,7 @@ package com.yowyob.erp.accounting.controller;
 
 import com.yowyob.erp.accounting.service.LettrageAutomatiqueService;
 import com.yowyob.erp.common.dto.ApiResponseWrapper;
-import com.yowyob.erp.config.tenant.TenantContext;
+import com.yowyob.erp.config.organization.OrganizationContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -47,10 +47,10 @@ public class LettrageController {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Accès refusé")
         })
         public reactor.core.publisher.Mono<ResponseEntity<ApiResponseWrapper<Integer>>> lancerLettrageAutomatique() {
-                UUID tenant_id = TenantContext.getCurrentTenant();
-                log.info("🔗 Launching automatic reconciliation for tenant {}", tenant_id);
+                UUID organization_id = OrganizationContext.getCurrentTenant();
+                log.info("🔗 Launching automatic reconciliation for tenant {}", organization_id);
 
-                return lettrage_service.lettrerToutLeTenant(tenant_id)
+                return lettrage_service.lettrerToutLeTenant(organization_id)
                                 .map(paires_lettrees -> ResponseEntity.ok(ApiResponseWrapper.success(
                                                 paires_lettrees,
                                                 paires_lettrees + " paires d'écritures lettrées automatiquement")));
@@ -69,8 +69,8 @@ public class LettrageController {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Non authentifié")
         })
         public ResponseEntity<ApiResponseWrapper<String>> getStatutLettrage() {
-                UUID tenant_id = TenantContext.getCurrentTenant();
-                log.info("📊 Getting reconciliation status for tenant {}", tenant_id);
+                UUID organization_id = OrganizationContext.getCurrentTenant();
+                log.info("📊 Getting reconciliation status for tenant {}", organization_id);
 
                 // This would require a new method in the service to get statistics
                 String status = "Fonctionnalité de statistiques à implémenter dans LettrageAutomatiqueService";

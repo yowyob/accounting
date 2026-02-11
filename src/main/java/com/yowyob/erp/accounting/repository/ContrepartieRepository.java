@@ -16,14 +16,14 @@ import java.util.UUID;
 @Repository
 public interface ContrepartieRepository extends R2dbcRepository<Contrepartie, UUID> {
 
-        @Query("SELECT * FROM contreparties WHERE tenant_id = :tenant_id AND operation_comptable_id = :operation_comptable_id")
-        Flux<Contrepartie> findByTenant_IdAndOperation_comptable_Id(@Param("tenant_id") UUID tenant_id,
+        @Query("SELECT * FROM contreparties WHERE organization_id = :organization_id AND operation_comptable_id = :operation_comptable_id")
+        Flux<Contrepartie> findByTenant_IdAndOperation_comptable_Id(@Param("organization_id") UUID organization_id,
                         @Param("operation_comptable_id") UUID operation_comptable_id);
 
-        @Query("SELECT * FROM contreparties WHERE tenant_id = :tenant_id AND compte_id = :compte_id")
-        Flux<Contrepartie> findByTenant_IdAndCompte_id(@Param("tenant_id") UUID tenant_id, @Param("compte_id") UUID compte_id);
+        @Query("SELECT * FROM contreparties WHERE organization_id = :organization_id AND compte_id = :compte_id")
+        Flux<Contrepartie> findByTenant_IdAndCompte_id(@Param("organization_id") UUID organization_id, @Param("compte_id") UUID compte_id);
 
-        @Query("DELETE FROM contreparties WHERE tenant_id = :tenant_id AND operation_comptable_id = :operation_comptable_id")
-        Mono<Void> deleteByTenantIdAndOperationComptableId(@Param("tenant_id") UUID tenant_id,
+        @Query("DELETE FROM contreparties WHERE organization_id = :organization_id AND operation_comptable_id = :operation_comptable_id")
+        Mono<Void> deleteByTenantIdAndOperationComptableId(@Param("organization_id") UUID organization_id,
                         @Param("operation_comptable_id") UUID operation_comptable_id);
 }

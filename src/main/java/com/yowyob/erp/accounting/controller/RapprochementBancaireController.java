@@ -56,7 +56,7 @@ public class RapprochementBancaireController {
     private ReleveBancaire mapToEntity(ReleveBancaireDto dto) {
         return ReleveBancaire.builder()
                 .id(dto.getId())
-                .tenantId(dto.getTenantId())
+                .organizationId(dto.getOrganizationId())
                 .compteId(dto.getCompteId())
                 .dateOperation(dto.getDateOperation())
                 .dateValeur(dto.getDateValeur())

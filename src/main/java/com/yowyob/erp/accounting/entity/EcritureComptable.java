@@ -30,8 +30,8 @@ public class EcritureComptable implements SettablePersistable<UUID> {
     @Id
     private UUID id;
 
-    @Column("tenant_id")
-    private UUID tenantId;
+    @Column("organization_id")
+    private UUID organizationId;
 
     @Column("journal_id")
     private UUID journal_id;
@@ -100,7 +100,7 @@ public class EcritureComptable implements SettablePersistable<UUID> {
     private String validated_by;
 
     @Transient
-    private Tenant tenant;
+    private Organization tenant;
 
     @Transient
     private JournalComptable journal;

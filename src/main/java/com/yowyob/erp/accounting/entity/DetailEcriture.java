@@ -34,8 +34,8 @@ public class DetailEcriture implements SettablePersistable<UUID> {
     @Id
     private UUID id;
 
-    @Column("tenant_id")
-    private UUID tenantId;
+    @Column("organization_id")
+    private UUID organizationId;
 
     @Column("ecriture_id")
     private UUID ecriture_id;
@@ -90,7 +90,7 @@ public class DetailEcriture implements SettablePersistable<UUID> {
     private String updated_by;
 
     @Transient
-    private Tenant tenant;
+    private Organization tenant;
 
     @Transient
     private EcritureComptable ecriture;

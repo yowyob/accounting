@@ -22,13 +22,13 @@ import java.util.UUID;
 public class ExerciceComptableInitializationService implements CommandLineRunner {
 
     private final ExerciceComptableRepository exercice_repository;
-    private final UUID tenant_id;
+    private final UUID organization_id;
 
     public ExerciceComptableInitializationService(
             ExerciceComptableRepository exercice_repository,
-            @Value("${app.tenant.default-tenant:550e8400-e29b-41d4-a716-446655440000}") String tenant_id_str) {
+            @Value("${app.tenant.default-tenant:550e8400-e29b-41d4-a716-446655440000}") String organization_id_str) {
         this.exercice_repository = exercice_repository;
-        this.tenant_id = UUID.fromString(tenant_id_str);
+        this.organization_id = UUID.fromString(organization_id_str);
     }
 
     @Override
@@ -41,11 +41,11 @@ public class ExerciceComptableInitializationService implements CommandLineRunner
     }
 
     private Mono<Void> createExerciceIfNotExists(String code, String libelle, LocalDate start, LocalDate end) {
-        return exercice_repository.findByTenantIdAndCode(tenant_id, code)
+        return exercice_repository.findByTenantIdAndCode(organization_id, code)
                 .switchIfEmpty(Mono.defer(() -> {
-                    log.info("Creating initial fiscal year '{}' for tenant {}", code, tenant_id);
+                    log.info("Creating initial fiscal year '{}' for tenant {}", code, organization_id);
                     ExerciceComptable exercice = ExerciceComptable.builder()
-                            .tenantId(tenant_id)
+                            .organizationId(organization_id)
                             .code(code)
                             .libelle(libelle)
                             .date_debut(start)

@@ -2,7 +2,7 @@ package com.yowyob.erp.accounting.controller;
 
 import com.yowyob.erp.accounting.service.CsvReleveBancaireService;
 import com.yowyob.erp.common.dto.ApiResponseWrapper;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -48,7 +48,7 @@ public class ReleveBancaireController {
                                 .map(transactions -> ResponseEntity.ok(ApiResponseWrapper.success(
                                                 transactions,
                                                 transactions.size() + " transactions détectées dans le relevé")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
@@ -60,12 +60,12 @@ public class ReleveBancaireController {
         public Mono<ResponseEntity<ApiResponseWrapper<List<Map<String, Object>>>>> getListeReleves() {
                 log.info("📋 Getting bank statements list");
 
-                // Assuming tenantId is handled reactively within the service
+                // Assuming organizationId is handled reactively within the service
                 return releve_service.getListeReleves(null)
                                 .map(releves -> ResponseEntity.ok(ApiResponseWrapper.success(
                                                 releves,
                                                 "Liste des relevés récupérée")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
@@ -83,6 +83,6 @@ public class ReleveBancaireController {
                                 .map(resultat -> ResponseEntity.ok(ApiResponseWrapper.success(
                                                 resultat,
                                                 "Relevé importé avec succès")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 }

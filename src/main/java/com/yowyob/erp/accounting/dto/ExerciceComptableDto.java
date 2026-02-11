@@ -21,7 +21,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class ExerciceComptableDto {
     private UUID id;
-    private UUID tenant_id;
+    private UUID organization_id;
     private String code;
     private String libelle;
     private LocalDate date_debut;

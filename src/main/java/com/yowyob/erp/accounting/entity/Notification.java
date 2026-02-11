@@ -21,8 +21,8 @@ public class Notification {
     @Id
     private UUID id;
 
-    @Column("tenant_id")
-    private UUID tenantId;
+    @Column("organization_id")
+    private UUID organizationId;
 
     @Column("user_id")
     private String userId;

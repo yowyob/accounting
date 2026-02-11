@@ -35,7 +35,7 @@ public interface ComptableObject {
      * 
      * @return the tenant ID
      */
-    UUID get_tenant_id();
+    UUID get_organization_id();
 
     /**
      * Total amount of the operation.
@@ -109,5 +109,5 @@ public interface ComptableObject {
      * @param ecriture the accounting entry
      * @return the list of entry details
      */
-    List<DetailEcriture> generate_ecriture_details(Tenant tenant, EcritureComptable ecriture);
+    List<DetailEcriture> generate_ecriture_details(Organization tenant, EcritureComptable ecriture);
 }

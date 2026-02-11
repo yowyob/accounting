@@ -68,12 +68,12 @@ public class RedisService {
     /**
      * Account balance management
      */
-    public Mono<Boolean> saveAccountBalance(String tenant_id, String account_number, Double balance) {
-        return save(String.format("account:balance:%s:%s", tenant_id, account_number), balance, Duration.ofMinutes(30));
+    public Mono<Boolean> saveAccountBalance(String organization_id, String account_number, Double balance) {
+        return save(String.format("account:balance:%s:%s", organization_id, account_number), balance, Duration.ofMinutes(30));
     }
 
-    public Mono<Double> getAccountBalance(String tenant_id, String account_number) {
-        return get(String.format("account:balance:%s:%s", tenant_id, account_number), Double.class);
+    public Mono<Double> getAccountBalance(String organization_id, String account_number) {
+        return get(String.format("account:balance:%s:%s", organization_id, account_number), Double.class);
     }
 
     /**

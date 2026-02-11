@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -67,15 +67,15 @@ public class RapportController {
                                         .body(ApiResponseWrapper.error("Start date must precede end date")));
                 }
 
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> rapport_service
-                                                .generateBilan(tenant_id, date_debut.toString(), date_fin.toString()))
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> rapport_service
+                                                .generateBilan(organization_id, date_debut.toString(), date_fin.toString()))
                                 .map(bilan -> {
                                         log.info("📊 Balance sheet generated between {} and {}", date_debut, date_fin);
                                         return ResponseEntity.ok(ApiResponseWrapper.success(bilan,
                                                         "Balance sheet generated successfully"));
                                 })
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
@@ -92,8 +92,8 @@ public class RapportController {
                                         .body(ApiResponseWrapper.error("Start date must precede end date")));
                 }
 
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> rapport_service.generateCompteResultat(tenant_id,
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> rapport_service.generateCompteResultat(organization_id,
                                                 date_debut.toString(), date_fin.toString()))
                                 .map(resultat -> {
                                         log.info("📈 Income statement generated between {} and {}", date_debut,
@@ -102,7 +102,7 @@ public class RapportController {
                                                         .ok(ApiResponseWrapper.success(resultat,
                                                                         "Income statement generated successfully"));
                                 })
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
@@ -119,12 +119,12 @@ public class RapportController {
                                         .body(ApiResponseWrapper.error("Start date must precede end date")));
                 }
 
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> rapport_service.generateGrandLivre(tenant_id,
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> rapport_service.generateGrandLivre(organization_id,
                                                 date_debut.toString(), date_fin.toString()))
                                 .map(grandLivre -> ResponseEntity.ok(ApiResponseWrapper.success(grandLivre,
                                                 "General Ledger generated successfully")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
@@ -141,12 +141,12 @@ public class RapportController {
                                         .body(ApiResponseWrapper.error("Start date must precede end date")));
                 }
 
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> rapport_service.generateBalanceDesComptes(tenant_id,
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> rapport_service.generateBalanceDesComptes(organization_id,
                                                 date_debut.toString(), date_fin.toString()))
                                 .map(balance -> ResponseEntity.ok(ApiResponseWrapper.success(balance,
                                                 "Trial Balance generated successfully")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
@@ -158,9 +158,9 @@ public class RapportController {
                         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date_debut,
                         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date_fin) {
 
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> rapport_service
-                                                .generateBilan(tenant_id, date_debut.toString(), date_fin.toString()))
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> rapport_service
+                                                .generateBilan(organization_id, date_debut.toString(), date_fin.toString()))
                                 .flatMap(bilan -> Mono.fromCallable(() -> {
                                         ByteArrayOutputStream out = new ByteArrayOutputStream();
                                         Document document = new Document(PageSize.A4);
@@ -203,7 +203,7 @@ public class RapportController {
                                 }).subscribeOn(Schedulers.boundedElastic())
                                                 .doOnError(e -> log.error("Error generating PDF for Balance Sheet: {}",
                                                                 e.getMessage())))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
@@ -215,8 +215,8 @@ public class RapportController {
                         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date_debut,
                         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date_fin) {
 
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> rapport_service.generateCompteResultat(tenant_id,
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> rapport_service.generateCompteResultat(organization_id,
                                                 date_debut.toString(), date_fin.toString()))
                                 .flatMap(compte_resultat -> Mono.fromCallable(() -> {
                                         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -265,7 +265,7 @@ public class RapportController {
                                                 .doOnError(e -> log.error(
                                                                 "Error generating PDF for Income Statement: {}",
                                                                 e.getMessage())))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
@@ -277,8 +277,8 @@ public class RapportController {
                         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date_debut,
                         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date_fin) {
 
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> rapport_service.generateGrandLivre(tenant_id,
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> rapport_service.generateGrandLivre(organization_id,
                                                 date_debut.toString(), date_fin.toString()))
                                 .flatMap(grandLivre -> Mono.fromCallable(() -> {
                                         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -364,7 +364,7 @@ public class RapportController {
                                                 .doOnError(e -> log.error(
                                                                 "Error generating PDF for General Ledger: {}",
                                                                 e.getMessage())))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
@@ -376,8 +376,8 @@ public class RapportController {
                         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date_debut,
                         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date_fin) {
 
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> rapport_service.generateBalanceDesComptes(tenant_id,
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> rapport_service.generateBalanceDesComptes(organization_id,
                                                 date_debut.toString(), date_fin.toString()))
                                 .flatMap(balance -> Mono.fromCallable(() -> {
                                         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -438,6 +438,6 @@ public class RapportController {
                                                 .doOnError(e -> log.error(
                                                                 "Error generating PDF for Trial Balance: {}",
                                                                 e.getMessage())))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 }

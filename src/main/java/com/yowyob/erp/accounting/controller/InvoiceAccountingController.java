@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 
 import jakarta.validation.Valid;
 
@@ -41,7 +41,7 @@ public class InvoiceAccountingController {
                                 .map(result -> ResponseEntity
                                                 .ok(ApiResponseWrapper.success(result,
                                                                 "Supplier invoice processed successfully")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         @PostMapping("/sale")
@@ -54,6 +54,6 @@ public class InvoiceAccountingController {
                                 .map(result -> ResponseEntity
                                                 .ok(ApiResponseWrapper.success(result,
                                                                 "Customer invoice processed successfully")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 }

@@ -22,16 +22,16 @@ public class AccountingSettingService {
 
     private final AccountingSettingRepository repository;
 
-    public Mono<AccountingSetting> getSetting(UUID tenantId, BrouillardType type, UUID journalId) {
+    public Mono<AccountingSetting> getSetting(UUID organizationId, BrouillardType type, UUID journalId) {
         if (journalId != null) {
-            return repository.findByTenantIdAndObjetTypeAndJournalId(tenantId, type, journalId)
-                    .switchIfEmpty(repository.findByTenantIdAndObjetTypeAndJournalIdIsNull(tenantId, type));
+            return repository.findByTenantIdAndObjetTypeAndJournalId(organizationId, type, journalId)
+                    .switchIfEmpty(repository.findByTenantIdAndObjetTypeAndJournalIdIsNull(organizationId, type));
         }
-        return repository.findByTenantIdAndObjetTypeAndJournalIdIsNull(tenantId, type);
+        return repository.findByTenantIdAndObjetTypeAndJournalIdIsNull(organizationId, type);
     }
 
-    public Mono<Boolean> shouldUseBrouillard(UUID tenantId, BrouillardType type, BigDecimal amount, UUID journalId) {
-        return getSetting(tenantId, type, journalId)
+    public Mono<Boolean> shouldUseBrouillard(UUID organizationId, BrouillardType type, BigDecimal amount, UUID journalId) {
+        return getSetting(organizationId, type, journalId)
                 .map(setting -> {
                     if (setting.getModeSaisie() == ModeSaisie.AUTOMATIQUE) {
                         return false;
@@ -44,27 +44,27 @@ public class AccountingSettingService {
                 .defaultIfEmpty(true); // Default to semi-automatic (draft) if no setting found
     }
 
-    public Flux<AccountingSetting> getAllSettings(UUID tenantId) {
-        return repository.findAllByTenantId(tenantId);
+    public Flux<AccountingSetting> getAllSettings(UUID organizationId) {
+        return repository.findAllByTenantId(organizationId);
     }
     
-    public Mono<AccountingSetting> updateSetting(UUID tenantId, AccountingSettingDto dto) {
+    public Mono<AccountingSetting> updateSetting(UUID organizationId, AccountingSettingDto dto) {
         if (dto.getObjetType() == null) {
             return Mono.error(new IllegalArgumentException("Object type is required"));
         }
 
         Mono<AccountingSetting> existingSetting;
         if (dto.getJournalId() != null) {
-            existingSetting = repository.findByTenantIdAndObjetTypeAndJournalId(tenantId, dto.getObjetType(), dto.getJournalId());
+            existingSetting = repository.findByTenantIdAndObjetTypeAndJournalId(organizationId, dto.getObjetType(), dto.getJournalId());
         } else {
-            existingSetting = repository.findByTenantIdAndObjetTypeAndJournalIdIsNull(tenantId, dto.getObjetType());
+            existingSetting = repository.findByTenantIdAndObjetTypeAndJournalIdIsNull(organizationId, dto.getObjetType());
         }
 
         return existingSetting
                 .switchIfEmpty(Mono.defer(() -> {
                     AccountingSetting newSetting = AccountingSetting.builder()
                         .id(UUID.randomUUID())
-                        .tenantId(tenantId)
+                        .organizationId(organizationId)
                         .objetType(dto.getObjetType())
                         .journalId(dto.getJournalId())
                         .createdAt(LocalDateTime.now())

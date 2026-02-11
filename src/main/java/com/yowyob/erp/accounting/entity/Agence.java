@@ -11,7 +11,7 @@ import java.util.UUID;
 
 /**
  * Entity representing an Agency (Agence).
- * An Agency belongs to a Tenant.
+ * An Agency belongs to a Organization.
  *
  * @author ALD
  * @date 30.12.2025
@@ -28,8 +28,8 @@ public class Agence implements SettablePersistable<UUID> {
     @Builder.Default
     private UUID id = UUID.randomUUID();
 
-    @Column("tenant_id")
-    private UUID tenantId;
+    @Column("organization_id")
+    private UUID organizationId;
 
     private String name;
 

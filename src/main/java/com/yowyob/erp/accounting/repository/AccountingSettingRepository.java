@@ -12,9 +12,9 @@ import java.util.UUID;
 @Repository
 public interface AccountingSettingRepository extends R2dbcRepository<AccountingSetting, UUID> {
     
-    Mono<AccountingSetting> findByTenantIdAndObjetTypeAndJournalId(UUID tenantId, BrouillardType objetType, UUID journalId);
+    Mono<AccountingSetting> findByTenantIdAndObjetTypeAndJournalId(UUID organizationId, BrouillardType objetType, UUID journalId);
     
-    Mono<AccountingSetting> findByTenantIdAndObjetTypeAndJournalIdIsNull(UUID tenantId, BrouillardType objetType);
+    Mono<AccountingSetting> findByTenantIdAndObjetTypeAndJournalIdIsNull(UUID organizationId, BrouillardType objetType);
 
-    Flux<AccountingSetting> findAllByTenantId(UUID tenantId);
+    Flux<AccountingSetting> findAllByTenantId(UUID organizationId);
 }

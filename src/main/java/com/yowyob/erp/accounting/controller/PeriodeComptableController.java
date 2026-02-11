@@ -57,7 +57,7 @@ public class PeriodeComptableController {
                     log.error("Error creating period: {}", e.getMessage());
                     return Mono.error(new BusinessException("Error creating period: " + e.getMessage()));
                 })
-                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext.captureFromThreadLocal());
+                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext.captureFromThreadLocal());
     }
 
     /**
@@ -69,7 +69,7 @@ public class PeriodeComptableController {
         return periode_service.getPeriode(id)
                 .map(dto -> ResponseEntity.ok(ApiResponseWrapper.success(dto, "Accounting period found")))
                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Accounting period", id.toString())))
-                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext.captureFromThreadLocal());
+                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext.captureFromThreadLocal());
     }
 
     /**
@@ -81,7 +81,7 @@ public class PeriodeComptableController {
         return periode_service.getAllPeriodes()
                 .map(periodes -> ResponseEntity.ok(ApiResponseWrapper.success(periodes,
                         "Complete list of accounting periods retrieved successfully")))
-                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext.captureFromThreadLocal());
+                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext.captureFromThreadLocal());
     }
 
     /**
@@ -93,7 +93,7 @@ public class PeriodeComptableController {
         return periode_service.getByCode(code)
                 .map(dto -> ResponseEntity.ok(ApiResponseWrapper.success(dto, "Accounting period found")))
                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Accounting period", code)))
-                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext.captureFromThreadLocal());
+                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext.captureFromThreadLocal());
     }
 
     /**
@@ -106,7 +106,7 @@ public class PeriodeComptableController {
         return periode_service.getByDate(date)
                 .map(dto -> ResponseEntity.ok(ApiResponseWrapper.success(dto, "Period containing the date found")))
                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Accounting period", date.toString())))
-                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext.captureFromThreadLocal());
+                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext.captureFromThreadLocal());
     }
 
     /**
@@ -118,7 +118,7 @@ public class PeriodeComptableController {
         return periode_service.getNonClosedPeriodes()
                 .map(periodes -> ResponseEntity
                         .ok(ApiResponseWrapper.success(periodes, "Non-closed periods retrieved successfully")))
-                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext.captureFromThreadLocal());
+                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext.captureFromThreadLocal());
     }
 
     /**
@@ -136,7 +136,7 @@ public class PeriodeComptableController {
         return periode_service.getByRange(start_date, end_date)
                 .map(periodes -> ResponseEntity
                         .ok(ApiResponseWrapper.success(periodes, "Periods retrieved successfully")))
-                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext.captureFromThreadLocal());
+                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext.captureFromThreadLocal());
     }
 
     /**
@@ -154,7 +154,7 @@ public class PeriodeComptableController {
                     log.error("Error updating period {} : {}", id, e.getMessage());
                     return Mono.error(new BusinessException("Error updating period: " + e.getMessage()));
                 })
-                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext.captureFromThreadLocal());
+                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext.captureFromThreadLocal());
     }
 
     /**
@@ -172,7 +172,7 @@ public class PeriodeComptableController {
                     log.error("Error closing period {} : {}", id, e.getMessage());
                     return Mono.error(new BusinessException("Error closing period: " + e.getMessage()));
                 })
-                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext.captureFromThreadLocal());
+                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext.captureFromThreadLocal());
     }
 
     /**
@@ -191,6 +191,6 @@ public class PeriodeComptableController {
                     log.error("Error deleting period {} : {}", id, e.getMessage());
                     return Mono.error(new ResourceNotFoundException("Accounting period", id.toString()));
                 })
-                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext.captureFromThreadLocal());
+                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext.captureFromThreadLocal());
     }
 }

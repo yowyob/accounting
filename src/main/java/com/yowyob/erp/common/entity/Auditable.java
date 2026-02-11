@@ -4,8 +4,8 @@ import java.util.UUID;
 import java.time.LocalDateTime;
 
 public interface Auditable {
-    UUID getTenantId();
-    void setTenantId(UUID tenantId);
+    UUID getOrganizationId();
+    void setTenantId(UUID organizationId);
     LocalDateTime getCreatedAt();
     void setCreatedAt(LocalDateTime createdAt);
     LocalDateTime getUpdatedAt();

@@ -2,7 +2,7 @@ package com.yowyob.erp.accounting.serviceInitialization;
 
 import com.yowyob.erp.accounting.entity.Organization;
 import com.yowyob.erp.accounting.repository.OrganizationRepository;
-import com.yowyob.erp.accounting.repository.TenantRepository;
+import com.yowyob.erp.accounting.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -23,7 +23,7 @@ import reactor.core.publisher.Mono;
 public class OrganizationInitializationService implements CommandLineRunner {
 
     private final OrganizationRepository organization_repository;
-    private final TenantRepository tenant_repository;
+    private final OrganizationRepository tenant_repository;
 
     @Override
     public void run(String... args) {

@@ -13,7 +13,7 @@ import com.yowyob.erp.accounting.repository.PeriodeComptableRepository;
 import com.yowyob.erp.accounting.repository.CompteRepository;
 import com.yowyob.erp.common.constants.AppConstants;
 import com.yowyob.erp.common.exception.BusinessException;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -49,21 +49,21 @@ public class InvoiceAccountingService {
      */
     @Transactional
     public Mono<Object> accountSupplierInvoice(SupplierInvoiceDto invoice) {
-        return ReactiveTenantContext.getTenantId()
-                .flatMap(tenant_id -> {
-                    log.info("Processing supplier invoice: {} for tenant: {}", invoice.getNumeroFacture(), tenant_id);
+        return ReactiveOrganizationContext.getOrganizationId()
+                .flatMap(organization_id -> {
+                    log.info("Processing supplier invoice: {} for tenant: {}", invoice.getNumeroFacture(), organization_id);
                     
                     // 1. Resolve Journal to check settings
-                    return findJournal(tenant_id, AppConstants.JournalTypes.PURCHASES)
+                    return findJournal(organization_id, AppConstants.JournalTypes.PURCHASES)
                             .flatMap(journal -> {
                                 // 2. Check if we should create a draft
-                                return brouillard_service.shouldCreateDraft(tenant_id, BrouillardType.FACTURE_FOURNISSEUR, 
+                                return brouillard_service.shouldCreateDraft(organization_id, BrouillardType.FACTURE_FOURNISSEUR, 
                                         invoice.getMontantTTC(), journal.getId())
                                         .flatMap(shouldDraft -> {
                                             if (shouldDraft) {
                                                 LocalDate date = invoice.getDateFacturation() != null ? invoice.getDateFacturation() : LocalDate.now();
-                                                return findPeriode(tenant_id, date)
-                                                    .flatMap(periode -> brouillard_service.createDraft(tenant_id, 
+                                                return findPeriode(organization_id, date)
+                                                    .flatMap(periode -> brouillard_service.createDraft(organization_id, 
                                                             BrouillardType.FACTURE_FOURNISSEUR, 
                                                             invoice, 
                                                             invoice.getIdFacture().toString(), 
@@ -80,7 +80,7 @@ public class InvoiceAccountingService {
                                                     .map(this::mapToDto)); // We need a mapper from Entity to DTO for Brouillard
                                             } else {
                                                 // Create direct entry (existing logic)
-                                                return processDirectSupplierInvoice(tenant_id, invoice, journal);
+                                                return processDirectSupplierInvoice(organization_id, invoice, journal);
                                             }
                                         });
                             });
@@ -104,9 +104,9 @@ public class InvoiceAccountingService {
      */
     @Transactional
     public Mono<EcritureComptableDto> createDirectSupplierInvoiceEntry(SupplierInvoiceDto invoice) {
-        return ReactiveTenantContext.getTenantId()
-                .flatMap(tenant_id -> findJournal(tenant_id, AppConstants.JournalTypes.PURCHASES)
-                        .flatMap(journal -> processDirectSupplierInvoice(tenant_id, invoice, journal)));
+        return ReactiveOrganizationContext.getOrganizationId()
+                .flatMap(organization_id -> findJournal(organization_id, AppConstants.JournalTypes.PURCHASES)
+                        .flatMap(journal -> processDirectSupplierInvoice(organization_id, invoice, journal)));
     }
 
     /**
@@ -119,16 +119,16 @@ public class InvoiceAccountingService {
      */
     @Transactional
     public Mono<EcritureComptableDto> createDirectCustomerInvoiceEntry(CustomerInvoiceDto invoice) {
-        return ReactiveTenantContext.getTenantId()
-                .flatMap(tenant_id -> findJournal(tenant_id, AppConstants.JournalTypes.SALES)
-                        .flatMap(journal -> processDirectCustomerInvoice(tenant_id, invoice, journal)));
+        return ReactiveOrganizationContext.getOrganizationId()
+                .flatMap(organization_id -> findJournal(organization_id, AppConstants.JournalTypes.SALES)
+                        .flatMap(journal -> processDirectCustomerInvoice(organization_id, invoice, journal)));
     }
 
-    private Mono<EcritureComptableDto> processDirectSupplierInvoice(UUID tenant_id, SupplierInvoiceDto invoice, com.yowyob.erp.accounting.entity.JournalComptable journal) {
-        return findOrCreateAccount(tenant_id, invoice.getIdFournisseur(), invoice.getNomFournisseru(), "SUPPLIER")
+    private Mono<EcritureComptableDto> processDirectSupplierInvoice(UUID organization_id, SupplierInvoiceDto invoice, com.yowyob.erp.accounting.entity.JournalComptable journal) {
+        return findOrCreateAccount(organization_id, invoice.getIdFournisseur(), invoice.getNomFournisseru(), "SUPPLIER")
                 .flatMap(supplier_account -> {
                     LocalDate date = invoice.getDateFacturation() != null ? invoice.getDateFacturation() : LocalDate.now();
-                    return findPeriode(tenant_id, date)
+                    return findPeriode(organization_id, date)
                         .flatMap(periode -> {
 
                             List<DetailEcritureDto> details = new ArrayList<>();
@@ -168,7 +168,7 @@ public class InvoiceAccountingService {
                                     .montant_credit(invoice.getMontantTTC())
                                     .build());
 
-                            return resolveAccountIds(tenant_id, details, "PURCHASE")
+                            return resolveAccountIds(organization_id, details, "PURCHASE")
                                     .flatMap(finalDetails -> {
                                         EcritureComptableDto ecritureDto = EcritureComptableDto
                                                 .builder()
@@ -194,19 +194,19 @@ public class InvoiceAccountingService {
      */
     @Transactional
     public Mono<Object> accountCustomerInvoice(CustomerInvoiceDto invoice) {
-        return ReactiveTenantContext.getTenantId()
-                .flatMap(tenant_id -> {
-                    log.info("Processing customer invoice: {} for tenant: {}", invoice.getNumeroFacture(), tenant_id);
+        return ReactiveOrganizationContext.getOrganizationId()
+                .flatMap(organization_id -> {
+                    log.info("Processing customer invoice: {} for tenant: {}", invoice.getNumeroFacture(), organization_id);
                     
-                    return findJournal(tenant_id, AppConstants.JournalTypes.SALES)
+                    return findJournal(organization_id, AppConstants.JournalTypes.SALES)
                             .flatMap(journal -> {
-                                return brouillard_service.shouldCreateDraft(tenant_id, BrouillardType.FACTURE_CLIENT, 
+                                return brouillard_service.shouldCreateDraft(organization_id, BrouillardType.FACTURE_CLIENT, 
                                         invoice.getMontantTTC(), journal.getId())
                                         .flatMap(shouldDraft -> {
                                             if (shouldDraft) {
                                                 LocalDate date = invoice.getDateFacturation() != null ? invoice.getDateFacturation().toLocalDate() : LocalDate.now();
-                                                return findPeriode(tenant_id, date)
-                                                    .flatMap(periode -> brouillard_service.createDraft(tenant_id, 
+                                                return findPeriode(organization_id, date)
+                                                    .flatMap(periode -> brouillard_service.createDraft(organization_id, 
                                                             BrouillardType.FACTURE_CLIENT, 
                                                             invoice, 
                                                             invoice.getIdFacture().toString(), 
@@ -222,14 +222,14 @@ public class InvoiceAccountingService {
                                                             objectMapper.valueToTree(invoice.getAttachmentIds()))
                                                     .map(this::mapToDto));
                                             } else {
-                                                return processDirectCustomerInvoice(tenant_id, invoice, journal);
+                                                return processDirectCustomerInvoice(organization_id, invoice, journal);
                                             }
                                         });
                             });
                 });
     }
 
-    private Mono<EcritureComptableDto> processDirectCustomerInvoice(UUID tenant_id, CustomerInvoiceDto invoice, com.yowyob.erp.accounting.entity.JournalComptable journal) {
+    private Mono<EcritureComptableDto> processDirectCustomerInvoice(UUID organization_id, CustomerInvoiceDto invoice, com.yowyob.erp.accounting.entity.JournalComptable journal) {
         UUID clientId = null;
         try {
             if (invoice.getIdClient() != null) {
@@ -239,13 +239,13 @@ public class InvoiceAccountingService {
             log.warn("Invalid UUID for client ID: {}", invoice.getIdClient());
         }
 
-        return findOrCreateAccount(tenant_id, clientId, invoice.getNomClient(), "CLIENT")
+        return findOrCreateAccount(organization_id, clientId, invoice.getNomClient(), "CLIENT")
                 .flatMap(client_account -> {
                             LocalDate date_facture = invoice.getDateFacturation() != null
                                     ? invoice.getDateFacturation().toLocalDate()
                                     : LocalDate.now();
 
-                            return findPeriode(tenant_id, date_facture)
+                            return findPeriode(organization_id, date_facture)
                                     .flatMap(periode -> {
 
                                         List<DetailEcritureDto> details = new ArrayList<>();
@@ -285,7 +285,7 @@ public class InvoiceAccountingService {
                                                     .build());
                                         }
 
-                                        return resolveAccountIds(tenant_id, details, "SALE")
+                                        return resolveAccountIds(organization_id, details, "SALE")
                                                 .flatMap(finalDetails -> {
                                                     EcritureComptableDto ecritureDto = EcritureComptableDto
                                                             .builder()
@@ -306,13 +306,13 @@ public class InvoiceAccountingService {
                         });
     }
 
-    private Mono<Compte> findOrCreateAccount(UUID tenant_id, UUID external_id, String name, String type) {
+    private Mono<Compte> findOrCreateAccount(UUID organization_id, UUID external_id, String name, String type) {
         if (external_id == null) {
             return Mono.error(new BusinessException(
                     "External ID is required to find or create the accounting account for the " + type));
         }
 
-        return compte_repository.findByTenant_IdAndExternal_id(tenant_id, external_id)
+        return compte_repository.findByTenant_IdAndExternal_id(organization_id, external_id)
                 .switchIfEmpty(Mono.defer(() -> {
                     log.info("Account not found for {} with external ID {}, creating auto-generated account...", type,
                             external_id);
@@ -323,21 +323,21 @@ public class InvoiceAccountingService {
                 }));
     }
 
-    private Mono<com.yowyob.erp.accounting.entity.JournalComptable> findJournal(UUID tenant_id, String type) {
-        return journal_repository.findByTenant_IdAndType_journal(tenant_id, type)
+    private Mono<com.yowyob.erp.accounting.entity.JournalComptable> findJournal(UUID organization_id, String type) {
+        return journal_repository.findByTenant_IdAndType_journal(organization_id, type)
                 .filter(j -> Boolean.TRUE.equals(j.getActif()))
                 .next()
                 .switchIfEmpty(Mono
                         .error(new BusinessException("No active journal of type " + type + " found for this tenant")));
     }
 
-    private Mono<com.yowyob.erp.accounting.entity.PeriodeComptable> findPeriode(UUID tenant_id, LocalDate date) {
-        return periode_repository.findByTenant_IdAndDateInRange(tenant_id, date)
+    private Mono<com.yowyob.erp.accounting.entity.PeriodeComptable> findPeriode(UUID organization_id, LocalDate date) {
+        return periode_repository.findByTenant_IdAndDateInRange(organization_id, date)
                 .switchIfEmpty(
                         Mono.error(new BusinessException("No open accounting period found for the date " + date)));
     }
 
-    private Mono<List<DetailEcritureDto>> resolveAccountIds(UUID tenant_id, List<DetailEcritureDto> details,
+    private Mono<List<DetailEcritureDto>> resolveAccountIds(UUID organization_id, List<DetailEcritureDto> details,
             String context) {
         List<Mono<DetailEcritureDto>> monos = details.stream().map(d -> {
             if (d.getCompte_comptable_id() == null) {
@@ -355,7 +355,7 @@ public class InvoiceAccountingService {
                     name = context.equals("SALE") ? "Ventes de Marchandises" : "Achats de Marchandises";
                 }
 
-                return findOrCreateStandardAccount(tenant_id, prefix, type, name)
+                return findOrCreateStandardAccount(organization_id, prefix, type, name)
                         .map(c -> {
                             d.setCompte_comptable_id(c.getId());
                             return d;
@@ -374,13 +374,13 @@ public class InvoiceAccountingService {
         });
     }
 
-    private Mono<Compte> findOrCreateStandardAccount(UUID tenant_id, String prefix, String type, String name) {
-        return compte_repository.findByTenant_IdAndNo_compteStartingWith(tenant_id, prefix)
+    private Mono<Compte> findOrCreateStandardAccount(UUID organization_id, String prefix, String type, String name) {
+        return compte_repository.findByTenant_IdAndNo_compteStartingWith(organization_id, prefix)
                 .next()
                 .switchIfEmpty(Mono.defer(() -> {
                     log.info(
                             "Standard account with prefix {} not found for tenant {}, creating auto-generated account of type {}...",
-                            prefix, tenant_id, type);
+                            prefix, organization_id, type);
                     return compte_service.createAutoGeneratedAccount(name, type, "Auto-created standard account", null)
                             .flatMap(dto -> compte_repository.findById(dto.getId()));
                 }));

@@ -34,8 +34,8 @@ public class StockMovementService {
      * @param tenant    The context tenant
      */
     @Transactional
-    public Mono<Void> recordStockMovement(MouvementStockComptable mouvement, Tenant tenant) {
-        log.info("Processing reactive stock movement for Tenant: {}", tenant.getCode());
+    public Mono<Void> recordStockMovement(MouvementStockComptable mouvement, Organization tenant) {
+        log.info("Processing reactive stock movement for Organization: {}", tenant.getCode());
 
         // 1. Validate movement data
         if (mouvement.getQuantite() <= 0 || mouvement.getCout_unitaire().compareTo(BigDecimal.ZERO) <= 0) {
@@ -48,7 +48,7 @@ public class StockMovementService {
                         "No accounting period found for date: " + mouvement.get_date())))
                 .flatMap(periodeDto -> {
                     EcritureComptable ecriture = EcritureComptable.builder()
-                            .tenantId(tenant.getId())
+                            .organizationId(tenant.getId())
                             .libelle(mouvement.get_description())
                             .date_ecriture(mouvement.get_date())
                             .journal_id(mouvement.get_journal_comptable_id())
@@ -90,7 +90,7 @@ public class StockMovementService {
     /**
      * Récupère les mouvements de stock (Reactive).
      */
-    public Flux<java.util.Map<String, Object>> getMouvements(UUID tenant_id, String type, String produit_id) {
+    public Flux<java.util.Map<String, Object>> getMouvements(UUID organization_id, String type, String produit_id) {
         return Flux.empty();
     }
 

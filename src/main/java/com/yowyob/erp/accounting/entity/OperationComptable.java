@@ -34,8 +34,8 @@ public class OperationComptable implements SettablePersistable<UUID> {
     private UUID id;
 
     @NotNull
-    @Column("tenant_id")
-    private UUID tenantId;
+    @Column("organization_id")
+    private UUID organizationId;
 
     @NotBlank
     @Column("type_operation")
@@ -91,7 +91,7 @@ public class OperationComptable implements SettablePersistable<UUID> {
     private String updated_by;
 
     @Transient
-    private Tenant tenant;
+    private Organization tenant;
 
     @Transient
     private JournalComptable journal_comptable;

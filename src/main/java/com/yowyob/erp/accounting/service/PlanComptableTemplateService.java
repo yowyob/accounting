@@ -8,7 +8,7 @@ import com.yowyob.erp.accounting.dto.PlanComptableTemplateDto;
 import com.yowyob.erp.accounting.entity.PlanComptableTemplate;
 import com.yowyob.erp.accounting.repository.PlanComptableTemplateRepository;
 import com.yowyob.erp.common.service.ValidationService;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +32,7 @@ public class PlanComptableTemplateService {
      */
     @Transactional
     public Mono<PlanComptableTemplateDto> createAccount(PlanComptableTemplateDto dto) {
-        return ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+        return ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                 .flatMap(current_user -> {
                     log.info("Creating accounting template account {}", dto.getNumero());
 

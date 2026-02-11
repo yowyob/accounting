@@ -9,7 +9,7 @@ public class UserInfo {
     private String username;
     private String email;
     private String phoneNumber;
-    private String tenantId; // To check
+    private String organizationId; // To check
     private String[] roles;
     private boolean active;
 }

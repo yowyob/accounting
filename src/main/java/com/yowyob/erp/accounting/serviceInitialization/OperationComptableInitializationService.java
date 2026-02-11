@@ -34,7 +34,7 @@ public class OperationComptableInitializationService implements CommandLineRunne
         private final JournalComptableRepository journal_repository;
         private final CompteRepository compte_repository;
         private final RedisService redis_service;
-        private final UUID tenant_id;
+        private final UUID organization_id;
 
         public OperationComptableInitializationService(
                         OperationComptableRepository operation_repository,
@@ -42,13 +42,13 @@ public class OperationComptableInitializationService implements CommandLineRunne
                         JournalComptableRepository journal_repository,
                         CompteRepository compte_repository,
                         RedisService redis_service,
-                        @Value("${app.tenant.default-tenant:550e8400-e29b-41d4-a716-446655440000}") String tenant_id_str) {
+                        @Value("${app.tenant.default-tenant:550e8400-e29b-41d4-a716-446655440000}") String organization_id_str) {
                 this.operation_repository = operation_repository;
                 this.contrepartie_repository = contrepartie_repository;
                 this.journal_repository = journal_repository;
                 this.compte_repository = compte_repository;
                 this.redis_service = redis_service;
-                this.tenant_id = UUID.fromString(tenant_id_str);
+                this.organization_id = UUID.fromString(organization_id_str);
         }
 
         @Override
@@ -56,9 +56,9 @@ public class OperationComptableInitializationService implements CommandLineRunne
                 log.info("Starting accounting operations initialization...");
 
                 Mono.zip(
-                                journal_repository.findByTenant_IdAndCode_journal(tenant_id, "AN"),
-                                journal_repository.findByTenant_IdAndCode_journal(tenant_id, "VE"),
-                                journal_repository.findByTenant_IdAndCode_journal(tenant_id, "TR"))
+                                journal_repository.findByTenant_IdAndCode_journal(organization_id, "AN"),
+                                journal_repository.findByTenant_IdAndCode_journal(organization_id, "VE"),
+                                journal_repository.findByTenant_IdAndCode_journal(organization_id, "TR"))
                                 .flatMap(tuple -> {
                                         JournalComptable journalAN = tuple.getT1();
                                         JournalComptable journalVE = tuple.getT2();
@@ -83,7 +83,7 @@ public class OperationComptableInitializationService implements CommandLineRunne
                                                                         BigDecimal.valueOf(5_000_000.0),
                                                                         List.of(new CPDef("401000", "DEBIT", "TTC",
                                                                                         false))))
-                                                        .then(redis_service.delete("operations:all:" + tenant_id))
+                                                        .then(redis_service.delete("operations:all:" + organization_id))
                                                         .then();
                                 })
                                 .doOnSuccess(v -> log.info("Accounting operations initialization completed."))
@@ -107,14 +107,14 @@ public class OperationComptableInitializationService implements CommandLineRunne
                         List<CPDef> cpDefs) {
 
                 return operation_repository
-                                .findByTenant_IdAndType_operationAndMode_reglement(tenant_id, type_operation,
+                                .findByTenant_IdAndType_operationAndMode_reglement(organization_id, type_operation,
                                                 mode_reglement)
                                 .flatMap(existing -> {
                                         // If exists but broken (null compte_principal_id), fix it
                                         if (existing.getCompte_principal_id() == null) {
                                                 log.info("Fixing operation: {} - {}", type_operation, mode_reglement);
                                                 return compte_repository
-                                                                .findByTenant_IdAndNo_compte(tenant_id, no_compte)
+                                                                .findByTenant_IdAndNo_compte(organization_id, no_compte)
                                                                 .flatMap(compte -> {
                                                                         existing.setCompte_principal_id(compte.getId());
                                                                         existing.setJournal_comptable_id(journal != null
@@ -130,12 +130,12 @@ public class OperationComptableInitializationService implements CommandLineRunne
                                 })
                                 .switchIfEmpty(Mono.defer(() -> {
                                         log.info("Creating operation: {} - {}", type_operation, mode_reglement);
-                                        return compte_repository.findByTenant_IdAndNo_compte(tenant_id, no_compte)
+                                        return compte_repository.findByTenant_IdAndNo_compte(organization_id, no_compte)
                                                         .flatMap(compte -> {
                                                                 OperationComptable operation = OperationComptable
                                                                                 .builder()
                                                                                 .id(UUID.randomUUID())
-                                                                                .tenantId(tenant_id)
+                                                                                .organizationId(organization_id)
                                                                                 .type_operation(type_operation)
                                                                                 .mode_reglement(mode_reglement)
                                                                                 .compte_principal_id(compte.getId())
@@ -160,7 +160,7 @@ public class OperationComptableInitializationService implements CommandLineRunne
                                 .flatMap(saved -> {
                                         // Check and add counterparties
                                         return contrepartie_repository
-                                                        .findByTenant_IdAndOperation_comptable_Id(tenant_id,
+                                                        .findByTenant_IdAndOperation_comptable_Id(organization_id,
                                                                         saved.getId())
                                                         .collectList()
                                                         .flatMap(existingCps -> {
@@ -168,13 +168,13 @@ public class OperationComptableInitializationService implements CommandLineRunne
                                                                         return Flux.fromIterable(cpDefs)
                                                                                         .flatMap(cpDef -> compte_repository
                                                                                                         .findByTenant_IdAndNo_compte(
-                                                                                                                        tenant_id,
+                                                                                                                        organization_id,
                                                                                                                         cpDef.noCompte())
                                                                                                         .flatMap(compte -> {
                                                                                                                 Contrepartie cp = Contrepartie
                                                                                                                                 .builder()
                                                                                                                                 .id(UUID.randomUUID())
-                                                                                                                                .tenantId(tenant_id)
+                                                                                                                                .organizationId(organization_id)
                                                                                                                                 .operation_comptable_id(
                                                                                                                                                 saved.getId())
                                                                                                                                 .compte_id(compte

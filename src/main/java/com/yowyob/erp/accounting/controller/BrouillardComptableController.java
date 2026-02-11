@@ -14,7 +14,7 @@ import com.yowyob.erp.accounting.entity.BrouillardType;
 import com.yowyob.erp.accounting.service.BrouillardComptableService;
 import com.yowyob.erp.accounting.service.InvoiceAccountingService;
 import com.yowyob.erp.common.dto.ApiResponseWrapper;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -51,15 +51,15 @@ public class BrouillardComptableController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         
-        return ReactiveTenantContext.getTenantId()
-                .flatMapMany(tenantId -> {
+        return ReactiveOrganizationContext.getOrganizationId()
+                .flatMapMany(organizationId -> {
                     PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
                     if (statut != null) {
-                        return brouillardService.getBrouillardsByStatut(tenantId, statut, pageable);
+                        return brouillardService.getBrouillardsByStatut(organizationId, statut, pageable);
                     } else if (type != null) {
-                        return brouillardService.getBrouillardsByType(tenantId, type, pageable);
+                        return brouillardService.getBrouillardsByType(organizationId, type, pageable);
                     } else {
-                        return brouillardService.getAllBrouillards(tenantId, pageable);
+                        return brouillardService.getAllBrouillards(organizationId, pageable);
                     }
                 })
                 .map(this::mapToDto)

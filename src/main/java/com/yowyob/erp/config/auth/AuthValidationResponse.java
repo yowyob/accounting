@@ -10,7 +10,7 @@ import lombok.Data;
 public class AuthValidationResponse {
     private boolean valid;
     private String userId;
-    private String tenantId;
+    private String organizationId;
     private String[] roles;
 
     public static AuthValidationResponse invalid() {

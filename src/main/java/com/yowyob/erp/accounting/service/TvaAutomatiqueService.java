@@ -42,10 +42,10 @@ public class TvaAutomatiqueService {
         public Mono<Void> appliquerTvaSurEcriture(EcritureComptable ecriture) {
                 return Mono.zip(
                                 detail_repository
-                                                .findByTenant_IdAndEcriture_Id(ecriture.getTenantId(), ecriture.getId())
+                                                .findByTenant_IdAndEcriture_Id(ecriture.getOrganizationId(), ecriture.getId())
                                                 .collectList(),
-                                taxe_repository.findByTenant_IdAndActifTrue(ecriture.getTenantId()).collectList(),
-                                compte_repository.findAllByTenant_Id(ecriture.getTenantId())
+                                taxe_repository.findByTenant_IdAndActifTrue(ecriture.getOrganizationId()).collectList(),
+                                compte_repository.findAllByTenant_Id(ecriture.getOrganizationId())
                                                 .collectMap(compte -> compte.getId(), compte -> compte.getNo_compte()))
                                 .flatMap(tuple -> {
                                         List<DetailEcriture> details = tuple.getT1();
@@ -125,15 +125,15 @@ public class TvaAutomatiqueService {
 
                                                                 return compte_repository
                                                                                 .findByTenant_IdAndNo_compte(
-                                                                                                ecriture.getTenantId(),
+                                                                                                ecriture.getOrganizationId(),
                                                                                                 target_compte_no)
                                                                                 .flatMap(compte -> {
                                                                                         DetailEcriture ligne_taxe = DetailEcriture
                                                                                                         .builder()
                                                                                                         .ecriture_id(ecriture
                                                                                                                         .getId())
-                                                                                                        .tenantId(ecriture
-                                                                                                                        .getTenantId())
+                                                                                                        .organizationId(ecriture
+                                                                                                                        .getOrganizationId())
                                                                                                         .compte_id(compte
                                                                                                                         .getId())
                                                                                                         .libelle("Auto Tax "

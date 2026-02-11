@@ -3,7 +3,7 @@ package com.yowyob.erp.accounting.controller;
 import com.yowyob.erp.accounting.dto.CompteDto;
 import com.yowyob.erp.accounting.service.CompteService;
 import com.yowyob.erp.common.dto.ApiResponseWrapper;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +40,7 @@ public class CompteController {
                                 .map(saved -> ResponseEntity.status(HttpStatus.CREATED)
                                                 .body(ApiResponseWrapper.success(saved,
                                                                 "Account created successfully")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
@@ -59,7 +59,7 @@ public class CompteController {
                                 .map(saved -> ResponseEntity.status(HttpStatus.CREATED)
                                                 .body(ApiResponseWrapper.success(saved,
                                                                 "Account created successfully")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
@@ -68,13 +68,13 @@ public class CompteController {
         @GetMapping
         @Operation(summary = "List all accounts")
         public Mono<ResponseEntity<ApiResponseWrapper<List<CompteDto>>>> getAllComptes() {
-                return ReactiveTenantContext.getTenantId()
+                return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMapMany(compte_service::findAllByTenant)
                                 .collectList()
                                 .map(comptes -> ResponseEntity
                                                 .ok(ApiResponseWrapper.success(comptes,
                                                                 "Accounts list retrieved successfully")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
@@ -83,10 +83,10 @@ public class CompteController {
         @GetMapping("/{id}")
         @Operation(summary = "Get account by ID")
         public Mono<ResponseEntity<ApiResponseWrapper<CompteDto>>> getCompteById(@PathVariable UUID id) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> compte_service.findById(tenant_id, id))
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> compte_service.findById(organization_id, id))
                                 .map(compte -> ResponseEntity.ok(ApiResponseWrapper.success(compte, "Account found")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
@@ -96,12 +96,12 @@ public class CompteController {
         @Operation(summary = "Search accounts by account number")
         public Mono<ResponseEntity<ApiResponseWrapper<List<CompteDto>>>> findByNoCompte(
                         @RequestParam String no_compte) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMapMany(tenant_id -> compte_service.findByNoCompte(tenant_id, no_compte))
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMapMany(organization_id -> compte_service.findByNoCompte(organization_id, no_compte))
                                 .collectList()
                                 .map(comptes -> ResponseEntity
                                                 .ok(ApiResponseWrapper.success(comptes, "Search results")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
@@ -110,12 +110,12 @@ public class CompteController {
         @GetMapping("/clients")
         @Operation(summary = "Get all client accounts")
         public Mono<ResponseEntity<ApiResponseWrapper<List<CompteDto>>>> getClientAccounts() {
-                return ReactiveTenantContext.getTenantId()
+                return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMapMany(compte_service::getClientAccounts)
                                 .collectList()
                                 .map(comptes -> ResponseEntity
                                                 .ok(ApiResponseWrapper.success(comptes, "Client accounts retrieved")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
@@ -124,12 +124,12 @@ public class CompteController {
         @GetMapping("/suppliers")
         @Operation(summary = "Get all supplier accounts")
         public Mono<ResponseEntity<ApiResponseWrapper<List<CompteDto>>>> getSupplierAccounts() {
-                return ReactiveTenantContext.getTenantId()
+                return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMapMany(compte_service::getSupplierAccounts)
                                 .collectList()
                                 .map(comptes -> ResponseEntity
                                                 .ok(ApiResponseWrapper.success(comptes, "Supplier accounts retrieved")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
@@ -138,12 +138,12 @@ public class CompteController {
         @GetMapping("/banks")
         @Operation(summary = "Get all bank accounts")
         public Mono<ResponseEntity<ApiResponseWrapper<List<CompteDto>>>> getBankAccounts() {
-                return ReactiveTenantContext.getTenantId()
+                return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMapMany(compte_service::getBankAccounts)
                                 .collectList()
                                 .map(comptes -> ResponseEntity
                                                 .ok(ApiResponseWrapper.success(comptes, "Bank accounts retrieved")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
@@ -152,12 +152,12 @@ public class CompteController {
         @GetMapping("/cash")
         @Operation(summary = "Get all cash accounts")
         public Mono<ResponseEntity<ApiResponseWrapper<List<CompteDto>>>> getCashAccounts() {
-                return ReactiveTenantContext.getTenantId()
+                return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMapMany(compte_service::getCashAccounts)
                                 .collectList()
                                 .map(comptes -> ResponseEntity
                                                 .ok(ApiResponseWrapper.success(comptes, "Cash accounts retrieved")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
@@ -167,13 +167,13 @@ public class CompteController {
         @Operation(summary = "Get accounts by type")
         public Mono<ResponseEntity<ApiResponseWrapper<List<CompteDto>>>> getAccountsByType(
                         @PathVariable String type) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMapMany(tenant_id -> compte_service.getAccountsByType(tenant_id, type))
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMapMany(organization_id -> compte_service.getAccountsByType(organization_id, type))
                                 .collectList()
                                 .map(comptes -> ResponseEntity
                                                 .ok(ApiResponseWrapper.success(comptes,
                                                                 type + " accounts retrieved")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
@@ -183,11 +183,11 @@ public class CompteController {
         @Operation(summary = "Update an account")
         public Mono<ResponseEntity<ApiResponseWrapper<CompteDto>>> updateCompte(@PathVariable UUID id,
                         @RequestBody CompteDto dto) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> compte_service.updateCompte(tenant_id, id, dto))
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> compte_service.updateCompte(organization_id, id, dto))
                                 .map(updated -> ResponseEntity.ok(
                                                 ApiResponseWrapper.success(updated, "Account updated successfully")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
@@ -196,10 +196,10 @@ public class CompteController {
         @DeleteMapping("/{id}")
         @Operation(summary = "Delete an account")
         public Mono<ResponseEntity<ApiResponseWrapper<String>>> deleteCompte(@PathVariable UUID id) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> compte_service.deleteById(tenant_id, id))
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> compte_service.deleteById(organization_id, id))
                                 .thenReturn(ResponseEntity
                                                 .ok(ApiResponseWrapper.success("Account deleted successfully")))
-                                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 }

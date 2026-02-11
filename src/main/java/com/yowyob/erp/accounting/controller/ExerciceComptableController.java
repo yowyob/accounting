@@ -85,7 +85,7 @@ public class ExerciceComptableController {
         return exercice_service.closeExercice(id)
                 .then(Mono.fromCallable(
                         () -> ResponseEntity.ok(ApiResponseWrapper.success(null, "Fiscal year closed successfully"))))
-                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext.captureFromThreadLocal());
+                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext.captureFromThreadLocal());
     }
 
     @DeleteMapping("/{id}")

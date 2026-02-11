@@ -13,7 +13,7 @@ import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.common.service.ValidationService;
 import com.yowyob.erp.config.kafka.KafkaMessageService;
 import com.yowyob.erp.config.redis.RedisService;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -47,13 +47,13 @@ public class PlanComptableService {
         private static final String CACHE_CLASS = "plancomptable:class:";
 
         @Transactional
-        public Mono<Void> initializePlanComptableForTenant(UUID tenant_id) {
-                log.info("Initializing accounting plan for tenant: {}", tenant_id);
+        public Mono<Void> initializePlanComptableForTenant(UUID organization_id) {
+                log.info("Initializing accounting plan for tenant: {}", organization_id);
 
-                return ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                return ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                 .flatMap(current_user -> template_repository.findAll()
                                                 .map(template -> PlanComptable.builder()
-                                                                .tenantId(tenant_id)
+                                                                .organizationId(organization_id)
                                                                 .no_compte(template.getNumero())
                                                                 .classe(template.getClasse())
                                                                 .libelle(template.getLibelle())
@@ -68,16 +68,16 @@ public class PlanComptableService {
                                                 .flatMap(accounts -> account_repository.saveAll(accounts).then())
                                                 .doOnSuccess(v -> log.info(
                                                                 "Successfully initialized plan for tenant {}",
-                                                                tenant_id)));
+                                                                organization_id)));
         }
 
         @Transactional
         public Mono<PlanComptableDto> createAccount(PlanComptableDto dto) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                                 .flatMap(current_user -> {
                                                         log.info("Creating account {} for tenant {}",
-                                                                        dto.getNo_compte(), tenant_id);
+                                                                        dto.getNo_compte(), organization_id);
 
                                                         try {
                                                                 validation_service.validateAccountNumber(
@@ -87,7 +87,7 @@ public class PlanComptableService {
                                                         }
 
                                                         return account_repository
-                                                                        .existsByTenant_IdAndNo_compte(tenant_id,
+                                                                        .existsByTenant_IdAndNo_compte(organization_id,
                                                                                         dto.getNo_compte())
                                                                         .flatMap(exists -> {
                                                                                 if (Boolean.TRUE.equals(exists)) {
@@ -99,7 +99,7 @@ public class PlanComptableService {
 
                                                                                 PlanComptable account = PlanComptable
                                                                                                 .builder()
-                                                                                                .tenantId(tenant_id)
+                                                                                                .organizationId(organization_id)
                                                                                                 .no_compte(dto.getNo_compte())
                                                                                                 .classe(Character
                                                                                                                 .getNumericValue(
@@ -118,14 +118,14 @@ public class PlanComptableService {
 
                                                                                 return account_repository.save(account)
                                                                                                 .flatMap(saved -> logAudit(
-                                                                                                                tenant_id,
+                                                                                                                organization_id,
                                                                                                                 current_user,
                                                                                                                 "ACCOUNT_CREATED",
                                                                                                                 "Creation of account: "
                                                                                                                                 + saved.getNo_compte())
                                                                                                                 .then(redis_service
                                                                                                                                 .delete(CACHE_ALL
-                                                                                                                                                + tenant_id))
+                                                                                                                                                + organization_id))
                                                                                                                 .thenReturn(mapToDto(
                                                                                                                                 saved)));
                                                                         });
@@ -134,12 +134,12 @@ public class PlanComptableService {
 
         @SuppressWarnings("unchecked")
         public Mono<List<PlanComptableDto>> getAllAccounts() {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> {
-                                        String key = CACHE_ALL + tenant_id;
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
+                                        String key = CACHE_ALL + organization_id;
                                         return redis_service.get(key, List.class)
                                                         .map(list -> (List<PlanComptableDto>) list)
-                                                        .switchIfEmpty(account_repository.findByTenant_Id(tenant_id)
+                                                        .switchIfEmpty(account_repository.findByTenant_Id(organization_id)
                                                                         .map(this::mapToDto)
                                                                         .collectList()
                                                                         .flatMap(list -> redis_service
@@ -151,13 +151,13 @@ public class PlanComptableService {
 
         @SuppressWarnings("unchecked")
         public Mono<List<PlanComptableDto>> getAllActiveAccounts() {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> {
-                                        String key = CACHE_ACTIVE + tenant_id;
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
+                                        String key = CACHE_ACTIVE + organization_id;
                                         return redis_service.get(key, List.class)
                                                         .map(list -> (List<PlanComptableDto>) list)
                                                         .switchIfEmpty(account_repository
-                                                                        .findByTenant_IdAndActifTrue(tenant_id)
+                                                                        .findByTenant_IdAndActifTrue(organization_id)
                                                                         .map(this::mapToDto)
                                                                         .collectList()
                                                                         .flatMap(list -> redis_service
@@ -168,12 +168,12 @@ public class PlanComptableService {
         }
 
         public Mono<PlanComptableDto> getAccountById(UUID id) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> {
-                                        String key = CACHE_SINGLE + tenant_id + ":" + id;
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
+                                        String key = CACHE_SINGLE + organization_id + ":" + id;
                                         return redis_service.get(key, PlanComptableDto.class)
                                                         .switchIfEmpty(account_repository
-                                                                        .findByTenant_IdAndId(tenant_id, id)
+                                                                        .findByTenant_IdAndId(organization_id, id)
                                                                         .switchIfEmpty(Mono.error(
                                                                                         new ResourceNotFoundException(
                                                                                                         "Accounting account",
@@ -188,13 +188,13 @@ public class PlanComptableService {
 
         @SuppressWarnings("unchecked")
         public Mono<List<PlanComptableDto>> getAccountsByClass(Integer classe) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> {
-                                        String key = CACHE_CLASS + tenant_id + ":" + classe;
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
+                                        String key = CACHE_CLASS + organization_id + ":" + classe;
                                         return redis_service.get(key, List.class)
                                                         .map(list -> (List<PlanComptableDto>) list)
                                                         .switchIfEmpty(account_repository
-                                                                        .findByTenant_IdAndClasse(tenant_id, classe)
+                                                                        .findByTenant_IdAndClasse(organization_id, classe)
                                                                         .map(this::mapToDto)
                                                                         .collectList()
                                                                         .flatMap(list -> redis_service
@@ -206,14 +206,14 @@ public class PlanComptableService {
 
         @SuppressWarnings("unchecked")
         public Mono<List<PlanComptableDto>> getAccountsByPrefix(String prefix) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> {
-                                        String key = CACHE_PREFIX + tenant_id + ":" + prefix;
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
+                                        String key = CACHE_PREFIX + organization_id + ":" + prefix;
                                         return redis_service.get(key, List.class)
                                                         .map(list -> (List<PlanComptableDto>) list)
                                                         .switchIfEmpty(account_repository
                                                                         .findByTenant_IdAndNo_compteStartingWith(
-                                                                                        tenant_id, prefix)
+                                                                                        organization_id, prefix)
                                                                         .map(this::mapToDto)
                                                                         .collectList()
                                                                         .flatMap(list -> redis_service
@@ -225,10 +225,10 @@ public class PlanComptableService {
 
         @Transactional
         public Mono<PlanComptableDto> updateAccount(UUID id, PlanComptableDto dto) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                                 .flatMap(current_user -> account_repository
-                                                                .findByTenant_IdAndId(tenant_id, id)
+                                                                .findByTenant_IdAndId(organization_id, id)
                                                                 .switchIfEmpty(Mono.error(new ResourceNotFoundException(
                                                                                 "Accounting account", id.toString())))
                                                                 .flatMap(account -> {
@@ -239,19 +239,19 @@ public class PlanComptableService {
 
                                                                         return account_repository.save(account)
                                                                                         .flatMap(saved -> logAudit(
-                                                                                                        tenant_id,
+                                                                                                        organization_id,
                                                                                                         current_user,
                                                                                                         "ACCOUNT_UPDATED",
                                                                                                         "Update of account: "
                                                                                                                         + saved.getNo_compte())
                                                                                                         .then(redis_service
                                                                                                                         .delete(CACHE_SINGLE
-                                                                                                                                        + tenant_id
+                                                                                                                                        + organization_id
                                                                                                                                         + ":"
                                                                                                                                         + id))
                                                                                                         .then(redis_service
                                                                                                                         .delete(CACHE_ALL
-                                                                                                                                        + tenant_id))
+                                                                                                                                        + organization_id))
                                                                                                         .thenReturn(mapToDto(
                                                                                                                         saved)));
                                                                 })));
@@ -259,10 +259,10 @@ public class PlanComptableService {
 
         @Transactional
         public Mono<Void> deactivateAccount(UUID id) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                                 .flatMap(current_user -> account_repository
-                                                                .findByTenant_IdAndId(tenant_id, id)
+                                                                .findByTenant_IdAndId(organization_id, id)
                                                                 .switchIfEmpty(Mono.error(new ResourceNotFoundException(
                                                                                 "Accounting account", id.toString())))
                                                                 .flatMap(account -> {
@@ -272,19 +272,19 @@ public class PlanComptableService {
 
                                                                         return account_repository.save(account)
                                                                                         .flatMap(saved -> logAudit(
-                                                                                                        tenant_id,
+                                                                                                        organization_id,
                                                                                                         current_user,
                                                                                                         "ACCOUNT_DEACTIVATED",
                                                                                                         "Deactivation of account: "
                                                                                                                         + saved.getNo_compte())
                                                                                                         .then(redis_service
                                                                                                                         .delete(CACHE_SINGLE
-                                                                                                                                        + tenant_id
+                                                                                                                                        + organization_id
                                                                                                                                         + ":"
                                                                                                                                         + id))
                                                                                                         .then(redis_service
                                                                                                                         .delete(CACHE_ACTIVE
-                                                                                                                                        + tenant_id))
+                                                                                                                                        + organization_id))
                                                                                                         .then());
                                                                 })));
         }
@@ -304,10 +304,10 @@ public class PlanComptableService {
                                 .build();
         }
 
-        private Mono<Void> logAudit(UUID tenant_id, String user, String action, String details) {
+        private Mono<Void> logAudit(UUID organization_id, String user, String action, String details) {
                 JournalAudit audit = JournalAudit.builder()
                                 .id(UUID.randomUUID())
-                                .tenantId(tenant_id)
+                                .organizationId(organization_id)
                                 .action(action)
                                 .utilisateur(user)
                                 .details(details)
@@ -328,12 +328,12 @@ public class PlanComptableService {
                                                         .date_action(saved.getDate_action())
                                                         .build();
 
-                                        return kafka_service.sendAuditLog(auditDto, tenant_id, action);
+                                        return kafka_service.sendAuditLog(auditDto, organization_id, action);
                                 });
         }
 
         @SuppressWarnings("unused")
-        private Mono<Void> logAudit(Tenant tenant, String user, String action, String details) {
+        private Mono<Void> logAudit(Organization tenant, String user, String action, String details) {
                 return logAudit(tenant.getId(), user, action, details);
         }
 }

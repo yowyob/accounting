@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -39,7 +39,7 @@ public class DeviseController {
         return devise_service.createDevise(dto)
                 .map(created -> ResponseEntity.status(HttpStatus.CREATED)
                         .body(ApiResponseWrapper.success(created, "Currency created successfully")))
-                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
     }
 
     /**
@@ -52,7 +52,7 @@ public class DeviseController {
         return devise_service.updateDevise(id, dto)
                 .map(updated -> ResponseEntity
                         .ok(ApiResponseWrapper.success(updated, "Currency updated successfully")))
-                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
     }
 
     /**
@@ -64,7 +64,7 @@ public class DeviseController {
         return devise_service.getDevise(id)
                 .map(devise -> ResponseEntity.ok(ApiResponseWrapper.success(devise, "Currency found")))
                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Currency", id.toString())))
-                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
     }
 
     /**
@@ -78,7 +78,7 @@ public class DeviseController {
                 : devise_service.getAllDevises();
         return listMono.map(devises -> ResponseEntity
                 .ok(ApiResponseWrapper.success(devises, "Currencies list retrieved successfully")))
-                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
     }
 
     /**
@@ -90,6 +90,6 @@ public class DeviseController {
         return devise_service.deleteDevise(id)
                 .then(Mono.fromCallable(
                         () -> ResponseEntity.ok(ApiResponseWrapper.success(null, "Currency deleted successfully"))))
-                .contextWrite(ReactiveTenantContext.captureFromThreadLocal());
+                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
     }
 }

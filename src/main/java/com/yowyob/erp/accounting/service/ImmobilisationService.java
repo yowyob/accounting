@@ -115,14 +115,14 @@ public class ImmobilisationService {
 
     private Mono<Void> creerEcritureAmortissement(ExerciceComptable ex, Immobilisation immo, AmortissementLigne ligne) {
         String libelle = "Dotation amortissement " + ex.getCode() + " - " + immo.getLibelle();
-        return creerEcritureSysteme(ex.getTenantId(), ex.getDate_fin(), libelle, "OD")
+        return creerEcritureSysteme(ex.getOrganizationId(), ex.getDate_fin(), libelle, "OD")
                 .flatMap(ecritureId -> {
                     // Debit 681 (Dotations)
                     // Credit 281 (Amortissements)
                     return Mono.when(
-                            insererDetailEcritureDirect(ecritureId, ex.getTenantId(), immo.getCompteDotationId(),
+                            insererDetailEcritureDirect(ecritureId, ex.getOrganizationId(), immo.getCompteDotationId(),
                                     ligne.getAnnuite(), "DEBIT"),
-                            insererDetailEcritureDirect(ecritureId, ex.getTenantId(), immo.getCompteAmortId(),
+                            insererDetailEcritureDirect(ecritureId, ex.getOrganizationId(), immo.getCompteAmortId(),
                                     ligne.getAnnuite(), "CREDIT"))
                             .then(Mono.defer(() -> {
                                 ligne.setComptabilisee(true);
@@ -132,11 +132,11 @@ public class ImmobilisationService {
                 }).then();
     }
 
-    private Mono<UUID> creerEcritureSysteme(UUID tenantId, LocalDate date, String libelle, String codeJournal) {
+    private Mono<UUID> creerEcritureSysteme(UUID organizationId, LocalDate date, String libelle, String codeJournal) {
         String sql = """
                 INSERT INTO ecritures_comptables
-                (id, tenant_id, date_ecriture, libelle, journal_id, validee, created_at, numero_ecriture)
-                VALUES (:id, :tenantId, :date, :libelle, NULL, true, NOW(), :numero)
+                (id, organization_id, date_ecriture, libelle, journal_id, validee, created_at, numero_ecriture)
+                VALUES (:id, :organizationId, :date, :libelle, NULL, true, NOW(), :numero)
                 RETURNING id
                 """;
         UUID id = UUID.randomUUID();
@@ -144,7 +144,7 @@ public class ImmobilisationService {
 
         return databaseClient.sql(sql)
                 .bind("id", id)
-                .bind("tenantId", tenantId)
+                .bind("organizationId", organizationId)
                 .bind("date", date)
                 .bind("libelle", libelle)
                 .bind("numero", numero)
@@ -152,11 +152,11 @@ public class ImmobilisationService {
                 .one();
     }
 
-    private Mono<Void> insererDetailEcritureDirect(UUID ecritureId, UUID tenantId, UUID compteId, BigDecimal montant,
+    private Mono<Void> insererDetailEcritureDirect(UUID ecritureId, UUID organizationId, UUID compteId, BigDecimal montant,
             String sens) {
         String sql = """
                 INSERT INTO details_ecritures
-                (id, ecriture_id, tenant_id, compte_id, libelle, sens, montant_debit, montant_credit, date_ecriture, created_at)
+                (id, ecriture_id, organization_id, compte_id, libelle, sens, montant_debit, montant_credit, date_ecriture, created_at)
                 VALUES (:id, :ecId, :tId, :cId, 'Dotation aux amortissements', :sens,
                        CASE WHEN :sens = 'DEBIT' THEN :montant ELSE 0 END,
                        CASE WHEN :sens = 'CREDIT' THEN :montant ELSE 0 END,
@@ -165,7 +165,7 @@ public class ImmobilisationService {
         return databaseClient.sql(sql)
                 .bind("id", UUID.randomUUID())
                 .bind("ecId", ecritureId)
-                .bind("tId", tenantId)
+                .bind("tId", organizationId)
                 .bind("cId", compteId)
                 .bind("sens", sens)
                 .bind("montant", montant)

@@ -17,42 +17,42 @@ import java.util.UUID;
 @Repository
 public interface EcritureComptableRepository extends R2dbcRepository<EcritureComptable, UUID> {
 
-      @Query("SELECT * FROM ecritures_comptables WHERE tenant_id = :tenant_id")
-      Flux<EcritureComptable> findByTenant_Id(@Param("tenant_id") UUID tenant_id);
+      @Query("SELECT * FROM ecritures_comptables WHERE organization_id = :organization_id")
+      Flux<EcritureComptable> findByTenant_Id(@Param("organization_id") UUID organization_id);
 
-      @Query("SELECT * FROM ecritures_comptables WHERE tenant_id = :tenant_id AND id = :id")
-      Mono<EcritureComptable> findByTenant_IdAndId(@Param("tenant_id") UUID tenant_id, @Param("id") UUID id);
+      @Query("SELECT * FROM ecritures_comptables WHERE organization_id = :organization_id AND id = :id")
+      Mono<EcritureComptable> findByTenant_IdAndId(@Param("organization_id") UUID organization_id, @Param("id") UUID id);
 
-      @Query("SELECT * FROM ecritures_comptables WHERE tenant_id = :tenant_id AND validee = false")
-      Flux<EcritureComptable> findByTenant_IdAndValideeFalse(@Param("tenant_id") UUID tenant_id);
+      @Query("SELECT * FROM ecritures_comptables WHERE organization_id = :organization_id AND validee = false")
+      Flux<EcritureComptable> findByTenant_IdAndValideeFalse(@Param("organization_id") UUID organization_id);
 
-      @Query("SELECT * FROM ecritures_comptables WHERE tenant_id = :tenant_id AND date_ecriture BETWEEN :start_date AND :end_date")
+      @Query("SELECT * FROM ecritures_comptables WHERE organization_id = :organization_id AND date_ecriture BETWEEN :start_date AND :end_date")
       Flux<EcritureComptable> findByTenant_IdAndDate_ecritureBetween(
-                  @Param("tenant_id") UUID tenant_id,
+                  @Param("organization_id") UUID organization_id,
                   @Param("start_date") LocalDate start_date,
                   @Param("end_date") LocalDate end_date);
 
-      @Query("SELECT * FROM ecritures_comptables WHERE tenant_id = :tenant_id AND journal_id = :journal_id")
+      @Query("SELECT * FROM ecritures_comptables WHERE organization_id = :organization_id AND journal_id = :journal_id")
       Flux<EcritureComptable> findByTenant_IdAndJournal_Id(
-                  @Param("tenant_id") UUID tenant_id,
+                  @Param("organization_id") UUID organization_id,
                   @Param("journal_id") UUID journal_id);
 
       @Query("SELECT * FROM ecritures_comptables " +
-                  "WHERE tenant_id = :tenant_id " +
+                  "WHERE organization_id = :organization_id " +
                   "AND journal_id = :journal_id " +
                   "AND date_ecriture BETWEEN :start_date AND :end_date")
       Flux<EcritureComptable> findByTenant_IdAndJournal_IdAndDate_ecritureBetween(
-                  @Param("tenant_id") UUID tenant_id,
+                  @Param("organization_id") UUID organization_id,
                   @Param("journal_id") UUID journal_id,
                   @Param("start_date") LocalDate start_date,
                   @Param("end_date") LocalDate end_date);
 
       @Query("SELECT * FROM ecritures_comptables " +
-                  "WHERE tenant_id = :tenant_id " +
+                  "WHERE organization_id = :organization_id " +
                   "AND date_ecriture BETWEEN :start_date AND :end_date " +
                   "AND validee = false")
       Flux<EcritureComptable> findNonValidatedByDateRange(
-                  @Param("tenant_id") UUID tenant_id,
+                  @Param("organization_id") UUID organization_id,
                   @Param("start_date") LocalDate start_date,
                   @Param("end_date") LocalDate end_date);
 }

@@ -10,7 +10,7 @@ import com.yowyob.erp.accounting.repository.JournalAuditRepository;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.config.kafka.KafkaMessageService;
 import com.yowyob.erp.config.redis.RedisService;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,7 +41,7 @@ public class DeviseService {
 
         @Transactional
         public Mono<DeviseDto> createDevise(DeviseDto dto) {
-                return ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                return ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                 .flatMap(user -> devise_repository.existsByCode(dto.getCode())
                                                 .flatMap(exists -> {
                                                         if (Boolean.TRUE.equals(exists)) {
@@ -63,7 +63,7 @@ public class DeviseService {
                                                                         .build();
 
                                                         return devise_repository.save(entity)
-                                                                        .flatMap(saved -> ReactiveTenantContext
+                                                                        .flatMap(saved -> ReactiveOrganizationContext
                                                                                         .getCurrentTenantAsTenant()
                                                                                         .flatMap(tenant -> logAudit(
                                                                                                         tenant, user,
@@ -77,7 +77,7 @@ public class DeviseService {
 
         @Transactional
         public Mono<DeviseDto> updateDevise(UUID id, DeviseDto dto) {
-                return ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                return ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                 .flatMap(user -> devise_repository.findById(id)
                                                 .switchIfEmpty(Mono.error(
                                                                 new ResourceNotFoundException("Devise", id.toString())))
@@ -101,7 +101,7 @@ public class DeviseService {
                                                                         existing.setNotNew();
 
                                                                         return devise_repository.save(existing)
-                                                                                        .flatMap(saved -> ReactiveTenantContext
+                                                                                        .flatMap(saved -> ReactiveOrganizationContext
                                                                                                         .getCurrentTenantAsTenant()
                                                                                                         .flatMap(tenant -> logAudit(
                                                                                                                         tenant,
@@ -156,12 +156,12 @@ public class DeviseService {
 
         @Transactional
         public Mono<Void> deleteDevise(UUID id) {
-                return ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                return ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                 .flatMap(user -> devise_repository.findById(id)
                                                 .switchIfEmpty(Mono.error(
                                                                 new ResourceNotFoundException("Devise", id.toString())))
                                                 .flatMap(devise -> devise_repository.delete(devise)
-                                                                .then(ReactiveTenantContext.getCurrentTenantAsTenant()
+                                                                .then(ReactiveOrganizationContext.getCurrentTenantAsTenant()
                                                                                 .flatMap(tenant -> logAudit(tenant,
                                                                                                 user, "DEVISE_DELETED",
                                                                                                 "Deletion of currency "
@@ -189,10 +189,10 @@ public class DeviseService {
                                 .build();
         }
 
-        private Mono<Void> logAudit(Tenant tenant, String utilisateur, String action, String details) {
+        private Mono<Void> logAudit(Organization tenant, String utilisateur, String action, String details) {
                 JournalAudit audit = JournalAudit.builder()
                                 .id(UUID.randomUUID())
-                                .tenantId(tenant.getId())
+                                .organizationId(tenant.getId())
                                 .action(action)
                                 .utilisateur(utilisateur)
                                 .details(details)

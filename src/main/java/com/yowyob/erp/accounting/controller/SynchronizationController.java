@@ -2,7 +2,7 @@ package com.yowyob.erp.accounting.controller;
 
 import com.yowyob.erp.accounting.service.SynchronizationService;
 import com.yowyob.erp.common.dto.ApiResponseWrapper;
-import com.yowyob.erp.config.tenant.TenantContext;
+import com.yowyob.erp.config.organization.OrganizationContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -46,10 +46,10 @@ public class SynchronizationController {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Accès refusé - Admin uniquement")
         })
         public ResponseEntity<ApiResponseWrapper<Map<String, Object>>> syncElasticsearch() {
-                UUID tenant_id = TenantContext.getCurrentTenant();
-                log.info("🔄 Forcing Elasticsearch synchronization for tenant {}", tenant_id);
+                UUID organization_id = OrganizationContext.getCurrentTenant();
+                log.info("🔄 Forcing Elasticsearch synchronization for tenant {}", organization_id);
 
-                Map<String, Object> resultat = sync_service.synchroniserElasticsearch(tenant_id);
+                Map<String, Object> resultat = sync_service.synchroniserElasticsearch(organization_id);
 
                 return ResponseEntity.ok(ApiResponseWrapper.success(
                                 resultat,
@@ -70,10 +70,10 @@ public class SynchronizationController {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Accès refusé - Admin uniquement")
         })
         public ResponseEntity<ApiResponseWrapper<String>> clearRedisCache() {
-                UUID tenant_id = TenantContext.getCurrentTenant();
-                log.warn("🗑️ Clearing Redis cache for tenant {}", tenant_id);
+                UUID organization_id = OrganizationContext.getCurrentTenant();
+                log.warn("🗑️ Clearing Redis cache for tenant {}", organization_id);
 
-                sync_service.viderCacheRedis(tenant_id);
+                sync_service.viderCacheRedis(organization_id);
 
                 return ResponseEntity.ok(ApiResponseWrapper.success(
                                 "Cache vidé",
@@ -93,10 +93,10 @@ public class SynchronizationController {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Non authentifié")
         })
         public ResponseEntity<ApiResponseWrapper<Map<String, Object>>> getSyncStatus() {
-                UUID tenant_id = TenantContext.getCurrentTenant();
-                log.info("📊 Getting synchronization status for tenant {}", tenant_id);
+                UUID organization_id = OrganizationContext.getCurrentTenant();
+                log.info("📊 Getting synchronization status for tenant {}", organization_id);
 
-                Map<String, Object> statut = sync_service.getStatutSynchronisation(tenant_id);
+                Map<String, Object> statut = sync_service.getStatutSynchronisation(organization_id);
 
                 return ResponseEntity.ok(ApiResponseWrapper.success(
                                 statut,

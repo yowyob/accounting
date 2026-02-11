@@ -22,8 +22,8 @@ import lombok.NoArgsConstructor;
 public class SearchResult {
     private String id;
 
-    @JsonProperty("tenant_id")
-    private String tenantId;
+    @JsonProperty("organization_id")
+    private String organizationId;
 
     private String type;
     private String title;

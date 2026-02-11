@@ -49,7 +49,7 @@ public class AccountingKafkaListener {
             Acknowledgment acknowledgment) {
 
         log.info("📄 [INVOICE] Event received on topic={} partition={} | type={} | tenant={}",
-                topic, partition, message.getEventType(), message.getTenantId());
+                topic, partition, message.getEventType(), message.getOrganizationId());
 
         Mono<Void> process = switch (message.getEventType()) {
             case "INVOICE_CREATED" -> handleInvoiceCreated(message);
@@ -68,7 +68,7 @@ public class AccountingKafkaListener {
 
     @KafkaListener(topics = "${app.kafka.topics.accounting-entries}", groupId = "${spring.kafka.consumer.group-id}")
     public Mono<Void> handleAccountingEvents(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
-        log.info("📘 [COMPTA] Event received | type={} | tenant={}", message.getEventType(), message.getTenantId());
+        log.info("📘 [COMPTA] Event received | type={} | tenant={}", message.getEventType(), message.getOrganizationId());
 
         Mono<Void> process = switch (message.getEventType()) {
             case "ACCOUNTING_ENTRY_CREATED" -> handleAccountingEntryCreated(message);
@@ -88,7 +88,7 @@ public class AccountingKafkaListener {
     @KafkaListener(topics = "transaction.events", groupId = "${spring.kafka.consumer.group-id}")
     public Mono<Void> handleTransactionEvents(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
         log.info("💳 [TRANSACTION] Event received | type={} | tenant={}", message.getEventType(),
-                message.getTenantId());
+                message.getOrganizationId());
 
         Mono<Void> process = switch (message.getEventType()) {
             case "TRANSACTION_CREATED" -> handleTransactionCreated(message);
@@ -107,7 +107,7 @@ public class AccountingKafkaListener {
 
     @KafkaListener(topics = "${app.kafka.topics.audit-logs}", groupId = "${spring.kafka.consumer.group-id}")
     public Mono<Void> handleAuditLogs(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
-        log.info("🧩 [AUDIT] New log received | action={} | tenant={}", message.getEventType(), message.getTenantId());
+        log.info("🧩 [AUDIT] New log received | action={} | tenant={}", message.getEventType(), message.getOrganizationId());
 
         if (message.getPayload() instanceof Map<?, ?> rawPayload) {
             return Mono.fromCallable(() -> {
@@ -143,7 +143,7 @@ public class AccountingKafkaListener {
 
                                     JournalAudit auditEntry = JournalAudit.builder()
                                             .id(auditId)
-                                            .tenantId(message.getTenantId())
+                                            .organizationId(message.getOrganizationId())
                                             .action(dto.getAction())
                                             .utilisateur(dto.getUtilisateur())
                                             .details(dto.getDetails())
@@ -199,7 +199,7 @@ public class AccountingKafkaListener {
 
     private Mono<Void> handleAccountingEntryCreated(KafkaMessage message) {
         if (elasticsearchService != null) {
-            elasticsearchService.indexAccountingEntry(message.getPayload(), message.getTenantId().toString());
+            elasticsearchService.indexAccountingEntry(message.getPayload(), message.getOrganizationId().toString());
         }
         return Mono.empty();
     }
@@ -210,12 +210,12 @@ public class AccountingKafkaListener {
             Object idObj = payload.get("id");
             if (idObj != null) {
                 UUID entryId = UUID.fromString(idObj.toString());
-                balanceUpdate = compteService.updateBalances(message.getTenantId(), entryId);
+                balanceUpdate = compteService.updateBalances(message.getOrganizationId(), entryId);
             }
         }
 
         if (elasticsearchService != null) {
-            elasticsearchService.indexAccountingEntry(message.getPayload(), message.getTenantId().toString());
+            elasticsearchService.indexAccountingEntry(message.getPayload(), message.getOrganizationId().toString());
         }
         return balanceUpdate;
     }
@@ -226,7 +226,7 @@ public class AccountingKafkaListener {
 
         Mono<com.yowyob.erp.accounting.entity.TransactionComptable> prepareTransaction;
         if (transaction.getJournal_comptable_id() == null) {
-            prepareTransaction = journalComptableRepository.findByTenant_IdAndCode_journal(message.getTenantId(), "TR")
+            prepareTransaction = journalComptableRepository.findByTenant_IdAndCode_journal(message.getOrganizationId(), "TR")
                     .map(j -> {
                         transaction.setJournal_comptable_id(j.getId());
                         return transaction;
@@ -238,7 +238,7 @@ public class AccountingKafkaListener {
 
         return prepareTransaction
                 .flatMap(prepared -> ecritureComptableService.generateFromComptableObject(prepared)
-                        .flatMap(ecriture -> kafkaMessageService.sendTreasurySync(prepared, message.getTenantId(),
+                        .flatMap(ecriture -> kafkaMessageService.sendTreasurySync(prepared, message.getOrganizationId(),
                                 "TREASURY_SYNC_SUCCESS")))
                 .then();
     }
@@ -248,28 +248,28 @@ public class AccountingKafkaListener {
         if (message.getPayload() instanceof Map<?, ?> payload) {
             Object entryId = payload.get("ecriture_id");
             if (entryId != null) {
-                update = compteService.updateBalances(message.getTenantId(), UUID.fromString(entryId.toString()));
+                update = compteService.updateBalances(message.getOrganizationId(), UUID.fromString(entryId.toString()));
             }
         }
         if (elasticsearchService != null) {
-            elasticsearchService.indexAccountingEntry(message.getPayload(), message.getTenantId().toString());
+            elasticsearchService.indexAccountingEntry(message.getPayload(), message.getOrganizationId().toString());
         }
         return update
-                .then(Mono.defer(() -> kafkaMessageService.sendTreasurySync(message.getPayload(), message.getTenantId(),
+                .then(Mono.defer(() -> kafkaMessageService.sendTreasurySync(message.getPayload(), message.getOrganizationId(),
                         "TREASURY_VALIDATION_NOTIFIED")))
                 .then();
     }
 
     @KafkaListener(topics = "${app.kafka.topics.stock-events:stock.events}", groupId = "${spring.kafka.consumer.group-id}")
     public Mono<Void> handleStockEvents(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
-        log.info("📦 [STOCK] Event received | type={} | tenant={}", message.getEventType(), message.getTenantId());
+        log.info("📦 [STOCK] Event received | type={} | tenant={}", message.getEventType(), message.getOrganizationId());
         acknowledgment.acknowledge();
         return Mono.empty();
     }
 
     @KafkaListener(topics = "${app.kafka.topics.thirdparty-events:thirdparty.events}", groupId = "${spring.kafka.consumer.group-id}")
     public Mono<Void> handleThirdPartyEvents(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
-        log.info("👥 [TIERS] Event received | type={} | tenant={}", message.getEventType(), message.getTenantId());
+        log.info("👥 [TIERS] Event received | type={} | tenant={}", message.getEventType(), message.getOrganizationId());
         acknowledgment.acknowledge();
         return Mono.empty();
     }
@@ -277,7 +277,7 @@ public class AccountingKafkaListener {
     @KafkaListener(topics = "${app.kafka.topics.organization-events:organization.events}", groupId = "${spring.kafka.consumer.group-id}")
     public Mono<Void> handleOrganizationEvents(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
         log.info("🏢 [ORGANISATION] Event received | type={} | tenant={}", message.getEventType(),
-                message.getTenantId());
+                message.getOrganizationId());
         acknowledgment.acknowledge();
         return Mono.empty();
     }

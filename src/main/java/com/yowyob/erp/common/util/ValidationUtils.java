@@ -2,17 +2,17 @@
 package com.yowyob.erp.common.util;
 
 import com.yowyob.erp.common.exception.TenantException;
-import com.yowyob.erp.config.tenant.TenantContext;
+import com.yowyob.erp.config.organization.OrganizationContext;
 import java.util.UUID;
 
 public class ValidationUtils {
 
     public static void validateTenantAccess(UUID resourceTenantId) {
-        UUID currentTenant = TenantContext.getCurrentTenant();
-        if (currentTenant == null) {
+        UUID currentOrganization = OrganizationContext.getCurrentTenant();
+        if (currentOrganization == null) {
             throw new TenantException("Contexte tenant non défini");
         }
-        if (!currentTenant.equals(resourceTenantId)) {
+        if (!currentOrganization.equals(resourceTenantId)) {
             throw new TenantException("Accès refusé à la ressource d'un autre tenant");
         }
     }

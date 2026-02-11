@@ -29,8 +29,8 @@ public class PlanComptable implements SettablePersistable<UUID> {
     @Builder.Default
     private UUID id = UUID.randomUUID();
 
-    @Column("tenant_id")
-    private UUID tenantId;
+    @Column("organization_id")
+    private UUID organizationId;
 
     @Column("classe")
     private Integer classe;
@@ -61,7 +61,7 @@ public class PlanComptable implements SettablePersistable<UUID> {
     private String updated_by;
 
     @Transient
-    private Tenant tenant;
+    private Organization tenant;
 
     @Transient
     @Builder.Default

@@ -6,7 +6,7 @@ import com.yowyob.erp.accounting.entity.TransactionComptable;
 import com.yowyob.erp.common.dto.ComptableObjectRequest;
 import com.yowyob.erp.common.entity.ComptableObject;
 import com.yowyob.erp.common.enums.SourceType;
-import com.yowyob.erp.config.tenant.TenantContext;
+import com.yowyob.erp.config.organization.OrganizationContext;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -34,7 +34,7 @@ public class AccountingUtils {
             throw new IllegalArgumentException("Accounting object type is required");
         }
 
-        UUID tenant_id = TenantContext.getCurrentTenant();
+        UUID organization_id = OrganizationContext.getCurrentTenant();
         LocalDate date = request.getDate() != null ? request.getDate() : LocalDate.now();
         UUID journal_comptable_id = request.getJournalComptableId();
         UUID periode_comptable_id = request.getPeriodeComptableId() != null ? request.getPeriodeComptableId()
@@ -58,7 +58,7 @@ public class AccountingUtils {
 
                 TransactionComptable transaction = TransactionComptable.builder()
                         .id(request.getId() != null ? request.getId() : UUID.randomUUID())
-                        .tenant_id(tenant_id)
+                        .organization_id(organization_id)
                         .montant(request.getMontant() != null ? request.getMontant() : BigDecimal.ZERO)
                         .date(date)
                         .libelle(request.getLibelle())
@@ -84,7 +84,7 @@ public class AccountingUtils {
 
                 FactureComptable facture = FactureComptable.builder()
                         .id(request.getId() != null ? request.getId() : UUID.randomUUID())
-                        .tenant_id(tenant_id)
+                        .organization_id(organization_id)
                         .montant_ht(request.getMontantHT())
                         .date(date)
                         .libelle(request.getLibelle())
@@ -93,7 +93,7 @@ public class AccountingUtils {
                         .client_id(request.getClientId())
                         .is_achat(Boolean.TRUE.equals(request.getIsAchat()))
                         .build();
-                facture.setTenant_id(tenant_id);
+                facture.setTenant_id(organization_id);
                 return facture;
             }
 
@@ -111,7 +111,7 @@ public class AccountingUtils {
 
                 MouvementStockComptable mouvement = MouvementStockComptable.builder()
                         .id(request.getId() != null ? request.getId() : UUID.randomUUID())
-                        .tenant_id(tenant_id)
+                        .organization_id(organization_id)
                         .quantite(request.getQuantite())
                         .cout_unitaire(request.getCoutUnitaire())
                         .date(date)

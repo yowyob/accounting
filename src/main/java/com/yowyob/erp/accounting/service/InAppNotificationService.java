@@ -18,10 +18,10 @@ public class InAppNotificationService {
 
     private final NotificationRepository repository;
 
-    public Mono<Notification> createNotification(UUID tenantId, String userId, String title, String message, String type, String referenceId) {
+    public Mono<Notification> createNotification(UUID organizationId, String userId, String title, String message, String type, String referenceId) {
         Notification notification = Notification.builder()
                 .id(UUID.randomUUID())
-                .tenantId(tenantId)
+                .organizationId(organizationId)
                 .userId(userId)
                 .title(title)
                 .message(message)
@@ -35,8 +35,8 @@ public class InAppNotificationService {
                 .doOnSuccess(n -> log.info("In-App Notification created for user {}: {}", userId, title));
     }
 
-    public Flux<Notification> getUnreadNotifications(UUID tenantId, String userId) {
-        return repository.findAllByTenantIdAndUserIdAndIsReadFalseOrderByCreatedAtDesc(tenantId, userId);
+    public Flux<Notification> getUnreadNotifications(UUID organizationId, String userId) {
+        return repository.findAllByTenantIdAndUserIdAndIsReadFalseOrderByCreatedAtDesc(organizationId, userId);
     }
 
     public Mono<Notification> markAsRead(UUID id) {

@@ -17,26 +17,26 @@ import java.util.UUID;
 @Repository
 public interface PeriodeComptableRepository extends R2dbcRepository<PeriodeComptable, UUID> {
 
-       @Query("SELECT * FROM periodes_comptables WHERE tenant_id = :tenant_id AND id = :id")
-       Mono<PeriodeComptable> findByTenant_IdAndId(@Param("tenant_id") UUID tenant_id, @Param("id") UUID id);
+       @Query("SELECT * FROM periodes_comptables WHERE organization_id = :organization_id AND id = :id")
+       Mono<PeriodeComptable> findByTenant_IdAndId(@Param("organization_id") UUID organization_id, @Param("id") UUID id);
 
        @Query("SELECT * FROM periodes_comptables WHERE exercice_id = :exercice_id")
        Flux<PeriodeComptable> findByExerciceId(@Param("exercice_id") UUID exercice_id);
 
-       @Query("SELECT * FROM periodes_comptables WHERE tenant_id = :tenant_id ORDER BY date_debut DESC")
-       Flux<PeriodeComptable> findByTenant_IdOrderByDate_debutDesc(@Param("tenant_id") UUID tenant_id);
+       @Query("SELECT * FROM periodes_comptables WHERE organization_id = :organization_id ORDER BY date_debut DESC")
+       Flux<PeriodeComptable> findByTenant_IdOrderByDate_debutDesc(@Param("organization_id") UUID organization_id);
 
-       @Query("SELECT * FROM periodes_comptables WHERE tenant_id = :tenant_id AND code = :code")
-       Mono<PeriodeComptable> findByTenant_IdAndCode(@Param("tenant_id") UUID tenant_id, @Param("code") String code);
+       @Query("SELECT * FROM periodes_comptables WHERE organization_id = :organization_id AND code = :code")
+       Mono<PeriodeComptable> findByTenant_IdAndCode(@Param("organization_id") UUID organization_id, @Param("code") String code);
 
-       @Query("SELECT * FROM periodes_comptables WHERE tenant_id = :tenant_id AND :date BETWEEN date_debut AND date_fin")
-       Mono<PeriodeComptable> findByTenant_IdAndDateInRange(@Param("tenant_id") UUID tenant_id,
+       @Query("SELECT * FROM periodes_comptables WHERE organization_id = :organization_id AND :date BETWEEN date_debut AND date_fin")
+       Mono<PeriodeComptable> findByTenant_IdAndDateInRange(@Param("organization_id") UUID organization_id,
                      @Param("date") LocalDate date);
 
-       @Query("SELECT * FROM periodes_comptables WHERE tenant_id = :tenant_id AND cloturee = false")
-       Flux<PeriodeComptable> findByTenant_IdAndClotureeFalse(@Param("tenant_id") UUID tenant_id);
+       @Query("SELECT * FROM periodes_comptables WHERE organization_id = :organization_id AND cloturee = false")
+       Flux<PeriodeComptable> findByTenant_IdAndClotureeFalse(@Param("organization_id") UUID organization_id);
 
-       @Query("SELECT * FROM periodes_comptables WHERE tenant_id = :tenant_id AND date_debut >= :start_date AND date_fin <= :end_date")
-       Flux<PeriodeComptable> findByTenant_IdAndPeriodRange(@Param("tenant_id") UUID tenant_id,
+       @Query("SELECT * FROM periodes_comptables WHERE organization_id = :organization_id AND date_debut >= :start_date AND date_fin <= :end_date")
+       Flux<PeriodeComptable> findByTenant_IdAndPeriodRange(@Param("organization_id") UUID organization_id,
                      @Param("start_date") LocalDate start_date, @Param("end_date") LocalDate end_date);
 }

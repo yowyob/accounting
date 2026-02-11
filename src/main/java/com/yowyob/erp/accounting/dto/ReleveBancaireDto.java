@@ -18,7 +18,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class ReleveBancaireDto {
     private UUID id;
-    private UUID tenantId;
+    private UUID organizationId;
     private UUID compteId;
     private LocalDateTime dateOperation;
     private LocalDateTime dateValeur;

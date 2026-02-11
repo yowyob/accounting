@@ -37,7 +37,7 @@ public class EcritureComptableController {
                                 .map(created -> ResponseEntity.status(HttpStatus.CREATED)
                                                 .body(ApiResponseWrapper.success(created,
                                                                 "Entry created successfully")))
-                                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext
+                                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext
                                                 .captureFromThreadLocal());
         }
 
@@ -49,7 +49,7 @@ public class EcritureComptableController {
                                 .map(validated -> ResponseEntity
                                                 .ok(ApiResponseWrapper.success(validated,
                                                                 "Entry validated successfully")))
-                                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext
+                                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext
                                                 .captureFromThreadLocal());
         }
 
@@ -59,7 +59,7 @@ public class EcritureComptableController {
                 return ecriture_service.getAll()
                                 .map(list -> ResponseEntity
                                                 .ok(ApiResponseWrapper.success(list, "Entries list retrieved")))
-                                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext
+                                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext
                                                 .captureFromThreadLocal());
         }
 
@@ -70,7 +70,7 @@ public class EcritureComptableController {
                                 .map(e -> ResponseEntity.ok(ApiResponseWrapper.success(e, "Entry found")))
                                 .defaultIfEmpty(ResponseEntity.status(HttpStatus.NOT_FOUND)
                                                 .body(ApiResponseWrapper.error("Entry not found", 404)))
-                                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext
+                                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext
                                                 .captureFromThreadLocal());
         }
 
@@ -81,7 +81,7 @@ public class EcritureComptableController {
                                 .map(list -> ResponseEntity
                                                 .ok(ApiResponseWrapper.success(list,
                                                                 "Non-validated entries list retrieved")))
-                                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext
+                                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext
                                                 .captureFromThreadLocal());
         }
 
@@ -93,7 +93,7 @@ public class EcritureComptableController {
                         @RequestParam(required = false) UUID journalId) {
                 return ecriture_service.searchEcritures(start, end, journalId)
                                 .map(list -> ResponseEntity.ok(ApiResponseWrapper.success(list, "Search results")))
-                                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext
+                                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext
                                                 .captureFromThreadLocal());
         }
 
@@ -105,7 +105,7 @@ public class EcritureComptableController {
                                 .map(created -> ResponseEntity.status(HttpStatus.CREATED)
                                                 .body(ApiResponseWrapper.success(created,
                                                                 "Entry generated successfully")))
-                                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext
+                                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext
                                                 .captureFromThreadLocal());
         }
 
@@ -116,7 +116,7 @@ public class EcritureComptableController {
                                 .then(Mono.fromCallable(
                                                 () -> ResponseEntity.ok(ApiResponseWrapper.success(null,
                                                                 "Entry deleted successfully"))))
-                                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext
+                                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext
                                                 .captureFromThreadLocal());
         }
 
@@ -127,7 +127,7 @@ public class EcritureComptableController {
                 return ecriture_service.cancelEcriture(id, user)
                                 .map(canceled -> ResponseEntity.ok(
                                                 ApiResponseWrapper.success(canceled, "Entry canceled successfully")))
-                                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext
+                                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext
                                                 .captureFromThreadLocal());
         }
 
@@ -138,7 +138,7 @@ public class EcritureComptableController {
                                 .then(Mono.fromCallable(
                                                 () -> ResponseEntity.ok(ApiResponseWrapper.success(null,
                                                                 "Entry deactivated successfully"))))
-                                .contextWrite(com.yowyob.erp.config.tenant.ReactiveTenantContext
+                                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext
                                                 .captureFromThreadLocal());
         }
 }

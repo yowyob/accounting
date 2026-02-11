@@ -13,7 +13,7 @@ import com.yowyob.erp.accounting.repository.JournalAuditRepository;
 import com.yowyob.erp.common.entity.ComptableObject;
 import com.yowyob.erp.common.enums.Sens;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import com.yowyob.erp.accounting.dto.DetailEcritureDto;
 import com.yowyob.erp.accounting.dto.JournalAuditDto;
 import com.yowyob.erp.config.kafka.KafkaMessageService;
@@ -53,9 +53,9 @@ public class DetailEcritureService {
          * Manually creates a new accounting entry detail.
          */
         @Transactional
-        public Mono<DetailEcriture> createDetailEcriture(DetailEcriture detail, Tenant tenant,
+        public Mono<DetailEcriture> createDetailEcriture(DetailEcriture detail, Organization tenant,
                         EcritureComptable ecriture) {
-                return ReactiveTenantContext.getCurrentUser()
+                return ReactiveOrganizationContext.getCurrentUser()
                                 .defaultIfEmpty("system")
                                 .flatMap(current_user -> {
                                         return validateDetailEcriture(detail)
@@ -102,9 +102,9 @@ public class DetailEcritureService {
          */
         public Mono<Void> generateDetailsFromOperation(EcritureComptable ecriture, OperationComptable operation,
                         Transaction transaction) {
-                Tenant tenant = ecriture.getTenant();
+                Organization tenant = ecriture.getTenant();
                 if (tenant == null) {
-                        return Mono.error(new IllegalStateException("Tenant is required in entry"));
+                        return Mono.error(new IllegalStateException("Organization is required in entry"));
                 }
 
                 return Mono.zip(
@@ -129,11 +129,11 @@ public class DetailEcritureService {
                                         String libelle = String.format("Transaction %s – Operation: %s",
                                                         transaction.getNumero_recu(), operation.getType_operation());
 
-                                        return ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                                        return ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                                         .flatMap(current_user -> {
                                                                 // Debit line
                                                                 DetailEcriture debit = DetailEcriture.builder()
-                                                                                .tenantId(tenant.getId())
+                                                                                .organizationId(tenant.getId())
                                                                                 .ecriture_id(ecriture.getId())
                                                                                 .compte_id(principal_account.getId())
                                                                                 .libelle(libelle)
@@ -150,7 +150,7 @@ public class DetailEcritureService {
 
                                                                 // Credit line
                                                                 DetailEcriture credit = DetailEcriture.builder()
-                                                                                .tenantId(tenant.getId())
+                                                                                .organizationId(tenant.getId())
                                                                                 .ecriture_id(ecriture.getId())
                                                                                 .compte_id(counter_account.getId())
                                                                                 .libelle(libelle)
@@ -182,9 +182,9 @@ public class DetailEcritureService {
          * Generates accounting lines from a generic accounting object.
          */
         public Mono<Void> generateDetailsFromComptableObject(EcritureComptable ecriture, ComptableObject object) {
-                Tenant tenant = ecriture.getTenant();
+                Organization tenant = ecriture.getTenant();
                 if (tenant == null) {
-                        return Mono.error(new IllegalStateException("Tenant is required in entry"));
+                        return Mono.error(new IllegalStateException("Organization is required in entry"));
                 }
 
                 return Mono.zip(
@@ -206,11 +206,11 @@ public class DetailEcritureService {
                                         String libelle = object.get_description() != null ? object.get_description()
                                                         : "Auto entry " + object.get_source_type();
 
-                                        return ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system")
+                                        return ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                                         .flatMap(current_user -> {
                                                                 // Debit
                                                                 DetailEcriture debit = DetailEcriture.builder()
-                                                                                .tenantId(tenant.getId())
+                                                                                .organizationId(tenant.getId())
                                                                                 .ecriture_id(ecriture.getId())
                                                                                 .compte_id(debit_account.getId())
                                                                                 .libelle(libelle)
@@ -226,7 +226,7 @@ public class DetailEcritureService {
 
                                                                 // Credit
                                                                 DetailEcriture credit = DetailEcriture.builder()
-                                                                                .tenantId(tenant.getId())
+                                                                                .organizationId(tenant.getId())
                                                                                 .ecriture_id(ecriture.getId())
                                                                                 .compte_id(credit_account.getId())
                                                                                 .libelle(libelle)
@@ -257,16 +257,16 @@ public class DetailEcritureService {
         /**
          * Retrieves an entry detail by ID and tenant.
          */
-        public Mono<DetailEcriture> getDetailEcriture(UUID id, Tenant tenant) {
+        public Mono<DetailEcriture> getDetailEcriture(UUID id, Organization tenant) {
                 return validateTenantAccess()
                                 .then(detail_repository.findById(id))
-                                .filter(d -> tenant.getId().equals(d.getTenantId()));
+                                .filter(d -> tenant.getId().equals(d.getOrganizationId()));
         }
 
         /**
          * Lists all details for a tenant.
          */
-        public Flux<DetailEcriture> getAllDetailsEcriture(Tenant tenant) {
+        public Flux<DetailEcriture> getAllDetailsEcriture(Organization tenant) {
                 return validateTenantAccess()
                                 .thenMany(detail_repository.findByTenantId(tenant.getId()));
         }
@@ -274,7 +274,7 @@ public class DetailEcritureService {
         /**
          * Lists details for a specific entry.
          */
-        public Flux<DetailEcriture> getDetailsByEcriture(Tenant tenant, EcritureComptable ecriture) {
+        public Flux<DetailEcriture> getDetailsByEcriture(Organization tenant, EcritureComptable ecriture) {
                 return validateTenantAccess()
                                 .thenMany(detail_repository.findByTenant_IdAndEcriture_Id(tenant.getId(),
                                                 ecriture.getId()));
@@ -284,13 +284,13 @@ public class DetailEcritureService {
          * Updates an existing entry detail.
          */
         @Transactional
-        public Mono<DetailEcriture> updateDetailEcriture(UUID id, DetailEcriture updated_detail, Tenant tenant,
+        public Mono<DetailEcriture> updateDetailEcriture(UUID id, DetailEcriture updated_detail, Organization tenant,
                         EcritureComptable ecriture) {
                 return validateTenantAccess()
-                                .then(ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system"))
+                                .then(ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system"))
                                 .flatMap(current_user -> {
                                         return detail_repository.findById(id)
-                                                        .filter(d -> tenant.getId().equals(d.getTenantId()))
+                                                        .filter(d -> tenant.getId().equals(d.getOrganizationId()))
                                                         .switchIfEmpty(Mono.error(new IllegalArgumentException(
                                                                         "Entry detail not found: " + id)))
                                                         .flatMap(existing -> {
@@ -351,12 +351,12 @@ public class DetailEcritureService {
          * Deletes an entry detail.
          */
         @Transactional
-        public Mono<Void> deleteDetailEcriture(UUID id, Tenant tenant, EcritureComptable ecriture) {
+        public Mono<Void> deleteDetailEcriture(UUID id, Organization tenant, EcritureComptable ecriture) {
                 return validateTenantAccess()
-                                .then(ReactiveTenantContext.getCurrentUser().defaultIfEmpty("system"))
+                                .then(ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system"))
                                 .flatMap(current_user -> {
                                         return detail_repository.findById(id)
-                                                        .filter(d -> tenant.getId().equals(d.getTenantId()))
+                                                        .filter(d -> tenant.getId().equals(d.getOrganizationId()))
                                                         .switchIfEmpty(Mono.error(new IllegalArgumentException(
                                                                         "Entry detail not found: " + id)))
                                                         .flatMap(detail -> {
@@ -390,10 +390,10 @@ public class DetailEcritureService {
                                 return Mono.error(new IllegalArgumentException("Compte ID is required"));
                         }
 
-                        return ReactiveTenantContext.getTenantId()
-                                        .flatMap(tenant_id -> {
+                        return ReactiveOrganizationContext.getOrganizationId()
+                                        .flatMap(organization_id -> {
                                                 return compte_repository.findById(detail.getCompte_id())
-                                                                .filter(p -> tenant_id.equals(p.getTenantId()))
+                                                                .filter(p -> organization_id.equals(p.getOrganizationId()))
                                                                 .switchIfEmpty(Mono.error(new IllegalArgumentException(
                                                                                 "Accounting account not found: "
                                                                                                 + detail.getCompte_id())))
@@ -429,11 +429,11 @@ public class DetailEcritureService {
         /**
          * Logs an audit action for an entry detail change.
          */
-        private Mono<Void> logAudit(Tenant tenant, UUID ecriture_comptable_id, String utilisateur, String action,
+        private Mono<Void> logAudit(Organization tenant, UUID ecriture_comptable_id, String utilisateur, String action,
                         String details) {
                 JournalAudit audit = JournalAudit.builder()
                                 .id(UUID.randomUUID())
-                                .tenantId(tenant.getId())
+                                .organizationId(tenant.getId())
                                 .ecriture_comptable_id(ecriture_comptable_id)
                                 .utilisateur(utilisateur)
                                 .action(action)
@@ -465,9 +465,9 @@ public class DetailEcritureService {
          * Ensures that a tenant context is defined.
          */
         private Mono<Void> validateTenantAccess() {
-                return ReactiveTenantContext.getTenantId()
+                return ReactiveOrganizationContext.getOrganizationId()
                                 .switchIfEmpty(Mono
-                                                .error(new SecurityException("Access denied: Tenant ID not defined")))
+                                                .error(new SecurityException("Access denied: Organization ID not defined")))
                                 .then();
         }
 

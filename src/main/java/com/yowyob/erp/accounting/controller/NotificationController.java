@@ -3,7 +3,7 @@ package com.yowyob.erp.accounting.controller;
 import com.yowyob.erp.accounting.entity.Notification;
 import com.yowyob.erp.accounting.service.InAppNotificationService;
 import com.yowyob.erp.common.dto.ApiResponseWrapper;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -34,8 +34,8 @@ public class NotificationController {
         if (userId == null) userId = jwt.getSubject();
 
         String finalUserId = userId;
-        return ReactiveTenantContext.getTenantId()
-                .flatMap(tenantId -> notificationService.getUnreadNotifications(tenantId, finalUserId).collectList())
+        return ReactiveOrganizationContext.getOrganizationId()
+                .flatMap(organizationId -> notificationService.getUnreadNotifications(organizationId, finalUserId).collectList())
                 .map(list -> ResponseEntity.ok(ApiResponseWrapper.success(list)));
     }
 

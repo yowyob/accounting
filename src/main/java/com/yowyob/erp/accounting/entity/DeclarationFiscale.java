@@ -37,11 +37,11 @@ public class DeclarationFiscale {
     @Column("declaration_id")
     private UUID id;
 
-    @Column("tenant_id")
-    private UUID tenantId;
+    @Column("organization_id")
+    private UUID organizationId;
 
     @Transient
-    private Tenant tenant;
+    private Organization tenant;
 
     @NotBlank
     @Column("type_declaration")

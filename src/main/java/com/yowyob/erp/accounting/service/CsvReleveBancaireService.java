@@ -40,8 +40,8 @@ public class CsvReleveBancaireService {
     public Mono<List<ReleveBancaire>> parseReleveBancaire(MultipartFile file) {
         return Mono.fromCallable(() -> {
             List<ReleveBancaire> operations = new ArrayList<>();
-            // Assuming Tenant is handled by context or passed externally
-            UUID tenantId = null;
+            // Assuming Organization is handled by context or passed externally
+            UUID organizationId = null;
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(file.getInputStream(), "UTF-8"))) {
                 String line;
@@ -58,7 +58,7 @@ public class CsvReleveBancaireService {
                         continue;
 
                     ReleveBancaire op = new ReleveBancaire();
-                    op.setTenantId(tenantId);
+                    op.setTenantId(organizationId);
                     op.setNew(true);
 
                     int idxDate = detectColumnIndex(cols, "date", "operation", "valeur");
@@ -152,7 +152,7 @@ public class CsvReleveBancaireService {
         });
     }
 
-    public Mono<List<Map<String, Object>>> getListeReleves(UUID tenant_id) {
+    public Mono<List<Map<String, Object>>> getListeReleves(UUID organization_id) {
         return Mono.just(new ArrayList<>());
     }
 

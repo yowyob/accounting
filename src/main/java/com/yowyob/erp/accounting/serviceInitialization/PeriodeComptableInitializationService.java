@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.yowyob.erp.accounting.dto.PeriodeComptableDto;
 import com.yowyob.erp.accounting.service.PeriodeComptableService;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -27,19 +27,19 @@ public class PeriodeComptableInitializationService implements CommandLineRunner 
 
     private final PeriodeComptableService periode_service;
     private final com.yowyob.erp.accounting.repository.ExerciceComptableRepository exercice_repository;
-    private final UUID tenant_id;
+    private final UUID organization_id;
 
     public PeriodeComptableInitializationService(PeriodeComptableService periode_service,
             com.yowyob.erp.accounting.repository.ExerciceComptableRepository exercice_repository,
-            @Value("${app.tenant.default-tenant:550e8400-e29b-41d4-a716-446655440000}") String tenant_id_str) {
+            @Value("${app.tenant.default-tenant:550e8400-e29b-41d4-a716-446655440000}") String organization_id_str) {
         this.periode_service = periode_service;
         this.exercice_repository = exercice_repository;
-        this.tenant_id = UUID.fromString(tenant_id_str);
+        this.organization_id = UUID.fromString(organization_id_str);
     }
 
     @Override
     public void run(String... args) {
-        exercice_repository.findByTenantIdAndCode(tenant_id, "2026")
+        exercice_repository.findByTenantIdAndCode(organization_id, "2026")
                 .flatMapMany(exercice -> {
                     UUID exercice_id = exercice.getId();
                     return Flux.range(1, 12)
@@ -63,7 +63,7 @@ public class PeriodeComptableInitializationService implements CommandLineRunner 
                                         });
                             });
                 })
-                .contextWrite(ReactiveTenantContext.withTenantId(tenant_id))
+                .contextWrite(ReactiveOrganizationContext.withTenantId(organization_id))
                 .subscribe(
                         v -> log.debug("Period iteration check: {}", v.getCode()),
                         e -> log.error("❌ Error initializing periods", e),

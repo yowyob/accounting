@@ -24,13 +24,13 @@ import java.util.UUID;
 public class AgenceInitializationService implements CommandLineRunner {
 
     private final AgenceRepository agence_repository;
-    private final UUID tenant_id;
+    private final UUID organization_id;
 
     public AgenceInitializationService(
             AgenceRepository agence_repository,
-            @Value("${app.tenant.default-tenant:550e8400-e29b-41d4-a716-446655440000}") String tenant_id_str) {
+            @Value("${app.tenant.default-tenant:550e8400-e29b-41d4-a716-446655440000}") String organization_id_str) {
         this.agence_repository = agence_repository;
-        this.tenant_id = UUID.fromString(tenant_id_str);
+        this.organization_id = UUID.fromString(organization_id_str);
     }
 
     @Override
@@ -42,10 +42,10 @@ public class AgenceInitializationService implements CommandLineRunner {
     }
 
     private Mono<Agence> createAgenceIfNotExists(String code, String name, String city, String country) {
-        return agence_repository.findByTenantIdAndCode(tenant_id, code)
+        return agence_repository.findByTenantIdAndCode(organization_id, code)
                 .switchIfEmpty(Mono.defer(() -> {
                     Agence agence = Agence.builder()
-                            .tenantId(tenant_id)
+                            .organizationId(organization_id)
                             .code(code)
                             .name(name)
                             .city(city)

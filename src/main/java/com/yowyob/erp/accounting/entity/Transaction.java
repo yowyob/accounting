@@ -29,8 +29,8 @@ public class Transaction implements SettablePersistable<UUID> {
     @Id
     private UUID id;
 
-    @Column("tenant_id")
-    private UUID tenantId;
+    @Column("organization_id")
+    private UUID organizationId;
 
     @Column("numero_recu")
     private String numero_recu;
@@ -94,7 +94,7 @@ public class Transaction implements SettablePersistable<UUID> {
     private String updated_by;
 
     @Transient
-    private Tenant tenant;
+    private Organization tenant;
 
     @Transient
     @Builder.Default

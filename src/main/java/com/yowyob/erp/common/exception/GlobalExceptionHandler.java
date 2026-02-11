@@ -56,9 +56,9 @@ public class GlobalExceptionHandler {
      * @param ex the tenant exception
      * @return forbidden response with error message
      */
-    @ExceptionHandler(TenantException.class)
-    public ResponseEntity<ApiResponseWrapper<Object>> handleTenantException(TenantException ex) {
-        log.error("Tenant error: {}", ex.getMessage());
+    @ExceptionHandler(OrganizationException.class)
+    public ResponseEntity<ApiResponseWrapper<Object>> handleTenantException(OrganizationException ex) {
+        log.error("Organization error: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ApiResponseWrapper.error(ex.getMessage()));
     }

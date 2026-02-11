@@ -32,16 +32,16 @@ public class ClotureMensuelleService {
    * Puis création automatique des écritures À-nouveaux au 01 du mois suivant
    */
   @Transactional
-  public Mono<Void> cloturerMoisEtGenererANouveaux(UUID tenantId, int mois, int annee) {
+  public Mono<Void> cloturerMoisEtGenererANouveaux(UUID organizationId, int mois, int annee) {
     YearMonth moisCloture = YearMonth.of(annee, mois);
     LocalDate dateCloture = moisCloture.atEndOfMonth();
     LocalDate dateANouveaux = moisCloture.plusMonths(1).atDay(1);
 
     // Étape 1 : Création de l'écriture de clôture
-    return creerEcritureCloture(tenantId, dateCloture)
+    return creerEcritureCloture(organizationId, dateCloture)
         .flatMap(ecritureClotureId -> {
           // Étape 2 : Calcul des soldes des comptes 6 et 7
-          return calculerSoldesClasses67(tenantId, mois, annee)
+          return calculerSoldesClasses67(organizationId, mois, annee)
               .collectList()
               .flatMap(soldes -> {
                 java.util.concurrent.atomic.AtomicReference<BigDecimal> totalCharges = new java.util.concurrent.atomic.AtomicReference<>(
@@ -58,11 +58,11 @@ public class ClotureMensuelleService {
                   if (numeroCompte.startsWith("6")) {
                     totalCharges.updateAndGet(v -> v.add(solde));
                     inserts = inserts
-                        .concatWith(insererDetailEcriture(ecritureClotureId, tenantId, numeroCompte, solde, "CREDIT"));
+                        .concatWith(insererDetailEcriture(ecritureClotureId, organizationId, numeroCompte, solde, "CREDIT"));
                   } else if (numeroCompte.startsWith("7")) {
                     totalProduits.updateAndGet(v -> v.add(solde));
                     inserts = inserts
-                        .concatWith(insererDetailEcriture(ecritureClotureId, tenantId, numeroCompte, solde, "DEBIT"));
+                        .concatWith(insererDetailEcriture(ecritureClotureId, organizationId, numeroCompte, solde, "DEBIT"));
                   }
                 }
 
@@ -73,23 +73,23 @@ public class ClotureMensuelleService {
                   BigDecimal resultat = tProduits.subtract(tCharges);
                   String compteResultat = resultat.compareTo(BigDecimal.ZERO) >= 0 ? "120000" : "121000";
                   String sens = resultat.compareTo(BigDecimal.ZERO) >= 0 ? "DEBIT" : "CREDIT";
-                  return insererDetailEcriture(ecritureClotureId, tenantId, compteResultat, resultat.abs(), sens);
+                  return insererDetailEcriture(ecritureClotureId, organizationId, compteResultat, resultat.abs(), sens);
                 }));
               });
         })
-        .then(genererEcrituresANouveaux(tenantId, dateANouveaux));
+        .then(genererEcrituresANouveaux(organizationId, dateANouveaux));
   }
 
-  private Mono<UUID> creerEcritureCloture(UUID tenantId, LocalDate date) {
+  private Mono<UUID> creerEcritureCloture(UUID organizationId, LocalDate date) {
     String sql = """
         INSERT INTO ecriture_comptable
-        (tenant_id, date_operation, libelle, journal_code, validee, created_at, numero_ecriture, journal_id, periode_id)
-        VALUES (:tenantId, :date, :libelle, 'OD', true, NOW(), :numeroEcriture, NULL, NULL)
+        (organization_id, date_operation, libelle, journal_code, validee, created_at, numero_ecriture, journal_id, periode_id)
+        VALUES (:organizationId, :date, :libelle, 'OD', true, NOW(), :numeroEcriture, NULL, NULL)
         RETURNING id
         """;
 
     return databaseClient.sql(sql)
-        .bind("tenantId", tenantId)
+        .bind("organizationId", organizationId)
         .bind("date", date)
         .bind("libelle", "Clôture mois " + date.getMonthValue() + "/" + date.getYear())
         .bind("numeroEcriture",
@@ -98,7 +98,7 @@ public class ClotureMensuelleService {
         .one();
   }
 
-  private Flux<Map<String, Object>> calculerSoldesClasses67(UUID tenantId, int mois, int annee) {
+  private Flux<Map<String, Object>> calculerSoldesClasses67(UUID organizationId, int mois, int annee) {
     String sql = """
         SELECT c.numero,
                SUM(
@@ -109,7 +109,7 @@ public class ClotureMensuelleService {
                ) as solde
         FROM details_ecritures de
         JOIN comptes c ON de.compte_id = c.id
-        WHERE de.tenant_id = :tenantId
+        WHERE de.organization_id = :organizationId
           AND EXTRACT(MONTH FROM de.date_ecriture) = :mois
           AND EXTRACT(YEAR FROM de.date_ecriture) = :annee
           AND (c.numero LIKE '6%' OR c.numero LIKE '7%')
@@ -123,44 +123,44 @@ public class ClotureMensuelleService {
         """;
 
     return databaseClient.sql(sql)
-        .bind("tenantId", tenantId)
+        .bind("organizationId", organizationId)
         .bind("mois", mois)
         .bind("annee", annee)
         .fetch()
         .all();
   }
 
-  private Mono<Void> insererDetailEcriture(UUID ecritureId, UUID tenantId, String numeroCompte, BigDecimal montant,
+  private Mono<Void> insererDetailEcriture(UUID ecritureId, UUID organizationId, String numeroCompte, BigDecimal montant,
       String sens) {
     String sql = """
         INSERT INTO details_ecritures
-        (ecriture_id, tenant_id, compte_id, libelle, sens, montant_debit, montant_credit, date_ecriture, created_at)
-        SELECT :ecritureId, :tenantId, c.id, 'Clôture automatique', :sens,
+        (ecriture_id, organization_id, compte_id, libelle, sens, montant_debit, montant_credit, date_ecriture, created_at)
+        SELECT :ecritureId, :organizationId, c.id, 'Clôture automatique', :sens,
                CASE WHEN :sens = 'DEBIT' THEN :montant ELSE NULL END,
                CASE WHEN :sens = 'CREDIT' THEN :montant ELSE NULL END,
                NOW(), NOW()
         FROM comptes c
-        WHERE c.tenant_id = :tenantId AND c.numero = :numeroCompte
+        WHERE c.organization_id = :organizationId AND c.numero = :numeroCompte
         """;
 
     return databaseClient.sql(sql)
         .bind("ecritureId", ecritureId)
-        .bind("tenantId", tenantId)
+        .bind("organizationId", organizationId)
         .bind("sens", sens)
         .bind("montant", montant)
         .bind("numeroCompte", numeroCompte)
         .then();
   }
 
-  private Mono<Void> genererEcrituresANouveaux(UUID tenantId, LocalDate dateDebut) {
+  private Mono<Void> genererEcrituresANouveaux(UUID organizationId, LocalDate dateDebut) {
     String sql = """
-        INSERT INTO ecriture_comptable (tenant_id, date_operation, libelle, journal_code, validee, created_at, numero_ecriture, journal_id, periode_id)
-        VALUES (:tenantId, :dateDebut, 'À-nouveaux', 'AN', true, NOW(), :numeroEcriture, NULL, NULL)
+        INSERT INTO ecriture_comptable (organization_id, date_operation, libelle, journal_code, validee, created_at, numero_ecriture, journal_id, periode_id)
+        VALUES (:organizationId, :dateDebut, 'À-nouveaux', 'AN', true, NOW(), :numeroEcriture, NULL, NULL)
         RETURNING id
         """;
 
     return databaseClient.sql(sql)
-        .bind("tenantId", tenantId)
+        .bind("organizationId", organizationId)
         .bind("dateDebut", dateDebut)
         .bind("numeroEcriture", "AN-" + dateDebut.getYear() + "-" + UUID.randomUUID().toString().substring(0, 8))
         .map(row -> row.get("id", UUID.class))
@@ -168,8 +168,8 @@ public class ClotureMensuelleService {
         .flatMap(ecritureANouveauxId -> {
           String sqlDetails = """
               INSERT INTO details_ecritures
-              (ecriture_id, tenant_id, compte_id, libelle, sens, montant_debit, montant_credit, date_ecriture)
-              SELECT :ecritureId, :tenantId, compte_id, 'À-nouveaux',
+              (ecriture_id, organization_id, compte_id, libelle, sens, montant_debit, montant_credit, date_ecriture)
+              SELECT :ecritureId, :organizationId, compte_id, 'À-nouveaux',
                      CASE WHEN solde >= 0 THEN 'DEBIT' ELSE 'CREDIT' END,
                      CASE WHEN solde >= 0 THEN ABS(solde) ELSE NULL END,
                      CASE WHEN solde < 0 THEN ABS(solde) ELSE NULL END,
@@ -178,7 +178,7 @@ public class ClotureMensuelleService {
                   SELECT compte_id,
                          SUM(COALESCE(montant_debit,0) - COALESCE(montant_credit,0)) as solde
                   FROM details_ecritures
-                  WHERE tenant_id = :tenantId
+                  WHERE organization_id = :organizationId
                     AND date_ecriture < :dateDebut
                   GROUP BY compte_id
                   HAVING SUM(COALESCE(montant_debit,0) - COALESCE(montant_credit,0)) <> 0
@@ -187,7 +187,7 @@ public class ClotureMensuelleService {
 
           return databaseClient.sql(sqlDetails)
               .bind("ecritureId", ecritureANouveauxId)
-              .bind("tenantId", tenantId)
+              .bind("organizationId", organizationId)
               .bind("dateDebut", dateDebut)
               .then();
         });
@@ -198,18 +198,18 @@ public class ClotureMensuelleService {
    */
   @Transactional
   public Mono<Map<String, Object>> cloturerPeriode(UUID periode_id, String user) {
-    String sqlPeriode = "SELECT tenant_id, date_debut, date_fin FROM periode_comptable WHERE id = :periodeId";
+    String sqlPeriode = "SELECT organization_id, date_debut, date_fin FROM periode_comptable WHERE id = :periodeId";
 
     return databaseClient.sql(sqlPeriode)
         .bind("periodeId", periode_id)
         .fetch()
         .one()
         .flatMap(row -> {
-          UUID tenant_id = (UUID) row.get("tenant_id");
+          UUID organization_id = (UUID) row.get("organization_id");
           LocalDate dateFin = (LocalDate) row.get("date_fin");
 
           return cloturerMoisEtGenererANouveaux(
-              tenant_id,
+              organization_id,
               dateFin.getMonthValue(),
               dateFin.getYear())
               .then(Mono.defer(() -> {

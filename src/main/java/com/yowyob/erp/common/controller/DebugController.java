@@ -17,7 +17,7 @@ import com.yowyob.erp.accounting.service.SynchronizationService;
 import com.yowyob.erp.common.dto.ApiResponseWrapper;
 import com.yowyob.erp.config.kafka.KafkaMessageService;
 import com.yowyob.erp.config.redis.RedisService;
-import com.yowyob.erp.config.tenant.TenantContext;
+import com.yowyob.erp.config.organization.OrganizationContext;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
  * Contrôleur utilitaire de test et de diagnostic interne :
  * - Vérifie la connectivité Redis et Kafka
  * - Déclenche des synchronisations manuelles
- * - Expose le contexte Tenant courant
+ * - Expose le contexte Organization courant
  *
  * À utiliser uniquement en environnement de développement, recette ou QA.
  */
@@ -47,10 +47,10 @@ public class DebugController {
      */
     @PostMapping("/kafka/test")
     public ApiResponseWrapper<String> testKafka(@RequestBody Map<String, Object> payload) {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        log.info("🛰️ Envoi d’un message Kafka de test pour le tenant {}", tenantId);
+        UUID organizationId = OrganizationContext.getCurrentTenant();
+        log.info("🛰️ Envoi d’un message Kafka de test pour le tenant {}", organizationId);
 
-        kafkaMessageService.sendAccountingEvent(payload, tenantId, "DEBUG_TEST_EVENT");
+        kafkaMessageService.sendAccountingEvent(payload, organizationId, "DEBUG_TEST_EVENT");
         return ApiResponseWrapper.success("✅ Message Kafka de test envoyé avec succès");
     }
 
@@ -59,11 +59,11 @@ public class DebugController {
      */
     @PostMapping("/redis/test")
     public ApiResponseWrapper<String> testRedis(@RequestBody Map<String, Object> data) {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        String key = String.format("debug:test:%s", tenantId);
+        UUID organizationId = OrganizationContext.getCurrentTenant();
+        String key = String.format("debug:test:%s", organizationId);
         redisService.save(key, data, Duration.ofMinutes(5));
 
-        log.info("💾 Données de test enregistrées dans Redis pour le tenant {}", tenantId);
+        log.info("💾 Données de test enregistrées dans Redis pour le tenant {}", organizationId);
         return ApiResponseWrapper.success("✅ Données sauvegardées en Redis");
     }
 
@@ -72,8 +72,8 @@ public class DebugController {
      */
     @GetMapping("/redis/test")
     public ApiResponseWrapper<Object> getRedisTest() {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        String key = String.format("debug:test:%s", tenantId);
+        UUID organizationId = OrganizationContext.getCurrentTenant();
+        String key = String.format("debug:test:%s", organizationId);
 
         Object data = redisService.get(key, Object.class);
         log.info("🔍 Lecture Redis : clé={} valeur={}", key, data);
@@ -85,20 +85,20 @@ public class DebugController {
      */
     @PostMapping("/sync/test")
     public ApiResponseWrapper<String> testSync() {
-        UUID tenantId = TenantContext.getCurrentTenant();
-        log.info("🔁 Déclenchement manuel de la synchronisation pour le tenant {}", tenantId);
+        UUID organizationId = OrganizationContext.getCurrentTenant();
+        log.info("🔁 Déclenchement manuel de la synchronisation pour le tenant {}", organizationId);
 
-        synchronizationService.checkAndSync(tenantId);
+        synchronizationService.checkAndSync(organizationId);
         return ApiResponseWrapper.success("✅ Synchronisation déclenchée avec succès");
     }
 
     /**
-     * 🧠 Affiche les informations du contexte Tenant courant
+     * 🧠 Affiche les informations du contexte Organization courant
      */
     @GetMapping("/tenant/info")
     public ApiResponseWrapper<Map<String, Object>> getTenantInfo() {
         Map<String, Object> info = new HashMap<>();
-        info.put("tenantId", TenantContext.getCurrentTenant());
+        info.put("organizationId", OrganizationContext.getCurrentTenant());
         info.put("thread", Thread.currentThread().getName());
         info.put("timestamp", System.currentTimeMillis());
 

@@ -36,8 +36,8 @@ public class ComptableObjectRequest {
      */
     private UUID id;
 
-    @JsonProperty("tenant_id")
-    private UUID tenantId;
+    @JsonProperty("organization_id")
+    private UUID organizationId;
 
     private LocalDate date;
     private String libelle;

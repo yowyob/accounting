@@ -40,7 +40,7 @@ public class MouvementStockComptable implements ComptableObject {
     // private static final String COMPTE_BANQUE = "512000";
 
     private UUID id;
-    private UUID tenant_id;
+    private UUID organization_id;
     private int quantite;
     private BigDecimal cout_unitaire; // Updated for financial precision
     private LocalDate date;
@@ -58,8 +58,8 @@ public class MouvementStockComptable implements ComptableObject {
     }
 
     @Override
-    public UUID get_tenant_id() {
-        return tenant_id;
+    public UUID get_organization_id() {
+        return organization_id;
     }
 
     @Override
@@ -109,7 +109,7 @@ public class MouvementStockComptable implements ComptableObject {
 
     /* Generate accounting lines (2 lines) */
     @Override
-    public List<DetailEcriture> generate_ecriture_details(Tenant tenant, EcritureComptable ecriture) {
+    public List<DetailEcriture> generate_ecriture_details(Organization tenant, EcritureComptable ecriture) {
         List<DetailEcriture> details = new ArrayList<>();
         BigDecimal montant_total = get_montant();
         LocalDateTime now = LocalDateTime.now();

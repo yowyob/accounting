@@ -30,8 +30,8 @@ public class ReleveBancaire implements SettablePersistable<UUID> {
     @Column("releve_bancaire_id")
     private UUID id;
 
-    @Column("tenant_id")
-    private UUID tenantId;
+    @Column("organization_id")
+    private UUID organizationId;
 
     @Column("compte_id")
     private UUID compteId; // The bank account in the ledger

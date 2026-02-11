@@ -7,7 +7,7 @@ import com.yowyob.erp.accounting.dto.DetailEcritureDto;
 import com.yowyob.erp.accounting.dto.EcritureComptableDto;
 import com.yowyob.erp.accounting.entity.Compte;
 import com.yowyob.erp.accounting.repository.CompteRepository;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import com.yowyob.erp.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,18 +40,18 @@ public class CashRegisterAccountingService {
                         return Mono.error(new IllegalArgumentException("Movement is already accounted"));
                 }
 
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenantId -> determineAccounts(movement, tenantId)
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organizationId -> determineAccounts(movement, organizationId)
                                                 .flatMap(tuple -> generateEcriture(movement, tuple.getT1(),
-                                                                tuple.getT2(), tenantId)));
+                                                                tuple.getT2(), organizationId)));
         }
 
-        private Mono<Tuple2<Compte, Compte>> determineAccounts(CashRegisterMovementDto movement, UUID tenantId) {
+        private Mono<Tuple2<Compte, Compte>> determineAccounts(CashRegisterMovementDto movement, UUID organizationId) {
                 // Resolve Emitter Account
                 Mono<Compte> emitterAccountMono;
                 if (movement.getEmitter_accounting_account() != null
                                 && !movement.getEmitter_accounting_account().isEmpty()) {
-                        emitterAccountMono = compteRepository.findByTenant_IdAndNo_compte(tenantId,
+                        emitterAccountMono = compteRepository.findByTenant_IdAndNo_compte(organizationId,
                                         movement.getEmitter_accounting_account())
                                         .switchIfEmpty(Mono.error(new BusinessException("Emitter account not found: "
                                                         + movement.getEmitter_accounting_account())));
@@ -64,7 +64,7 @@ public class CashRegisterAccountingService {
                 Mono<Compte> recipientAccountMono;
                 if (movement.getRecipient_accounting_account() != null
                                 && !movement.getRecipient_accounting_account().isEmpty()) {
-                        recipientAccountMono = compteRepository.findByTenant_IdAndNo_compte(tenantId,
+                        recipientAccountMono = compteRepository.findByTenant_IdAndNo_compte(organizationId,
                                         movement.getRecipient_accounting_account())
                                         .switchIfEmpty(Mono.error(new BusinessException("Recipient account not found: "
                                                         + movement.getRecipient_accounting_account())));
@@ -77,8 +77,8 @@ public class CashRegisterAccountingService {
         }
 
         private Mono<CashRegisterAccountingResponse> generateEcriture(CashRegisterMovementDto movement,
-                        Compte emitterCompte, Compte recipientCompte, UUID tenantId) {
-                return periodeService.getCurrentPeriode(tenantId)
+                        Compte emitterCompte, Compte recipientCompte, UUID organizationId) {
+                return periodeService.getCurrentPeriode(organizationId)
                                 .flatMap(periode -> {
                                         // Find a default journal for cash movements (looking for "Caisse" or "OD"
                                         // journal)

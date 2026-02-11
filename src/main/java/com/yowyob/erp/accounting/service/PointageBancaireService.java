@@ -2,7 +2,7 @@ package com.yowyob.erp.accounting.service;
 
 import com.yowyob.erp.accounting.entity.DetailEcriture;
 import com.yowyob.erp.accounting.repository.DetailEcritureRepository;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,15 +30,15 @@ public class PointageBancaireService {
     @SuppressWarnings("null")
     @Transactional
     public Mono<Integer> importerEtPointer(MultipartFile file) {
-        return ReactiveTenantContext.getTenantId()
-                .flatMap(tenant_id -> csvService.parseReleveBancaire(file)
+        return ReactiveOrganizationContext.getOrganizationId()
+                .flatMap(organization_id -> csvService.parseReleveBancaire(file)
                         .flatMapMany(Flux::fromIterable)
                         .concatMap(op -> {
                             LocalDate dDebut = op.getDateOperation().toLocalDate();
                             LocalDate dFin = dDebut.plusDays(1);
 
                             return detailRepo
-                                    .findByTenantIdAndMontantAndDateProche(tenant_id, op.getMontant(), dDebut, dFin,
+                                    .findByTenantIdAndMontantAndDateProche(organization_id, op.getMontant(), dDebut, dFin,
                                             dDebut)
                                     .collectList()
                                     .flatMap(candidats -> {
@@ -55,6 +55,6 @@ public class PointageBancaireService {
                         })
                         .reduce(0, (a, b) -> a + b)
                         .doOnSuccess(count -> log.info("✅ {} operations automatically pointed for tenant {}", count,
-                                tenant_id)));
+                                organization_id)));
     }
 }

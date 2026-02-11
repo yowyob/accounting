@@ -30,8 +30,8 @@ public class Compte implements SettablePersistable<UUID> {
     @Id
     private UUID id;
 
-    @Column("tenant_id")
-    private UUID tenantId;
+    @Column("organization_id")
+    private UUID organizationId;
 
     @Column("external_id")
     private UUID external_id;
@@ -72,7 +72,7 @@ public class Compte implements SettablePersistable<UUID> {
     private LocalDateTime updated_at;
 
     @Transient
-    private Tenant tenant; // Kept as transient for DTO mapping if needed
+    private Organization tenant; // Kept as transient for DTO mapping if needed
 
     @Transient
     @Builder.Default

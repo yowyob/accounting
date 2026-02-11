@@ -34,7 +34,7 @@ import java.util.UUID;
 public class TransactionComptable implements ComptableObject {
 
     private UUID id;
-    private UUID tenant_id;
+    private UUID organization_id;
     private BigDecimal montant;
     private LocalDate date;
     private String libelle;
@@ -53,8 +53,8 @@ public class TransactionComptable implements ComptableObject {
     }
 
     @Override
-    public UUID get_tenant_id() {
-        return tenant_id;
+    public UUID get_organization_id() {
+        return organization_id;
     }
 
     @Override
@@ -99,7 +99,7 @@ public class TransactionComptable implements ComptableObject {
 
     /* Automatically generate accounting entries (2 lines) */
     @Override
-    public List<DetailEcriture> generate_ecriture_details(Tenant tenant, EcritureComptable ecriture) {
+    public List<DetailEcriture> generate_ecriture_details(Organization tenant, EcritureComptable ecriture) {
         List<DetailEcriture> details = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
 

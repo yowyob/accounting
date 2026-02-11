@@ -16,28 +16,28 @@ import java.util.UUID;
 @Repository
 public interface PlanComptableRepository extends R2dbcRepository<PlanComptable, UUID> {
 
-        @Query("SELECT * FROM plans_comptables WHERE tenant_id = :tenant_id AND id = :id")
-        Mono<PlanComptable> findByTenant_IdAndId(@Param("tenant_id") UUID tenant_id, @Param("id") UUID id);
+        @Query("SELECT * FROM plans_comptables WHERE organization_id = :organization_id AND id = :id")
+        Mono<PlanComptable> findByTenant_IdAndId(@Param("organization_id") UUID organization_id, @Param("id") UUID id);
 
-        @Query("SELECT * FROM plans_comptables WHERE tenant_id = :tenant_id")
-        Flux<PlanComptable> findByTenant_Id(@Param("tenant_id") UUID tenant_id);
+        @Query("SELECT * FROM plans_comptables WHERE organization_id = :organization_id")
+        Flux<PlanComptable> findByTenant_Id(@Param("organization_id") UUID organization_id);
 
-        @Query("SELECT COUNT(*) > 0 FROM plans_comptables WHERE tenant_id = :tenant_id AND no_compte = :no_compte")
-        Mono<Boolean> existsByTenant_IdAndNo_compte(@Param("tenant_id") UUID tenant_id,
+        @Query("SELECT COUNT(*) > 0 FROM plans_comptables WHERE organization_id = :organization_id AND no_compte = :no_compte")
+        Mono<Boolean> existsByTenant_IdAndNo_compte(@Param("organization_id") UUID organization_id,
                         @Param("no_compte") String no_compte);
 
-        @Query("SELECT * FROM plans_comptables WHERE tenant_id = :tenant_id AND no_compte = :no_compte")
-        Mono<PlanComptable> findByTenant_IdAndNo_compte(@Param("tenant_id") UUID tenant_id,
+        @Query("SELECT * FROM plans_comptables WHERE organization_id = :organization_id AND no_compte = :no_compte")
+        Mono<PlanComptable> findByTenant_IdAndNo_compte(@Param("organization_id") UUID organization_id,
                         @Param("no_compte") String no_compte);
 
-        @Query("SELECT * FROM plans_comptables WHERE tenant_id = :tenant_id AND actif = true")
-        Flux<PlanComptable> findByTenant_IdAndActifTrue(@Param("tenant_id") UUID tenant_id);
+        @Query("SELECT * FROM plans_comptables WHERE organization_id = :organization_id AND actif = true")
+        Flux<PlanComptable> findByTenant_IdAndActifTrue(@Param("organization_id") UUID organization_id);
 
-        @Query("SELECT * FROM plans_comptables WHERE tenant_id = :tenant_id AND no_compte LIKE CONCAT(:prefix, '%')")
-        Flux<PlanComptable> findByTenant_IdAndNo_compteStartingWith(@Param("tenant_id") UUID tenant_id,
+        @Query("SELECT * FROM plans_comptables WHERE organization_id = :organization_id AND no_compte LIKE CONCAT(:prefix, '%')")
+        Flux<PlanComptable> findByTenant_IdAndNo_compteStartingWith(@Param("organization_id") UUID organization_id,
                         @Param("prefix") String prefix);
 
-        @Query("SELECT * FROM plans_comptables WHERE tenant_id = :tenant_id AND classe = :classe")
-        Flux<PlanComptable> findByTenant_IdAndClasse(@Param("tenant_id") UUID tenant_id,
+        @Query("SELECT * FROM plans_comptables WHERE organization_id = :organization_id AND classe = :classe")
+        Flux<PlanComptable> findByTenant_IdAndClasse(@Param("organization_id") UUID organization_id,
                         @Param("classe") Integer classe);
 }

@@ -29,8 +29,8 @@ public class PeriodeComptable implements com.yowyob.erp.common.persistence.Setta
     @Id
     private UUID id;
 
-    @Column("tenant_id")
-    private UUID tenantId;
+    @Column("organization_id")
+    private UUID organizationId;
 
     @Column("exercice_id")
     private UUID exerciceId;
@@ -69,7 +69,7 @@ public class PeriodeComptable implements com.yowyob.erp.common.persistence.Setta
     private String updated_by;
 
     @Transient
-    private Tenant tenant;
+    private Organization tenant;
 
     @Transient
     private ExerciceComptable exercice;

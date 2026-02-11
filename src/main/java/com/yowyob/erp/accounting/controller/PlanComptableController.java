@@ -44,12 +44,12 @@ public class PlanComptableController {
             @ApiResponse(responseCode = "200", description = "Plan initialized successfully"),
             @ApiResponse(responseCode = "400", description = "Validation error or tenant already initialized")
     })
-    @PostMapping("/admin/tenants/{tenantId}/plan-comptable/init-ohada-2025")
+    @PostMapping("/admin/tenants/{organizationId}/plan-comptable/init-ohada-2025")
     public Mono<ResponseEntity<ApiResponseWrapper<String>>> initPlanComptable(
-            @PathVariable(name = "tenantId") UUID tenant_id) {
-        return plan_service.initializePlanComptableForTenant(tenant_id)
+            @PathVariable(name = "organizationId") UUID organization_id) {
+        return plan_service.initializePlanComptableForTenant(organization_id)
                 .then(Mono.just(ResponseEntity.ok(
-                        ApiResponseWrapper.success("OHADA 2025 accounting plan initialized for tenant " + tenant_id))));
+                        ApiResponseWrapper.success("OHADA 2025 accounting plan initialized for tenant " + organization_id))));
     }
 
     /**

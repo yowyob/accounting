@@ -2,7 +2,7 @@ package com.yowyob.erp.accounting.entity;
 
 import com.yowyob.erp.common.entity.ComptableObject;
 import com.yowyob.erp.common.enums.SourceType;
-import com.yowyob.erp.config.tenant.TenantContext;
+import com.yowyob.erp.config.organization.OrganizationContext;
 import com.yowyob.erp.common.enums.Sens;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -43,7 +43,7 @@ public class FactureComptable implements ComptableObject {
     private static final String COMPTE_PRODUIT_VENTE = "701000";
 
     private UUID id;
-    private UUID tenant_id;
+    private UUID organization_id;
     private BigDecimal montant_ht;
     private BigDecimal taux_tva = TAUX_TVA_DEFAUT;
     private LocalDate date;
@@ -56,7 +56,7 @@ public class FactureComptable implements ComptableObject {
     public FactureComptable(UUID id, BigDecimal montant_ht, LocalDate date, String libelle,
             UUID journal_comptable_id, UUID periode_comptable_id, UUID client_id, boolean is_achat) {
         this.id = id;
-        this.tenant_id = TenantContext.getCurrentTenant();
+        this.organization_id = OrganizationContext.getCurrentTenant();
         this.montant_ht = montant_ht;
         this.date = date;
         this.libelle = libelle;
@@ -73,8 +73,8 @@ public class FactureComptable implements ComptableObject {
     }
 
     @Override
-    public UUID get_tenant_id() {
-        return tenant_id;
+    public UUID get_organization_id() {
+        return organization_id;
     }
 
     @Override
@@ -125,7 +125,7 @@ public class FactureComptable implements ComptableObject {
      * @return list of accounting details
      */
     @Override
-    public List<DetailEcriture> generate_ecriture_details(Tenant tenant, EcritureComptable ecriture) {
+    public List<DetailEcriture> generate_ecriture_details(Organization tenant, EcritureComptable ecriture) {
         List<DetailEcriture> details = new ArrayList<>();
         BigDecimal montant_tva = montant_ht.multiply(taux_tva);
         BigDecimal montant_ttc = montant_ht.add(montant_tva);

@@ -19,12 +19,12 @@ import java.util.UUID;
 @Repository
 public interface AgenceRepository extends R2dbcRepository<Agence, UUID> {
 
-    @Query("SELECT * FROM agences WHERE tenant_id = :tenantId")
-    Flux<Agence> findByTenantId(@Param("tenantId") UUID tenantId);
+    @Query("SELECT * FROM agences WHERE organization_id = :organizationId")
+    Flux<Agence> findByTenantId(@Param("organizationId") UUID organizationId);
 
     @Query("SELECT * FROM agences WHERE code = :code")
     Mono<Agence> findByCode(@Param("code") String code);
 
-    @Query("SELECT * FROM agences WHERE tenant_id = :tenantId AND code = :code")
-    Mono<Agence> findByTenantIdAndCode(@Param("tenantId") UUID tenantId, @Param("code") String code);
+    @Query("SELECT * FROM agences WHERE organization_id = :organizationId AND code = :code")
+    Mono<Agence> findByTenantIdAndCode(@Param("organizationId") UUID organizationId, @Param("code") String code);
 }

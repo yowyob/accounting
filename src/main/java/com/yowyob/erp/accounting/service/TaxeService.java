@@ -10,7 +10,7 @@ import com.yowyob.erp.accounting.repository.TaxeRepository;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.config.kafka.KafkaMessageService;
 import com.yowyob.erp.config.redis.RedisService;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,12 +41,12 @@ public class TaxeService {
 
         @Transactional
         public Mono<TaxeDto> createTaxe(TaxeDto dto) {
-                return Mono.zip(ReactiveTenantContext.getTenantId(), ReactiveTenantContext.getCurrentTenantAsTenant())
+                return Mono.zip(ReactiveOrganizationContext.getOrganizationId(), ReactiveOrganizationContext.getCurrentTenantAsTenant())
                                 .flatMap(tuple -> {
-                                        UUID tenant_id = tuple.getT1();
-                                        Tenant tenant = tuple.getT2();
+                                        UUID organization_id = tuple.getT1();
+                                        Organization tenant = tuple.getT2();
 
-                                        return taxe_repository.existsByTenant_IdAndCode(tenant_id, dto.getCode())
+                                        return taxe_repository.existsByTenant_IdAndCode(organization_id, dto.getCode())
                                                         .doOnSubscribe(s -> log.info("Checking existence for tax {}",
                                                                         dto.getCode()))
                                                         .defaultIfEmpty(false)
@@ -61,7 +61,7 @@ public class TaxeService {
 
                                                                 Taxe entity = Taxe.builder()
                                                                                 .id(UUID.randomUUID())
-                                                                                .tenantId(tenant_id)
+                                                                                .organizationId(organization_id)
                                                                                 .code(dto.getCode())
                                                                                 .libelle(dto.getLibelle())
                                                                                 .taux(dto.getTaux())
@@ -81,7 +81,7 @@ public class TaxeService {
 
                                                                 return taxe_repository.save(entity)
                                                                                 .flatMap(
-                                                                                                saved -> ReactiveTenantContext
+                                                                                                saved -> ReactiveOrganizationContext
                                                                                                                 .getCurrentUser()
                                                                                                                 .defaultIfEmpty("system")
                                                                                                                 .flatMap(user -> logAudit(
@@ -91,7 +91,7 @@ public class TaxeService {
                                                                                                                                 "Creation of tax "
                                                                                                                                                 + dto.getCode()))
                                                                                                                 .then(invalidateCache(
-                                                                                                                                tenant_id))
+                                                                                                                                organization_id))
                                                                                                                 .thenReturn(mapToDto(
                                                                                                                                 saved)));
                                                         });
@@ -100,16 +100,16 @@ public class TaxeService {
 
         @Transactional
         public Mono<TaxeDto> updateTaxe(UUID id, TaxeDto dto) {
-                return Mono.zip(ReactiveTenantContext.getTenantId(), ReactiveTenantContext.getCurrentTenantAsTenant())
+                return Mono.zip(ReactiveOrganizationContext.getOrganizationId(), ReactiveOrganizationContext.getCurrentTenantAsTenant())
                                 .flatMap(tuple -> {
-                                        UUID tenant_id = tuple.getT1();
-                                        Tenant tenant = tuple.getT2();
+                                        UUID organization_id = tuple.getT1();
+                                        Organization tenant = tuple.getT2();
 
-                                        return taxe_repository.findByTenant_IdAndId(tenant_id, id)
+                                        return taxe_repository.findByTenant_IdAndId(organization_id, id)
                                                         .switchIfEmpty(Mono.error(new ResourceNotFoundException("Taxe",
                                                                         id.toString())))
                                                         .flatMap(existing -> taxe_repository
-                                                                        .existsByTenant_IdAndCode(tenant_id,
+                                                                        .existsByTenant_IdAndCode(organization_id,
                                                                                         dto.getCode())
                                                                         .flatMap(exists -> {
                                                                                 if (!existing.getCode()
@@ -138,7 +138,7 @@ public class TaxeService {
                                                                                 existing.setNotNew();
 
                                                                                 return taxe_repository.save(existing)
-                                                                                                .flatMap(saved -> ReactiveTenantContext
+                                                                                                .flatMap(saved -> ReactiveOrganizationContext
                                                                                                                 .getCurrentUser()
                                                                                                                 .defaultIfEmpty("system")
                                                                                                                 .flatMap(user -> logAudit(
@@ -148,10 +148,10 @@ public class TaxeService {
                                                                                                                                 "Update of tax " + dto
                                                                                                                                                 .getCode()))
                                                                                                                 .then(invalidateCache(
-                                                                                                                                tenant_id))
+                                                                                                                                organization_id))
                                                                                                                 .then(redis_service
                                                                                                                                 .delete(CACHE_TAXE_SINGLE
-                                                                                                                                                + tenant_id
+                                                                                                                                                + organization_id
                                                                                                                                                 + ":"
                                                                                                                                                 + id))
                                                                                                                 .thenReturn(mapToDto(
@@ -161,12 +161,12 @@ public class TaxeService {
         }
 
         public Mono<TaxeDto> getTaxe(UUID id) {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> {
-                                        String cache_key = CACHE_TAXE_SINGLE + tenant_id + ":" + id;
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
+                                        String cache_key = CACHE_TAXE_SINGLE + organization_id + ":" + id;
                                         return redis_service.get(cache_key, TaxeDto.class)
                                                         .switchIfEmpty(taxe_repository
-                                                                        .findByTenant_IdAndId(tenant_id, id)
+                                                                        .findByTenant_IdAndId(organization_id, id)
                                                                         .map(this::mapToDto)
                                                                         .flatMap(dto -> redis_service
                                                                                         .save(cache_key, dto, Duration
@@ -177,12 +177,12 @@ public class TaxeService {
 
         @SuppressWarnings("unchecked")
         public Mono<List<TaxeDto>> getAllTaxes() {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> {
-                                        String cache_key = CACHE_TAXE_ALL + tenant_id;
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
+                                        String cache_key = CACHE_TAXE_ALL + organization_id;
                                         return redis_service.get(cache_key, List.class)
                                                         .map(list -> (List<TaxeDto>) list)
-                                                        .switchIfEmpty(taxe_repository.findByTenant_Id(tenant_id)
+                                                        .switchIfEmpty(taxe_repository.findByTenant_Id(organization_id)
                                                                         .map(this::mapToDto)
                                                                         .collectList()
                                                                         .flatMap(taxes -> redis_service
@@ -194,13 +194,13 @@ public class TaxeService {
 
         @SuppressWarnings("unchecked")
         public Mono<List<TaxeDto>> getActiveTaxes() {
-                return ReactiveTenantContext.getTenantId()
-                                .flatMap(tenant_id -> {
-                                        String cache_key = CACHE_TAXE_ACTIVE + tenant_id;
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
+                                        String cache_key = CACHE_TAXE_ACTIVE + organization_id;
                                         return redis_service.get(cache_key, List.class)
                                                         .map(list -> (List<TaxeDto>) list)
                                                         .switchIfEmpty(taxe_repository
-                                                                        .findByTenant_IdAndActifTrue(tenant_id)
+                                                                        .findByTenant_IdAndActifTrue(organization_id)
                                                                         .map(this::mapToDto)
                                                                         .collectList()
                                                                         .flatMap(taxes -> redis_service
@@ -212,32 +212,32 @@ public class TaxeService {
 
         @Transactional
         public Mono<Void> deleteTaxe(UUID id) {
-                return Mono.zip(ReactiveTenantContext.getTenantId(), ReactiveTenantContext.getCurrentTenantAsTenant())
+                return Mono.zip(ReactiveOrganizationContext.getOrganizationId(), ReactiveOrganizationContext.getCurrentTenantAsTenant())
                                 .flatMap(tuple -> {
-                                        UUID tenant_id = tuple.getT1();
-                                        Tenant tenant = tuple.getT2();
+                                        UUID organization_id = tuple.getT1();
+                                        Organization tenant = tuple.getT2();
 
-                                        return taxe_repository.findByTenant_IdAndId(tenant_id, id)
+                                        return taxe_repository.findByTenant_IdAndId(organization_id, id)
                                                         .switchIfEmpty(Mono.error(new ResourceNotFoundException("Taxe",
                                                                         id.toString())))
                                                         .flatMap(taxe -> taxe_repository.delete(taxe)
-                                                                        .then(ReactiveTenantContext.getCurrentUser()
+                                                                        .then(ReactiveOrganizationContext.getCurrentUser()
                                                                                         .defaultIfEmpty("system")
                                                                                         .flatMap(user -> logAudit(
                                                                                                         tenant, user,
                                                                                                         "TAXE_DELETED",
                                                                                                         "Deletion of tax "
                                                                                                                         + taxe.getCode())))
-                                                                        .then(invalidateCache(tenant_id))
+                                                                        .then(invalidateCache(organization_id))
                                                                         .then(redis_service.delete(CACHE_TAXE_SINGLE
-                                                                                        + tenant_id + ":" + id))
+                                                                                        + organization_id + ":" + id))
                                                                         .then());
                                 });
         }
 
-        private Mono<Void> invalidateCache(UUID tenant_id) {
-                return redis_service.delete(CACHE_TAXE_ALL + tenant_id)
-                                .then(redis_service.delete(CACHE_TAXE_ACTIVE + tenant_id))
+        private Mono<Void> invalidateCache(UUID organization_id) {
+                return redis_service.delete(CACHE_TAXE_ALL + organization_id)
+                                .then(redis_service.delete(CACHE_TAXE_ACTIVE + organization_id))
                                 .then();
         }
 
@@ -257,10 +257,10 @@ public class TaxeService {
                                 .build();
         }
 
-        private Mono<Void> logAudit(Tenant tenant, String utilisateur, String action, String details) {
+        private Mono<Void> logAudit(Organization tenant, String utilisateur, String action, String details) {
                 JournalAudit audit = JournalAudit.builder()
                                 .id(UUID.randomUUID())
-                                .tenantId(tenant.getId())
+                                .organizationId(tenant.getId())
                                 .action(action)
                                 .utilisateur(utilisateur)
                                 .details(details)

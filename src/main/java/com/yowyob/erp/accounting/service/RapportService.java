@@ -10,7 +10,7 @@ import com.yowyob.erp.accounting.repository.DetailEcritureRepository;
 import com.yowyob.erp.accounting.repository.JournalAuditRepository;
 import com.yowyob.erp.config.kafka.KafkaMessageService;
 import com.yowyob.erp.config.redis.RedisService;
-import com.yowyob.erp.config.tenant.ReactiveTenantContext;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -47,23 +47,23 @@ public class RapportService {
          * Generates a balance sheet (assets/liabilities) for a given tenant.
          */
         @SuppressWarnings("unchecked")
-        public Mono<Map<String, Object>> generateBilan(UUID tenant_id, String date_debut, String date_fin) {
+        public Mono<Map<String, Object>> generateBilan(UUID organization_id, String date_debut, String date_fin) {
                 LocalDate start = LocalDate.parse(date_debut);
                 LocalDate end = LocalDate.parse(date_fin);
-                String cache_key = CACHE_BILAN + tenant_id + ":" + start + ":" + end;
+                String cache_key = CACHE_BILAN + organization_id + ":" + start + ":" + end;
 
                 return redis_service.get(cache_key, Map.class)
                                 .map(map -> (Map<String, Object>) map)
                                 .switchIfEmpty(Mono.defer(() -> {
                                         log.info("📊 Generating balance sheet from {} to {} for tenant {}", start, end,
-                                                        tenant_id);
+                                                        organization_id);
 
                                         return detail_repository
-                                                        .findByTenant_IdAndDateRange(tenant_id, start.atStartOfDay(),
+                                                        .findByTenant_IdAndDateRange(organization_id, start.atStartOfDay(),
                                                                         end.plusDays(1).atStartOfDay())
                                                         .collectList()
                                                         .flatMap(allDetails -> compte_repository
-                                                                        .findAllByTenant_Id(tenant_id)
+                                                                        .findAllByTenant_Id(organization_id)
                                                                         .flatMap(compte -> {
                                                                                 BigDecimal solde = calculateAccountBalance(
                                                                                                 allDetails, compte);
@@ -101,9 +101,9 @@ public class RapportService {
                                                                                 return redis_service.save(cache_key,
                                                                                                 bilan,
                                                                                                 Duration.ofMinutes(30))
-                                                                                                .then(ReactiveTenantContext
+                                                                                                .then(ReactiveOrganizationContext
                                                                                                                 .getCurrentTenantAsTenant()
-                                                                                                                .flatMap(tenant -> ReactiveTenantContext
+                                                                                                                .flatMap(tenant -> ReactiveOrganizationContext
                                                                                                                                 .getCurrentUser()
                                                                                                                                 .defaultIfEmpty("system")
                                                                                                                                 .flatMap(user -> logAudit(
@@ -123,23 +123,23 @@ public class RapportService {
          * Generates an income statement (expenses/revenues) for a given tenant.
          */
         @SuppressWarnings("unchecked")
-        public Mono<Map<String, Object>> generateCompteResultat(UUID tenant_id, String date_debut, String date_fin) {
+        public Mono<Map<String, Object>> generateCompteResultat(UUID organization_id, String date_debut, String date_fin) {
                 LocalDate start = LocalDate.parse(date_debut);
                 LocalDate end = LocalDate.parse(date_fin);
-                String cache_key = CACHE_RESULTAT + tenant_id + ":" + start + ":" + end;
+                String cache_key = CACHE_RESULTAT + organization_id + ":" + start + ":" + end;
 
                 return redis_service.get(cache_key, Map.class)
                                 .map(map -> (Map<String, Object>) map)
                                 .switchIfEmpty(Mono.defer(() -> {
                                         log.info("📘 Generating income statement from {} to {} for tenant {}", start,
-                                                        end, tenant_id);
+                                                        end, organization_id);
 
                                         return detail_repository
-                                                        .findByTenant_IdAndDateRange(tenant_id, start.atStartOfDay(),
+                                                        .findByTenant_IdAndDateRange(organization_id, start.atStartOfDay(),
                                                                         end.plusDays(1).atStartOfDay())
                                                         .collectList()
                                                         .flatMap(allDetails -> compte_repository
-                                                                        .findAllByTenant_Id(tenant_id)
+                                                                        .findAllByTenant_Id(organization_id)
                                                                         .flatMap(compte -> {
                                                                                 BigDecimal solde = calculateAccountBalance(
                                                                                                 allDetails, compte);
@@ -182,9 +182,9 @@ public class RapportService {
                                                                                 return redis_service.save(cache_key,
                                                                                                 result_map,
                                                                                                 Duration.ofMinutes(30))
-                                                                                                .then(ReactiveTenantContext
+                                                                                                .then(ReactiveOrganizationContext
                                                                                                                 .getCurrentTenantAsTenant()
-                                                                                                                .flatMap(tenant -> ReactiveTenantContext
+                                                                                                                .flatMap(tenant -> ReactiveOrganizationContext
                                                                                                                                 .getCurrentUser()
                                                                                                                                 .defaultIfEmpty("system")
                                                                                                                                 .flatMap(user -> logAudit(
@@ -203,17 +203,17 @@ public class RapportService {
         /**
          * Generates the General Ledger (Grand Livre) for a given period.
          */
-        public Mono<List<com.yowyob.erp.accounting.dto.GrandLivreDto>> generateGrandLivre(UUID tenant_id,
+        public Mono<List<com.yowyob.erp.accounting.dto.GrandLivreDto>> generateGrandLivre(UUID organization_id,
                         String date_debut,
                         String date_fin) {
                 LocalDate start = LocalDate.parse(date_debut);
                 LocalDate end = LocalDate.parse(date_fin);
 
-                return compte_repository.findAllByTenant_Id(tenant_id)
+                return compte_repository.findAllByTenant_Id(organization_id)
                                 .flatMap(compte -> {
                                         // 1. Calculate opening balance (all entries before start date)
                                         return detail_repository
-                                                        .findByTenant_IdAndDateRange(tenant_id,
+                                                        .findByTenant_IdAndDateRange(organization_id,
                                                                         LocalDate.of(2000, 1, 1).atStartOfDay(),
                                                                         start.atStartOfDay())
                                                         .filter(d -> d.getCompte_id().equals(compte.getId()))
@@ -224,7 +224,7 @@ public class RapportService {
 
                                                                 // 2. Get period details
                                                                 return detail_repository
-                                                                                .findByTenant_IdAndDateRange(tenant_id,
+                                                                                .findByTenant_IdAndDateRange(organization_id,
                                                                                                 start.atStartOfDay(),
                                                                                                 end.plusDays(1)
                                                                                                                 .atStartOfDay())
@@ -311,17 +311,17 @@ public class RapportService {
         /**
          * Generates the Trial Balance (Balance des Comptes) for a given period.
          */
-        public Mono<com.yowyob.erp.accounting.dto.BalanceDesComptesDto> generateBalanceDesComptes(UUID tenant_id,
+        public Mono<com.yowyob.erp.accounting.dto.BalanceDesComptesDto> generateBalanceDesComptes(UUID organization_id,
                         String date_debut,
                         String date_fin) {
                 LocalDate start = LocalDate.parse(date_debut);
                 LocalDate end = LocalDate.parse(date_fin);
 
-                return compte_repository.findAllByTenant_Id(tenant_id)
+                return compte_repository.findAllByTenant_Id(organization_id)
                                 .flatMap(compte -> {
                                         // 1. Calculate opening balance details
                                         return detail_repository
-                                                        .findByTenant_IdAndDateRange(tenant_id,
+                                                        .findByTenant_IdAndDateRange(organization_id,
                                                                         LocalDate.of(2000, 1, 1).atStartOfDay(),
                                                                         start.atStartOfDay())
                                                         .filter(d -> d.getCompte_id().equals(compte.getId()))
@@ -344,7 +344,7 @@ public class RapportService {
 
                                                                 // 2. Get period details
                                                                 return detail_repository
-                                                                                .findByTenant_IdAndDateRange(tenant_id,
+                                                                                .findByTenant_IdAndDateRange(organization_id,
                                                                                                 start.atStartOfDay(),
                                                                                                 end.plusDays(1)
                                                                                                                 .atStartOfDay())
@@ -453,10 +453,10 @@ public class RapportService {
                                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         }
 
-        private Mono<Void> logAudit(Tenant tenant, String utilisateur, String action, String details) {
+        private Mono<Void> logAudit(Organization tenant, String utilisateur, String action, String details) {
                 JournalAudit audit = JournalAudit.builder()
                                 .id(UUID.randomUUID())
-                                .tenantId(tenant.getId())
+                                .organizationId(tenant.getId())
                                 .action(action)
                                 .utilisateur(utilisateur)
                                 .details(details)

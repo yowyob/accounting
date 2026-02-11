@@ -31,8 +31,8 @@ public class JournalAudit implements SettablePersistable<UUID> {
     private UUID id;
 
     @NotNull
-    @Column("tenant_id")
-    private UUID tenantId;
+    @Column("organization_id")
+    private UUID organizationId;
 
     @Column("ecriture_id")
     private UUID ecriture_comptable_id;
@@ -74,7 +74,7 @@ public class JournalAudit implements SettablePersistable<UUID> {
     private String updated_by;
 
     @Transient
-    private Tenant tenant;
+    private Organization tenant;
 
     @Transient
     @Builder.Default

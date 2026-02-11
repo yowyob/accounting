@@ -1,4 +1,4 @@
-package com.yowyob.erp.config.tenant;
+package com.yowyob.erp.config.organization;
 
 import com.yowyob.erp.accounting.entity.Organization;
 import reactor.core.publisher.Mono;
@@ -24,7 +24,7 @@ public class ReactiveOrganizationContext {
                 return Mono.just(ctx.get(ORGANIZATION_ID_KEY));
             }
             // Fallback for hybrid Servlet/Reactive environments
-            UUID threadLocalOrganizationId = TenantContext.getCurrentTenant();
+            UUID threadLocalOrganizationId = OrganizationContext.getCurrentTenant();
             if (threadLocalOrganizationId != null) {
                 return Mono.just(threadLocalOrganizationId);
             }
@@ -68,12 +68,12 @@ public class ReactiveOrganizationContext {
 
     /**
      * Captures the current organization and user from the ThreadLocal context
-     * (TenantContext)
+     * (OrganizationContext)
      * and returns a Reactor Context.
      */
     public static Context captureFromThreadLocal() {
-        UUID organizationId = TenantContext.getCurrentTenant();
-        String user = TenantContext.getCurrentUser();
+        UUID organizationId = OrganizationContext.getCurrentTenant();
+        String user = OrganizationContext.getCurrentUser();
 
         Context ctx = Context.empty();
         if (organizationId != null) {

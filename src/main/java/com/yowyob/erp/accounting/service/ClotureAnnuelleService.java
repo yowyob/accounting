@@ -75,13 +75,13 @@ public class ClotureAnnuelleService {
                        ) as solde_net
                 FROM details_ecritures de
                 JOIN comptes c ON de.compte_id = c.id
-                WHERE de.tenant_id = :tenantId
+                WHERE de.organization_id = :organizationId
                   AND de.date_ecriture BETWEEN :debut AND :fin
                   AND (c.no_compte LIKE '6%' OR c.no_compte LIKE '7%')
                 """;
 
         return databaseClient.sql(sqlSoldes)
-                .bind("tenantId", exercice.getTenantId())
+                .bind("organizationId", exercice.getOrganizationId())
                 .bind("debut", exercice.getDate_debut())
                 .bind("fin", exercice.getDate_fin())
                 .fetch()
@@ -93,7 +93,7 @@ public class ClotureAnnuelleService {
                     }
 
                     // Créer l'écriture de clôture de résultat
-                    return creerEcritureSysteme(exercice.getTenantId(), exercice.getDate_fin(),
+                    return creerEcritureSysteme(exercice.getOrganizationId(), exercice.getDate_fin(),
                             "Clôture de résultat annuelle " + exercice.getCode(), "OD")
                             .flatMap(ecritureId -> {
                                 // Le solde net (Débits - Crédits)
@@ -109,7 +109,7 @@ public class ClotureAnnuelleService {
                                 String compteResultat = resultat.compareTo(BigDecimal.ZERO) >= 0 ? "131000" : "139000";
                                 String sensResultat = resultat.compareTo(BigDecimal.ZERO) >= 0 ? "CREDIT" : "DEBIT";
 
-                                return insererDetailEcriture(ecritureId, exercice.getTenantId(), compteResultat,
+                                return insererDetailEcriture(ecritureId, exercice.getOrganizationId(), compteResultat,
                                         resultat.abs(), sensResultat)
                                         .then(soldeComptesGestionEtTransfert(ecritureId, exercice));
                             });
@@ -123,7 +123,7 @@ public class ClotureAnnuelleService {
                        SUM(COALESCE(de.montant_debit,0) - COALESCE(de.montant_credit,0)) as solde
                 FROM details_ecritures de
                 JOIN comptes c ON de.compte_id = c.id
-                WHERE de.tenant_id = :tenantId
+                WHERE de.organization_id = :organizationId
                   AND de.date_ecriture BETWEEN :debut AND :fin
                   AND (c.no_compte LIKE '6%' OR c.no_compte LIKE '7%')
                 GROUP BY c.id, c.no_compte
@@ -131,7 +131,7 @@ public class ClotureAnnuelleService {
                 """;
 
         return databaseClient.sql(sqlComptesGestion)
-                .bind("tenantId", exercice.getTenantId())
+                .bind("organizationId", exercice.getOrganizationId())
                 .bind("debut", exercice.getDate_debut())
                 .bind("fin", exercice.getDate_fin())
                 .fetch()
@@ -142,7 +142,7 @@ public class ClotureAnnuelleService {
                     // Pour solder : si solde est DEBIT (>0), on CREDITE. Si solde est CREDIT (<0),
                     // on DEBITE.
                     String sens = solde.compareTo(BigDecimal.ZERO) > 0 ? "CREDIT" : "DEBIT";
-                    return insererDetailEcritureDirect(ecritureId, exercice.getTenantId(), compteId, solde.abs(), sens);
+                    return insererDetailEcritureDirect(ecritureId, exercice.getOrganizationId(), compteId, solde.abs(), sens);
                 })
                 .then();
     }
@@ -151,9 +151,9 @@ public class ClotureAnnuelleService {
         LocalDate dateOuverture = exercice.getDate_fin().plusDays(1);
         log.info("Génération des À-nouveaux au {}", dateOuverture);
 
-        return exercice_repository.findActiveForDate(exercice.getTenantId(), dateOuverture)
+        return exercice_repository.findActiveForDate(exercice.getOrganizationId(), dateOuverture)
                 .flatMap(prochainExercice -> {
-                    return creerEcritureSysteme(exercice.getTenantId(), dateOuverture,
+                    return creerEcritureSysteme(exercice.getOrganizationId(), dateOuverture,
                             "Bilan d'ouverture - À-nouveaux " + prochainExercice.getCode(), "AN")
                             .flatMap(ecritureId -> {
                                 // Calculer les soldes de bilan (Classes 1 à 5) à la fin de l'exercice actuel
@@ -162,7 +162,7 @@ public class ClotureAnnuelleService {
                                                SUM(COALESCE(de.montant_debit,0) - COALESCE(de.montant_credit,0)) as solde
                                         FROM details_ecritures de
                                         JOIN comptes c ON de.compte_id = c.id
-                                        WHERE de.tenant_id = :tenantId
+                                        WHERE de.organization_id = :organizationId
                                           AND de.date_ecriture <= :fin
                                           AND (c.no_compte LIKE '1%' OR c.no_compte LIKE '2%' OR c.no_compte LIKE '3%' OR c.no_compte LIKE '4%' OR c.no_compte LIKE '5%')
                                         GROUP BY c.id
@@ -170,7 +170,7 @@ public class ClotureAnnuelleService {
                                         """;
 
                                 return databaseClient.sql(sqlSoldesBilan)
-                                        .bind("tenantId", exercice.getTenantId())
+                                        .bind("organizationId", exercice.getOrganizationId())
                                         .bind("fin", exercice.getDate_fin())
                                         .fetch()
                                         .all()
@@ -178,7 +178,7 @@ public class ClotureAnnuelleService {
                                             UUID compteId = (UUID) row.get("id");
                                             BigDecimal solde = (BigDecimal) row.get("solde");
                                             String sens = solde.compareTo(BigDecimal.ZERO) >= 0 ? "DEBIT" : "CREDIT";
-                                            return insererDetailEcritureDirect(ecritureId, exercice.getTenantId(),
+                                            return insererDetailEcritureDirect(ecritureId, exercice.getOrganizationId(),
                                                     compteId, solde.abs(), sens);
                                         })
                                         .then();
@@ -189,17 +189,17 @@ public class ClotureAnnuelleService {
                                 exercice.getDate_fin())));
     }
 
-    private Mono<UUID> creerEcritureSysteme(UUID tenantId, LocalDate date, String libelle, String codeJournal) {
+    private Mono<UUID> creerEcritureSysteme(UUID organizationId, LocalDate date, String libelle, String codeJournal) {
         String sql = """
                 INSERT INTO ecriture_comptable
-                (tenant_id, date_operation, libelle, journal_code, validee, created_at, numero_ecriture, journal_id, periode_id)
-                VALUES (:tenantId, :date, :libelle, :code, true, NOW(), :numero, NULL, NULL)
+                (organization_id, date_operation, libelle, journal_code, validee, created_at, numero_ecriture, journal_id, periode_id)
+                VALUES (:organizationId, :date, :libelle, :code, true, NOW(), :numero, NULL, NULL)
                 RETURNING id
                 """;
         String numero = codeJournal + "-" + date.getYear() + "-" + UUID.randomUUID().toString().substring(0, 8);
 
         return databaseClient.sql(sql)
-                .bind("tenantId", tenantId)
+                .bind("organizationId", organizationId)
                 .bind("date", date)
                 .bind("libelle", libelle)
                 .bind("code", codeJournal)
@@ -208,32 +208,32 @@ public class ClotureAnnuelleService {
                 .one();
     }
 
-    private Mono<Void> insererDetailEcriture(UUID ecritureId, UUID tenantId, String noCompte, BigDecimal montant,
+    private Mono<Void> insererDetailEcriture(UUID ecritureId, UUID organizationId, String noCompte, BigDecimal montant,
             String sens) {
         String sql = """
                 INSERT INTO details_ecritures
-                (ecriture_id, tenant_id, compte_id, libelle, sens, montant_debit, montant_credit, date_ecriture, created_at)
+                (ecriture_id, organization_id, compte_id, libelle, sens, montant_debit, montant_credit, date_ecriture, created_at)
                 SELECT :ecId, :tId, c.id, 'Clôture annuelle', :sens,
                        CASE WHEN :sens = 'DEBIT' THEN :montant ELSE 0 END,
                        CASE WHEN :sens = 'CREDIT' THEN :montant ELSE 0 END,
                        NOW(), NOW()
                 FROM comptes c
-                WHERE c.tenant_id = :tId AND c.no_compte = :no
+                WHERE c.organization_id = :tId AND c.no_compte = :no
                 """;
         return databaseClient.sql(sql)
                 .bind("ecId", ecritureId)
-                .bind("tId", tenantId)
+                .bind("tId", organizationId)
                 .bind("sens", sens)
                 .bind("montant", montant)
                 .bind("no", noCompte)
                 .then();
     }
 
-    private Mono<Void> insererDetailEcritureDirect(UUID ecritureId, UUID tenantId, UUID compteId, BigDecimal montant,
+    private Mono<Void> insererDetailEcritureDirect(UUID ecritureId, UUID organizationId, UUID compteId, BigDecimal montant,
             String sens) {
         String sql = """
                 INSERT INTO details_ecritures
-                (ecriture_id, tenant_id, compte_id, libelle, sens, montant_debit, montant_credit, date_ecriture, created_at)
+                (ecriture_id, organization_id, compte_id, libelle, sens, montant_debit, montant_credit, date_ecriture, created_at)
                 VALUES (:ecId, :tId, :cId, 'À-nouveaux (Report)', :sens,
                        CASE WHEN :sens = 'DEBIT' THEN :montant ELSE 0 END,
                        CASE WHEN :sens = 'CREDIT' THEN :montant ELSE 0 END,
@@ -241,7 +241,7 @@ public class ClotureAnnuelleService {
                 """;
         return databaseClient.sql(sql)
                 .bind("ecId", ecritureId)
-                .bind("tId", tenantId)
+                .bind("tId", organizationId)
                 .bind("cId", compteId)
                 .bind("sens", sens)
                 .bind("montant", montant)
