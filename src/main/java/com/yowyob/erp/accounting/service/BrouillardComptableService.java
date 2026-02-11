@@ -1,9 +1,7 @@
 package com.yowyob.erp.accounting.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.yowyob.erp.accounting.dto.BrouillardComptableDto;
 import com.yowyob.erp.accounting.dto.BrouillardRejectionRequest;
 import com.yowyob.erp.accounting.dto.BrouillardValidationRequest;
 import com.yowyob.erp.accounting.dto.EcritureComptableDto;
@@ -11,7 +9,6 @@ import com.yowyob.erp.accounting.entity.BrouillardComptable;
 import com.yowyob.erp.accounting.entity.BrouillardStatut;
 import com.yowyob.erp.accounting.entity.BrouillardType;
 import com.yowyob.erp.accounting.repository.BrouillardComptableRepository;
-import com.yowyob.erp.config.organization.OrganizationContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;

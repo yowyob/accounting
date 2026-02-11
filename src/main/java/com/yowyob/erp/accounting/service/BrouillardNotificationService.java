@@ -2,7 +2,6 @@ package com.yowyob.erp.accounting.service;
 
 import com.yowyob.erp.accounting.entity.BrouillardComptable;
 import com.yowyob.erp.config.auth.AuthService;
-import com.yowyob.erp.config.auth.UserInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -10,8 +9,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Service to notify accountants about new draft entries.

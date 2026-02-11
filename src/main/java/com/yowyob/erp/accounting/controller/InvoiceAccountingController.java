@@ -1,6 +1,5 @@
 package com.yowyob.erp.accounting.controller;
 
-import com.yowyob.erp.accounting.dto.EcritureComptableDto;
 import com.yowyob.erp.accounting.dto.invoice.CustomerInvoiceDto;
 import com.yowyob.erp.accounting.dto.invoice.SupplierInvoiceDto;
 import com.yowyob.erp.accounting.service.InvoiceAccountingService;

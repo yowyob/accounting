@@ -5,7 +5,6 @@ import com.yowyob.erp.accounting.dto.JournalAuditDto;
 import com.yowyob.erp.accounting.entity.DeclarationFiscale;
 import com.yowyob.erp.accounting.entity.Organization;
 import com.yowyob.erp.accounting.repository.DeclarationFiscaleRepository;
-import com.yowyob.erp.accounting.service.DeclarationGeneratorService;
 import com.yowyob.erp.common.exception.BusinessException;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.config.kafka.KafkaMessageService;
@@ -59,7 +58,7 @@ public class DeclarationFiscaleService {
                                         Organization organization = tuple.getT2();
                                         String current_user = Optional
                                                         .ofNullable(ReactiveOrganizationContext.getCurrentUser().block())
-                                                        .orElse("system"); // TODO: fully reactive user retrieval
+                                                        .orElse("system"); 
 
                                         Mono<DeclarationFiscale> entityMono;
                                         if (dto.getId() != null) {
@@ -202,7 +201,7 @@ public class DeclarationFiscaleService {
                                         Organization organization = tuple.getT2();
                                         String current_user = Optional
                                                         .ofNullable(ReactiveOrganizationContext.getCurrentUser().block())
-                                                        .orElse("system"); // TODO: reactive
+                                                        .orElse("system"); 
 
                                         return declaration_repository.findByOrganizationIdAndId(organization_id, id)
                                                         .switchIfEmpty(

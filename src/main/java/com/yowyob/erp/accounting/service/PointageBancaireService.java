@@ -27,7 +27,6 @@ public class PointageBancaireService {
     /**
      * Imports a bank statement and automatically reconciles entries.
      */
-    @SuppressWarnings("null")
     @Transactional
     public Mono<Integer> importerEtPointer(MultipartFile file) {
         return ReactiveOrganizationContext.getOrganizationId()

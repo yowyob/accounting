@@ -1,6 +1,5 @@
 package com.yowyob.erp.accounting.repository;
 
-import com.yowyob.erp.accounting.entity.Compte;
 import com.yowyob.erp.accounting.entity.DetailEcriture;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.r2dbc.repository.R2dbcRepository;

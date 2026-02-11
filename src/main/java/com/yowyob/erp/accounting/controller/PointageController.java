@@ -35,7 +35,6 @@ public class PointageController {
      * Imports a bank statement and automatically points matching accounting
      * entries.
      */
-    @SuppressWarnings("null")
     @PostMapping("/import")
     @Operation(summary = "Import and point bank statement")
     public Mono<ResponseEntity<String>> importerReleve(MultipartFile file) {
