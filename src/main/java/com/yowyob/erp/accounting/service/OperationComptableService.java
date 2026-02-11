@@ -56,16 +56,18 @@ public class OperationComptableService {
         @Transactional
         public Mono<OperationComptableDto> createOperation(OperationComptableDto dto) {
                 return ReactiveOrganizationContext.getOrganizationId()
-                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser()
+                                                .defaultIfEmpty("system")
                                                 .flatMap(user -> {
                                                         log.info("📝 Creating operation [{} - {}] for organization {}",
                                                                         dto.getType_operation(),
                                                                         dto.getMode_reglement(), organization_id);
 
                                                         return validateOperationDto(dto)
-                                                                        .then(journal_repository.findByOrganization_IdAndId(
-                                                                                        organization_id,
-                                                                                        dto.getJournal_comptable_id())
+                                                                        .then(journal_repository
+                                                                                        .findByOrganization_IdAndId(
+                                                                                                        organization_id,
+                                                                                                        dto.getJournal_comptable_id())
                                                                                         .filter(JournalComptable::getActif)
                                                                                         .switchIfEmpty(Mono.error(
                                                                                                         new IllegalArgumentException(
@@ -111,7 +113,7 @@ public class OperationComptableService {
                                                                                                                                                 saved.getId(),
                                                                                                                                                 user))
                                                                                                                                 .collectList()
-                                                                                                                                .flatMap(cps -> contrepartie_repository
+                                                                                                                                .flatMap((List<Contrepartie> cps) -> contrepartie_repository
                                                                                                                                                 .saveAll(cps)
                                                                                                                                                 .collectList())
                                                                                                                                 .thenReturn(saved);
@@ -140,7 +142,8 @@ public class OperationComptableService {
                                         String key = CACHE_OPERATIONS_ALL + organization_id;
                                         return redis_service.get(key, List.class)
                                                         .map(list -> (List<OperationComptableDto>) list)
-                                                        .switchIfEmpty(operation_repository.findByOrganization_Id(organization_id)
+                                                        .switchIfEmpty(operation_repository
+                                                                        .findByOrganization_Id(organization_id)
                                                                         .flatMap(this::mapToDto)
                                                                         .collectList()
                                                                         .flatMap(list -> redis_service
@@ -183,7 +186,8 @@ public class OperationComptableService {
 
         public Mono<List<OperationComptableDto>> getOperationsByCompte(String no_compte) {
                 return ReactiveOrganizationContext.getOrganizationId()
-                                .doOnNext(tid -> log.info("Searching for account {} with organization {}", no_compte, tid))
+                                .doOnNext(tid -> log.info("Searching for account {} with organization {}", no_compte,
+                                                tid))
                                 .flatMap(organization_id -> compte_repository
                                                 .findByOrganization_IdAndNo_compte(organization_id, no_compte)
                                                 .doOnNext(c -> log.info("Found account: {} ({})", c.getNo_compte(),
@@ -199,7 +203,8 @@ public class OperationComptableService {
         public Mono<OperationComptableDto> getByTypeAndMode(String type, String mode) {
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMap(organization_id -> operation_repository
-                                                .findByOrganization_IdAndType_operationAndMode_reglement(organization_id, type,
+                                                .findByOrganization_IdAndType_operationAndMode_reglement(
+                                                                organization_id, type,
                                                                 mode)
                                                 .flatMap(this::mapToDto)
                                                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Operation",
@@ -209,7 +214,8 @@ public class OperationComptableService {
         @Transactional
         public Mono<OperationComptableDto> updateOperation(UUID id, OperationComptableDto dto) {
                 return ReactiveOrganizationContext.getOrganizationId()
-                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser()
+                                                .defaultIfEmpty("system")
                                                 .flatMap(user -> operation_repository
                                                                 .findByOrganization_IdAndId(organization_id, id)
                                                                 .switchIfEmpty(Mono.error(new ResourceNotFoundException(
@@ -266,7 +272,7 @@ public class OperationComptableService {
                                                                                                                                                                         id,
                                                                                                                                                                         user))
                                                                                                                                                         .collectList()
-                                                                                                                                                        .flatMap(cps -> contrepartie_repository
+                                                                                                                                                        .flatMap((List<Contrepartie> cps) -> contrepartie_repository
                                                                                                                                                                         .saveAll(cps)
                                                                                                                                                                         .collectList()
                                                                                                                                                                         .then());
@@ -293,7 +299,8 @@ public class OperationComptableService {
         @Transactional
         public Mono<Void> deleteOperation(UUID id) {
                 return ReactiveOrganizationContext.getOrganizationId()
-                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser()
+                                                .defaultIfEmpty("system")
                                                 .flatMap(user -> operation_repository
                                                                 .findByOrganization_IdAndId(organization_id, id)
                                                                 .switchIfEmpty(Mono.error(new ResourceNotFoundException(
@@ -324,7 +331,8 @@ public class OperationComptableService {
                 });
         }
 
-        private Mono<Contrepartie> mapContrepartie(ContrepartieDto dto, Organization organization, UUID opId, String user) {
+        private Mono<Contrepartie> mapContrepartie(ContrepartieDto dto, Organization organization, UUID opId,
+                        String user) {
                 return journal_repository.findById(dto.getJournal_comptable_id())
                                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Journal",
                                                 dto.getJournal_comptable_id().toString())))
@@ -391,7 +399,8 @@ public class OperationComptableService {
         }
 
         private Mono<OperationComptableDto> mapToDto(OperationComptable op) {
-                return contrepartie_repository.findByOrganization_IdAndOperation_comptable_Id(op.getOrganizationId(), op.getId())
+                return contrepartie_repository
+                                .findByOrganization_IdAndOperation_comptable_Id(op.getOrganizationId(), op.getId())
                                 .map(cp -> ContrepartieDto.builder()
                                                 .id(cp.getId())
                                                 .compte_id(cp.getCompte_id())

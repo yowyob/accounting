@@ -38,6 +38,10 @@ public class OrganizationContext {
         return currentOrganization.get();
     }
 
+    public static UUID getCurrentOrganization() {
+        return getCurrentOrganizationId();
+    }
+
     /**
      * Gets the current organization object as a Mono.
      */

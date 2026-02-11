@@ -2,7 +2,6 @@ package com.yowyob.erp.accounting.serviceInitialization;
 
 import com.yowyob.erp.accounting.entity.Organization;
 import com.yowyob.erp.accounting.repository.OrganizationRepository;
-import com.yowyob.erp.accounting.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -12,8 +11,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 /**
- * Reactive Service to initialize default Organizations and link existing
- * Organizations.
+ * Reactive Service to initialize default Organizations.
  */
 @Slf4j
 @Service
@@ -22,7 +20,6 @@ import reactor.core.publisher.Mono;
 @DependsOn("liquibase")
 public class OrganizationInitializationService implements CommandLineRunner {
 
-    private final OrganizationRepository organization_repository;
     private final OrganizationRepository organization_repository;
 
     @Override
@@ -40,17 +37,6 @@ public class OrganizationInitializationService implements CommandLineRunner {
                             .build();
                     return organization_repository.save(org);
                 }))
-                .flatMap(default_org -> {
-                    // Link all orphans organizations to the default organization
-                    return organization_repository.findAll()
-                            .filter(t -> t.getOrganization() == null)
-                            .flatMap(t -> {
-                                log.info("Linking organization {} to organization {}", t.getCode(), default_org.getName());
-                                t.setOrganization(default_org);
-                                return organization_repository.save(t);
-                            })
-                            .then();
-                })
                 .doOnSuccess(v -> log.info("Organization initialization completed."))
                 .doOnError(e -> log.error("Error during organization initialization: {}", e.getMessage()))
                 .subscribe();

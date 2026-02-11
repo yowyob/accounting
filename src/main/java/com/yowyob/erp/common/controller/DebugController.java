@@ -47,7 +47,7 @@ public class DebugController {
      */
     @PostMapping("/kafka/test")
     public ApiResponseWrapper<String> testKafka(@RequestBody Map<String, Object> payload) {
-        UUID organizationId = OrganizationContext.getCurrentOrganization();
+        UUID organizationId = OrganizationContext.getCurrentOrganizationId();
         log.info("🛰️ Envoi d’un message Kafka de test pour le organization {}", organizationId);
 
         kafkaMessageService.sendAccountingEvent(payload, organizationId, "DEBUG_TEST_EVENT");
@@ -72,7 +72,7 @@ public class DebugController {
      */
     @GetMapping("/redis/test")
     public ApiResponseWrapper<Object> getRedisTest() {
-        UUID organizationId = OrganizationContext.getCurrentOrganization();
+        UUID organizationId = OrganizationContext .getCurrentOrganization();
         String key = String.format("debug:test:%s", organizationId);
 
         Object data = redisService.get(key, Object.class);

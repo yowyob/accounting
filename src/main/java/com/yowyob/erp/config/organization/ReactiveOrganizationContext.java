@@ -40,6 +40,10 @@ public class ReactiveOrganizationContext {
         return getOrganizationId().map(Organization::new);
     }
 
+    public static Mono<Organization> getCurrentOrganizationAsOrganization() {
+        return getCurrentOrganization();
+    }
+
     /**
      * Gets the current user from the Reactor Context.
      */

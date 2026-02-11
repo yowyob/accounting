@@ -110,25 +110,29 @@ public class OrganizationServiceImpl implements OrganizationService {
         }
 
         private Mono<Void> logAudit(UUID organizationId, String action, String details) {
-                // Since Organization operations might be outside organization context context or
+                // Since Organization operations might be outside organization context context
+                // or
                 // global
                 // We do our best to log. If organization context is available we use it.
                 // For Organization management, it might be system admin level.
                 return ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                 .flatMap(user -> ReactiveOrganizationContext.getOrganizationId()
-                                                // If no organization context, we might use a null organizationId or handle global
+                                                // If no organization context, we might use a null organizationId or
+                                                // handle global
                                                 // events
                                                 // differently
                                                 // For now assuming organization mgmt happens within a context or we
                                                 // pass null
                                                 .defaultIfEmpty(organizationId) // Fallback to org ID as context if
                                                                                 // possible or null
-                                                .flatMap(organizationId -> {
+                                                .flatMap(ctxOrgId -> {
                                                         JournalAudit audit = JournalAudit.builder()
                                                                         .id(UUID.randomUUID())
-                                                                        .organizationId(organizationId) // May be organization ID
-                                                                                            // itself if it's the root
-                                                                                            // context
+                                                                        .organizationId(organizationId) // May be
+                                                                                                        // organization
+                                                                                                        // ID
+                                                                        // itself if it's the root
+                                                                        // context
                                                                         .action(action)
                                                                         .utilisateur(user)
                                                                         .details(details)
@@ -152,7 +156,8 @@ public class OrganizationServiceImpl implements OrganizationService {
                                                                                                 .build();
 
                                                                                 return kafka_service.sendAuditLog(
-                                                                                                auditDto, organizationId,
+                                                                                                auditDto,
+                                                                                                organizationId,
                                                                                                 action);
                                                                         });
                                                 }));
