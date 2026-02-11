@@ -4,7 +4,7 @@ import com.yowyob.erp.accounting.dto.JournalAuditDto;
 import com.yowyob.erp.accounting.dto.TauxChangeDto;
 import com.yowyob.erp.accounting.entity.JournalAudit;
 import com.yowyob.erp.accounting.entity.TauxChange;
-import com.yowyob.erp.accounting.entity.Tenant;
+import com.yowyob.erp.accounting.entity.Organization;
 import com.yowyob.erp.accounting.repository.DeviseRepository;
 import com.yowyob.erp.accounting.repository.JournalAuditRepository;
 import com.yowyob.erp.accounting.repository.TauxChangeRepository;
@@ -37,13 +37,13 @@ public class TauxChangeService {
         private final RedisService redis_service;
         private final KafkaMessageService kafka_service;
 
-        private static final String CACHE_TAUX_TENANT = "taux:tenant:";
+        private static final String CACHE_TAUX_TENANT = "taux:organization:";
 
         @Transactional
         public Mono<TauxChangeDto> createTauxChange(TauxChangeDto dto) {
                 return ReactiveOrganizationContext.getOrganizationId()
-                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentTenantAsTenant()
-                                                .flatMap(tenant -> ReactiveOrganizationContext.getCurrentUser()
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentOrganizationAsOrganization()
+                                                .flatMap(organization -> ReactiveOrganizationContext.getCurrentUser()
                                                                 .defaultIfEmpty("system")
                                                                 .flatMap(user -> Mono.zip(
                                                                                 devise_repository.findById(dto
@@ -85,7 +85,7 @@ public class TauxChangeService {
                                                                                                                         .info("Exchange rate saved: {}",
                                                                                                                                         s.getId()))
                                                                                                         .flatMap(saved -> logAudit(
-                                                                                                                        tenant,
+                                                                                                                        organization,
                                                                                                                         user,
                                                                                                                         "TAUX_CHANGE_CREATED",
                                                                                                                         String.format("New rate for %s -> %s: %s",
@@ -99,13 +99,13 @@ public class TauxChangeService {
         }
 
         @SuppressWarnings("unchecked")
-        public Mono<List<TauxChangeDto>> getTenantRates() {
+        public Mono<List<TauxChangeDto>> getOrganizationRates() {
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMap(organization_id -> {
                                         String cache_key = CACHE_TAUX_TENANT + organization_id;
                                         return redis_service.get(cache_key, List.class)
                                                         .map(list -> (List<TauxChangeDto>) list)
-                                                        .switchIfEmpty(taux_repository.findByTenant_Id(organization_id)
+                                                        .switchIfEmpty(taux_repository.findByOrganization_Id(organization_id)
                                                                         .flatMap(this::mapToDto)
                                                                         .collectList()
                                                                         .flatMap(rates -> redis_service
@@ -125,8 +125,8 @@ public class TauxChangeService {
         @Transactional
         public Mono<Void> deleteTauxChange(UUID id) {
                 return ReactiveOrganizationContext.getOrganizationId()
-                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentTenantAsTenant()
-                                                .flatMap(tenant -> ReactiveOrganizationContext.getCurrentUser()
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentOrganizationAsOrganization()
+                                                .flatMap(organization -> ReactiveOrganizationContext.getCurrentUser()
                                                                 .defaultIfEmpty("system")
                                                                 .flatMap(user -> taux_repository.findById(id)
                                                                                 .filter(r -> organization_id.equals(
@@ -137,7 +137,7 @@ public class TauxChangeService {
                                                                                                                 id.toString())))
                                                                                 .flatMap(rate -> taux_repository
                                                                                                 .delete(rate)
-                                                                                                .then(logAudit(tenant,
+                                                                                                .then(logAudit(organization,
                                                                                                                 user,
                                                                                                                 "TAUX_CHANGE_DELETED",
                                                                                                                 "Deletion of rate"))
@@ -166,10 +166,10 @@ public class TauxChangeService {
                                                 .build());
         }
 
-        private Mono<Void> logAudit(Organization tenant, String utilisateur, String action, String details) {
+        private Mono<Void> logAudit(Organization organization, String utilisateur, String action, String details) {
                 JournalAudit audit = JournalAudit.builder()
                                 .id(UUID.randomUUID())
-                                .organizationId(tenant.getId())
+                                .organizationId(organization.getId())
                                 .action(action)
                                 .utilisateur(utilisateur)
                                 .details(details)
@@ -189,7 +189,7 @@ public class TauxChangeService {
                                                         .date_action(saved.getDate_action())
                                                         .build();
 
-                                        return kafka_service.sendAuditLog(auditDto, tenant.getId(), action);
+                                        return kafka_service.sendAuditLog(auditDto, organization.getId(), action);
                                 });
         }
 }

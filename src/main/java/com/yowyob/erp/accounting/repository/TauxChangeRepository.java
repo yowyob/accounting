@@ -18,7 +18,7 @@ import java.util.UUID;
 public interface TauxChangeRepository extends R2dbcRepository<TauxChange, UUID> {
 
     @Query("SELECT * FROM taux_change WHERE organization_id = :organization_id")
-    Flux<TauxChange> findByTenant_Id(@Param("organization_id") UUID organization_id);
+    Flux<TauxChange> findByOrganization_Id(@Param("organization_id") UUID organization_id);
 
     /**
      * Finds the most recent exchange rate for a pair of currencies at or before a

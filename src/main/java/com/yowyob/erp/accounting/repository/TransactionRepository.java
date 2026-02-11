@@ -17,29 +17,29 @@ import java.util.UUID;
 public interface TransactionRepository extends ReactiveCrudRepository<Transaction, UUID> {
 
        @Query("SELECT * FROM transactions WHERE organization_id = :organizationId AND id = :id")
-       Mono<Transaction> findByTenantIdAndId(UUID organizationId, UUID id);
+       Mono<Transaction> findByOrganizationIdAndId(UUID organizationId, UUID id);
 
        @Query("SELECT * FROM transactions WHERE organization_id = :organizationId ORDER BY date_transaction DESC")
-       Flux<Transaction> findByTenantIdOrderByDateTransactionDesc(UUID organizationId);
+       Flux<Transaction> findByOrganizationIdOrderByDateTransactionDesc(UUID organizationId);
 
        @Query("SELECT * FROM transactions WHERE organization_id = :organizationId AND numero_recu = :numeroRecu")
-       Mono<Transaction> findByTenantIdAndNumeroRecu(UUID organizationId, String numeroRecu);
+       Mono<Transaction> findByOrganizationIdAndNumeroRecu(UUID organizationId, String numeroRecu);
 
        @Query("SELECT * FROM transactions WHERE organization_id = :organizationId AND est_comptabilisee = false")
-       Flux<Transaction> findByTenantIdAndEstComptabiliseeFalse(UUID organizationId);
+       Flux<Transaction> findByOrganizationIdAndEstComptabiliseeFalse(UUID organizationId);
 
        @Query("SELECT * FROM transactions WHERE organization_id = :organizationId AND est_validee = false")
-       Flux<Transaction> findByTenantIdAndEstValideeFalse(UUID organizationId);
+       Flux<Transaction> findByOrganizationIdAndEstValideeFalse(UUID organizationId);
 
        @Query("SELECT * FROM transactions WHERE organization_id = :organizationId AND date_transaction BETWEEN :startDate AND :endDate")
-       Flux<Transaction> findByTenantIdAndDateRange(UUID organizationId, LocalDateTime startDate, LocalDateTime endDate);
+       Flux<Transaction> findByOrganizationIdAndDateRange(UUID organizationId, LocalDateTime startDate, LocalDateTime endDate);
 
        @Query("SELECT COALESCE(SUM(montant_transaction), 0) FROM transactions WHERE organization_id = :organizationId AND est_validee = true")
        Mono<Double> getTotalValidatedTransactions(UUID organizationId);
 
        @Query("SELECT * FROM transactions WHERE organization_id = :organizationId AND caissier = :caissier")
-       Flux<Transaction> findByTenantIdAndCaissier(UUID organizationId, String caissier);
+       Flux<Transaction> findByOrganizationIdAndCaissier(UUID organizationId, String caissier);
 
        @Query("SELECT COUNT(*) > 0 FROM transactions WHERE organization_id = :organizationId AND numero_recu = :numeroRecu")
-       Mono<Boolean> existsByTenantIdAndNumeroRecu(UUID organizationId, String numeroRecu);
+       Mono<Boolean> existsByOrganizationIdAndNumeroRecu(UUID organizationId, String numeroRecu);
 }

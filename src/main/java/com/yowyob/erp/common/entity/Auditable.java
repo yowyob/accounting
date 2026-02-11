@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 public interface Auditable {
     UUID getOrganizationId();
-    void setTenantId(UUID organizationId);
+    void setOrganizationId(UUID organizationId);
     LocalDateTime getCreatedAt();
     void setCreatedAt(LocalDateTime createdAt);
     LocalDateTime getUpdatedAt();

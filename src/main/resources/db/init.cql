@@ -9,7 +9,7 @@ USE yowyob_erp;
 
 -- Table pour les comptes
 CREATE TABLE IF NOT EXISTS compte (
-    tenant_id UUID,
+    organization_id UUID,
     id UUID,
     no_compte TEXT,
     libelle TEXT,
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS compte (
     updated_at TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-    PRIMARY KEY (tenant_id, id)
+    PRIMARY KEY (organization_id, id)
 )
 WITH compression = {'sstable_compression': 'LZ4Compressor'};
 
@@ -31,7 +31,7 @@ CREATE INDEX IF NOT EXISTS idx_no_compte ON compte (no_compte);
 
 -- Table pour les contreparties
 CREATE TABLE IF NOT EXISTS contrepartie (
-    tenant_id UUID,
+    organization_id UUID,
     id UUID,
     compte TEXT,
     est_compte_tiers BOOLEAN,
@@ -43,13 +43,13 @@ CREATE TABLE IF NOT EXISTS contrepartie (
     updated_at TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-    PRIMARY KEY (tenant_id, id, compte)
+    PRIMARY KEY (organization_id, id, compte)
 )
 WITH compression = {'sstable_compression': 'LZ4Compressor'};
 
 -- Table pour les déclarations fiscales
 CREATE TABLE IF NOT EXISTS declaration_fiscale (
-    tenant_id UUID,
+    organization_id UUID,
     id UUID,
     type_declaration TEXT,
     periode_debut DATE,
@@ -64,13 +64,13 @@ CREATE TABLE IF NOT EXISTS declaration_fiscale (
     updated_at TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-    PRIMARY KEY (tenant_id, id, type_declaration)
+    PRIMARY KEY (organization_id, id, type_declaration)
 )
 WITH compression = {'sstable_compression': 'LZ4Compressor'};
 
 -- Table pour les détails d écriture
 CREATE TABLE IF NOT EXISTS detail_ecriture (
-    tenant_id UUID,
+    organization_id UUID,
     id UUID,
     ecriture_id UUID,
     compte_comptable_id UUID,
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS detail_ecriture (
     updated_at TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-    PRIMARY KEY (tenant_id, id)
+    PRIMARY KEY (organization_id, id)
 )
 WITH compression = {'sstable_compression': 'LZ4Compressor'};
 
@@ -93,7 +93,7 @@ CREATE INDEX IF NOT EXISTS ON detail_ecriture(ecriture_id);
 
 -- Table pour les écritures comptables
 CREATE TABLE IF NOT EXISTS ecriture_comptable (
-    tenant_id UUID,
+    organization_id UUID,
     id UUID,
     numero_ecriture TEXT,
     libelle TEXT,
@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS ecriture_comptable (
     updated_at TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-    PRIMARY KEY (tenant_id, id)
+    PRIMARY KEY (organization_id, id)
 )
 WITH compression = {'sstable_compression': 'LZ4Compressor'};
 
@@ -120,7 +120,7 @@ CREATE INDEX IF NOT EXISTS idx_ecriture_journal ON ecriture_comptable (journal_c
 
 -- Table pour les journaux d audit
 CREATE TABLE IF NOT EXISTS journal_audit (
-    tenant_id UUID,
+    organization_id UUID,
     date_action TIMESTAMP,
     id UUID,
     ecriture_comptable_id UUID,
@@ -134,14 +134,14 @@ CREATE TABLE IF NOT EXISTS journal_audit (
     updated_at TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-    PRIMARY KEY (tenant_id, date_action, id)
+    PRIMARY KEY (organization_id, date_action, id)
 )
 WITH compression = {'sstable_compression': 'LZ4Compressor'}
 AND CLUSTERING ORDER BY (date_action DESC, id ASC);
 
 -- Table pour les journaux comptables
 CREATE TABLE IF NOT EXISTS journal_comptable (
-    tenant_id UUID,
+    organization_id UUID,
     id UUID,
     code_journal TEXT,
     libelle TEXT,
@@ -152,7 +152,7 @@ CREATE TABLE IF NOT EXISTS journal_comptable (
     updated_at TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-    PRIMARY KEY (tenant_id, id)
+    PRIMARY KEY (organization_id, id)
 )
 WITH compression = {'sstable_compression': 'LZ4Compressor'};
 
@@ -162,7 +162,7 @@ CREATE INDEX IF NOT EXISTS ON journal_comptable(actif);
 
 -- Table pour les opérations comptables
 CREATE TABLE IF NOT EXISTS operation_comptable (
-    tenant_id UUID,
+    organization_id UUID,
     id UUID,
     operation_comptable_id UUID,
     type_operation TEXT,
@@ -179,7 +179,7 @@ CREATE TABLE IF NOT EXISTS operation_comptable (
     updated_at TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-    PRIMARY KEY (tenant_id, id)
+    PRIMARY KEY (organization_id, id)
 )
 WITH compression = {'sstable_compression': 'LZ4Compressor'};
 
@@ -192,7 +192,7 @@ CREATE INDEX IF NOT EXISTS ON operation_comptable(mode_reglement);
 
 -- Table pour les périodes comptables
 CREATE TABLE IF NOT EXISTS periode_comptable (
-    tenant_id UUID,
+    organization_id UUID,
     id UUID,
     code TEXT,
     date_debut DATE,
@@ -204,7 +204,7 @@ CREATE TABLE IF NOT EXISTS periode_comptable (
     updated_at TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-    PRIMARY KEY (tenant_id, id)
+    PRIMARY KEY (organization_id, id)
 )
 WITH compression = {'sstable_compression': 'LZ4Compressor'};
 
@@ -212,7 +212,7 @@ CREATE INDEX IF NOT EXISTS ON periode_comptable(code);
 
 -- Table pour les plan comptables
 CREATE TABLE IF NOT EXISTS plan_comptable (
-    tenant_id UUID,
+    organization_id UUID,
     id UUID,
     no_compte TEXT,
     code_classe INT,
@@ -223,7 +223,7 @@ CREATE TABLE IF NOT EXISTS plan_comptable (
     updated_at TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-    PRIMARY KEY (tenant_id, id)
+    PRIMARY KEY (organization_id, id)
 )
 WITH compression = {'sstable_compression': 'LZ4Compressor'};
 
@@ -234,7 +234,7 @@ CREATE INDEX IF NOT EXISTS ON plan_comptable (no_compte);
 
 -- Table pour les transactions
 CREATE TABLE IF NOT EXISTS transaction (
-    tenant_id UUID,
+    organization_id UUID,
     id UUID,
     numero_recu TEXT,
     operation_comptable_id UUID,
@@ -253,13 +253,13 @@ CREATE TABLE IF NOT EXISTS transaction (
     updated_at TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-    PRIMARY KEY (tenant_id, numero_recu)
+    PRIMARY KEY (organization_id, numero_recu)
 )
 WITH compression = {'sstable_compression': 'LZ4Compressor'};
 
--- Table pour les tenants
-CREATE TABLE IF NOT EXISTS tenants (
-    tenant_id UUID,
+-- Table pour les organizations
+CREATE TABLE IF NOT EXISTS organizations (
+    organization_id UUID,
     id UUID,
     name TEXT,
     legal_name TEXT,
@@ -275,6 +275,6 @@ CREATE TABLE IF NOT EXISTS tenants (
     updated_at TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-    PRIMARY KEY (tenant_id)
+    PRIMARY KEY (organization_id)
 )
 WITH compression = {'sstable_compression': 'LZ4Compressor'};

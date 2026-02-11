@@ -62,13 +62,13 @@ public class StockMovementController {
         }
 
         /**
-         * Gets all stock movements for the current tenant.
+         * Gets all stock movements for the current organization.
          * 
          * @return list of stock movements
          */
         @GetMapping("/mouvements")
         @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT', 'USER')")
-        @Operation(summary = "Liste des mouvements de stock", description = "Retourne tous les mouvements de stock du tenant")
+        @Operation(summary = "Liste des mouvements de stock", description = "Retourne tous les mouvements de stock du organization")
         @ApiResponses(value = {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Liste récupérée"),
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Non authentifié")
@@ -79,7 +79,7 @@ public class StockMovementController {
 
                 return com.yowyob.erp.config.organization.ReactiveOrganizationContext.getOrganizationId()
                                 .flatMap(organization_id -> {
-                                        log.info("📋 Getting stock movements for tenant {}", organization_id);
+                                        log.info("📋 Getting stock movements for organization {}", organization_id);
                                         return stock_service.getMouvements(organization_id, type, produit_id)
                                                         .collectList()
                                                         .map(mouvements -> ResponseEntity.ok(ApiResponseWrapper.success(
@@ -107,7 +107,7 @@ public class StockMovementController {
                         @PathVariable UUID mouvementId) {
                 return com.yowyob.erp.config.organization.ReactiveOrganizationContext.getOrganizationId()
                                 .flatMap(organization_id -> {
-                                        log.info("💰 Getting accounting impact for stock movement {} of tenant {}",
+                                        log.info("💰 Getting accounting impact for stock movement {} of organization {}",
                                                         mouvementId, organization_id);
                                         return stock_service.getImpactComptable(mouvementId)
                                                         .map(impact -> ResponseEntity.ok(ApiResponseWrapper.success(

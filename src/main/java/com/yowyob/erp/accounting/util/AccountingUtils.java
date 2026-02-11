@@ -34,7 +34,7 @@ public class AccountingUtils {
             throw new IllegalArgumentException("Accounting object type is required");
         }
 
-        UUID organization_id = OrganizationContext.getCurrentTenant();
+        UUID organization_id = OrganizationContext.getCurrentOrganization();
         LocalDate date = request.getDate() != null ? request.getDate() : LocalDate.now();
         UUID journal_comptable_id = request.getJournalComptableId();
         UUID periode_comptable_id = request.getPeriodeComptableId() != null ? request.getPeriodeComptableId()
@@ -93,7 +93,7 @@ public class AccountingUtils {
                         .client_id(request.getClientId())
                         .is_achat(Boolean.TRUE.equals(request.getIsAchat()))
                         .build();
-                facture.setTenant_id(organization_id);
+                facture.setOrganization_id(organization_id);
                 return facture;
             }
 

@@ -31,11 +31,11 @@ public class StockMovementService {
      * Records a stock movement and generates the corresponding accounting entry.
      * 
      * @param mouvement The stock movement data
-     * @param tenant    The context tenant
+     * @param organization    The context organization
      */
     @Transactional
-    public Mono<Void> recordStockMovement(MouvementStockComptable mouvement, Organization tenant) {
-        log.info("Processing reactive stock movement for Organization: {}", tenant.getCode());
+    public Mono<Void> recordStockMovement(MouvementStockComptable mouvement, Organization organization) {
+        log.info("Processing reactive stock movement for Organization: {}", organization.getCode());
 
         // 1. Validate movement data
         if (mouvement.getQuantite() <= 0 || mouvement.getCout_unitaire().compareTo(BigDecimal.ZERO) <= 0) {
@@ -48,7 +48,7 @@ public class StockMovementService {
                         "No accounting period found for date: " + mouvement.get_date())))
                 .flatMap(periodeDto -> {
                     EcritureComptable ecriture = EcritureComptable.builder()
-                            .organizationId(tenant.getId())
+                            .organizationId(organization.getId())
                             .libelle(mouvement.get_description())
                             .date_ecriture(mouvement.get_date())
                             .journal_id(mouvement.get_journal_comptable_id())
@@ -60,12 +60,12 @@ public class StockMovementService {
 
                     return ecritureRepository.save(ecriture)
                             .flatMap(savedEcriture -> {
-                                List<DetailEcriture> details = mouvement.generate_ecriture_details(tenant,
+                                List<DetailEcriture> details = mouvement.generate_ecriture_details(organization,
                                         savedEcriture);
                                 // Set back links if needed for persistence
                                 details.forEach(d -> {
                                     d.setEcriture_id(savedEcriture.getId());
-                                    d.setTenantId(tenant.getId());
+                                    d.setOrganizationId(organization.getId());
                                 });
                                 return detailRepository.saveAll(details).collectList()
                                         .doOnSuccess(savedDetails -> log.info(

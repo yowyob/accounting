@@ -69,7 +69,7 @@ public class JournalComptableController {
         }
 
         @GetMapping
-        @Operation(summary = "List all journals for the current tenant")
+        @Operation(summary = "List all journals for the current organization")
         public Mono<ResponseEntity<ApiResponseWrapper<List<JournalComptableDto>>>> getAllJournals() {
                 return journal_service.getAllJournaux()
                                 .map(list -> ResponseEntity

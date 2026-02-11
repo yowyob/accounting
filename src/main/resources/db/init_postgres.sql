@@ -12,8 +12,8 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE SCHEMA IF NOT EXISTS public;
 
 -- Tenants
-CREATE TABLE IF NOT EXISTS tenants (
-  tenant_id UUID PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS organizations (
+  organization_id UUID PRIMARY KEY,
   name TEXT,
   tax_id TEXT,
   address TEXT,
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS tenants (
 -- ======================
 CREATE TABLE IF NOT EXISTS plan_comptable (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  tenant_id UUID NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES organizations(organization_id) ON DELETE CASCADE,
   no_compte VARCHAR(20) NOT NULL,
   libelle TEXT NOT NULL,
   code_classe SMALLINT,               -- 1..9 (OHADA classes)
@@ -43,16 +43,16 @@ CREATE TABLE IF NOT EXISTS plan_comptable (
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   created_by TEXT,
   updated_by TEXT,
-  UNIQUE (tenant_id, no_compte)
+  UNIQUE (organization_id, no_compte)
 );
 
-CREATE INDEX IF NOT EXISTS idx_plan_comptable_tenant ON plan_comptable(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_plan_comptable_tenant ON plan_comptable(organization_id);
 CREATE INDEX IF NOT EXISTS idx_plan_comptable_actif ON plan_comptable(actif);
 CREATE INDEX IF NOT EXISTS idx_plan_comptable_code_classe ON plan_comptable(code_classe);
 
 -- Alias 'compte' table name from CQL -> keep a view for compatibility (optional)
 CREATE OR REPLACE VIEW compte AS
-  SELECT tenant_id, id, no_compte, libelle, notes, created_at, updated_at, created_by, updated_by
+  SELECT organization_id, id, no_compte, libelle, notes, created_at, updated_at, created_by, updated_by
   FROM plan_comptable;
 
 -- ======================
@@ -60,7 +60,7 @@ CREATE OR REPLACE VIEW compte AS
 -- ======================
 CREATE TABLE IF NOT EXISTS journal_comptable (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  tenant_id UUID NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES organizations(organization_id) ON DELETE CASCADE,
   code_journal VARCHAR(20) NOT NULL,
   libelle TEXT NOT NULL,
   type_journal TEXT,                  -- ventes, achats, tresorerie, etc.
@@ -70,10 +70,10 @@ CREATE TABLE IF NOT EXISTS journal_comptable (
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   created_by TEXT,
   updated_by TEXT,
-  UNIQUE (tenant_id, code_journal)
+  UNIQUE (organization_id, code_journal)
 );
 
-CREATE INDEX IF NOT EXISTS idx_journal_comptable_tenant ON journal_comptable(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_journal_comptable_tenant ON journal_comptable(organization_id);
 CREATE INDEX IF NOT EXISTS idx_journal_comptable_code ON journal_comptable(code_journal);
 CREATE INDEX IF NOT EXISTS idx_journal_comptable_actif ON journal_comptable(actif);
 
@@ -82,7 +82,7 @@ CREATE INDEX IF NOT EXISTS idx_journal_comptable_actif ON journal_comptable(acti
 -- ======================
 CREATE TABLE IF NOT EXISTS periode_comptable (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  tenant_id UUID NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES organizations(organization_id) ON DELETE CASCADE,
   code TEXT NOT NULL,
   date_debut DATE NOT NULL,
   date_fin DATE NOT NULL,
@@ -92,10 +92,10 @@ CREATE TABLE IF NOT EXISTS periode_comptable (
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   created_by TEXT,
   updated_by TEXT,
-  UNIQUE (tenant_id, code)
+  UNIQUE (organization_id, code)
 );
 
-CREATE INDEX IF NOT EXISTS idx_periode_comptable_tenant ON periode_comptable(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_periode_comptable_tenant ON periode_comptable(organization_id);
 CREATE INDEX IF NOT EXISTS idx_periode_comptable_cloturee ON periode_comptable(cloturee);
 
 -- ======================
@@ -103,7 +103,7 @@ CREATE INDEX IF NOT EXISTS idx_periode_comptable_cloturee ON periode_comptable(c
 -- ======================
 CREATE TABLE IF NOT EXISTS operation_comptable (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  tenant_id UUID NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES organizations(organization_id) ON DELETE CASCADE,
   type_operation TEXT NOT NULL,                 -- vente, achat, tresorerie, etc.
   mode_reglement TEXT,                          -- espece, credit, etc.
   est_compte_statique BOOLEAN DEFAULT FALSE,
@@ -121,13 +121,13 @@ CREATE TABLE IF NOT EXISTS operation_comptable (
   updated_by TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_operation_comptable_tenant ON operation_comptable(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_operation_comptable_tenant ON operation_comptable(organization_id);
 CREATE INDEX IF NOT EXISTS idx_operation_comptable_type ON operation_comptable(type_operation);
 
 -- Contreparties de l'opération (Phase 2)
 CREATE TABLE IF NOT EXISTS contrepartie (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  tenant_id UUID NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES organizations(organization_id) ON DELETE CASCADE,
   operation_comptable_id UUID NOT NULL REFERENCES operation_comptable(id) ON DELETE CASCADE,
   compte_id UUID REFERENCES plan_comptable(id),     -- null si compte tiers
   est_compte_tiers BOOLEAN DEFAULT FALSE,
@@ -148,7 +148,7 @@ CREATE INDEX IF NOT EXISTS idx_contrepartie_operation ON contrepartie(operation_
 -- ======================
 CREATE TABLE IF NOT EXISTS ecriture_comptable (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  tenant_id UUID NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES organizations(organization_id) ON DELETE CASCADE,
   journal_comptable_id UUID REFERENCES journal_comptable(id),
   periode_id UUID REFERENCES periode_comptable(id),
   numero_piece TEXT,
@@ -161,13 +161,13 @@ CREATE TABLE IF NOT EXISTS ecriture_comptable (
   updated_by TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_ecriture_tenant ON ecriture_comptable(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_ecriture_tenant ON ecriture_comptable(organization_id);
 CREATE INDEX IF NOT EXISTS idx_ecriture_journal ON ecriture_comptable(journal_comptable_id);
 CREATE INDEX IF NOT EXISTS idx_ecriture_periode ON ecriture_comptable(periode_id);
 
 CREATE TABLE IF NOT EXISTS detail_ecriture (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  tenant_id UUID NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES organizations(organization_id) ON DELETE CASCADE,
   ecriture_id UUID NOT NULL REFERENCES ecriture_comptable(id) ON DELETE CASCADE,
   plan_comptable_id UUID REFERENCES plan_comptable(id),
   libelle TEXT,
@@ -190,7 +190,7 @@ CREATE INDEX IF NOT EXISTS idx_detail_ecriture_plan ON detail_ecriture(plan_comp
 -- Journal d'audit
 CREATE TABLE IF NOT EXISTS journal_audit (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  tenant_id UUID NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES organizations(organization_id) ON DELETE CASCADE,
   ecriture_id UUID REFERENCES ecriture_comptable(id) ON DELETE SET NULL,
   action TEXT,                         -- creation/validation/modification
   utilisateur TEXT,
@@ -198,14 +198,14 @@ CREATE TABLE IF NOT EXISTS journal_audit (
   details TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_journal_audit_tenant_date ON journal_audit(tenant_id, date_action DESC);
+CREATE INDEX IF NOT EXISTS idx_journal_audit_tenant_date ON journal_audit(organization_id, date_action DESC);
 
 -- ======================
 -- Transactions (source des écritures)
 -- ======================
 CREATE TABLE IF NOT EXISTS transaction (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  tenant_id UUID NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES organizations(organization_id) ON DELETE CASCADE,
   numero_recu TEXT,
   operation_comptable_id UUID REFERENCES operation_comptable(id),
   montant_transaction NUMERIC(18,2),
@@ -222,7 +222,7 @@ CREATE TABLE IF NOT EXISTS transaction (
   updated_by TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_transaction_tenant ON transaction(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_transaction_tenant ON transaction(organization_id);
 CREATE INDEX IF NOT EXISTS idx_transaction_operation ON transaction(operation_comptable_id);
 
 -- ======================
@@ -230,7 +230,7 @@ CREATE INDEX IF NOT EXISTS idx_transaction_operation ON transaction(operation_co
 -- ======================
 CREATE TABLE IF NOT EXISTS declaration_fiscale (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  tenant_id UUID NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES organizations(organization_id) ON DELETE CASCADE,
   type_declaration TEXT NOT NULL,         -- TVA, etc.
   periode TEXT NOT NULL,                  -- e.g. 2025-07
   montant NUMERIC(18,2) DEFAULT 0,
@@ -241,7 +241,7 @@ CREATE TABLE IF NOT EXISTS declaration_fiscale (
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   created_by TEXT,
   updated_by TEXT,
-  UNIQUE (tenant_id, type_declaration, periode)
+  UNIQUE (organization_id, type_declaration, periode)
 );
 
 -- ======================

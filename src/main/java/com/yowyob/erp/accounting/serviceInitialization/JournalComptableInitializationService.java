@@ -1,7 +1,7 @@
 package com.yowyob.erp.accounting.serviceInitialization;
 
 import com.yowyob.erp.accounting.entity.JournalComptable;
-import com.yowyob.erp.accounting.entity.Tenant;
+import com.yowyob.erp.accounting.entity.Organization;
 import com.yowyob.erp.accounting.repository.JournalComptableRepository;
 import com.yowyob.erp.common.constants.AppConstants;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +30,7 @@ public class JournalComptableInitializationService implements CommandLineRunner 
 
     public JournalComptableInitializationService(
             JournalComptableRepository journal_repository,
-            @Value("${app.tenant.default-tenant:550e8400-e29b-41d4-a716-446655440000}") String organization_id_str) {
+            @Value("${app.organization.default-organization:550e8400-e29b-41d4-a716-446655440000}") String organization_id_str) {
         this.journal_repository = journal_repository;
         this.organization_id = UUID.fromString(organization_id_str);
     }
@@ -52,14 +52,14 @@ public class JournalComptableInitializationService implements CommandLineRunner 
     }
 
     private Mono<Void> createJournalIfNotExists(String code_journal, String libelle, String type_journal) {
-        return journal_repository.existsByTenant_IdAndCode_journal(organization_id, code_journal)
+        return journal_repository.existsByOrganization_IdAndCode_journal(organization_id, code_journal)
                 .flatMap(exists -> {
                     if (!exists) {
                         log.info("Creating journal: {} - {}", code_journal, libelle);
                         JournalComptable journal = JournalComptable.builder()
                                 .id(UUID.randomUUID())
                                 .organizationId(organization_id)
-                                .tenant(new Tenant(organization_id))
+                                .organization(new Organization(organization_id))
                                 .code_journal(code_journal)
                                 .libelle(libelle)
                                 .type_journal(type_journal)

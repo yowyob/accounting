@@ -20,18 +20,18 @@ import java.util.UUID;
 @Repository
 public interface DetailEcritureRepository extends R2dbcRepository<DetailEcriture, UUID> {
 
-        Flux<DetailEcriture> findByTenantId(UUID organization_id);
+        Flux<DetailEcriture> findByOrganizationId(UUID organization_id);
 
         @Query("SELECT * FROM details_ecritures WHERE organization_id = :organization_id AND ecriture_id = :ecriture_id")
-        Flux<DetailEcriture> findByTenant_IdAndEcriture_Id(@Param("organization_id") UUID organization_id,
+        Flux<DetailEcriture> findByOrganization_IdAndEcriture_Id(@Param("organization_id") UUID organization_id,
                         @Param("ecriture_id") UUID ecriture_id);
 
         @Query("SELECT * FROM details_ecritures WHERE organization_id = :organization_id AND compte_id = :compte_id")
-        Flux<DetailEcriture> findByTenant_IdAndCompte_Id(@Param("organization_id") UUID organization_id,
+        Flux<DetailEcriture> findByOrganization_IdAndCompte_Id(@Param("organization_id") UUID organization_id,
                         @Param("compte_id") UUID compte_id);
 
         @Query("SELECT * FROM details_ecritures WHERE organization_id = :organization_id AND date_ecriture BETWEEN :start_date AND :end_date")
-        Flux<DetailEcriture> findByTenant_IdAndDateRange(@Param("organization_id") UUID organization_id,
+        Flux<DetailEcriture> findByOrganization_IdAndDateRange(@Param("organization_id") UUID organization_id,
                         @Param("start_date") LocalDateTime start_date,
                         @Param("end_date") LocalDateTime end_date);
 
@@ -67,7 +67,7 @@ public interface DetailEcritureRepository extends R2dbcRepository<DetailEcriture
                         "AND de.date_ecriture BETWEEN :date_debut AND :date_fin " +
                         "ORDER BY ABS(EXTRACT(DAY FROM (de.date_ecriture - :date_reference))) " +
                         "LIMIT 3")
-        Flux<DetailEcriture> findByTenantIdAndMontantAndDateProche(
+        Flux<DetailEcriture> findByOrganizationIdAndMontantAndDateProche(
                         @Param("organization_id") UUID organization_id,
                         @Param("montant") BigDecimal montant,
                         @Param("date_debut") LocalDate date_debut,

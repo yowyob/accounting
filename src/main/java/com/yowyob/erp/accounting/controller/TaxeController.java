@@ -56,7 +56,7 @@ public class TaxeController {
     }
 
     @GetMapping
-    @Operation(summary = "List all taxes for the current tenant")
+    @Operation(summary = "List all taxes for the current organization")
     public Mono<ResponseEntity<ApiResponseWrapper<List<TaxeDto>>>> getAllTaxes(
             @RequestParam(required = false, defaultValue = "false") boolean onlyActive) {
         Mono<List<TaxeDto>> taxesMono = onlyActive ? taxe_service.getActiveTaxes() : taxe_service.getAllTaxes();

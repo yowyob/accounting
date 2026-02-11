@@ -91,7 +91,7 @@ public class OperationComptable implements SettablePersistable<UUID> {
     private String updated_by;
 
     @Transient
-    private Organization tenant;
+    private Organization organization;
 
     @Transient
     private JournalComptable journal_comptable;

@@ -18,7 +18,7 @@ public class LettrageAutomatiqueService {
     private final DatabaseClient databaseClient;
 
     @Transactional
-    public Mono<Integer> lettrerToutLeTenant(UUID organizationId) {
+    public Mono<Integer> lettrerToutLeOrganization(UUID organizationId) {
         String sql = """
                 WITH candidats AS (
                     SELECT

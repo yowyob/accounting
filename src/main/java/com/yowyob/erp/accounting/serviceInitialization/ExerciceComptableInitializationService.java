@@ -26,7 +26,7 @@ public class ExerciceComptableInitializationService implements CommandLineRunner
 
     public ExerciceComptableInitializationService(
             ExerciceComptableRepository exercice_repository,
-            @Value("${app.tenant.default-tenant:550e8400-e29b-41d4-a716-446655440000}") String organization_id_str) {
+            @Value("${app.organization.default-organization:550e8400-e29b-41d4-a716-446655440000}") String organization_id_str) {
         this.exercice_repository = exercice_repository;
         this.organization_id = UUID.fromString(organization_id_str);
     }
@@ -41,9 +41,9 @@ public class ExerciceComptableInitializationService implements CommandLineRunner
     }
 
     private Mono<Void> createExerciceIfNotExists(String code, String libelle, LocalDate start, LocalDate end) {
-        return exercice_repository.findByTenantIdAndCode(organization_id, code)
+        return exercice_repository.findByOrganizationIdAndCode(organization_id, code)
                 .switchIfEmpty(Mono.defer(() -> {
-                    log.info("Creating initial fiscal year '{}' for tenant {}", code, organization_id);
+                    log.info("Creating initial fiscal year '{}' for organization {}", code, organization_id);
                     ExerciceComptable exercice = ExerciceComptable.builder()
                             .organizationId(organization_id)
                             .code(code)

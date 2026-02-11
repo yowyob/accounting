@@ -51,7 +51,7 @@ public class CashRegisterAccountingService {
                 Mono<Compte> emitterAccountMono;
                 if (movement.getEmitter_accounting_account() != null
                                 && !movement.getEmitter_accounting_account().isEmpty()) {
-                        emitterAccountMono = compteRepository.findByTenant_IdAndNo_compte(organizationId,
+                        emitterAccountMono = compteRepository.findByOrganization_IdAndNo_compte(organizationId,
                                         movement.getEmitter_accounting_account())
                                         .switchIfEmpty(Mono.error(new BusinessException("Emitter account not found: "
                                                         + movement.getEmitter_accounting_account())));
@@ -64,7 +64,7 @@ public class CashRegisterAccountingService {
                 Mono<Compte> recipientAccountMono;
                 if (movement.getRecipient_accounting_account() != null
                                 && !movement.getRecipient_accounting_account().isEmpty()) {
-                        recipientAccountMono = compteRepository.findByTenant_IdAndNo_compte(organizationId,
+                        recipientAccountMono = compteRepository.findByOrganization_IdAndNo_compte(organizationId,
                                         movement.getRecipient_accounting_account())
                                         .switchIfEmpty(Mono.error(new BusinessException("Recipient account not found: "
                                                         + movement.getRecipient_accounting_account())));

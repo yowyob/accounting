@@ -38,7 +38,7 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
         public Mono<ExerciceComptableDto> createExercice(ExerciceComptableDto exercice_dto) {
                 log.info("Starting createExercice for code: {}", exercice_dto.getCode());
                 return ReactiveOrganizationContext.getOrganizationId()
-                                .doOnNext(tid -> log.info("TenantId resolved: {}", tid))
+                                .doOnNext(tid -> log.info("OrganizationId resolved: {}", tid))
                                 .switchIfEmpty(Mono.defer(() -> {
                                         log.error("Organization ID NOT RESOLVED in createExercice");
                                         return Mono.empty();
@@ -46,7 +46,7 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
                                 .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                                 .doOnNext(u -> log.info("User resolved: {}", u))
                                                 .flatMap(user -> {
-                                                        log.info("Creating new fiscal year '{}' for tenant {}",
+                                                        log.info("Creating new fiscal year '{}' for organization {}",
                                                                         exercice_dto.getCode(), organization_id);
 
                                                         return validateDates(exercice_dto)
@@ -112,7 +112,7 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
         @Override
         public Mono<List<ExerciceComptableDto>> getAllExercices() {
                 return ReactiveOrganizationContext.getOrganizationId()
-                                .flatMap(organization_id -> exercice_repository.findByTenantId(organization_id)
+                                .flatMap(organization_id -> exercice_repository.findByOrganizationId(organization_id)
                                                 .map(this::mapToDto)
                                                 .collectList());
         }
@@ -290,7 +290,7 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
         }
 
         private Mono<Void> checkOverlap(ExerciceComptableDto dto, UUID organization_id, UUID current_id) {
-                return exercice_repository.findByTenantId(organization_id)
+                return exercice_repository.findByOrganizationId(organization_id)
                                 .filter(e -> current_id == null || !e.getId().equals(current_id))
                                 .filter(e -> (dto.getDate_debut().isBefore(e.getDate_fin())
                                                 && dto.getDate_fin().isAfter(e.getDate_debut()))

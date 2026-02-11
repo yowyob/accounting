@@ -8,6 +8,6 @@ import java.util.UUID;
 
 @Repository
 public interface NotificationRepository extends R2dbcRepository<Notification, UUID> {
-    Flux<Notification> findAllByTenantIdAndUserIdOrderByCreatedAtDesc(UUID organizationId, String userId);
-    Flux<Notification> findAllByTenantIdAndUserIdAndIsReadFalseOrderByCreatedAtDesc(UUID organizationId, String userId);
+    Flux<Notification> findAllByOrganizationIdAndUserIdOrderByCreatedAtDesc(UUID organizationId, String userId);
+    Flux<Notification> findAllByOrganizationIdAndUserIdAndIsReadFalseOrderByCreatedAtDesc(UUID organizationId, String userId);
 }

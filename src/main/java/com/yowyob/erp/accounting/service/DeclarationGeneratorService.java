@@ -36,16 +36,16 @@ public class DeclarationGeneratorService {
     private final ObjectMapper object_mapper;
 
     public Mono<DeclarationFiscale> generateVatDeclaration(UUID organization_id, LocalDate start_date, LocalDate end_date) {
-        log.info("Generating VAT declaration for tenant {} from {} to {}", organization_id, start_date, end_date);
+        log.info("Generating VAT declaration for organization {} from {} to {}", organization_id, start_date, end_date);
 
         LocalDateTime start = start_date.atStartOfDay();
         LocalDateTime end = end_date.atTime(LocalTime.MAX);
 
-        return taxe_repository.findByTenant_IdAndActifTrue(organization_id)
+        return taxe_repository.findByOrganization_IdAndActifTrue(organization_id)
                 .collectList()
                 .flatMap(taxes -> {
                     if (taxes.isEmpty()) {
-                        return Mono.error(new RuntimeException("No active taxes found for this tenant"));
+                        return Mono.error(new RuntimeException("No active taxes found for this organization"));
                     }
 
                     Set<String> all_tax_accounts = new HashSet<>();
@@ -67,7 +67,7 @@ public class DeclarationGeneratorService {
                     }
 
                     // First, we need to map compte_id to no_compte
-                    return compte_repository.findAllByTenant_Id(organization_id)
+                    return compte_repository.findAllByOrganization_Id(organization_id)
                             .filter(c -> all_tax_accounts.contains(c.getNo_compte()))
                             .collectMap(Compte::getId, Compte::getNo_compte)
                             .flatMap(id_to_no -> {

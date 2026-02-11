@@ -20,11 +20,11 @@ import java.util.UUID;
 public interface AgenceRepository extends R2dbcRepository<Agence, UUID> {
 
     @Query("SELECT * FROM agences WHERE organization_id = :organizationId")
-    Flux<Agence> findByTenantId(@Param("organizationId") UUID organizationId);
+    Flux<Agence> findByOrganizationId(@Param("organizationId") UUID organizationId);
 
     @Query("SELECT * FROM agences WHERE code = :code")
     Mono<Agence> findByCode(@Param("code") String code);
 
     @Query("SELECT * FROM agences WHERE organization_id = :organizationId AND code = :code")
-    Mono<Agence> findByTenantIdAndCode(@Param("organizationId") UUID organizationId, @Param("code") String code);
+    Mono<Agence> findByOrganizationIdAndCode(@Param("organizationId") UUID organizationId, @Param("code") String code);
 }

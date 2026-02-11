@@ -16,29 +16,29 @@ import java.util.UUID;
 @Repository
 public interface JournalAuditRepository extends R2dbcRepository<JournalAudit, UUID> {
 
-        /** Lists all audits for a tenant, ordered by action date descending */
+        /** Lists all audits for a organization, ordered by action date descending */
         @Query("SELECT * FROM journal_audit WHERE organization_id = :organization_id ORDER BY date_action DESC")
-        Flux<JournalAudit> findByTenant_IdOrderByDate_actionDesc(@Param("organization_id") UUID organization_id);
+        Flux<JournalAudit> findByOrganization_IdOrderByDate_actionDesc(@Param("organization_id") UUID organization_id);
 
-        /** Lists audits for a tenant filtered by user */
+        /** Lists audits for a organization filtered by user */
         @Query("SELECT * FROM journal_audit WHERE organization_id = :organization_id AND utilisateur = :utilisateur")
-        Flux<JournalAudit> findByTenant_IdAndUtilisateur(@Param("organization_id") UUID organization_id,
+        Flux<JournalAudit> findByOrganization_IdAndUtilisateur(@Param("organization_id") UUID organization_id,
                         @Param("utilisateur") String utilisateur);
 
-        /** Lists audits for a tenant filtered by action type */
+        /** Lists audits for a organization filtered by action type */
         @Query("SELECT * FROM journal_audit WHERE organization_id = :organization_id AND action = :action")
-        Flux<JournalAudit> findByTenant_IdAndAction(@Param("organization_id") UUID organization_id, @Param("action") String action);
+        Flux<JournalAudit> findByOrganization_IdAndAction(@Param("organization_id") UUID organization_id, @Param("action") String action);
 
-        /** Lists audits for a tenant within a specific time range */
+        /** Lists audits for a organization within a specific time range */
         @Query("SELECT * FROM journal_audit WHERE organization_id = :organization_id AND date_action BETWEEN :start_date AND :end_date")
-        Flux<JournalAudit> findByTenant_IdAndDate_actionBetween(
+        Flux<JournalAudit> findByOrganization_IdAndDate_actionBetween(
                         @Param("organization_id") UUID organization_id,
                         @Param("start_date") LocalDateTime start_date,
                         @Param("end_date") LocalDateTime end_date);
 
-        /** Lists audits for a tenant related to a specific accounting entry */
+        /** Lists audits for a organization related to a specific accounting entry */
         @Query("SELECT * FROM journal_audit WHERE organization_id = :organization_id AND ecriture_id = :ecriture_comptable_id")
-        Flux<JournalAudit> findByTenant_IdAndEcriture_comptable_id(
+        Flux<JournalAudit> findByOrganization_IdAndEcriture_comptable_id(
                         @Param("organization_id") UUID organization_id,
                         @Param("ecriture_comptable_id") UUID ecriture_comptable_id);
 }

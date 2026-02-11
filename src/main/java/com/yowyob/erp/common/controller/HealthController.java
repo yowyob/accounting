@@ -39,7 +39,7 @@ public class HealthController {
         info.put("application", applicationName);
         info.put("version", "1.0.0");
         info.put("description", "Yowyob ERP - Module Comptabilité");
-        info.put("phase", "Phase 1 - Configuration et Architecture Multi-tenant");
+        info.put("phase", "Phase 1 - Configuration et Architecture Multi-organization");
         
         return ResponseEntity.ok(ApiResponseWrapper.success(info));
     }

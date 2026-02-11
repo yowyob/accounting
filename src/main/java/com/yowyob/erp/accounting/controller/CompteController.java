@@ -63,13 +63,13 @@ public class CompteController {
         }
 
         /**
-         * Retrieves all accounts for the current tenant.
+         * Retrieves all accounts for the current organization.
          */
         @GetMapping
         @Operation(summary = "List all accounts")
         public Mono<ResponseEntity<ApiResponseWrapper<List<CompteDto>>>> getAllComptes() {
                 return ReactiveOrganizationContext.getOrganizationId()
-                                .flatMapMany(compte_service::findAllByTenant)
+                                .flatMapMany(compte_service::findAllByOrganization)
                                 .collectList()
                                 .map(comptes -> ResponseEntity
                                                 .ok(ApiResponseWrapper.success(comptes,

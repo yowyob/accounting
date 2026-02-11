@@ -24,7 +24,7 @@ public class ReactiveOrganizationContext {
                 return Mono.just(ctx.get(ORGANIZATION_ID_KEY));
             }
             // Fallback for hybrid Servlet/Reactive environments
-            UUID threadLocalOrganizationId = OrganizationContext.getCurrentTenant();
+            UUID threadLocalOrganizationId = OrganizationContext.getCurrentOrganization();
             if (threadLocalOrganizationId != null) {
                 return Mono.just(threadLocalOrganizationId);
             }
@@ -72,7 +72,7 @@ public class ReactiveOrganizationContext {
      * and returns a Reactor Context.
      */
     public static Context captureFromThreadLocal() {
-        UUID organizationId = OrganizationContext.getCurrentTenant();
+        UUID organizationId = OrganizationContext.getCurrentOrganization();
         String user = OrganizationContext.getCurrentUser();
 
         Context ctx = Context.empty();

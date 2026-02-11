@@ -54,7 +54,7 @@ public class ExerciceComptableController {
     }
 
     @GetMapping
-    @Operation(summary = "Get all fiscal years for current tenant")
+    @Operation(summary = "Get all fiscal years for current organization")
     public Mono<ResponseEntity<ApiResponseWrapper<List<ExerciceComptableDto>>>> getAllExercices() {
         return exercice_service.getAllExercices()
                 .map(exercices -> ResponseEntity

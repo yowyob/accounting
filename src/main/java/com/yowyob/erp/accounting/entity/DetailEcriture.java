@@ -90,7 +90,7 @@ public class DetailEcriture implements SettablePersistable<UUID> {
     private String updated_by;
 
     @Transient
-    private Organization tenant;
+    private Organization organization;
 
     @Transient
     private EcritureComptable ecriture;

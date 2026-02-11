@@ -57,7 +57,7 @@ public class TauxChange implements com.yowyob.erp.common.persistence.SettablePer
     private LocalDateTime created_at = LocalDateTime.now();
 
     @Transient
-    private Organization tenant;
+    private Organization organization;
 
     @Transient
     private Devise devise_source;

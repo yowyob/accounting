@@ -56,7 +56,7 @@ public class FactureComptable implements ComptableObject {
     public FactureComptable(UUID id, BigDecimal montant_ht, LocalDate date, String libelle,
             UUID journal_comptable_id, UUID periode_comptable_id, UUID client_id, boolean is_achat) {
         this.id = id;
-        this.organization_id = OrganizationContext.getCurrentTenant();
+        this.organization_id = OrganizationContext.getCurrentOrganization();
         this.montant_ht = montant_ht;
         this.date = date;
         this.libelle = libelle;
@@ -120,12 +120,12 @@ public class FactureComptable implements ComptableObject {
     /**
      * Generates OHADA accounting lines for the invoice.
      * 
-     * @param tenant   the current tenant
+     * @param organization   the current organization
      * @param ecriture the associated accounting entry
      * @return list of accounting details
      */
     @Override
-    public List<DetailEcriture> generate_ecriture_details(Organization tenant, EcritureComptable ecriture) {
+    public List<DetailEcriture> generate_ecriture_details(Organization organization, EcritureComptable ecriture) {
         List<DetailEcriture> details = new ArrayList<>();
         BigDecimal montant_tva = montant_ht.multiply(taux_tva);
         BigDecimal montant_ttc = montant_ht.add(montant_tva);
@@ -135,7 +135,7 @@ public class FactureComptable implements ComptableObject {
         // Line 1: Main account (product or expense)
         details.add(DetailEcriture.builder()
                 .id(UUID.randomUUID())
-                .tenant(tenant)
+                .organization(organization)
                 .ecriture(ecriture)
                 .compte(null) // Should be fetched from repository based on account code
                 .libelle(libelle + " - Amount HT")
@@ -152,7 +152,7 @@ public class FactureComptable implements ComptableObject {
         // Line 2: VAT (collected or deductible)
         details.add(DetailEcriture.builder()
                 .id(UUID.randomUUID())
-                .tenant(tenant)
+                .organization(organization)
                 .ecriture(ecriture)
                 .compte(null) // Should be fetched from repository
                 .libelle(is_achat ? "Deductible VAT" : "Collected VAT")
@@ -169,7 +169,7 @@ public class FactureComptable implements ComptableObject {
         // Line 3: Client or supplier
         details.add(DetailEcriture.builder()
                 .id(UUID.randomUUID())
-                .tenant(tenant)
+                .organization(organization)
                 .ecriture(ecriture)
                 .compte(null) // Should be fetched from repository
                 .libelle(is_achat ? "Supplier" : "Client")

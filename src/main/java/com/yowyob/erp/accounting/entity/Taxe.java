@@ -76,7 +76,7 @@ public class Taxe implements com.yowyob.erp.common.persistence.SettablePersistab
     private LocalDateTime created_at = LocalDateTime.now();
 
     @Transient
-    private Organization tenant;
+    private Organization organization;
 
     @Transient
     @Builder.Default

@@ -18,22 +18,22 @@ import java.util.UUID;
 public interface EcritureComptableRepository extends R2dbcRepository<EcritureComptable, UUID> {
 
       @Query("SELECT * FROM ecritures_comptables WHERE organization_id = :organization_id")
-      Flux<EcritureComptable> findByTenant_Id(@Param("organization_id") UUID organization_id);
+      Flux<EcritureComptable> findByOrganization_Id(@Param("organization_id") UUID organization_id);
 
       @Query("SELECT * FROM ecritures_comptables WHERE organization_id = :organization_id AND id = :id")
-      Mono<EcritureComptable> findByTenant_IdAndId(@Param("organization_id") UUID organization_id, @Param("id") UUID id);
+      Mono<EcritureComptable> findByOrganization_IdAndId(@Param("organization_id") UUID organization_id, @Param("id") UUID id);
 
       @Query("SELECT * FROM ecritures_comptables WHERE organization_id = :organization_id AND validee = false")
-      Flux<EcritureComptable> findByTenant_IdAndValideeFalse(@Param("organization_id") UUID organization_id);
+      Flux<EcritureComptable> findByOrganization_IdAndValideeFalse(@Param("organization_id") UUID organization_id);
 
       @Query("SELECT * FROM ecritures_comptables WHERE organization_id = :organization_id AND date_ecriture BETWEEN :start_date AND :end_date")
-      Flux<EcritureComptable> findByTenant_IdAndDate_ecritureBetween(
+      Flux<EcritureComptable> findByOrganization_IdAndDate_ecritureBetween(
                   @Param("organization_id") UUID organization_id,
                   @Param("start_date") LocalDate start_date,
                   @Param("end_date") LocalDate end_date);
 
       @Query("SELECT * FROM ecritures_comptables WHERE organization_id = :organization_id AND journal_id = :journal_id")
-      Flux<EcritureComptable> findByTenant_IdAndJournal_Id(
+      Flux<EcritureComptable> findByOrganization_IdAndJournal_Id(
                   @Param("organization_id") UUID organization_id,
                   @Param("journal_id") UUID journal_id);
 
@@ -41,7 +41,7 @@ public interface EcritureComptableRepository extends R2dbcRepository<EcritureCom
                   "WHERE organization_id = :organization_id " +
                   "AND journal_id = :journal_id " +
                   "AND date_ecriture BETWEEN :start_date AND :end_date")
-      Flux<EcritureComptable> findByTenant_IdAndJournal_IdAndDate_ecritureBetween(
+      Flux<EcritureComptable> findByOrganization_IdAndJournal_IdAndDate_ecritureBetween(
                   @Param("organization_id") UUID organization_id,
                   @Param("journal_id") UUID journal_id,
                   @Param("start_date") LocalDate start_date,

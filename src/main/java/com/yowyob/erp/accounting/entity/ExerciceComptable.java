@@ -71,7 +71,7 @@ public class ExerciceComptable implements SettablePersistable<UUID> {
     private String updated_by;
 
     @Transient
-    private Organization tenant;
+    private Organization organization;
 
     @Transient
     private List<PeriodeComptable> periodes;

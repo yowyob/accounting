@@ -8,7 +8,7 @@ import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.yowyob.erp.accounting.entity.DetailEcriture;
 import com.yowyob.erp.accounting.entity.EcritureComptable;
-import com.yowyob.erp.accounting.entity.Tenant;
+import com.yowyob.erp.accounting.entity.Organization;
 import com.yowyob.erp.common.enums.SourceType;
 
 /**
@@ -31,9 +31,9 @@ public interface ComptableObject {
     UUID get_id();
 
     /**
-     * Identifier of the tenant (multi-tenancy).
+     * Identifier of the organization (multi-tenancy).
      * 
-     * @return the tenant ID
+     * @return the organization ID
      */
     UUID get_organization_id();
 
@@ -105,9 +105,9 @@ public interface ComptableObject {
     /**
      * Generates the accounting entry detail lines associated with this object.
      * 
-     * @param tenant   the current tenant
+     * @param organization the current organization
      * @param ecriture the accounting entry
      * @return the list of entry details
      */
-    List<DetailEcriture> generate_ecriture_details(Organization tenant, EcritureComptable ecriture);
+    List<DetailEcriture> generate_ecriture_details(Organization organization, EcritureComptable ecriture);
 }

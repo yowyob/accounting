@@ -3,7 +3,7 @@ package com.yowyob.erp.accounting.service;
 import com.yowyob.erp.accounting.dto.DeclarationFiscaleDto;
 import com.yowyob.erp.accounting.dto.JournalAuditDto;
 import com.yowyob.erp.accounting.entity.DeclarationFiscale;
-import com.yowyob.erp.accounting.entity.Tenant;
+import com.yowyob.erp.accounting.entity.Organization;
 import com.yowyob.erp.accounting.repository.DeclarationFiscaleRepository;
 import com.yowyob.erp.accounting.service.DeclarationGeneratorService;
 import com.yowyob.erp.common.exception.BusinessException;
@@ -26,7 +26,7 @@ import java.util.UUID;
 
 /**
  * Service for managing tax declarations (DeclarationFiscale).
- * Handles CRUD operations, retrieval by tenant, type, and period range.
+ * Handles CRUD operations, retrieval by organization, type, and period range.
  * Integrates with Redis for caching and Kafka for audit logging.
  * 
  * @author Leonel Delmat AZANGUE
@@ -53,10 +53,10 @@ public class DeclarationFiscaleService {
         @Transactional
         public Mono<DeclarationFiscaleDto> saveDeclaration(DeclarationFiscaleDto dto) {
                 return ReactiveOrganizationContext.getOrganizationId()
-                                .zipWith(ReactiveOrganizationContext.getCurrentTenantAsTenant())
+                                .zipWith(ReactiveOrganizationContext.getCurrentOrganizationAsOrganization())
                                 .flatMap(tuple -> {
                                         UUID organization_id = tuple.getT1();
-                                        Organization tenant = tuple.getT2();
+                                        Organization organization = tuple.getT2();
                                         String current_user = Optional
                                                         .ofNullable(ReactiveOrganizationContext.getCurrentUser().block())
                                                         .orElse("system"); // TODO: fully reactive user retrieval
@@ -64,20 +64,20 @@ public class DeclarationFiscaleService {
                                         Mono<DeclarationFiscale> entityMono;
                                         if (dto.getId() != null) {
                                                 entityMono = declaration_repository
-                                                                .findByTenantIdAndId(organization_id, dto.getId())
+                                                                .findByOrganizationIdAndId(organization_id, dto.getId())
                                                                 .switchIfEmpty(
                                                                                 Mono.error(new ResourceNotFoundException(
                                                                                                 "Tax declaration",
                                                                                                 dto.getId().toString())))
                                                                 .doOnNext(e -> log.info(
-                                                                                "Updating tax declaration {} for tenant {}",
+                                                                                "Updating tax declaration {} for organization {}",
                                                                                 dto.getId(),
                                                                                 organization_id));
                                         } else {
                                                 DeclarationFiscale newEntity = new DeclarationFiscale();
-                                                newEntity.setTenantId(organization_id);
+                                                newEntity.setOrganizationId(organization_id);
                                                 newEntity.setCreated_by(current_user);
-                                                log.info("Creating new tax declaration for tenant {}", organization_id);
+                                                log.info("Creating new tax declaration for organization {}", organization_id);
                                                 entityMono = Mono.just(newEntity);
                                         }
 
@@ -110,7 +110,7 @@ public class DeclarationFiscaleService {
 
                                                                         return redis_service.delete(CACHE_KEY_PREFIX
                                                                                         + "all:" + organization_id)
-                                                                                        .then(logAudit(tenant,
+                                                                                        .then(logAudit(organization,
                                                                                                         current_user,
                                                                                                         auditAction,
                                                                                                         auditDetails))
@@ -128,12 +128,12 @@ public class DeclarationFiscaleService {
          */
         public Mono<DeclarationFiscaleDto> getById(UUID id) {
                 return ReactiveOrganizationContext.getOrganizationId()
-                                .flatMap(organization_id -> declaration_repository.findByTenantIdAndId(organization_id, id)
+                                .flatMap(organization_id -> declaration_repository.findByOrganizationIdAndId(organization_id, id)
                                                 .map(this::mapToDto));
         }
 
         /**
-         * Lists all declarations for the current tenant.
+         * Lists all declarations for the current organization.
          * 
          * @return list of declaration DTOs
          */
@@ -148,7 +148,7 @@ public class DeclarationFiscaleService {
                                                                         (java.util.List<DeclarationFiscaleDto>) list))
                                                         .switchIfEmpty(
                                                                         declaration_repository
-                                                                                        .findByTenantIdOrderByDateGenerationDesc(
+                                                                                        .findByOrganizationIdOrderByDateGenerationDesc(
                                                                                                         organization_id)
                                                                                         .map(this::mapToDto)
                                                                                         .collectList()
@@ -170,7 +170,7 @@ public class DeclarationFiscaleService {
         public Flux<DeclarationFiscaleDto> getByType(String type) {
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMapMany(organization_id -> declaration_repository
-                                                .findByTenantIdAndTypeDeclaration(organization_id, type)
+                                                .findByOrganizationIdAndTypeDeclaration(organization_id, type)
                                                 .map(this::mapToDto));
         }
 
@@ -184,7 +184,7 @@ public class DeclarationFiscaleService {
         public Flux<DeclarationFiscaleDto> getByPeriodRange(LocalDate start, LocalDate end) {
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMapMany(organization_id -> declaration_repository
-                                                .findByTenantIdAndPeriodRange(organization_id, start, end)
+                                                .findByOrganizationIdAndPeriodRange(organization_id, start, end)
                                                 .map(this::mapToDto));
         }
 
@@ -196,15 +196,15 @@ public class DeclarationFiscaleService {
         @Transactional
         public Mono<Void> delete(UUID id) {
                 return ReactiveOrganizationContext.getOrganizationId()
-                                .zipWith(ReactiveOrganizationContext.getCurrentTenantAsTenant())
+                                .zipWith(ReactiveOrganizationContext.getCurrentOrganizationAsOrganization())
                                 .flatMap(tuple -> {
                                         UUID organization_id = tuple.getT1();
-                                        Organization tenant = tuple.getT2();
+                                        Organization organization = tuple.getT2();
                                         String current_user = Optional
                                                         .ofNullable(ReactiveOrganizationContext.getCurrentUser().block())
                                                         .orElse("system"); // TODO: reactive
 
-                                        return declaration_repository.findByTenantIdAndId(organization_id, id)
+                                        return declaration_repository.findByOrganizationIdAndId(organization_id, id)
                                                         .switchIfEmpty(
                                                                         Mono.error(new ResourceNotFoundException(
                                                                                         "Tax declaration",
@@ -216,7 +216,7 @@ public class DeclarationFiscaleService {
                                                                                                 .delete(CACHE_KEY_PREFIX
                                                                                                                 + "all:"
                                                                                                                 + organization_id))
-                                                                                .then(logAudit(tenant, current_user,
+                                                                                .then(logAudit(organization, current_user,
                                                                                                 "TAX_DECLARATION_DELETED",
                                                                                                 "Deleted tax declaration: "
                                                                                                                 + (result.getNumero_declaration() != null
@@ -224,7 +224,7 @@ public class DeclarationFiscaleService {
                                                                                                                                 : id)));
                                                         })
                                                         .doOnSuccess(v -> log.info(
-                                                                        "Deleted tax declaration {} for tenant {}", id,
+                                                                        "Deleted tax declaration {} for organization {}", id,
                                                                         organization_id));
                                 });
         }
@@ -250,7 +250,7 @@ public class DeclarationFiscaleService {
                                 .build();
         }
 
-        private Mono<Void> logAudit(Organization tenant, String utilisateur, String action, String details) {
+        private Mono<Void> logAudit(Organization organization, String utilisateur, String action, String details) {
                 // NOTE: Does KafkaService.sendAuditLog return void/future? Assuming I can wrap
                 // it or it needs update.
                 // Assuming wrapping in fromRunnable or similar if it's void, but check
@@ -262,7 +262,7 @@ public class DeclarationFiscaleService {
                                         .details(details)
                                         .date_action(LocalDateTime.now())
                                         .build();
-                        kafka_service.sendAuditLog(auditDto, tenant.getId(), action);
+                        kafka_service.sendAuditLog(auditDto, organization.getId(), action);
                 }).then();
         }
 

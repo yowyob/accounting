@@ -84,7 +84,7 @@ public class DeclarationFiscaleController {
     }
 
     /**
-     * Lists all declarations for the current tenant.
+     * Lists all declarations for the current organization.
      * 
      * @return list of declarations
      */

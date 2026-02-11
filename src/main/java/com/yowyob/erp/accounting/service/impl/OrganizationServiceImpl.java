@@ -110,13 +110,13 @@ public class OrganizationServiceImpl implements OrganizationService {
         }
 
         private Mono<Void> logAudit(UUID organizationId, String action, String details) {
-                // Since Organization operations might be outside tenant context context or
+                // Since Organization operations might be outside organization context context or
                 // global
-                // We do our best to log. If tenant context is available we use it.
+                // We do our best to log. If organization context is available we use it.
                 // For Organization management, it might be system admin level.
                 return ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                 .flatMap(user -> ReactiveOrganizationContext.getOrganizationId()
-                                                // If no tenant context, we might use a null organizationId or handle global
+                                                // If no organization context, we might use a null organizationId or handle global
                                                 // events
                                                 // differently
                                                 // For now assuming organization mgmt happens within a context or we

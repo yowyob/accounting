@@ -15,7 +15,7 @@ import java.util.UUID;
 public interface AgenceService {
 
     /**
-     * Creates a new agency for the current tenant.
+     * Creates a new agency for the current organization.
      * 
      * @param agence_dto the agency data
      * @return the created agency DTO
@@ -23,7 +23,7 @@ public interface AgenceService {
     Mono<AgenceDto> createAgence(AgenceDto agence_dto);
 
     /**
-     * Retrieves an agency by ID within the current tenant.
+     * Retrieves an agency by ID within the current organization.
      * 
      * @param id the agency ID
      * @return the agency DTO
@@ -31,14 +31,14 @@ public interface AgenceService {
     Mono<AgenceDto> getAgence(UUID id);
 
     /**
-     * Retrieves all agencies for the current tenant.
+     * Retrieves all agencies for the current organization.
      * 
      * @return a list of agency DTOs
      */
     Flux<AgenceDto> getAllAgences();
 
     /**
-     * Updates an existing agency within the current tenant.
+     * Updates an existing agency within the current organization.
      * 
      * @param id         the agency ID
      * @param agence_dto the new agency data
@@ -47,7 +47,7 @@ public interface AgenceService {
     Mono<AgenceDto> updateAgence(UUID id, AgenceDto agence_dto);
 
     /**
-     * Deletes an agency from the current tenant.
+     * Deletes an agency from the current organization.
      * 
      * @param id the agency ID
      * @return Mono<Void>

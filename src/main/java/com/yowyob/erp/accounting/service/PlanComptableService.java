@@ -4,7 +4,7 @@ import com.yowyob.erp.accounting.dto.JournalAuditDto;
 import com.yowyob.erp.accounting.dto.PlanComptableDto;
 import com.yowyob.erp.accounting.entity.JournalAudit;
 import com.yowyob.erp.accounting.entity.PlanComptable;
-import com.yowyob.erp.accounting.entity.Tenant;
+import com.yowyob.erp.accounting.entity.Organization;
 import com.yowyob.erp.accounting.repository.PlanComptableRepository;
 import com.yowyob.erp.accounting.repository.PlanComptableTemplateRepository;
 import com.yowyob.erp.accounting.repository.JournalAuditRepository;
@@ -47,8 +47,8 @@ public class PlanComptableService {
         private static final String CACHE_CLASS = "plancomptable:class:";
 
         @Transactional
-        public Mono<Void> initializePlanComptableForTenant(UUID organization_id) {
-                log.info("Initializing accounting plan for tenant: {}", organization_id);
+        public Mono<Void> initializePlanComptableForOrganization(UUID organization_id) {
+                log.info("Initializing accounting plan for organization: {}", organization_id);
 
                 return ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                 .flatMap(current_user -> template_repository.findAll()
@@ -67,7 +67,7 @@ public class PlanComptableService {
                                                 .collectList()
                                                 .flatMap(accounts -> account_repository.saveAll(accounts).then())
                                                 .doOnSuccess(v -> log.info(
-                                                                "Successfully initialized plan for tenant {}",
+                                                                "Successfully initialized plan for organization {}",
                                                                 organization_id)));
         }
 
@@ -76,7 +76,7 @@ public class PlanComptableService {
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                                 .flatMap(current_user -> {
-                                                        log.info("Creating account {} for tenant {}",
+                                                        log.info("Creating account {} for organization {}",
                                                                         dto.getNo_compte(), organization_id);
 
                                                         try {
@@ -87,7 +87,7 @@ public class PlanComptableService {
                                                         }
 
                                                         return account_repository
-                                                                        .existsByTenant_IdAndNo_compte(organization_id,
+                                                                        .existsByOrganization_IdAndNo_compte(organization_id,
                                                                                         dto.getNo_compte())
                                                                         .flatMap(exists -> {
                                                                                 if (Boolean.TRUE.equals(exists)) {
@@ -139,7 +139,7 @@ public class PlanComptableService {
                                         String key = CACHE_ALL + organization_id;
                                         return redis_service.get(key, List.class)
                                                         .map(list -> (List<PlanComptableDto>) list)
-                                                        .switchIfEmpty(account_repository.findByTenant_Id(organization_id)
+                                                        .switchIfEmpty(account_repository.findByOrganization_Id(organization_id)
                                                                         .map(this::mapToDto)
                                                                         .collectList()
                                                                         .flatMap(list -> redis_service
@@ -157,7 +157,7 @@ public class PlanComptableService {
                                         return redis_service.get(key, List.class)
                                                         .map(list -> (List<PlanComptableDto>) list)
                                                         .switchIfEmpty(account_repository
-                                                                        .findByTenant_IdAndActifTrue(organization_id)
+                                                                        .findByOrganization_IdAndActifTrue(organization_id)
                                                                         .map(this::mapToDto)
                                                                         .collectList()
                                                                         .flatMap(list -> redis_service
@@ -173,7 +173,7 @@ public class PlanComptableService {
                                         String key = CACHE_SINGLE + organization_id + ":" + id;
                                         return redis_service.get(key, PlanComptableDto.class)
                                                         .switchIfEmpty(account_repository
-                                                                        .findByTenant_IdAndId(organization_id, id)
+                                                                        .findByOrganization_IdAndId(organization_id, id)
                                                                         .switchIfEmpty(Mono.error(
                                                                                         new ResourceNotFoundException(
                                                                                                         "Accounting account",
@@ -194,7 +194,7 @@ public class PlanComptableService {
                                         return redis_service.get(key, List.class)
                                                         .map(list -> (List<PlanComptableDto>) list)
                                                         .switchIfEmpty(account_repository
-                                                                        .findByTenant_IdAndClasse(organization_id, classe)
+                                                                        .findByOrganization_IdAndClasse(organization_id, classe)
                                                                         .map(this::mapToDto)
                                                                         .collectList()
                                                                         .flatMap(list -> redis_service
@@ -212,7 +212,7 @@ public class PlanComptableService {
                                         return redis_service.get(key, List.class)
                                                         .map(list -> (List<PlanComptableDto>) list)
                                                         .switchIfEmpty(account_repository
-                                                                        .findByTenant_IdAndNo_compteStartingWith(
+                                                                        .findByOrganization_IdAndNo_compteStartingWith(
                                                                                         organization_id, prefix)
                                                                         .map(this::mapToDto)
                                                                         .collectList()
@@ -228,7 +228,7 @@ public class PlanComptableService {
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                                 .flatMap(current_user -> account_repository
-                                                                .findByTenant_IdAndId(organization_id, id)
+                                                                .findByOrganization_IdAndId(organization_id, id)
                                                                 .switchIfEmpty(Mono.error(new ResourceNotFoundException(
                                                                                 "Accounting account", id.toString())))
                                                                 .flatMap(account -> {
@@ -262,7 +262,7 @@ public class PlanComptableService {
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                                 .flatMap(current_user -> account_repository
-                                                                .findByTenant_IdAndId(organization_id, id)
+                                                                .findByOrganization_IdAndId(organization_id, id)
                                                                 .switchIfEmpty(Mono.error(new ResourceNotFoundException(
                                                                                 "Accounting account", id.toString())))
                                                                 .flatMap(account -> {
@@ -333,7 +333,7 @@ public class PlanComptableService {
         }
 
         @SuppressWarnings("unused")
-        private Mono<Void> logAudit(Organization tenant, String user, String action, String details) {
-                return logAudit(tenant.getId(), user, action, details);
+        private Mono<Void> logAudit(Organization organization, String user, String action, String details) {
+                return logAudit(organization.getId(), user, action, details);
         }
 }

@@ -46,8 +46,8 @@ public class SynchronizationController {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Accès refusé - Admin uniquement")
         })
         public ResponseEntity<ApiResponseWrapper<Map<String, Object>>> syncElasticsearch() {
-                UUID organization_id = OrganizationContext.getCurrentTenant();
-                log.info("🔄 Forcing Elasticsearch synchronization for tenant {}", organization_id);
+                UUID organization_id = OrganizationContext.getCurrentOrganization();
+                log.info("🔄 Forcing Elasticsearch synchronization for organization {}", organization_id);
 
                 Map<String, Object> resultat = sync_service.synchroniserElasticsearch(organization_id);
 
@@ -57,31 +57,31 @@ public class SynchronizationController {
         }
 
         /**
-         * Clears all Redis cache for the current tenant.
+         * Clears all Redis cache for the current organization.
          * 
          * @return cache clearing result
          */
         @PostMapping("/redis/clear")
         @PreAuthorize("hasRole('ADMIN')")
-        @Operation(summary = "Vider le cache Redis", description = "Supprime tous les caches Redis du tenant (Admin uniquement)")
+        @Operation(summary = "Vider le cache Redis", description = "Supprime tous les caches Redis du organization (Admin uniquement)")
         @ApiResponses(value = {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Cache vidé"),
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Non authentifié"),
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Accès refusé - Admin uniquement")
         })
         public ResponseEntity<ApiResponseWrapper<String>> clearRedisCache() {
-                UUID organization_id = OrganizationContext.getCurrentTenant();
-                log.warn("🗑️ Clearing Redis cache for tenant {}", organization_id);
+                UUID organization_id = OrganizationContext.getCurrentOrganization();
+                log.warn("🗑️ Clearing Redis cache for organization {}", organization_id);
 
                 sync_service.viderCacheRedis(organization_id);
 
                 return ResponseEntity.ok(ApiResponseWrapper.success(
                                 "Cache vidé",
-                                "Tous les caches Redis du tenant ont été supprimés"));
+                                "Tous les caches Redis du organization ont été supprimés"));
         }
 
         /**
-         * Gets the synchronization status for the current tenant.
+         * Gets the synchronization status for the current organization.
          * 
          * @return synchronization statistics
          */
@@ -93,8 +93,8 @@ public class SynchronizationController {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Non authentifié")
         })
         public ResponseEntity<ApiResponseWrapper<Map<String, Object>>> getSyncStatus() {
-                UUID organization_id = OrganizationContext.getCurrentTenant();
-                log.info("📊 Getting synchronization status for tenant {}", organization_id);
+                UUID organization_id = OrganizationContext.getCurrentOrganization();
+                log.info("📊 Getting synchronization status for organization {}", organization_id);
 
                 Map<String, Object> statut = sync_service.getStatutSynchronisation(organization_id);
 

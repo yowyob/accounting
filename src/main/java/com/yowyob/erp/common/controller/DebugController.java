@@ -47,8 +47,8 @@ public class DebugController {
      */
     @PostMapping("/kafka/test")
     public ApiResponseWrapper<String> testKafka(@RequestBody Map<String, Object> payload) {
-        UUID organizationId = OrganizationContext.getCurrentTenant();
-        log.info("🛰️ Envoi d’un message Kafka de test pour le tenant {}", organizationId);
+        UUID organizationId = OrganizationContext.getCurrentOrganization();
+        log.info("🛰️ Envoi d’un message Kafka de test pour le organization {}", organizationId);
 
         kafkaMessageService.sendAccountingEvent(payload, organizationId, "DEBUG_TEST_EVENT");
         return ApiResponseWrapper.success("✅ Message Kafka de test envoyé avec succès");
@@ -59,11 +59,11 @@ public class DebugController {
      */
     @PostMapping("/redis/test")
     public ApiResponseWrapper<String> testRedis(@RequestBody Map<String, Object> data) {
-        UUID organizationId = OrganizationContext.getCurrentTenant();
+        UUID organizationId = OrganizationContext.getCurrentOrganization();
         String key = String.format("debug:test:%s", organizationId);
         redisService.save(key, data, Duration.ofMinutes(5));
 
-        log.info("💾 Données de test enregistrées dans Redis pour le tenant {}", organizationId);
+        log.info("💾 Données de test enregistrées dans Redis pour le organization {}", organizationId);
         return ApiResponseWrapper.success("✅ Données sauvegardées en Redis");
     }
 
@@ -72,7 +72,7 @@ public class DebugController {
      */
     @GetMapping("/redis/test")
     public ApiResponseWrapper<Object> getRedisTest() {
-        UUID organizationId = OrganizationContext.getCurrentTenant();
+        UUID organizationId = OrganizationContext.getCurrentOrganization();
         String key = String.format("debug:test:%s", organizationId);
 
         Object data = redisService.get(key, Object.class);
@@ -85,8 +85,8 @@ public class DebugController {
      */
     @PostMapping("/sync/test")
     public ApiResponseWrapper<String> testSync() {
-        UUID organizationId = OrganizationContext.getCurrentTenant();
-        log.info("🔁 Déclenchement manuel de la synchronisation pour le tenant {}", organizationId);
+        UUID organizationId = OrganizationContext.getCurrentOrganization();
+        log.info("🔁 Déclenchement manuel de la synchronisation pour le organization {}", organizationId);
 
         synchronizationService.checkAndSync(organizationId);
         return ApiResponseWrapper.success("✅ Synchronisation déclenchée avec succès");
@@ -95,14 +95,14 @@ public class DebugController {
     /**
      * 🧠 Affiche les informations du contexte Organization courant
      */
-    @GetMapping("/tenant/info")
-    public ApiResponseWrapper<Map<String, Object>> getTenantInfo() {
+    @GetMapping("/organization/info")
+    public ApiResponseWrapper<Map<String, Object>> getOrganizationInfo() {
         Map<String, Object> info = new HashMap<>();
-        info.put("organizationId", OrganizationContext.getCurrentTenant());
+        info.put("organizationId", OrganizationContext.getCurrentOrganization());
         info.put("thread", Thread.currentThread().getName());
         info.put("timestamp", System.currentTimeMillis());
 
-        log.debug("🧠 Contexte tenant : {}", info);
+        log.debug("🧠 Contexte organization : {}", info);
         return ApiResponseWrapper.success(info);
     }
 

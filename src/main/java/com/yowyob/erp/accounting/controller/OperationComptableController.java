@@ -37,9 +37,9 @@ public class OperationComptableController {
     private final OperationComptableService operation_service;
 
     /**
-     * Creates a new accounting operation for the current tenant.
+     * Creates a new accounting operation for the current organization.
      */
-    @Operation(summary = "Create an accounting operation", description = "Creates a new accounting operation for the current tenant.")
+    @Operation(summary = "Create an accounting operation", description = "Creates a new accounting operation for the current organization.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Operation created successfully", content = @Content(schema = @Schema(implementation = OperationComptableDto.class))),
             @ApiResponse(responseCode = "400", description = "Invalid data validation failure")
@@ -73,7 +73,7 @@ public class OperationComptableController {
     }
 
     /**
-     * Lists all accounting operations for the current tenant.
+     * Lists all accounting operations for the current organization.
      */
     @Operation(summary = "List all accounting operations")
     @GetMapping

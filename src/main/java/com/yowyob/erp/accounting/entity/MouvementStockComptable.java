@@ -109,7 +109,7 @@ public class MouvementStockComptable implements ComptableObject {
 
     /* Generate accounting lines (2 lines) */
     @Override
-    public List<DetailEcriture> generate_ecriture_details(Organization tenant, EcritureComptable ecriture) {
+    public List<DetailEcriture> generate_ecriture_details(Organization organization, EcritureComptable ecriture) {
         List<DetailEcriture> details = new ArrayList<>();
         BigDecimal montant_total = get_montant();
         LocalDateTime now = LocalDateTime.now();
@@ -117,7 +117,7 @@ public class MouvementStockComptable implements ComptableObject {
         // Line 1: Stock (603000)
         details.add(DetailEcriture.builder()
                 .id(UUID.randomUUID())
-                .tenant(tenant)
+                .organization(organization)
                 .ecriture(ecriture)
                 .compte(null) // Link to Compte object if needed
                 .libelle(is_entree ? "Stock entry" : "Stock exit")
@@ -134,7 +134,7 @@ public class MouvementStockComptable implements ComptableObject {
         // Line 2: Counterpart (Supplier or Bank)
         details.add(DetailEcriture.builder()
                 .id(UUID.randomUUID())
-                .tenant(tenant)
+                .organization(organization)
                 .ecriture(ecriture)
                 .compte(null)
                 .libelle(is_entree ? "Supplier" : "Bank")

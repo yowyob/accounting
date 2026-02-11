@@ -24,10 +24,10 @@ public class AccountingSettingService {
 
     public Mono<AccountingSetting> getSetting(UUID organizationId, BrouillardType type, UUID journalId) {
         if (journalId != null) {
-            return repository.findByTenantIdAndObjetTypeAndJournalId(organizationId, type, journalId)
-                    .switchIfEmpty(repository.findByTenantIdAndObjetTypeAndJournalIdIsNull(organizationId, type));
+            return repository.findByOrganizationIdAndObjetTypeAndJournalId(organizationId, type, journalId)
+                    .switchIfEmpty(repository.findByOrganizationIdAndObjetTypeAndJournalIdIsNull(organizationId, type));
         }
-        return repository.findByTenantIdAndObjetTypeAndJournalIdIsNull(organizationId, type);
+        return repository.findByOrganizationIdAndObjetTypeAndJournalIdIsNull(organizationId, type);
     }
 
     public Mono<Boolean> shouldUseBrouillard(UUID organizationId, BrouillardType type, BigDecimal amount, UUID journalId) {
@@ -45,7 +45,7 @@ public class AccountingSettingService {
     }
 
     public Flux<AccountingSetting> getAllSettings(UUID organizationId) {
-        return repository.findAllByTenantId(organizationId);
+        return repository.findAllByOrganizationId(organizationId);
     }
     
     public Mono<AccountingSetting> updateSetting(UUID organizationId, AccountingSettingDto dto) {
@@ -55,9 +55,9 @@ public class AccountingSettingService {
 
         Mono<AccountingSetting> existingSetting;
         if (dto.getJournalId() != null) {
-            existingSetting = repository.findByTenantIdAndObjetTypeAndJournalId(organizationId, dto.getObjetType(), dto.getJournalId());
+            existingSetting = repository.findByOrganizationIdAndObjetTypeAndJournalId(organizationId, dto.getObjetType(), dto.getJournalId());
         } else {
-            existingSetting = repository.findByTenantIdAndObjetTypeAndJournalIdIsNull(organizationId, dto.getObjetType());
+            existingSetting = repository.findByOrganizationIdAndObjetTypeAndJournalIdIsNull(organizationId, dto.getObjetType());
         }
 
         return existingSetting

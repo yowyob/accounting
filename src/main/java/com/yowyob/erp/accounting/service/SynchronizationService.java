@@ -23,12 +23,12 @@ public class SynchronizationService {
     /**
      * Synchronizes offline data with the central server.
      * 
-     * @param organization_id the tenant ID
+     * @param organization_id the organization ID
      * @return a CompletableFuture representing the async operation
      */
     @Async("taskExecutor")
     public CompletableFuture<Void> synchronizeOfflineData(UUID organization_id) {
-        log.info("Starting offline synchronization for tenant: {}", organization_id);
+        log.info("Starting offline synchronization for organization: {}", organization_id);
 
         try {
             // Implementation steps:
@@ -40,10 +40,10 @@ public class SynchronizationService {
 
             Thread.sleep(2000); // Simulation of processing
 
-            log.info("Synchronization completed successfully for tenant: {}", organization_id);
+            log.info("Synchronization completed successfully for organization: {}", organization_id);
 
         } catch (Exception e) {
-            log.error("Error during synchronization for tenant: {}", organization_id, e);
+            log.error("Error during synchronization for organization: {}", organization_id, e);
             throw new RuntimeException("Synchronization failed", e);
         }
 
@@ -53,7 +53,7 @@ public class SynchronizationService {
     /**
      * Checks network connectivity and triggers synchronization.
      * 
-     * @param organization_id the tenant ID
+     * @param organization_id the organization ID
      */
     public void checkAndSync(UUID organization_id) {
         // Check network connectivity
@@ -67,13 +67,13 @@ public class SynchronizationService {
     }
 
     /**
-     * Force la synchronisation Elasticsearch pour un tenant.
+     * Force la synchronisation Elasticsearch pour un organization.
      * 
-     * @param organization_id ID du tenant
+     * @param organization_id ID du organization
      * @return résultat de la synchronisation
      */
     public java.util.Map<String, Object> synchroniserElasticsearch(UUID organization_id) {
-        log.info("Forcing Elasticsearch synchronization for tenant: {}", organization_id);
+        log.info("Forcing Elasticsearch synchronization for organization: {}", organization_id);
 
         // Cette méthode nécessiterait une intégration complète avec Elasticsearch
         // Pour l'instant, retourne un résultat basique
@@ -84,12 +84,12 @@ public class SynchronizationService {
     }
 
     /**
-     * Vide le cache Redis pour un tenant.
+     * Vide le cache Redis pour un organization.
      * 
-     * @param organization_id ID du tenant
+     * @param organization_id ID du organization
      */
     public void viderCacheRedis(UUID organization_id) {
-        log.warn("Clearing Redis cache for tenant: {}", organization_id);
+        log.warn("Clearing Redis cache for organization: {}", organization_id);
 
         // Cette méthode nécessiterait une intégration avec RedisService
         // Pour l'instant, ne fait rien
@@ -98,7 +98,7 @@ public class SynchronizationService {
     /**
      * Récupère le statut de synchronisation.
      * 
-     * @param organization_id ID du tenant
+     * @param organization_id ID du organization
      * @return statut de synchronisation
      */
     public java.util.Map<String, Object> getStatutSynchronisation(UUID organization_id) {

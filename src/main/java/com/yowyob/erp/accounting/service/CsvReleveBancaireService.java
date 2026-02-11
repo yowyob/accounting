@@ -58,7 +58,7 @@ public class CsvReleveBancaireService {
                         continue;
 
                     ReleveBancaire op = new ReleveBancaire();
-                    op.setTenantId(organizationId);
+                    op.setOrganizationId(organizationId);
                     op.setNew(true);
 
                     int idxDate = detectColumnIndex(cols, "date", "operation", "valeur");

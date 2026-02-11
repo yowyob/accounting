@@ -12,7 +12,7 @@ import java.util.UUID;
 public interface ExerciceComptableService {
 
     /**
-     * Creates a new fiscal year for the current tenant.
+     * Creates a new fiscal year for the current organization.
      * 
      * @param exercice_dto the fiscal year data
      * @return the created fiscal year DTO
@@ -20,7 +20,7 @@ public interface ExerciceComptableService {
     Mono<ExerciceComptableDto> createExercice(ExerciceComptableDto exercice_dto);
 
     /**
-     * Retrieves a fiscal year by ID within the current tenant.
+     * Retrieves a fiscal year by ID within the current organization.
      * 
      * @param id the fiscal year ID
      * @return the fiscal year DTO
@@ -28,7 +28,7 @@ public interface ExerciceComptableService {
     Mono<ExerciceComptableDto> getExercice(UUID id);
 
     /**
-     * Retrieves all fiscal years for the current tenant.
+     * Retrieves all fiscal years for the current organization.
      * 
      * @return a list of fiscal year DTOs
      */

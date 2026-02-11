@@ -37,25 +37,25 @@ public class PlanComptableController {
     private final PlanComptableService plan_service;
 
     /**
-     * Initializes the accounting plan for a specific tenant.
+     * Initializes the accounting plan for a specific organization.
      */
-    @Operation(summary = "Initialize accounting plan", description = "Creates a default set of accounts for the given tenant.")
+    @Operation(summary = "Initialize accounting plan", description = "Creates a default set of accounts for the given organization.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Plan initialized successfully"),
-            @ApiResponse(responseCode = "400", description = "Validation error or tenant already initialized")
+            @ApiResponse(responseCode = "400", description = "Validation error or organization already initialized")
     })
-    @PostMapping("/admin/tenants/{organizationId}/plan-comptable/init-ohada-2025")
+    @PostMapping("/admin/organizations/{organizationId}/plan-comptable/init-ohada-2025")
     public Mono<ResponseEntity<ApiResponseWrapper<String>>> initPlanComptable(
             @PathVariable(name = "organizationId") UUID organization_id) {
-        return plan_service.initializePlanComptableForTenant(organization_id)
+        return plan_service.initializePlanComptableForOrganization(organization_id)
                 .then(Mono.just(ResponseEntity.ok(
-                        ApiResponseWrapper.success("OHADA 2025 accounting plan initialized for tenant " + organization_id))));
+                        ApiResponseWrapper.success("OHADA 2025 accounting plan initialized for organization " + organization_id))));
     }
 
     /**
-     * Creates a new accounting account for the current tenant.
+     * Creates a new accounting account for the current organization.
      */
-    @Operation(summary = "Create an accounting account", description = "Creates a new account for the current tenant.")
+    @Operation(summary = "Create an accounting account", description = "Creates a new account for the current organization.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Account created successfully", content = @Content(schema = @Schema(implementation = PlanComptableDto.class))),
             @ApiResponse(responseCode = "400", description = "Validation error or account already exists")
@@ -89,7 +89,7 @@ public class PlanComptableController {
     }
 
     /**
-     * Lists all accounts for the current tenant.
+     * Lists all accounts for the current organization.
      */
     @Operation(summary = "List all accounting accounts")
     @GetMapping
@@ -100,7 +100,7 @@ public class PlanComptableController {
     }
 
     /**
-     * Lists all active accounts for the current tenant.
+     * Lists all active accounts for the current organization.
      */
     @Operation(summary = "List all active accounts")
     @GetMapping("/actifs")

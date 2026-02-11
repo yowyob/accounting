@@ -13,7 +13,7 @@ import reactor.core.publisher.Mono;
 
 /**
  * Reactive Service to initialize default Organizations and link existing
- * Tenants.
+ * Organizations.
  */
 @Slf4j
 @Service
@@ -23,7 +23,7 @@ import reactor.core.publisher.Mono;
 public class OrganizationInitializationService implements CommandLineRunner {
 
     private final OrganizationRepository organization_repository;
-    private final OrganizationRepository tenant_repository;
+    private final OrganizationRepository organization_repository;
 
     @Override
     public void run(String... args) {
@@ -41,13 +41,13 @@ public class OrganizationInitializationService implements CommandLineRunner {
                     return organization_repository.save(org);
                 }))
                 .flatMap(default_org -> {
-                    // Link all orphans tenants to the default organization
-                    return tenant_repository.findAll()
+                    // Link all orphans organizations to the default organization
+                    return organization_repository.findAll()
                             .filter(t -> t.getOrganization() == null)
                             .flatMap(t -> {
-                                log.info("Linking tenant {} to organization {}", t.getCode(), default_org.getName());
+                                log.info("Linking organization {} to organization {}", t.getCode(), default_org.getName());
                                 t.setOrganization(default_org);
-                                return tenant_repository.save(t);
+                                return organization_repository.save(t);
                             })
                             .then();
                 })

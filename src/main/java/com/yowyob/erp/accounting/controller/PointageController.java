@@ -39,7 +39,7 @@ public class PointageController {
     @PostMapping("/import")
     @Operation(summary = "Import and point bank statement")
     public Mono<ResponseEntity<String>> importerReleve(MultipartFile file) {
-        // Assuming OrganizationContext.getCurrentTenant() works in reactive context if
+        // Assuming OrganizationContext.getCurrentOrganization() works in reactive context if
         // configured
         // Otherwise, it should be retrieved from ReactiveSecurityContext or through the
         // service layer.
@@ -48,9 +48,9 @@ public class PointageController {
         return csvService.parseReleveBancaire(file)
                 .flatMapMany(Flux::fromIterable)
                 .flatMap(op -> {
-                    // This assumes findByTenantIdAndMontantAndDateProche returns a Flux
+                    // This assumes findByOrganizationIdAndMontantAndDateProche returns a Flux
                     LocalDate dOp = op.getDateOperation().toLocalDate();
-                    return detailEcritureRepository.findByTenantIdAndMontantAndDateProche(
+                    return detailEcritureRepository.findByOrganizationIdAndMontantAndDateProche(
                             null,
                             op.getMontant(),
                             dOp,

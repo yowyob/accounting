@@ -15,10 +15,10 @@ import java.util.UUID;
 public interface ExerciceComptableRepository extends R2dbcRepository<ExerciceComptable, UUID> {
 
     @Query("SELECT * FROM exercices_comptables WHERE organization_id = :organizationId")
-    Flux<ExerciceComptable> findByTenantId(@Param("organizationId") UUID organizationId);
+    Flux<ExerciceComptable> findByOrganizationId(@Param("organizationId") UUID organizationId);
 
     @Query("SELECT * FROM exercices_comptables WHERE organization_id = :organizationId AND code = :code")
-    Mono<ExerciceComptable> findByTenantIdAndCode(@Param("organizationId") UUID organizationId, @Param("code") String code);
+    Mono<ExerciceComptable> findByOrganizationIdAndCode(@Param("organizationId") UUID organizationId, @Param("code") String code);
 
     @Query("SELECT * FROM exercices_comptables WHERE organization_id = :organizationId AND :date BETWEEN date_debut AND date_fin")
     Mono<ExerciceComptable> findActiveForDate(@Param("organizationId") UUID organizationId, @Param("date") LocalDate date);

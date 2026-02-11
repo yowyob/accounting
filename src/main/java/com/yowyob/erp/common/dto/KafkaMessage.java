@@ -24,7 +24,7 @@ import java.util.UUID;
  * Example:
  * new KafkaMessage(
  * accountingEntry,
- * "tenant-550e8400",
+ * "organization-550e8400",
  * "ACCOUNTING_ENTRY_VALIDATED",
  * LocalDateTime.now(),
  * UUID.randomUUID().toString(),
@@ -46,7 +46,7 @@ public class KafkaMessage implements Serializable {
     /** Business data (AccountingEntry, Invoice, Transaction, etc.) */
     private Object payload;
 
-    /** Unique tenant identifier (multi-tenant ERP) */
+    /** Unique organization identifier (multi-organization ERP) */
     @JsonProperty("organization_id")
     private UUID organizationId;
 

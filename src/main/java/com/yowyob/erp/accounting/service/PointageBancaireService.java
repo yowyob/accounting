@@ -38,7 +38,7 @@ public class PointageBancaireService {
                             LocalDate dFin = dDebut.plusDays(1);
 
                             return detailRepo
-                                    .findByTenantIdAndMontantAndDateProche(organization_id, op.getMontant(), dDebut, dFin,
+                                    .findByOrganizationIdAndMontantAndDateProche(organization_id, op.getMontant(), dDebut, dFin,
                                             dDebut)
                                     .collectList()
                                     .flatMap(candidats -> {
@@ -54,7 +54,7 @@ public class PointageBancaireService {
                                     });
                         })
                         .reduce(0, (a, b) -> a + b)
-                        .doOnSuccess(count -> log.info("✅ {} operations automatically pointed for tenant {}", count,
+                        .doOnSuccess(count -> log.info("✅ {} operations automatically pointed for organization {}", count,
                                 organization_id)));
     }
 }

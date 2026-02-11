@@ -4,7 +4,7 @@ import com.yowyob.erp.accounting.dto.JournalAuditDto;
 import com.yowyob.erp.accounting.dto.PeriodeComptableDto;
 import com.yowyob.erp.accounting.entity.JournalAudit;
 import com.yowyob.erp.accounting.entity.PeriodeComptable;
-import com.yowyob.erp.accounting.entity.Tenant;
+import com.yowyob.erp.accounting.entity.Organization;
 import com.yowyob.erp.accounting.repository.JournalAuditRepository;
 import com.yowyob.erp.accounting.repository.PeriodeComptableRepository;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
@@ -58,12 +58,12 @@ public class PeriodeComptableService {
                                 }))
                                 .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                                 .flatMap(user -> {
-                                                        log.info("🧾 Creating accounting period [{} - {}] for tenant {}",
+                                                        log.info("🧾 Creating accounting period [{} - {}] for organization {}",
                                                                         dto.getCode(),
                                                                         dto.getDate_debut(), organization_id);
 
                                                         return validateDto(dto)
-                                                                        .then(periode_repository.findByTenant_IdAndCode(
+                                                                        .then(periode_repository.findByOrganization_IdAndCode(
                                                                                         organization_id, dto.getCode())
                                                                                         .flatMap(p -> Mono.error(
                                                                                                         new IllegalArgumentException(
@@ -73,11 +73,11 @@ public class PeriodeComptableService {
                                                                                         dto.getDate_debut(),
                                                                                         dto.getDate_fin(), null))
                                                                         .then(ReactiveOrganizationContext
-                                                                                        .getCurrentTenantAsTenant())
-                                                                        .flatMap(tenant -> {
+                                                                                        .getCurrentOrganizationAsOrganization())
+                                                                        .flatMap(organization -> {
                                                                                 PeriodeComptable entity = mapToEntity(
-                                                                                                dto, tenant);
-                                                                                entity.setTenantId(tenant.getId());
+                                                                                                dto, organization);
+                                                                                entity.setOrganizationId(organization.getId());
                                                                                 entity.setCreated_at(
                                                                                                 LocalDateTime.now());
                                                                                 entity.setUpdated_at(
@@ -87,7 +87,7 @@ public class PeriodeComptableService {
 
                                                                                 return periode_repository.save(entity)
                                                                                                 .flatMap(saved -> logAudit(
-                                                                                                                tenant,
+                                                                                                                organization,
                                                                                                                 user,
                                                                                                                 "PERIODE_CREATED",
                                                                                                                 "Created period: "
@@ -113,7 +113,7 @@ public class PeriodeComptableService {
                                         String cache_key = CACHE_SINGLE + organization_id + ":" + id;
                                         return redis_service.get(cache_key, PeriodeComptableDto.class)
                                                         .switchIfEmpty(periode_repository
-                                                                        .findByTenant_IdAndId(organization_id, id)
+                                                                        .findByOrganization_IdAndId(organization_id, id)
                                                                         .switchIfEmpty(Mono
                                                                                         .error(new ResourceNotFoundException(
                                                                                                         "Accounting period",
@@ -127,7 +127,7 @@ public class PeriodeComptableService {
         }
 
         /**
-         * Retrieves all periods for the current tenant.
+         * Retrieves all periods for the current organization.
          */
         @SuppressWarnings("unchecked")
         public Mono<List<PeriodeComptableDto>> getAllPeriodes() {
@@ -137,7 +137,7 @@ public class PeriodeComptableService {
                                         return redis_service.get(cache_key, List.class)
                                                         .map(list -> (List<PeriodeComptableDto>) list)
                                                         .switchIfEmpty(periode_repository
-                                                                        .findByTenant_IdOrderByDate_debutDesc(organization_id)
+                                                                        .findByOrganization_IdOrderByDate_debutDesc(organization_id)
                                                                         .map(this::mapToDto)
                                                                         .collectList()
                                                                         .flatMap(periodes -> redis_service.save(
@@ -152,7 +152,7 @@ public class PeriodeComptableService {
          */
         public Mono<PeriodeComptableDto> getByCode(String code) {
                 return ReactiveOrganizationContext.getOrganizationId()
-                                .flatMap(organization_id -> periode_repository.findByTenant_IdAndCode(organization_id, code)
+                                .flatMap(organization_id -> periode_repository.findByOrganization_IdAndCode(organization_id, code)
                                                 .map(this::mapToDto));
         }
 
@@ -161,12 +161,12 @@ public class PeriodeComptableService {
          */
         public Mono<PeriodeComptableDto> getByDate(LocalDate date) {
                 return ReactiveOrganizationContext.getOrganizationId()
-                                .flatMap(organization_id -> periode_repository.findByTenant_IdAndDateInRange(organization_id, date)
+                                .flatMap(organization_id -> periode_repository.findByOrganization_IdAndDateInRange(organization_id, date)
                                                 .map(this::mapToDto));
         }
 
         /**
-         * Retrieves all non-closed periods for the current tenant.
+         * Retrieves all non-closed periods for the current organization.
          */
         @SuppressWarnings("unchecked")
         public Mono<List<PeriodeComptableDto>> getNonClosedPeriodes() {
@@ -176,7 +176,7 @@ public class PeriodeComptableService {
                                         return redis_service.get(cache_key, List.class)
                                                         .map(list -> (List<PeriodeComptableDto>) list)
                                                         .switchIfEmpty(periode_repository
-                                                                        .findByTenant_IdAndClotureeFalse(organization_id)
+                                                                        .findByOrganization_IdAndClotureeFalse(organization_id)
                                                                         .map(this::mapToDto)
                                                                         .collectList()
                                                                         .flatMap(periodes -> redis_service.save(
@@ -192,26 +192,26 @@ public class PeriodeComptableService {
         public Mono<List<PeriodeComptableDto>> getByRange(LocalDate start, LocalDate end) {
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMap(organization_id -> periode_repository
-                                                .findByTenant_IdAndPeriodRange(organization_id, start, end)
+                                                .findByOrganization_IdAndPeriodRange(organization_id, start, end)
                                                 .map(this::mapToDto)
                                                 .collectList());
         }
 
         /**
-         * Retrieves the current open period for a given tenant.
+         * Retrieves the current open period for a given organization.
          */
         public Mono<PeriodeComptableDto> getCurrentPeriode(UUID organization_id) {
                 String cache_key = CACHE_CURRENT + organization_id;
                 return redis_service.get(cache_key, PeriodeComptableDto.class)
                                 .switchIfEmpty(Mono.defer(() -> {
                                         LocalDate today = LocalDate.now();
-                                        return periode_repository.findByTenant_IdAndDateInRange(organization_id, today)
+                                        return periode_repository.findByOrganization_IdAndDateInRange(organization_id, today)
                                                         .filter(p -> !Boolean.TRUE.equals(p.getCloturee()))
                                                         .switchIfEmpty(Mono.error(new ResourceNotFoundException(
                                                                         "No open accounting period found for the current date")))
                                                         .map(this::mapToDto)
                                                         .flatMap(dto -> {
-                                                                log.info("📅 Current accounting period for tenant {} : {}",
+                                                                log.info("📅 Current accounting period for organization {} : {}",
                                                                                 organization_id, dto.getCode());
                                                                 return redis_service
                                                                                 .save(cache_key, dto,
@@ -229,7 +229,7 @@ public class PeriodeComptableService {
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                                 .flatMap(user -> {
-                                                        return periode_repository.findByTenant_IdAndId(organization_id, id)
+                                                        return periode_repository.findByOrganization_IdAndId(organization_id, id)
                                                                         .switchIfEmpty(Mono
                                                                                         .error(new ResourceNotFoundException(
                                                                                                         "Accounting period",
@@ -247,7 +247,7 @@ public class PeriodeComptableService {
                                                                                                         if (!existing.getCode()
                                                                                                                         .equals(dto.getCode())) {
                                                                                                                 return periode_repository
-                                                                                                                                .findByTenant_IdAndCode(
+                                                                                                                                .findByOrganization_IdAndCode(
                                                                                                                                                 organization_id,
                                                                                                                                                 dto.getCode())
                                                                                                                                 .flatMap(p -> Mono
@@ -279,9 +279,9 @@ public class PeriodeComptableService {
                                                                                                         return periode_repository
                                                                                                                         .save(existing)
                                                                                                                         .flatMap(saved -> ReactiveOrganizationContext
-                                                                                                                                        .getCurrentTenantAsTenant()
-                                                                                                                                        .flatMap(tenant -> logAudit(
-                                                                                                                                                        tenant,
+                                                                                                                                        .getCurrentOrganizationAsOrganization()
+                                                                                                                                        .flatMap(organization -> logAudit(
+                                                                                                                                                        organization,
                                                                                                                                                         user,
                                                                                                                                                         "PERIODE_UPDATED",
                                                                                                                                                         "Updated period: "
@@ -315,7 +315,7 @@ public class PeriodeComptableService {
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                                 .flatMap(user -> {
-                                                        return periode_repository.findByTenant_IdAndId(organization_id, id)
+                                                        return periode_repository.findByOrganization_IdAndId(organization_id, id)
                                                                         .switchIfEmpty(Mono
                                                                                         .error(new ResourceNotFoundException(
                                                                                                         "Accounting period",
@@ -337,9 +337,9 @@ public class PeriodeComptableService {
                                                                                 periode.setNotNew();
                                                                                 return periode_repository.save(periode)
                                                                                                 .flatMap(saved -> ReactiveOrganizationContext
-                                                                                                                .getCurrentTenantAsTenant()
-                                                                                                                .flatMap(tenant -> logAudit(
-                                                                                                                                tenant,
+                                                                                                                .getCurrentOrganizationAsOrganization()
+                                                                                                                .flatMap(organization -> logAudit(
+                                                                                                                                organization,
                                                                                                                                 user,
                                                                                                                                 "PERIODE_CLOSED",
                                                                                                                                 "Closed period: "
@@ -372,7 +372,7 @@ public class PeriodeComptableService {
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                                 .flatMap(user -> {
-                                                        return periode_repository.findByTenant_IdAndId(organization_id, id)
+                                                        return periode_repository.findByOrganization_IdAndId(organization_id, id)
                                                                         .switchIfEmpty(Mono
                                                                                         .error(new ResourceNotFoundException(
                                                                                                         "Accounting period",
@@ -388,9 +388,9 @@ public class PeriodeComptableService {
                                                                                 return periode_repository
                                                                                                 .delete(periode)
                                                                                                 .then(ReactiveOrganizationContext
-                                                                                                                .getCurrentTenantAsTenant()
-                                                                                                                .flatMap(tenant -> logAudit(
-                                                                                                                                tenant,
+                                                                                                                .getCurrentOrganizationAsOrganization()
+                                                                                                                .flatMap(organization -> logAudit(
+                                                                                                                                organization,
                                                                                                                                 user,
                                                                                                                                 "PERIODE_DELETED",
                                                                                                                                 "Deleted period: "
@@ -452,7 +452,7 @@ public class PeriodeComptableService {
          * Validates that a period does not overlap with existing periods.
          */
         private Mono<Void> validateNoOverlap(UUID organization_id, LocalDate debut, LocalDate fin, UUID exclude_id) {
-                return periode_repository.findByTenant_IdOrderByDate_debutDesc(organization_id)
+                return periode_repository.findByOrganization_IdOrderByDate_debutDesc(organization_id)
                                 .filter(p -> exclude_id == null || !p.getId().equals(exclude_id))
                                 .filter(p -> !(fin.isBefore(p.getDate_debut()) || debut.isAfter(p.getDate_fin())))
                                 .next()
@@ -464,10 +464,10 @@ public class PeriodeComptableService {
         /**
          * Maps a DTO to a PeriodeComptable entity.
          */
-        private PeriodeComptable mapToEntity(PeriodeComptableDto dto, Organization tenant) {
+        private PeriodeComptable mapToEntity(PeriodeComptableDto dto, Organization organization) {
                 PeriodeComptable p = new PeriodeComptable();
                 p.setId(dto.getId() != null ? dto.getId() : UUID.randomUUID());
-                p.setTenantId(tenant.getId());
+                p.setOrganizationId(organization.getId());
                 p.setNew(dto.getId() == null);
                 p.setCode(dto.getCode());
                 p.setDate_debut(dto.getDate_debut());
@@ -501,10 +501,10 @@ public class PeriodeComptableService {
         /**
          * Logs an audit entry.
          */
-        private Mono<Void> logAudit(Organization tenant, String user, String action, String details) {
+        private Mono<Void> logAudit(Organization organization, String user, String action, String details) {
                 JournalAudit audit = JournalAudit.builder()
                                 .id(UUID.randomUUID())
-                                .organizationId(tenant.getId())
+                                .organizationId(organization.getId())
                                 .utilisateur(user)
                                 .action(action)
                                 .details(details)
@@ -524,7 +524,7 @@ public class PeriodeComptableService {
                                                         .date_action(savedAudit.getDate_action())
                                                         .build();
 
-                                        return kafka_service.sendAuditLog(auditDto, tenant.getId(), action);
+                                        return kafka_service.sendAuditLog(auditDto, organization.getId(), action);
                                 });
         }
 }

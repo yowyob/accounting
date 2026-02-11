@@ -40,7 +40,7 @@ public class BrouillardNotificationService {
                 .collectList()
                 .flatMap(members -> {
                     if (members.isEmpty()) {
-                        log.warn("No admins or accountants found for tenant {}", brouillard.getOrganizationId());
+                        log.warn("No admins or accountants found for organization {}", brouillard.getOrganizationId());
                         return Mono.empty();
                     }
 

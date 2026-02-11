@@ -4,7 +4,7 @@ import com.yowyob.erp.accounting.dto.DeviseDto;
 import com.yowyob.erp.accounting.dto.JournalAuditDto;
 import com.yowyob.erp.accounting.entity.Devise;
 import com.yowyob.erp.accounting.entity.JournalAudit;
-import com.yowyob.erp.accounting.entity.Tenant;
+import com.yowyob.erp.accounting.entity.Organization;
 import com.yowyob.erp.accounting.repository.DeviseRepository;
 import com.yowyob.erp.accounting.repository.JournalAuditRepository;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
@@ -64,9 +64,9 @@ public class DeviseService {
 
                                                         return devise_repository.save(entity)
                                                                         .flatMap(saved -> ReactiveOrganizationContext
-                                                                                        .getCurrentTenantAsTenant()
-                                                                                        .flatMap(tenant -> logAudit(
-                                                                                                        tenant, user,
+                                                                                        .getCurrentOrganizationAsOrganization()
+                                                                                        .flatMap(organization -> logAudit(
+                                                                                                        organization, user,
                                                                                                         "DEVISE_CREATED",
                                                                                                         "Creation of currency "
                                                                                                                         + dto.getCode()))
@@ -102,9 +102,9 @@ public class DeviseService {
 
                                                                         return devise_repository.save(existing)
                                                                                         .flatMap(saved -> ReactiveOrganizationContext
-                                                                                                        .getCurrentTenantAsTenant()
-                                                                                                        .flatMap(tenant -> logAudit(
-                                                                                                                        tenant,
+                                                                                                        .getCurrentOrganizationAsOrganization()
+                                                                                                        .flatMap(organization -> logAudit(
+                                                                                                                        organization,
                                                                                                                         user,
                                                                                                                         "DEVISE_UPDATED",
                                                                                                                         "Update of currency "
@@ -161,8 +161,8 @@ public class DeviseService {
                                                 .switchIfEmpty(Mono.error(
                                                                 new ResourceNotFoundException("Devise", id.toString())))
                                                 .flatMap(devise -> devise_repository.delete(devise)
-                                                                .then(ReactiveOrganizationContext.getCurrentTenantAsTenant()
-                                                                                .flatMap(tenant -> logAudit(tenant,
+                                                                .then(ReactiveOrganizationContext.getCurrentOrganizationAsOrganization()
+                                                                                .flatMap(organization -> logAudit(organization,
                                                                                                 user, "DEVISE_DELETED",
                                                                                                 "Deletion of currency "
                                                                                                                 + devise.getCode())))
@@ -189,10 +189,10 @@ public class DeviseService {
                                 .build();
         }
 
-        private Mono<Void> logAudit(Organization tenant, String utilisateur, String action, String details) {
+        private Mono<Void> logAudit(Organization organization, String utilisateur, String action, String details) {
                 JournalAudit audit = JournalAudit.builder()
                                 .id(UUID.randomUUID())
-                                .organizationId(tenant.getId())
+                                .organizationId(organization.getId())
                                 .action(action)
                                 .utilisateur(utilisateur)
                                 .details(details)
@@ -212,7 +212,7 @@ public class DeviseService {
                                                         .date_action(saved.getDate_action())
                                                         .build();
 
-                                        return kafka_service.sendAuditLog(auditDto, tenant.getId(), action);
+                                        return kafka_service.sendAuditLog(auditDto, organization.getId(), action);
                                 });
         }
 }

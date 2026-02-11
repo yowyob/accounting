@@ -72,7 +72,7 @@ public class Compte implements SettablePersistable<UUID> {
     private LocalDateTime updated_at;
 
     @Transient
-    private Organization tenant; // Kept as transient for DTO mapping if needed
+    private Organization organization; // Kept as transient for DTO mapping if needed
 
     @Transient
     @Builder.Default

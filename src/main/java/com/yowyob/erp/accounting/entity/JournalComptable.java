@@ -59,7 +59,7 @@ public class JournalComptable implements SettablePersistable<UUID> {
     private String updated_by;
 
     @Transient
-    private Organization tenant;
+    private Organization organization;
 
     @Transient
     @Builder.Default

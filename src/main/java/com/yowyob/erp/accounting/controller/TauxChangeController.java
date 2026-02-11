@@ -26,7 +26,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/accounting/exchange-rates")
 @RequiredArgsConstructor
-@Tag(name = "Exchange Rate Management", description = "Endpoints for managing tenant-specific exchange rates")
+@Tag(name = "Exchange Rate Management", description = "Endpoints for managing organization-specific exchange rates")
 @Slf4j
 public class TauxChangeController {
 
@@ -45,18 +45,18 @@ public class TauxChangeController {
                                                 .body(ApiResponseWrapper.success(created,
                                                                 "Exchange rate created successfully")))
                                 .switchIfEmpty(Mono.error(new RuntimeException(
-                                                "Service returned empty result (possibly missing tenant context)")))
+                                                "Service returned empty result (possibly missing organization context)")))
                                 .doOnError(e -> log.error("Error creating exchange rate", e))
                                 .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
-         * Lists all exchange rates for the current tenant.
+         * Lists all exchange rates for the current organization.
          */
         @GetMapping
-        @Operation(summary = "List all exchange rates for the current tenant")
-        public Mono<ResponseEntity<ApiResponseWrapper<List<TauxChangeDto>>>> getTenantRates() {
-                return taux_service.getTenantRates()
+        @Operation(summary = "List all exchange rates for the current organization")
+        public Mono<ResponseEntity<ApiResponseWrapper<List<TauxChangeDto>>>> getOrganizationRates() {
+                return taux_service.getOrganizationRates()
                                 .map(rates -> ResponseEntity
                                                 .ok(ApiResponseWrapper.success(rates,
                                                                 "Exchange rates list retrieved successfully")));

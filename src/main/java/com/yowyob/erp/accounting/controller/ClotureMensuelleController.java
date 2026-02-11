@@ -57,7 +57,7 @@ public class ClotureMensuelleController {
                                 .flatMap(tuple -> {
                                         UUID organization_id = tuple.getT1();
                                         String user = tuple.getT2();
-                                        log.info("🔒 Closing period {} for tenant {} by user {}", periodeId, organization_id,
+                                        log.info("🔒 Closing period {} for organization {} by user {}", periodeId, organization_id,
                                                         user);
 
                                         return cloture_service.cloturerPeriode(periodeId, user)
@@ -86,7 +86,7 @@ public class ClotureMensuelleController {
                         @PathVariable UUID periodeId) {
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMap(organization_id -> {
-                                        log.info("🔍 Checking closure eligibility for period {} of tenant {}",
+                                        log.info("🔍 Checking closure eligibility for period {} of organization {}",
                                                         periodeId, organization_id);
                                         return cloture_service.verifierEligibiliteCloture(periodeId)
                                                         .map(statut -> ResponseEntity.ok(ApiResponseWrapper.success(

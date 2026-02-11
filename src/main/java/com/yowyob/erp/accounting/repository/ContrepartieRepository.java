@@ -17,13 +17,13 @@ import java.util.UUID;
 public interface ContrepartieRepository extends R2dbcRepository<Contrepartie, UUID> {
 
         @Query("SELECT * FROM contreparties WHERE organization_id = :organization_id AND operation_comptable_id = :operation_comptable_id")
-        Flux<Contrepartie> findByTenant_IdAndOperation_comptable_Id(@Param("organization_id") UUID organization_id,
+        Flux<Contrepartie> findByOrganization_IdAndOperation_comptable_Id(@Param("organization_id") UUID organization_id,
                         @Param("operation_comptable_id") UUID operation_comptable_id);
 
         @Query("SELECT * FROM contreparties WHERE organization_id = :organization_id AND compte_id = :compte_id")
-        Flux<Contrepartie> findByTenant_IdAndCompte_id(@Param("organization_id") UUID organization_id, @Param("compte_id") UUID compte_id);
+        Flux<Contrepartie> findByOrganization_IdAndCompte_id(@Param("organization_id") UUID organization_id, @Param("compte_id") UUID compte_id);
 
         @Query("DELETE FROM contreparties WHERE organization_id = :organization_id AND operation_comptable_id = :operation_comptable_id")
-        Mono<Void> deleteByTenantIdAndOperationComptableId(@Param("organization_id") UUID organization_id,
+        Mono<Void> deleteByOrganizationIdAndOperationComptableId(@Param("organization_id") UUID organization_id,
                         @Param("operation_comptable_id") UUID operation_comptable_id);
 }

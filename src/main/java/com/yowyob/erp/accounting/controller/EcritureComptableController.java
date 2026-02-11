@@ -54,7 +54,7 @@ public class EcritureComptableController {
         }
 
         @GetMapping
-        @Operation(summary = "List all entries for the current tenant")
+        @Operation(summary = "List all entries for the current organization")
         public Mono<ResponseEntity<ApiResponseWrapper<List<EcritureComptableDto>>>> getAll() {
                 return ecriture_service.getAll()
                                 .map(list -> ResponseEntity

@@ -6,7 +6,7 @@ import com.yowyob.erp.accounting.dto.JournalComptableDto;
 import com.yowyob.erp.accounting.entity.EcritureComptable;
 import com.yowyob.erp.accounting.entity.JournalAudit;
 import com.yowyob.erp.accounting.entity.JournalComptable;
-import com.yowyob.erp.accounting.entity.Tenant;
+import com.yowyob.erp.accounting.entity.Organization;
 import com.yowyob.erp.accounting.repository.CompteRepository;
 import com.yowyob.erp.accounting.repository.DetailEcritureRepository;
 import com.yowyob.erp.accounting.repository.EcritureComptableRepository;
@@ -59,13 +59,13 @@ public class JournalComptableService {
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                                 .flatMap(user -> {
-                                                        log.info("📓 Creating accounting journal [{}] for tenant {}",
+                                                        log.info("📓 Creating accounting journal [{}] for organization {}",
                                                                         dto.getCode_journal(),
                                                                         organization_id);
 
                                                         return validateJournalComptableDto(dto)
                                                                         .then(journal_repository
-                                                                                        .existsByTenant_IdAndCode_journal(
+                                                                                        .existsByOrganization_IdAndCode_journal(
                                                                                                         organization_id,
                                                                                                         dto.getCode_journal()))
                                                                         .flatMap(exists -> {
@@ -76,13 +76,13 @@ public class JournalComptableService {
                                                                                                                                         + dto.getCode_journal()));
                                                                                 }
                                                                                 return ReactiveOrganizationContext
-                                                                                                .getCurrentTenantAsTenant()
-                                                                                                .flatMap(tenant -> {
+                                                                                                .getCurrentOrganizationAsOrganization()
+                                                                                                .flatMap(organization -> {
                                                                                                         JournalComptable entity = mapToEntity(
                                                                                                                         dto,
-                                                                                                                        tenant);
-                                                                                                        entity.setTenantId(
-                                                                                                                        tenant.getId());
+                                                                                                                        organization);
+                                                                                                        entity.setOrganizationId(
+                                                                                                                        organization.getId());
                                                                                                         entity.setCreated_at(
                                                                                                                         LocalDateTime.now());
                                                                                                         entity.setUpdated_at(
@@ -95,7 +95,7 @@ public class JournalComptableService {
                                                                                                         return journal_repository
                                                                                                                         .save(entity)
                                                                                                                         .flatMap(saved -> logAudit(
-                                                                                                                                        tenant,
+                                                                                                                                        organization,
                                                                                                                                         user,
                                                                                                                                         "JOURNAL_CREATED",
                                                                                                                                         "Creation of journal "
@@ -119,9 +119,9 @@ public class JournalComptableService {
         public Mono<JournalComptableDto> getJournalComptable(UUID journal_id) {
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMap(organization_id -> {
-                                        log.info("🔍 Retrieving accounting journal [{}] for tenant {}", journal_id,
+                                        log.info("🔍 Retrieving accounting journal [{}] for organization {}", journal_id,
                                                         organization_id);
-                                        return journal_repository.findByTenant_IdAndId(organization_id, journal_id)
+                                        return journal_repository.findByOrganization_IdAndId(organization_id, journal_id)
                                                         .switchIfEmpty(Mono
                                                                         .error(new ResourceNotFoundException(
                                                                                         "JournalComptable",
@@ -129,7 +129,7 @@ public class JournalComptableService {
                                                         .flatMap(journal -> {
                                                                 JournalComptableDto dto = mapToDto(journal);
                                                                 return ecriture_repository
-                                                                                .findByTenant_IdAndJournal_Id(organization_id,
+                                                                                .findByOrganization_IdAndJournal_Id(organization_id,
                                                                                                 journal_id)
                                                                                 .flatMap(this::getFullEcritureDto)
                                                                                 .collectList()
@@ -143,7 +143,7 @@ public class JournalComptableService {
         }
 
         /**
-         * Retrieves all journals for the current tenant.
+         * Retrieves all journals for the current organization.
          */
         @SuppressWarnings("unchecked")
         public Mono<java.util.List<JournalComptableDto>> getAllJournaux() {
@@ -152,12 +152,12 @@ public class JournalComptableService {
                                         String cache_key = CACHE_JOURNAL_ALL + organization_id;
                                         return redis_service.get(cache_key, java.util.List.class)
                                                         .map(list -> (java.util.List<JournalComptableDto>) list)
-                                                        .switchIfEmpty(journal_repository.findByTenant_Id(organization_id)
+                                                        .switchIfEmpty(journal_repository.findByOrganization_Id(organization_id)
                                                                         .flatMap(journal -> {
                                                                                 JournalComptableDto dto = mapToDto(
                                                                                                 journal);
                                                                                 return ecriture_repository
-                                                                                                .findByTenant_IdAndJournal_Id(
+                                                                                                .findByOrganization_IdAndJournal_Id(
                                                                                                                 organization_id,
                                                                                                                 journal.getId())
                                                                                                 .flatMap(this::getFullEcritureDto)
@@ -184,12 +184,12 @@ public class JournalComptableService {
                                         return redis_service.get(cache_key, java.util.List.class)
                                                         .map(list -> (java.util.List<JournalComptableDto>) list)
                                                         .switchIfEmpty(journal_repository
-                                                                        .findByTenant_IdAndActifTrue(organization_id)
+                                                                        .findByOrganization_IdAndActifTrue(organization_id)
                                                                         .flatMap(journal -> {
                                                                                 JournalComptableDto dto = mapToDto(
                                                                                                 journal);
                                                                                 return ecriture_repository
-                                                                                                .findByTenant_IdAndJournal_Id(
+                                                                                                .findByOrganization_IdAndJournal_Id(
                                                                                                                 organization_id,
                                                                                                                 journal.getId())
                                                                                                 .flatMap(this::getFullEcritureDto)
@@ -216,7 +216,7 @@ public class JournalComptableService {
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                                 .flatMap(user -> {
-                                                        return journal_repository.findByTenant_IdAndId(organization_id, id)
+                                                        return journal_repository.findByOrganization_IdAndId(organization_id, id)
                                                                         .switchIfEmpty(Mono
                                                                                         .error(new ResourceNotFoundException(
                                                                                                         "JournalComptable",
@@ -242,9 +242,9 @@ public class JournalComptableService {
                                                                                                         return journal_repository
                                                                                                                         .save(existing)
                                                                                                                         .flatMap(saved -> ReactiveOrganizationContext
-                                                                                                                                        .getCurrentTenantAsTenant()
-                                                                                                                                        .flatMap(tenant -> logAudit(
-                                                                                                                                                        tenant,
+                                                                                                                                        .getCurrentOrganizationAsOrganization()
+                                                                                                                                        .flatMap(organization -> logAudit(
+                                                                                                                                                        organization,
                                                                                                                                                         user,
                                                                                                                                                         "JOURNAL_UPDATED",
                                                                                                                                                         "Update of journal "
@@ -270,7 +270,7 @@ public class JournalComptableService {
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                                 .flatMap(user -> {
-                                                        return journal_repository.findByTenant_IdAndId(organization_id, id)
+                                                        return journal_repository.findByOrganization_IdAndId(organization_id, id)
                                                                         .switchIfEmpty(Mono
                                                                                         .error(new ResourceNotFoundException(
                                                                                                         "JournalComptable",
@@ -279,9 +279,9 @@ public class JournalComptableService {
                                                                                 return journal_repository
                                                                                                 .delete(journal)
                                                                                                 .then(ReactiveOrganizationContext
-                                                                                                                .getCurrentTenantAsTenant()
-                                                                                                                .flatMap(tenant -> logAudit(
-                                                                                                                                tenant,
+                                                                                                                .getCurrentOrganizationAsOrganization()
+                                                                                                                .flatMap(organization -> logAudit(
+                                                                                                                                organization,
                                                                                                                                 user,
                                                                                                                                 "JOURNAL_DELETED",
                                                                                                                                 "Deletion of journal "
@@ -330,10 +330,10 @@ public class JournalComptableService {
         /**
          * Logs an audit entry.
          */
-        private Mono<Void> logAudit(Organization tenant, String utilisateur, String action, String details) {
+        private Mono<Void> logAudit(Organization organization, String utilisateur, String action, String details) {
                 JournalAudit audit = JournalAudit.builder()
                                 .id(UUID.randomUUID())
-                                .organizationId(tenant.getId())
+                                .organizationId(organization.getId())
                                 .action(action)
                                 .utilisateur(utilisateur)
                                 .details(details)
@@ -358,17 +358,17 @@ public class JournalComptableService {
                                                         .updated_by(savedAudit.getUpdated_by())
                                                         .build();
 
-                                        return kafka_service.sendAuditLog(auditDto, tenant.getId(), action);
+                                        return kafka_service.sendAuditLog(auditDto, organization.getId(), action);
                                 });
         }
 
         /**
-         * Maps a DTO and tenant to a JournalComptable entity.
+         * Maps a DTO and organization to a JournalComptable entity.
          */
-        private JournalComptable mapToEntity(JournalComptableDto dto, Organization tenant) {
+        private JournalComptable mapToEntity(JournalComptableDto dto, Organization organization) {
                 JournalComptable j = new JournalComptable();
                 j.setId(dto.getId() != null ? dto.getId() : UUID.randomUUID());
-                j.setTenantId(tenant.getId());
+                j.setOrganizationId(organization.getId());
                 j.setCode_journal(dto.getCode_journal());
                 j.setLibelle(dto.getLibelle());
                 j.setType_journal(dto.getType_journal());
@@ -424,7 +424,7 @@ public class JournalComptableService {
          */
         private Mono<EcritureComptableDto> getFullEcritureDto(EcritureComptable e) {
                 EcritureComptableDto dto = mapEcritureToDto(e);
-                return detail_repository.findByTenant_IdAndEcriture_Id(e.getOrganizationId(), e.getId())
+                return detail_repository.findByOrganization_IdAndEcriture_Id(e.getOrganizationId(), e.getId())
                                 .map(this::mapDetailToDto)
                                 .collectList()
                                 .map(details -> {
@@ -457,7 +457,7 @@ public class JournalComptableService {
          */
         public Mono<List<com.yowyob.erp.accounting.dto.CompteDto>> getComptesByJournal(UUID journalId) {
                 return ReactiveOrganizationContext.getOrganizationId()
-                                .flatMap(organization_id -> journal_repository.findByTenant_IdAndId(organization_id, journalId)
+                                .flatMap(organization_id -> journal_repository.findByOrganization_IdAndId(organization_id, journalId)
                                                 .switchIfEmpty(Mono.error(new ResourceNotFoundException(
                                                                 "JournalComptable", journalId.toString())))
                                                 .thenMany(compte_repository.findDistinctComptesByJournalId(organization_id,

@@ -69,7 +69,7 @@ public class Contrepartie implements com.yowyob.erp.common.persistence.SettableP
     private String updated_by;
 
     @Transient
-    private Organization tenant;
+    private Organization organization;
 
     @Transient
     private OperationComptable operation_comptable;

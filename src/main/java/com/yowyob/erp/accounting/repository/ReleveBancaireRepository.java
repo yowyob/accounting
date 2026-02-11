@@ -8,7 +8,7 @@ import java.util.UUID;
 
 @Repository
 public interface ReleveBancaireRepository extends R2dbcRepository<ReleveBancaire, UUID> {
-    Flux<ReleveBancaire> findByTenantIdAndCompteId(UUID organizationId, UUID compteId);
+    Flux<ReleveBancaire> findByOrganizationIdAndCompteId(UUID organizationId, UUID compteId);
 
-    Flux<ReleveBancaire> findByTenantIdAndCompteIdAndRapprocheFalse(UUID organizationId, UUID compteId);
+    Flux<ReleveBancaire> findByOrganizationIdAndCompteIdAndRapprocheFalse(UUID organizationId, UUID compteId);
 }

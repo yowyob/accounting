@@ -18,7 +18,7 @@ import java.util.UUID;
 
 /**
  * Reactive Implementation of AgenceService.
- * Handles CRUD operations with tenant isolation.
+ * Handles CRUD operations with organization isolation.
  * 
  * @author ALD
  * @date 03.01.2026
@@ -35,7 +35,7 @@ public class AgenceServiceImpl implements AgenceService {
         public Mono<AgenceDto> createAgence(AgenceDto agence_dto) {
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMap(organization_id -> {
-                                        log.info("Creating new agency '{}' for tenant {}", agence_dto.getName(),
+                                        log.info("Creating new agency '{}' for organization {}", agence_dto.getName(),
                                                         organization_id);
                                         Agence agence = Agence.builder()
                                                         .organizationId(organization_id)
@@ -67,12 +67,12 @@ public class AgenceServiceImpl implements AgenceService {
         public Flux<AgenceDto> getAllAgences() {
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMapMany(organization_id -> {
-                                        log.info("Retrieving all agencies for tenant: {}", organization_id);
-                                        return agence_repository.findByTenantId(organization_id)
+                                        log.info("Retrieving all agencies for organization: {}", organization_id);
+                                        return agence_repository.findByOrganizationId(organization_id)
                                                         .map(this::mapToDto);
                                 })
                                 .switchIfEmpty(Flux.defer(() -> {
-                                        log.info("No agencies found or tenant not set in context");
+                                        log.info("No agencies found or organization not set in context");
                                         return Flux.empty();
                                 }));
         }
@@ -86,7 +86,7 @@ public class AgenceServiceImpl implements AgenceService {
                                                 .switchIfEmpty(Mono.error(
                                                                 new ResourceNotFoundException("Agence", id.toString())))
                                                 .flatMap(agence -> {
-                                                        log.info("Updating agency {} for tenant {}", id, organization_id);
+                                                        log.info("Updating agency {} for organization {}", id, organization_id);
                                                         agence.setName(agence_dto.getName());
                                                         agence.setCode(agence_dto.getCode());
                                                         agence.setAddress(agence_dto.getAddress());
@@ -108,7 +108,7 @@ public class AgenceServiceImpl implements AgenceService {
                                                 .switchIfEmpty(Mono.error(
                                                                 new ResourceNotFoundException("Agence", id.toString())))
                                                 .flatMap(agence -> {
-                                                        log.warn("Deleting agency {} for tenant {}", id, organization_id);
+                                                        log.warn("Deleting agency {} for organization {}", id, organization_id);
                                                         return agence_repository.delete(agence);
                                                 }));
         }

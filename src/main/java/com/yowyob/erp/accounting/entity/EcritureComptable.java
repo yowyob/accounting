@@ -100,7 +100,7 @@ public class EcritureComptable implements SettablePersistable<UUID> {
     private String validated_by;
 
     @Transient
-    private Organization tenant;
+    private Organization organization;
 
     @Transient
     private JournalComptable journal;

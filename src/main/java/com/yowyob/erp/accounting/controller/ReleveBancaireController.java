@@ -56,7 +56,7 @@ public class ReleveBancaireController {
          */
         @GetMapping("/list")
         @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT', 'USER')")
-        @Operation(summary = "Liste des relevés importés", description = "Retourne la liste des relevés bancaires uploadés pour le tenant")
+        @Operation(summary = "Liste des relevés importés", description = "Retourne la liste des relevés bancaires uploadés pour le organization")
         public Mono<ResponseEntity<ApiResponseWrapper<List<Map<String, Object>>>>> getListeReleves() {
                 log.info("📋 Getting bank statements list");
 
@@ -78,7 +78,7 @@ public class ReleveBancaireController {
                         @PathVariable UUID releveId) {
                 log.info("💾 Importing bank statement {}", releveId);
 
-                // Assuming user and tenant are handled reactively
+                // Assuming user and organization are handled reactively
                 return releve_service.importerReleveEnEcritures(releveId, "system")
                                 .map(resultat -> ResponseEntity.ok(ApiResponseWrapper.success(
                                                 resultat,

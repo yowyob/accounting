@@ -42,10 +42,10 @@ public class TvaAutomatiqueService {
         public Mono<Void> appliquerTvaSurEcriture(EcritureComptable ecriture) {
                 return Mono.zip(
                                 detail_repository
-                                                .findByTenant_IdAndEcriture_Id(ecriture.getOrganizationId(), ecriture.getId())
+                                                .findByOrganization_IdAndEcriture_Id(ecriture.getOrganizationId(), ecriture.getId())
                                                 .collectList(),
-                                taxe_repository.findByTenant_IdAndActifTrue(ecriture.getOrganizationId()).collectList(),
-                                compte_repository.findAllByTenant_Id(ecriture.getOrganizationId())
+                                taxe_repository.findByOrganization_IdAndActifTrue(ecriture.getOrganizationId()).collectList(),
+                                compte_repository.findAllByOrganization_Id(ecriture.getOrganizationId())
                                                 .collectMap(compte -> compte.getId(), compte -> compte.getNo_compte()))
                                 .flatMap(tuple -> {
                                         List<DetailEcriture> details = tuple.getT1();
@@ -124,7 +124,7 @@ public class TvaAutomatiqueService {
                                                                 }
 
                                                                 return compte_repository
-                                                                                .findByTenant_IdAndNo_compte(
+                                                                                .findByOrganization_IdAndNo_compte(
                                                                                                 ecriture.getOrganizationId(),
                                                                                                 target_compte_no)
                                                                                 .flatMap(compte -> {

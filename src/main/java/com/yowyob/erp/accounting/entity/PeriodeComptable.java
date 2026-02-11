@@ -69,7 +69,7 @@ public class PeriodeComptable implements com.yowyob.erp.common.persistence.Setta
     private String updated_by;
 
     @Transient
-    private Organization tenant;
+    private Organization organization;
 
     @Transient
     private ExerciceComptable exercice;

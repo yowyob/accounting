@@ -4,7 +4,7 @@ import com.yowyob.erp.accounting.dto.CompteDto;
 import com.yowyob.erp.accounting.dto.JournalAuditDto;
 import com.yowyob.erp.accounting.entity.Compte;
 import com.yowyob.erp.accounting.entity.JournalAudit;
-import com.yowyob.erp.accounting.entity.Tenant;
+import com.yowyob.erp.accounting.entity.Organization;
 import com.yowyob.erp.accounting.repository.CompteRepository;
 import com.yowyob.erp.accounting.repository.JournalAuditRepository;
 import com.yowyob.erp.common.exception.BusinessException;
@@ -49,14 +49,14 @@ public class CompteService {
         public Mono<CompteDto> createCompte(CompteDto dto) {
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .switchIfEmpty(Mono.error(new IllegalStateException("Organization ID is required")))
-                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentTenantAsTenant()
-                                                .flatMap(tenant -> {
-                                                        log.info("Creating account for tenant {} with number {}",
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentOrganizationAsOrganization()
+                                                .flatMap(organization -> {
+                                                        log.info("Creating account for organization {} with number {}",
                                                                         organization_id, dto.getNo_compte());
 
                                                         Compte compte = mapToEntity(dto);
                                                         compte.setId(UUID.randomUUID());
-                                                        compte.setTenantId(organization_id);
+                                                        compte.setOrganizationId(organization_id);
                                                         compte.setCreated_at(LocalDateTime.now());
                                                         compte.setUpdated_at(LocalDateTime.now());
                                                         compte.setCreated_by("system");
@@ -69,7 +69,7 @@ public class CompteService {
                                                                                                         + ":"
                                                                                                         + saved.getId(),
                                                                                                         saved.getSolde())
-                                                                                        .then(logAudit(tenant, "system",
+                                                                                        .then(logAudit(organization, "system",
                                                                                                         "COMPTE_CREATED",
                                                                                                         "Creation of account: "
                                                                                                                         + saved.getNo_compte()))
@@ -80,17 +80,17 @@ public class CompteService {
         }
 
         /**
-         * Finds all accounts for a tenant.
+         * Finds all accounts for a organization.
          */
         @SuppressWarnings("unchecked")
-        public Flux<CompteDto> findAllByTenant(UUID organization_id) {
+        public Flux<CompteDto> findAllByOrganization(UUID organization_id) {
                 String cache_key = CACHE_ALL_PREFIX + organization_id;
 
                 return redis_template.opsForValue().get(cache_key)
                                 .cast(java.util.List.class)
                                 .flatMapMany(list -> Flux.fromIterable((Iterable<CompteDto>) list))
                                 .switchIfEmpty(
-                                                compte_repository.findAllByTenant_Id(organization_id)
+                                                compte_repository.findAllByOrganization_Id(organization_id)
                                                                 .map(this::mapToDto)
                                                                 .collectList()
                                                                 .flatMap(list -> redis_template.opsForValue()
@@ -99,10 +99,10 @@ public class CompteService {
         }
 
         /**
-         * Finds an account by ID and tenant ID.
+         * Finds an account by ID and organization ID.
          */
         public Mono<CompteDto> findById(UUID organization_id, UUID id) {
-                return compte_repository.findByTenant_IdAndId(organization_id, id)
+                return compte_repository.findByOrganization_IdAndId(organization_id, id)
                                 .switchIfEmpty(Mono.error(
                                                 new ResourceNotFoundException("Accounting account", id.toString())))
                                 .flatMap(compte -> {
@@ -132,7 +132,7 @@ public class CompteService {
          * Finds accounts by account number. Matches exactly or by prefix.
          */
         public Flux<CompteDto> findByNoCompte(UUID organization_id, String no_compte) {
-                return compte_repository.findByTenant_IdAndNo_compte(organization_id, no_compte)
+                return compte_repository.findByOrganization_IdAndNo_compte(organization_id, no_compte)
                                 .map(this::mapToDto)
                                 .flux();
         }
@@ -141,8 +141,8 @@ public class CompteService {
          * Gets all client accounts (411xxx).
          */
         public Flux<CompteDto> getClientAccounts(UUID organization_id) {
-                log.debug("Retrieving client accounts for tenant {}", organization_id);
-                return compte_repository.findAllByTenant_Id(organization_id)
+                log.debug("Retrieving client accounts for organization {}", organization_id);
+                return compte_repository.findAllByOrganization_Id(organization_id)
                                 .filter(compte -> compte.getNo_compte() != null
                                                 && compte.getNo_compte().startsWith("411"))
                                 .map(this::mapToDto);
@@ -152,8 +152,8 @@ public class CompteService {
          * Gets all supplier accounts (401xxx).
          */
         public Flux<CompteDto> getSupplierAccounts(UUID organization_id) {
-                log.debug("Retrieving supplier accounts for tenant {}", organization_id);
-                return compte_repository.findAllByTenant_Id(organization_id)
+                log.debug("Retrieving supplier accounts for organization {}", organization_id);
+                return compte_repository.findAllByOrganization_Id(organization_id)
                                 .filter(compte -> compte.getNo_compte() != null
                                                 && compte.getNo_compte().startsWith("401"))
                                 .map(this::mapToDto);
@@ -163,8 +163,8 @@ public class CompteService {
          * Gets all bank accounts (521xxx).
          */
         public Flux<CompteDto> getBankAccounts(UUID organization_id) {
-                log.debug("Retrieving bank accounts for tenant {}", organization_id);
-                return compte_repository.findAllByTenant_Id(organization_id)
+                log.debug("Retrieving bank accounts for organization {}", organization_id);
+                return compte_repository.findAllByOrganization_Id(organization_id)
                                 .filter(compte -> compte.getNo_compte() != null
                                                 && compte.getNo_compte().startsWith("521"))
                                 .map(this::mapToDto);
@@ -174,8 +174,8 @@ public class CompteService {
          * Gets all cash accounts (571xxx).
          */
         public Flux<CompteDto> getCashAccounts(UUID organization_id) {
-                log.debug("Retrieving cash accounts for tenant {}", organization_id);
-                return compte_repository.findAllByTenant_Id(organization_id)
+                log.debug("Retrieving cash accounts for organization {}", organization_id);
+                return compte_repository.findAllByOrganization_Id(organization_id)
                                 .filter(compte -> compte.getNo_compte() != null
                                                 && compte.getNo_compte().startsWith("571"))
                                 .map(this::mapToDto);
@@ -185,8 +185,8 @@ public class CompteService {
          * Gets accounts by type (ACTIF, PASSIF, CHARGE, PRODUIT, TAXE).
          */
         public Flux<CompteDto> getAccountsByType(UUID organization_id, String type) {
-                log.debug("Retrieving {} accounts for tenant {}", type, organization_id);
-                return compte_repository.findAllByTenant_Id(organization_id)
+                log.debug("Retrieving {} accounts for organization {}", type, organization_id);
+                return compte_repository.findAllByOrganization_Id(organization_id)
                                 .filter(compte -> type.equalsIgnoreCase(compte.getType_compte()))
                                 .map(this::mapToDto);
         }
@@ -196,7 +196,7 @@ public class CompteService {
          */
         @Transactional
         public Mono<CompteDto> updateCompte(UUID organization_id, UUID id, CompteDto dto) {
-                return compte_repository.findByTenant_IdAndId(organization_id, id)
+                return compte_repository.findByOrganization_IdAndId(organization_id, id)
                                 .switchIfEmpty(Mono.error(
                                                 new ResourceNotFoundException("Accounting account", id.toString())))
                                 .flatMap(compte -> {
@@ -211,9 +211,9 @@ public class CompteService {
                                                                                         + updated.getId(),
                                                                                         updated.getSolde())
                                                                         .then(ReactiveOrganizationContext
-                                                                                        .getCurrentTenantAsTenant()
-                                                                                        .flatMap(tenant -> logAudit(
-                                                                                                        tenant,
+                                                                                        .getCurrentOrganizationAsOrganization()
+                                                                                        .flatMap(organization -> logAudit(
+                                                                                                        organization,
                                                                                                         "system",
                                                                                                         "COMPTE_UPDATED",
                                                                                                         "Update of account: "
@@ -229,16 +229,16 @@ public class CompteService {
          */
         @Transactional
         public Mono<Void> deleteById(UUID organization_id, UUID id) {
-                return compte_repository.findByTenant_IdAndId(organization_id, id)
+                return compte_repository.findByOrganization_IdAndId(organization_id, id)
                                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Account", id.toString())))
                                 .flatMap(compte -> compte_repository.delete(compte)
-                                                .then(ReactiveOrganizationContext.getCurrentTenantAsTenant()
-                                                                .flatMap(tenant -> logAudit(tenant, "system",
+                                                .then(ReactiveOrganizationContext.getCurrentOrganizationAsOrganization()
+                                                                .flatMap(organization -> logAudit(organization, "system",
                                                                                 "COMPTE_DELETED",
                                                                                 "Deletion of account: " + compte
                                                                                                 .getNo_compte())))
                                                 .then(invalidateCache(organization_id, compte.getNo_compte()))
-                                                .doOnSuccess(v -> log.info("Account deleted: {} for tenant {}",
+                                                .doOnSuccess(v -> log.info("Account deleted: {} for organization {}",
                                                                 compte.getNo_compte(),
                                                                 organization_id)));
         }
@@ -250,7 +250,7 @@ public class CompteService {
         public Mono<Void> updateBalances(UUID organization_id, UUID ecriture_id) {
                 log.info("Updating account balances for entry {} (Organization: {})", ecriture_id, organization_id);
 
-                return detail_repository.findByTenant_IdAndEcriture_Id(organization_id, ecriture_id)
+                return detail_repository.findByOrganization_IdAndEcriture_Id(organization_id, ecriture_id)
                                 .flatMap(detail -> compte_repository.findById(detail.getCompte_id())
                                                 .flatMap(compte -> {
                                                         BigDecimal debit = detail.getMontant_debit() != null
@@ -404,7 +404,7 @@ public class CompteService {
 
         private Mono<String> generateNextAccountNumber(UUID organization_id, String prefix) {
                 return compte_repository
-                                .findTopByTenant_IdAndNo_compteStartingWithOrderByNo_compteDesc(organization_id, prefix)
+                                .findTopByOrganization_IdAndNo_compteStartingWithOrderByNo_compteDesc(organization_id, prefix)
                                 .map(lastAccount -> {
                                         String lastNo = lastAccount.getNo_compte();
                                         if (lastNo.length() > prefix.length()) {
@@ -426,14 +426,14 @@ public class CompteService {
                 return redis_template.delete(CACHE_ALL_PREFIX + organization_id)
                                 .then(redis_template.delete(CACHE_BY_NO_COMPTE_PREFIX + organization_id + ":" + no_compte))
                                 .then()
-                                .doOnSuccess(v -> log.debug("Cache invalidated for tenant {} and account {}", organization_id,
+                                .doOnSuccess(v -> log.debug("Cache invalidated for organization {} and account {}", organization_id,
                                                 no_compte));
         }
 
-        private Mono<Void> logAudit(Organization tenant, String utilisateur, String action, String details) {
+        private Mono<Void> logAudit(Organization organization, String utilisateur, String action, String details) {
                 JournalAudit audit = JournalAudit.builder()
                                 .id(UUID.randomUUID())
-                                .organizationId(tenant.getId())
+                                .organizationId(organization.getId())
                                 .action(action)
                                 .utilisateur(utilisateur)
                                 .details(details)
@@ -453,7 +453,7 @@ public class CompteService {
                                                         .date_action(saved.getDate_action())
                                                         .build();
 
-                                        return kafka_service.sendAuditLog(auditDto, tenant.getId(), action);
+                                        return kafka_service.sendAuditLog(auditDto, organization.getId(), action);
                                 });
         }
 }

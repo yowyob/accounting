@@ -48,7 +48,7 @@ public class AccountingKafkaListener {
             @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
             Acknowledgment acknowledgment) {
 
-        log.info("📄 [INVOICE] Event received on topic={} partition={} | type={} | tenant={}",
+        log.info("📄 [INVOICE] Event received on topic={} partition={} | type={} | organization={}",
                 topic, partition, message.getEventType(), message.getOrganizationId());
 
         Mono<Void> process = switch (message.getEventType()) {
@@ -68,7 +68,7 @@ public class AccountingKafkaListener {
 
     @KafkaListener(topics = "${app.kafka.topics.accounting-entries}", groupId = "${spring.kafka.consumer.group-id}")
     public Mono<Void> handleAccountingEvents(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
-        log.info("📘 [COMPTA] Event received | type={} | tenant={}", message.getEventType(), message.getOrganizationId());
+        log.info("📘 [COMPTA] Event received | type={} | organization={}", message.getEventType(), message.getOrganizationId());
 
         Mono<Void> process = switch (message.getEventType()) {
             case "ACCOUNTING_ENTRY_CREATED" -> handleAccountingEntryCreated(message);
@@ -87,7 +87,7 @@ public class AccountingKafkaListener {
 
     @KafkaListener(topics = "transaction.events", groupId = "${spring.kafka.consumer.group-id}")
     public Mono<Void> handleTransactionEvents(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
-        log.info("💳 [TRANSACTION] Event received | type={} | tenant={}", message.getEventType(),
+        log.info("💳 [TRANSACTION] Event received | type={} | organization={}", message.getEventType(),
                 message.getOrganizationId());
 
         Mono<Void> process = switch (message.getEventType()) {
@@ -107,7 +107,7 @@ public class AccountingKafkaListener {
 
     @KafkaListener(topics = "${app.kafka.topics.audit-logs}", groupId = "${spring.kafka.consumer.group-id}")
     public Mono<Void> handleAuditLogs(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
-        log.info("🧩 [AUDIT] New log received | action={} | tenant={}", message.getEventType(), message.getOrganizationId());
+        log.info("🧩 [AUDIT] New log received | action={} | organization={}", message.getEventType(), message.getOrganizationId());
 
         if (message.getPayload() instanceof Map<?, ?> rawPayload) {
             return Mono.fromCallable(() -> {
@@ -226,7 +226,7 @@ public class AccountingKafkaListener {
 
         Mono<com.yowyob.erp.accounting.entity.TransactionComptable> prepareTransaction;
         if (transaction.getJournal_comptable_id() == null) {
-            prepareTransaction = journalComptableRepository.findByTenant_IdAndCode_journal(message.getOrganizationId(), "TR")
+            prepareTransaction = journalComptableRepository.findByOrganization_IdAndCode_journal(message.getOrganizationId(), "TR")
                     .map(j -> {
                         transaction.setJournal_comptable_id(j.getId());
                         return transaction;
@@ -262,21 +262,21 @@ public class AccountingKafkaListener {
 
     @KafkaListener(topics = "${app.kafka.topics.stock-events:stock.events}", groupId = "${spring.kafka.consumer.group-id}")
     public Mono<Void> handleStockEvents(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
-        log.info("📦 [STOCK] Event received | type={} | tenant={}", message.getEventType(), message.getOrganizationId());
+        log.info("📦 [STOCK] Event received | type={} | organization={}", message.getEventType(), message.getOrganizationId());
         acknowledgment.acknowledge();
         return Mono.empty();
     }
 
     @KafkaListener(topics = "${app.kafka.topics.thirdparty-events:thirdparty.events}", groupId = "${spring.kafka.consumer.group-id}")
     public Mono<Void> handleThirdPartyEvents(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
-        log.info("👥 [TIERS] Event received | type={} | tenant={}", message.getEventType(), message.getOrganizationId());
+        log.info("👥 [TIERS] Event received | type={} | organization={}", message.getEventType(), message.getOrganizationId());
         acknowledgment.acknowledge();
         return Mono.empty();
     }
 
     @KafkaListener(topics = "${app.kafka.topics.organization-events:organization.events}", groupId = "${spring.kafka.consumer.group-id}")
     public Mono<Void> handleOrganizationEvents(@Payload KafkaMessage message, Acknowledgment acknowledgment) {
-        log.info("🏢 [ORGANISATION] Event received | type={} | tenant={}", message.getEventType(),
+        log.info("🏢 [ORGANISATION] Event received | type={} | organization={}", message.getEventType(),
                 message.getOrganizationId());
         acknowledgment.acknowledge();
         return Mono.empty();

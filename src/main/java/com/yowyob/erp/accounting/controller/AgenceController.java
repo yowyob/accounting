@@ -44,7 +44,7 @@ public class AgenceController {
     }
 
     @GetMapping
-    @Operation(summary = "Get all agencies for current tenant")
+    @Operation(summary = "Get all agencies for current organization")
     public Mono<ResponseEntity<ApiResponseWrapper<List<AgenceDto>>>> getAllAgences() {
         return agence_service.getAllAgences()
                 .collectList()

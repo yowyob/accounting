@@ -42,7 +42,7 @@ public class OperationComptableInitializationService implements CommandLineRunne
                         JournalComptableRepository journal_repository,
                         CompteRepository compte_repository,
                         RedisService redis_service,
-                        @Value("${app.tenant.default-tenant:550e8400-e29b-41d4-a716-446655440000}") String organization_id_str) {
+                        @Value("${app.organization.default-organization:550e8400-e29b-41d4-a716-446655440000}") String organization_id_str) {
                 this.operation_repository = operation_repository;
                 this.contrepartie_repository = contrepartie_repository;
                 this.journal_repository = journal_repository;
@@ -56,9 +56,9 @@ public class OperationComptableInitializationService implements CommandLineRunne
                 log.info("Starting accounting operations initialization...");
 
                 Mono.zip(
-                                journal_repository.findByTenant_IdAndCode_journal(organization_id, "AN"),
-                                journal_repository.findByTenant_IdAndCode_journal(organization_id, "VE"),
-                                journal_repository.findByTenant_IdAndCode_journal(organization_id, "TR"))
+                                journal_repository.findByOrganization_IdAndCode_journal(organization_id, "AN"),
+                                journal_repository.findByOrganization_IdAndCode_journal(organization_id, "VE"),
+                                journal_repository.findByOrganization_IdAndCode_journal(organization_id, "TR"))
                                 .flatMap(tuple -> {
                                         JournalComptable journalAN = tuple.getT1();
                                         JournalComptable journalVE = tuple.getT2();
@@ -107,14 +107,14 @@ public class OperationComptableInitializationService implements CommandLineRunne
                         List<CPDef> cpDefs) {
 
                 return operation_repository
-                                .findByTenant_IdAndType_operationAndMode_reglement(organization_id, type_operation,
+                                .findByOrganization_IdAndType_operationAndMode_reglement(organization_id, type_operation,
                                                 mode_reglement)
                                 .flatMap(existing -> {
                                         // If exists but broken (null compte_principal_id), fix it
                                         if (existing.getCompte_principal_id() == null) {
                                                 log.info("Fixing operation: {} - {}", type_operation, mode_reglement);
                                                 return compte_repository
-                                                                .findByTenant_IdAndNo_compte(organization_id, no_compte)
+                                                                .findByOrganization_IdAndNo_compte(organization_id, no_compte)
                                                                 .flatMap(compte -> {
                                                                         existing.setCompte_principal_id(compte.getId());
                                                                         existing.setJournal_comptable_id(journal != null
@@ -130,7 +130,7 @@ public class OperationComptableInitializationService implements CommandLineRunne
                                 })
                                 .switchIfEmpty(Mono.defer(() -> {
                                         log.info("Creating operation: {} - {}", type_operation, mode_reglement);
-                                        return compte_repository.findByTenant_IdAndNo_compte(organization_id, no_compte)
+                                        return compte_repository.findByOrganization_IdAndNo_compte(organization_id, no_compte)
                                                         .flatMap(compte -> {
                                                                 OperationComptable operation = OperationComptable
                                                                                 .builder()
@@ -160,14 +160,14 @@ public class OperationComptableInitializationService implements CommandLineRunne
                                 .flatMap(saved -> {
                                         // Check and add counterparties
                                         return contrepartie_repository
-                                                        .findByTenant_IdAndOperation_comptable_Id(organization_id,
+                                                        .findByOrganization_IdAndOperation_comptable_Id(organization_id,
                                                                         saved.getId())
                                                         .collectList()
                                                         .flatMap(existingCps -> {
                                                                 if (existingCps.isEmpty()) {
                                                                         return Flux.fromIterable(cpDefs)
                                                                                         .flatMap(cpDef -> compte_repository
-                                                                                                        .findByTenant_IdAndNo_compte(
+                                                                                                        .findByOrganization_IdAndNo_compte(
                                                                                                                         organization_id,
                                                                                                                         cpDef.noCompte())
                                                                                                         .flatMap(compte -> {

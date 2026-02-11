@@ -29,23 +29,23 @@ public class JournalAuditController {
     private final JournalAuditService audit_service;
 
     /**
-     * Retrieves all audits for a tenant (last N actions).
+     * Retrieves all audits for a organization (last N actions).
      */
-    @GetMapping("/tenant/{organizationId}")
-    @Operation(summary = "Get all audits for a tenant")
-    public Mono<ResponseEntity<ApiResponseWrapper<List<JournalAuditDto>>>> getAllByTenant(
+    @GetMapping("/organization/{organizationId}")
+    @Operation(summary = "Get all audits for a organization")
+    public Mono<ResponseEntity<ApiResponseWrapper<List<JournalAuditDto>>>> getAllByOrganization(
             @PathVariable(name = "organizationId") UUID organization_id,
             @RequestParam(defaultValue = "100") int limit) {
 
-        return audit_service.getAllByTenant(organization_id, limit)
+        return audit_service.getAllByOrganization(organization_id, limit)
                 .collectList()
                 .map(list -> ResponseEntity.ok(ApiResponseWrapper.success(list, "Audit logs retrieved successfully")));
     }
 
     /**
-     * Retrieves audits for a tenant within a specific time period.
+     * Retrieves audits for a organization within a specific time period.
      */
-    @GetMapping("/tenant/{organizationId}/periode")
+    @GetMapping("/organization/{organizationId}/periode")
     @Operation(summary = "Get audits by time period")
     public Mono<ResponseEntity<ApiResponseWrapper<List<JournalAuditDto>>>> getByPeriode(
             @PathVariable(name = "organizationId") UUID organization_id,
@@ -59,9 +59,9 @@ public class JournalAuditController {
     }
 
     /**
-     * Retrieves audits for a tenant filtered by user.
+     * Retrieves audits for a organization filtered by user.
      */
-    @GetMapping("/tenant/{organizationId}/utilisateur/{utilisateur}")
+    @GetMapping("/organization/{organizationId}/utilisateur/{utilisateur}")
     @Operation(summary = "Get audits by user")
     public Mono<ResponseEntity<ApiResponseWrapper<List<JournalAuditDto>>>> getByUtilisateur(
             @PathVariable(name = "organizationId") UUID organization_id,
@@ -74,9 +74,9 @@ public class JournalAuditController {
     }
 
     /**
-     * Retrieves audits for a tenant filtered by action type.
+     * Retrieves audits for a organization filtered by action type.
      */
-    @GetMapping("/tenant/{organizationId}/action/{action}")
+    @GetMapping("/organization/{organizationId}/action/{action}")
     @Operation(summary = "Get audits by action type")
     public Mono<ResponseEntity<ApiResponseWrapper<List<JournalAuditDto>>>> getByAction(
             @PathVariable(name = "organizationId") UUID organization_id,
@@ -91,7 +91,7 @@ public class JournalAuditController {
     /**
      * Retrieves audits related to a specific accounting entry ID.
      */
-    @GetMapping("/tenant/{organizationId}/ecriture/{ecritureId}")
+    @GetMapping("/organization/{organizationId}/ecriture/{ecritureId}")
     @Operation(summary = "Get audits by accounting entry ID")
     public Mono<ResponseEntity<ApiResponseWrapper<List<JournalAuditDto>>>> getByEcriture(
             @PathVariable(name = "organizationId") UUID organization_id,
@@ -123,7 +123,7 @@ public class JournalAuditController {
         } else if (action != null && !action.isBlank()) {
             resultMono = audit_service.getByAction(organization_id, action).collectList();
         } else {
-            resultMono = audit_service.getAllByTenant(organization_id, 200).collectList();
+            resultMono = audit_service.getAllByOrganization(organization_id, 200).collectList();
         }
 
         return resultMono

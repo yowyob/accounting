@@ -99,14 +99,14 @@ public class TransactionComptable implements ComptableObject {
 
     /* Automatically generate accounting entries (2 lines) */
     @Override
-    public List<DetailEcriture> generate_ecriture_details(Organization tenant, EcritureComptable ecriture) {
+    public List<DetailEcriture> generate_ecriture_details(Organization organization, EcritureComptable ecriture) {
         List<DetailEcriture> details = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
 
         // Line 1: Debit (main account)
         details.add(DetailEcriture.builder()
                 .id(UUID.randomUUID())
-                .tenant(tenant)
+                .organization(organization)
                 .ecriture(ecriture)
                 .compte(null) // Link to Compte object if needed
                 .libelle("Debit: " + libelle)
@@ -123,7 +123,7 @@ public class TransactionComptable implements ComptableObject {
         // Line 2: Credit (counterpart)
         details.add(DetailEcriture.builder()
                 .id(UUID.randomUUID())
-                .tenant(tenant)
+                .organization(organization)
                 .ecriture(ecriture)
                 .compte(null)
                 .libelle("Credit: " + libelle)

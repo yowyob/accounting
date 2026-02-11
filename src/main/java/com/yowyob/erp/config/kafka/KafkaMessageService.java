@@ -39,14 +39,14 @@ public class KafkaMessageService {
     @Value("${app.kafka.topics.audit-logs}")
     private String auditLogsTopic;
 
-    @Value("${app.kafka.topics.tenant-created}")
-    private String tenantCreatedTopic;
+    @Value("${app.kafka.topics.organization-created}")
+    private String organizationCreatedTopic;
 
-    @Value("${app.kafka.topics.tenant-updated}")
-    private String tenantUpdatedTopic;
+    @Value("${app.kafka.topics.organization-updated}")
+    private String organizationUpdatedTopic;
 
-    @Value("${app.kafka.topics.tenant-deleted}")
-    private String tenantDeletedTopic;
+    @Value("${app.kafka.topics.organization-deleted}")
+    private String organizationDeletedTopic;
 
     @Value("${app.kafka.topics.treasury-sync:treasury.sync.events}")
     private String treasurySyncTopic;
@@ -97,16 +97,16 @@ public class KafkaMessageService {
         return sendMessage(notificationsTopic, organizationId.toString(), payload, type, organizationId);
     }
 
-    public Mono<Void> sendTenantCreated(Object payload, UUID organizationId) {
-        return sendMessage(tenantCreatedTopic, organizationId.toString(), payload, "TENANT_CREATED", organizationId);
+    public Mono<Void> sendOrganizationCreated(Object payload, UUID organizationId) {
+        return sendMessage(organizationCreatedTopic, organizationId.toString(), payload, "TENANT_CREATED", organizationId);
     }
 
-    public Mono<Void> sendTenantUpdated(Object payload, UUID organizationId) {
-        return sendMessage(tenantUpdatedTopic, organizationId.toString(), payload, "TENANT_UPDATED", organizationId);
+    public Mono<Void> sendOrganizationUpdated(Object payload, UUID organizationId) {
+        return sendMessage(organizationUpdatedTopic, organizationId.toString(), payload, "TENANT_UPDATED", organizationId);
     }
 
-    public Mono<Void> sendTenantDeleted(Object payload, UUID organizationId) {
-        return sendMessage(tenantDeletedTopic, organizationId.toString(), payload, "TENANT_DELETED", organizationId);
+    public Mono<Void> sendOrganizationDeleted(Object payload, UUID organizationId) {
+        return sendMessage(organizationDeletedTopic, organizationId.toString(), payload, "TENANT_DELETED", organizationId);
     }
 
     public Mono<Void> sendTreasurySync(Object payload, UUID organizationId, String type) {

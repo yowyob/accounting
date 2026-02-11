@@ -84,10 +84,10 @@ public class AuthService {
         return webClient
                 .get()
                 .uri(authApiUrl + "/employees")
-                .header("X-Tenant-ID", organizationId.toString())
+                .header("X-Organization-ID", organizationId.toString())
                 .retrieve()
                 .bodyToFlux(OrganizationMember.class)
                 .timeout(Duration.ofMillis(timeout))
-                .doOnError(error -> log.error("Error retrieving members for tenant {}", organizationId, error));
+                .doOnError(error -> log.error("Error retrieving members for organization {}", organizationId, error));
     }
 }

@@ -8,7 +8,7 @@ import java.util.UUID;
 
 @Repository
 public interface ImmobilisationRepository extends R2dbcRepository<Immobilisation, UUID> {
-    Flux<Immobilisation> findByTenantId(UUID organizationId);
+    Flux<Immobilisation> findByOrganizationId(UUID organizationId);
 
-    Flux<Immobilisation> findByTenantIdAndStatut(UUID organizationId, String statut);
+    Flux<Immobilisation> findByOrganizationIdAndStatut(UUID organizationId, String statut);
 }

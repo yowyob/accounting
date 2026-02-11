@@ -41,7 +41,7 @@ public class DeclarationFiscale {
     private UUID organizationId;
 
     @Transient
-    private Organization tenant;
+    private Organization organization;
 
     @NotBlank
     @Column("type_declaration")

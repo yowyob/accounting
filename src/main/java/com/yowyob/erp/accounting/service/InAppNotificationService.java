@@ -36,7 +36,7 @@ public class InAppNotificationService {
     }
 
     public Flux<Notification> getUnreadNotifications(UUID organizationId, String userId) {
-        return repository.findAllByTenantIdAndUserIdAndIsReadFalseOrderByCreatedAtDesc(organizationId, userId);
+        return repository.findAllByOrganizationIdAndUserIdAndIsReadFalseOrderByCreatedAtDesc(organizationId, userId);
     }
 
     public Mono<Notification> markAsRead(UUID id) {

@@ -33,7 +33,7 @@ public class LettrageController {
         private final LettrageAutomatiqueService lettrage_service;
 
         /**
-         * Launches automatic reconciliation for the current tenant.
+         * Launches automatic reconciliation for the current organization.
          * Matches debit and credit entries with the same account and amount.
          * 
          * @return number of reconciled entry pairs
@@ -47,30 +47,30 @@ public class LettrageController {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Accès refusé")
         })
         public reactor.core.publisher.Mono<ResponseEntity<ApiResponseWrapper<Integer>>> lancerLettrageAutomatique() {
-                UUID organization_id = OrganizationContext.getCurrentTenant();
-                log.info("🔗 Launching automatic reconciliation for tenant {}", organization_id);
+                UUID organization_id = OrganizationContext.getCurrentOrganization();
+                log.info("🔗 Launching automatic reconciliation for organization {}", organization_id);
 
-                return lettrage_service.lettrerToutLeTenant(organization_id)
+                return lettrage_service.lettrerToutLeOrganization(organization_id)
                                 .map(paires_lettrees -> ResponseEntity.ok(ApiResponseWrapper.success(
                                                 paires_lettrees,
                                                 paires_lettrees + " paires d'écritures lettrées automatiquement")));
         }
 
         /**
-         * Gets the reconciliation status for the current tenant.
+         * Gets the reconciliation status for the current organization.
          * 
          * @return reconciliation statistics
          */
         @GetMapping("/status")
         @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT', 'USER')")
-        @Operation(summary = "Obtenir le statut du lettrage", description = "Retourne les statistiques de lettrage pour le tenant")
+        @Operation(summary = "Obtenir le statut du lettrage", description = "Retourne les statistiques de lettrage pour le organization")
         @ApiResponses(value = {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Statut récupéré"),
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Non authentifié")
         })
         public ResponseEntity<ApiResponseWrapper<String>> getStatutLettrage() {
-                UUID organization_id = OrganizationContext.getCurrentTenant();
-                log.info("📊 Getting reconciliation status for tenant {}", organization_id);
+                UUID organization_id = OrganizationContext.getCurrentOrganization();
+                log.info("📊 Getting reconciliation status for organization {}", organization_id);
 
                 // This would require a new method in the service to get statistics
                 String status = "Fonctionnalité de statistiques à implémenter dans LettrageAutomatiqueService";

@@ -41,7 +41,7 @@ public class PeriodeComptableController {
     /**
      * Creates a new accounting period.
      */
-    @Operation(summary = "Create an accounting period", description = "Adds a new accounting period for the current tenant.")
+    @Operation(summary = "Create an accounting period", description = "Adds a new accounting period for the current organization.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Period created successfully", content = @Content(schema = @Schema(implementation = PeriodeComptableDto.class))),
             @ApiResponse(responseCode = "400", description = "Validation error or overlapping period")
@@ -73,7 +73,7 @@ public class PeriodeComptableController {
     }
 
     /**
-     * Lists all accounting periods for the current tenant.
+     * Lists all accounting periods for the current organization.
      */
     @Operation(summary = "List all accounting periods")
     @GetMapping
@@ -110,7 +110,7 @@ public class PeriodeComptableController {
     }
 
     /**
-     * Lists all non-closed (open) periods for the current tenant.
+     * Lists all non-closed (open) periods for the current organization.
      */
     @Operation(summary = "List non-closed (open) periods")
     @GetMapping("/non-closed")

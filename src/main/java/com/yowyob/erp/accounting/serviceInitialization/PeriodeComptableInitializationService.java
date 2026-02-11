@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono;
 
 /**
  * Reactive Service for initializing default accounting periods for the default
- * tenant.
+ * organization.
  * Runs on application startup.
  */
 @Service
@@ -31,7 +31,7 @@ public class PeriodeComptableInitializationService implements CommandLineRunner 
 
     public PeriodeComptableInitializationService(PeriodeComptableService periode_service,
             com.yowyob.erp.accounting.repository.ExerciceComptableRepository exercice_repository,
-            @Value("${app.tenant.default-tenant:550e8400-e29b-41d4-a716-446655440000}") String organization_id_str) {
+            @Value("${app.organization.default-organization:550e8400-e29b-41d4-a716-446655440000}") String organization_id_str) {
         this.periode_service = periode_service;
         this.exercice_repository = exercice_repository;
         this.organization_id = UUID.fromString(organization_id_str);
@@ -39,7 +39,7 @@ public class PeriodeComptableInitializationService implements CommandLineRunner 
 
     @Override
     public void run(String... args) {
-        exercice_repository.findByTenantIdAndCode(organization_id, "2026")
+        exercice_repository.findByOrganizationIdAndCode(organization_id, "2026")
                 .flatMapMany(exercice -> {
                     UUID exercice_id = exercice.getId();
                     return Flux.range(1, 12)
@@ -63,7 +63,7 @@ public class PeriodeComptableInitializationService implements CommandLineRunner 
                                         });
                             });
                 })
-                .contextWrite(ReactiveOrganizationContext.withTenantId(organization_id))
+                .contextWrite(ReactiveOrganizationContext.withOrganizationId(organization_id))
                 .subscribe(
                         v -> log.debug("Period iteration check: {}", v.getCode()),
                         e -> log.error("❌ Error initializing periods", e),

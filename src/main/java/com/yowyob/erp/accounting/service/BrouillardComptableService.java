@@ -106,15 +106,15 @@ public class BrouillardComptableService {
     }
 
     public Flux<BrouillardComptable> getAllBrouillards(UUID organizationId, Pageable pageable) {
-        return repository.findAllByTenantId(organizationId, pageable);
+        return repository.findAllByOrganizationId(organizationId, pageable);
     }
     
     public Flux<BrouillardComptable> getBrouillardsByStatut(UUID organizationId, BrouillardStatut statut, Pageable pageable) {
-        return repository.findAllByTenantIdAndStatut(organizationId, statut, pageable);
+        return repository.findAllByOrganizationIdAndStatut(organizationId, statut, pageable);
     }
     
     public Flux<BrouillardComptable> getBrouillardsByType(UUID organizationId, BrouillardType type, Pageable pageable) {
-        return repository.findAllByTenantIdAndType(organizationId, type, pageable);
+        return repository.findAllByOrganizationIdAndType(organizationId, type, pageable);
     }
 
     public Mono<BrouillardComptable> getBrouillardById(UUID id) {
