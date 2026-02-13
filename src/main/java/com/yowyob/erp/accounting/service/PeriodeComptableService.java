@@ -7,6 +7,8 @@ import com.yowyob.erp.accounting.entity.PeriodeComptable;
 import com.yowyob.erp.accounting.entity.Organization;
 import com.yowyob.erp.accounting.repository.JournalAuditRepository;
 import com.yowyob.erp.accounting.repository.PeriodeComptableRepository;
+import com.yowyob.erp.accounting.repository.EcritureComptableRepository;
+import com.yowyob.erp.common.exception.BusinessException;
 import com.yowyob.erp.common.exception.ResourceNotFoundException;
 import com.yowyob.erp.config.kafka.KafkaMessageService;
 import com.yowyob.erp.config.redis.RedisService;
@@ -39,6 +41,7 @@ public class PeriodeComptableService {
         private final Validator validator;
         private final KafkaMessageService kafka_service;
         private final RedisService redis_service;
+        private final EcritureComptableRepository ecriture_repository;
 
         private static final String CACHE_ALL = "periodes:all:";
         private static final String CACHE_ACTIVE = "periodes:active:";
@@ -69,6 +72,12 @@ public class PeriodeComptableService {
                                                                                                         new IllegalArgumentException(
                                                                                                                         "Period code already exists: "
                                                                                                                                         + dto.getCode()))))
+                                                                        .then(Mono.defer(() -> {
+                                                                                if (dto.getCloturee() == null || !dto.getCloturee()) {
+                                                                                        return checkNoOtherOpenPeriod(organization_id, null);
+                                                                                }
+                                                                                return Mono.empty();
+                                                                        }))
                                                                         .then(validateNoOverlap(organization_id,
                                                                                         dto.getDate_debut(),
                                                                                         dto.getDate_fin(), null))
@@ -263,6 +272,12 @@ public class PeriodeComptableService {
                                                                                                                 dto.getDate_fin(),
                                                                                                                 id))
                                                                                                 .then(Mono.defer(() -> {
+                                                                                                        if (dto.getCloturee() == null || !dto.getCloturee()) {
+                                                                                                                return checkNoOtherOpenPeriod(organization_id, id);
+                                                                                                        }
+                                                                                                        return Mono.empty();
+                                                                                                }))
+                                                                                                .then(Mono.defer(() -> {
                                                                                                         existing.setCode(
                                                                                                                         dto.getCode());
                                                                                                         existing.setDate_debut(
@@ -323,43 +338,52 @@ public class PeriodeComptableService {
                                                                         .flatMap(periode -> {
                                                                                 if (Boolean.TRUE.equals(periode
                                                                                                 .getCloturee())) {
-                                                                                        return Mono.error(
-                                                                                                        new IllegalStateException(
-                                                                                                                        "Period is already closed"));
+                                                                                         return Mono.error(
+                                                                                                         new IllegalStateException(
+                                                                                                                         "Period is already closed"));
                                                                                 }
 
-                                                                                periode.setCloturee(true);
-                                                                                periode.setDate_cloture(
-                                                                                                LocalDate.now());
-                                                                                periode.setUpdated_by(user);
-                                                                                periode.setUpdated_at(
-                                                                                                LocalDateTime.now());
-                                                                                periode.setNotNew();
-                                                                                return periode_repository.save(periode)
-                                                                                                .flatMap(saved -> ReactiveOrganizationContext
-                                                                                                                .getCurrentOrganizationAsOrganization()
-                                                                                                                .flatMap(organization -> logAudit(
-                                                                                                                                organization,
-                                                                                                                                user,
-                                                                                                                                "PERIODE_CLOSED",
-                                                                                                                                "Closed period: "
-                                                                                                                                                + periode.getCode()))
-                                                                                                                .then(redis_service
-                                                                                                                                .delete(CACHE_ALL
-                                                                                                                                                + organization_id))
-                                                                                                                .then(redis_service
-                                                                                                                                .delete(CACHE_ACTIVE
-                                                                                                                                                + organization_id))
-                                                                                                                .then(redis_service
-                                                                                                                                .delete(CACHE_SINGLE
-                                                                                                                                                + organization_id
-                                                                                                                                                + ":"
-                                                                                                                                                + id))
-                                                                                                                .then(redis_service
-                                                                                                                                .delete(CACHE_CURRENT
-                                                                                                                                                + organization_id))
-                                                                                                                .thenReturn(mapToDto(
-                                                                                                                                saved)));
+                                                                                return ecriture_repository.countNonValidatedByPeriod(organization_id, id)
+                                                                                                .flatMap(count -> {
+                                                                                                        if (count > 0) {
+                                                                                                                return Mono.error(new BusinessException("Cannot close period: there are " + count + " non-validated entries"));
+                                                                                                        }
+                                                                                                        return Mono.empty();
+                                                                                                })
+                                                                                                .then(Mono.defer(() -> {
+                                                                                                        periode.setCloturee(true);
+                                                                                                        periode.setDate_cloture(
+                                                                                                                        LocalDate.now());
+                                                                                                        periode.setUpdated_by(user);
+                                                                                                        periode.setUpdated_at(
+                                                                                                                        LocalDateTime.now());
+                                                                                                        periode.setNotNew();
+                                                                                                        return periode_repository.save(periode)
+                                                                                                                        .flatMap(saved -> ReactiveOrganizationContext
+                                                                                                                                        .getCurrentOrganizationAsOrganization()
+                                                                                                                                        .flatMap(organization -> logAudit(
+                                                                                                                                                        organization,
+                                                                                                                                                        user,
+                                                                                                                                                        "PERIODE_CLOSED",
+                                                                                                                                                        "Closed period: "
+                                                                                                                                                                        + periode.getCode()))
+                                                                                                                                        .then(redis_service
+                                                                                                                                                        .delete(CACHE_ALL
+                                                                                                                                                                        + organization_id))
+                                                                                                                                        .then(redis_service
+                                                                                                                                                        .delete(CACHE_ACTIVE
+                                                                                                                                                                        + organization_id))
+                                                                                                                                        .then(redis_service
+                                                                                                                                                        .delete(CACHE_SINGLE
+                                                                                                                                                                        + organization_id
+                                                                                                                                                                        + ":"
+                                                                                                                                                                        + id))
+                                                                                                                                        .then(redis_service
+                                                                                                                                                        .delete(CACHE_CURRENT
+                                                                                                                                                                        + organization_id))
+                                                                                                                                        .thenReturn(mapToDto(
+                                                                                                                                                        saved)));
+                                                                                                }));
                                                                         });
                                                 }));
         }
@@ -446,6 +470,16 @@ public class PeriodeComptableService {
                         }
                         return Mono.empty();
                 });
+        }
+
+        /**
+         * Checks that no other period is open for the organization.
+         */
+        private Mono<Void> checkNoOtherOpenPeriod(UUID organization_id, UUID exclude_id) {
+                return periode_repository.findByOrganization_IdAndClotureeFalse(organization_id)
+                                .filter(p -> exclude_id == null || !p.getId().equals(exclude_id))
+                                .next()
+                                .flatMap(p -> Mono.error(new BusinessException("Another accounting period is already open: " + p.getCode())));
         }
 
         /**

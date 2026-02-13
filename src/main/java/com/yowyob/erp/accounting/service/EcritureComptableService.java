@@ -63,7 +63,8 @@ public class EcritureComptableService {
         @Transactional
         public Mono<EcritureComptableDto> createEcriture(EcritureComptableDto dto) {
                 return ReactiveOrganizationContext.getOrganizationId()
-                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser()
+                                                .defaultIfEmpty("system")
                                                 .flatMap(current_user -> {
                                                         log.info("➡️ Creating accounting entry for organization: {}",
                                                                         organization_id);
@@ -89,7 +90,8 @@ public class EcritureComptableService {
                                                                                 EcritureComptable ecriture = mapToEntity(
                                                                                                 dto, organization);
                                                                                 ecriture.setId(UUID.randomUUID());
-                                                                                ecriture.setOrganizationId(organization.getId());
+                                                                                ecriture.setOrganizationId(
+                                                                                                organization.getId());
                                                                                 ecriture.setNumero_ecriture(
                                                                                                 "ECR-" + UUID.randomUUID()
                                                                                                                 .toString()
@@ -198,6 +200,159 @@ public class EcritureComptableService {
         }
 
         /**
+         * Updates an existing accounting entry.
+         */
+        @Transactional
+        public Mono<EcritureComptableDto> updateEcriture(UUID id, EcritureComptableDto dto) {
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser()
+                                                .defaultIfEmpty("system")
+                                                .flatMap(current_user -> {
+                                                        log.info("➡️ Updating accounting entry {} for organization: {}",
+                                                                        id, organization_id);
+                                                        validator_ref.validate(dto);
+
+                                                        return ecriture_repository
+                                                                        .findByOrganization_IdAndId(organization_id, id)
+                                                                        .switchIfEmpty(Mono.error(
+                                                                                        new ResourceNotFoundException(
+                                                                                                        "Entry",
+                                                                                                        id.toString())))
+                                                                        .flatMap(existing -> {
+                                                                                if (Boolean.TRUE.equals(existing
+                                                                                                .getValidee())) {
+                                                                                        return Mono.error(
+                                                                                                        new BusinessException(
+                                                                                                                        "Cannot update a validated entry"));
+                                                                                }
+
+                                                                                return journal_service
+                                                                                                .getJournalComptable(dto
+                                                                                                                .getJournal_comptable_id())
+                                                                                                .then(periode_service
+                                                                                                                .getPeriode(dto.getPeriode_comptable_id())
+                                                                                                                .flatMap(p -> {
+                                                                                                                        if (Boolean.TRUE.equals(
+                                                                                                                                        p.getCloturee())) {
+                                                                                                                                return Mono.error(
+                                                                                                                                                new BusinessException(
+                                                                                                                                                                "Accounting period is closed"));
+                                                                                                                        }
+                                                                                                                        return Mono.just(
+                                                                                                                                        p);
+                                                                                                                }))
+                                                                                                .then(ReactiveOrganizationContext
+                                                                                                                .getCurrentOrganizationAsOrganization())
+                                                                                                .flatMap(organization -> {
+                                                                                                        existing.setLibelle(
+                                                                                                                        dto.getLibelle());
+                                                                                                        existing.setDate_ecriture(
+                                                                                                                        dto.getDate_ecriture());
+                                                                                                        existing.setJournal_id(
+                                                                                                                        dto.getJournal_comptable_id());
+                                                                                                        existing.setPeriode_id(
+                                                                                                                        dto.getPeriode_comptable_id());
+                                                                                                        existing.setMontant_total_debit(
+                                                                                                                        dto.getMontant_total_debit());
+                                                                                                        existing.setMontant_total_credit(
+                                                                                                                        dto.getMontant_total_credit());
+                                                                                                        existing.setReference_externe(
+                                                                                                                        dto.getReference_externe());
+                                                                                                        existing.setNotes(
+                                                                                                                        dto.getNotes());
+                                                                                                        existing.setAttachment_ids(
+                                                                                                                        dto.getAttachment_ids());
+                                                                                                        existing.setUpdated_at(
+                                                                                                                        LocalDateTime.now());
+                                                                                                        existing.setUpdated_by(
+                                                                                                                        current_user);
+                                                                                                        existing.setNotNew();
+
+                                                                                                        return detail_repository
+                                                                                                                        .deleteByEcriture_id(
+                                                                                                                                        id)
+                                                                                                                        .then(Mono.defer(
+                                                                                                                                        () -> {
+                                                                                                                                                if (dto.getDetails_ecriture() != null
+                                                                                                                                                                && !dto.getDetails_ecriture()
+                                                                                                                                                                                .isEmpty()) {
+                                                                                                                                                        java.util.List<DetailEcriture> details_entities = dto
+                                                                                                                                                                        .getDetails_ecriture()
+                                                                                                                                                                        .stream()
+                                                                                                                                                                        .map(d -> {
+                                                                                                                                                                                DetailEcriture detail = new DetailEcriture();
+                                                                                                                                                                                detail.setId(UUID
+                                                                                                                                                                                                .randomUUID());
+                                                                                                                                                                                detail.setOrganizationId(
+                                                                                                                                                                                                organization_id);
+                                                                                                                                                                                detail.setEcriture_id(
+                                                                                                                                                                                                existing.getId());
+                                                                                                                                                                                detail.setCompte_id(
+                                                                                                                                                                                                d.getCompte_comptable_id());
+                                                                                                                                                                                detail.setLibelle(
+                                                                                                                                                                                                d.getLibelle());
+                                                                                                                                                                                detail.setSens(com.yowyob.erp.common.enums.Sens
+                                                                                                                                                                                                .valueOf(d.getSens()));
+                                                                                                                                                                                detail.setMontant_debit(
+                                                                                                                                                                                                d.getMontant_debit());
+                                                                                                                                                                                detail.setMontant_credit(
+                                                                                                                                                                                                d.getMontant_credit());
+                                                                                                                                                                                detail.setLettree(
+                                                                                                                                                                                                d.getLettree());
+                                                                                                                                                                                detail.setNotes(d
+                                                                                                                                                                                                .getNotes());
+                                                                                                                                                                                detail.setReference_bancaire(
+                                                                                                                                                                                                d.getReference_bancaire());
+                                                                                                                                                                                detail.setDate_ecriture(
+                                                                                                                                                                                                existing.getDate_ecriture()
+                                                                                                                                                                                                                .atStartOfDay());
+                                                                                                                                                                                detail.setCreated_at(
+                                                                                                                                                                                                LocalDateTime.now());
+                                                                                                                                                                                detail.setUpdated_at(
+                                                                                                                                                                                                LocalDateTime.now());
+                                                                                                                                                                                detail.setCreated_by(
+                                                                                                                                                                                                current_user);
+                                                                                                                                                                                detail.setUpdated_by(
+                                                                                                                                                                                                current_user);
+                                                                                                                                                                                return detail;
+                                                                                                                                                                        })
+                                                                                                                                                                        .collect(java.util.stream.Collectors
+                                                                                                                                                                                        .toList());
+
+                                                                                                                                                        return detail_repository
+                                                                                                                                                                        .saveAll(details_entities)
+                                                                                                                                                                        .collectList();
+                                                                                                                                                } else {
+                                                                                                                                                        return Mono.just(
+                                                                                                                                                                        java.util.Collections
+                                                                                                                                                                                        .<DetailEcriture>emptyList());
+                                                                                                                                                }
+                                                                                                                                        }))
+                                                                                                                        .flatMap(savedDetails -> {
+                                                                                                                                existing.setDetails(
+                                                                                                                                                savedDetails);
+                                                                                                                                return validateBalance(
+                                                                                                                                                savedDetails)
+                                                                                                                                                .then(ecriture_repository
+                                                                                                                                                                .save(existing))
+                                                                                                                                                .flatMap(savedEcriture -> logAuditAndSendKafka(
+                                                                                                                                                                organization,
+                                                                                                                                                                savedEcriture.getId(),
+                                                                                                                                                                current_user,
+                                                                                                                                                                "ECRITURE_UPDATED",
+                                                                                                                                                                "Entry updated")
+                                                                                                                                                                .then(redis_service
+                                                                                                                                                                                .delete(CACHE_ALL
+                                                                                                                                                                                                + organization_id))
+                                                                                                                                                                .thenReturn(mapToDto(
+                                                                                                                                                                                savedEcriture)));
+                                                                                                                        });
+                                                                                                });
+                                                                        });
+                                                }));
+        }
+
+        /**
          * Validates an accounting entry.
          */
         @Transactional
@@ -265,7 +420,8 @@ public class EcritureComptableService {
                                         String key = CACHE_ALL + organization_id;
                                         return redis_service.get(key, java.util.List.class)
                                                         .map(list -> (java.util.List<EcritureComptableDto>) list)
-                                                        .switchIfEmpty(ecriture_repository.findByOrganization_Id(organization_id)
+                                                        .switchIfEmpty(ecriture_repository
+                                                                        .findByOrganization_Id(organization_id)
                                                                         .flatMap(ecriture -> detail_repository
                                                                                         .findByOrganization_IdAndEcriture_Id(
                                                                                                         organization_id,
@@ -296,7 +452,8 @@ public class EcritureComptableService {
                                         return redis_service.get(key, java.util.List.class)
                                                         .map(list -> (java.util.List<EcritureComptableDto>) list)
                                                         .switchIfEmpty(ecriture_repository
-                                                                        .findByOrganization_IdAndValideeFalse(organization_id)
+                                                                        .findByOrganization_IdAndValideeFalse(
+                                                                                        organization_id)
                                                                         .map(this::mapToDto)
                                                                         .collectList()
                                                                         .flatMap(list -> redis_service
@@ -311,7 +468,8 @@ public class EcritureComptableService {
          */
         public Mono<EcritureComptableDto> getById(UUID id) {
                 return ReactiveOrganizationContext.getOrganizationId()
-                                .flatMap(organization_id -> ecriture_repository.findByOrganization_IdAndId(organization_id, id)
+                                .flatMap(organization_id -> ecriture_repository
+                                                .findByOrganization_IdAndId(organization_id, id)
                                                 .flatMap(ecriture -> detail_repository
                                                                 .findByOrganization_IdAndEcriture_Id(organization_id,
                                                                                 ecriture.getId())
@@ -366,7 +524,8 @@ public class EcritureComptableService {
                                                                                                         journal_id);
                                                                 } else {
                                                                         results = ecriture_repository
-                                                                                        .findByOrganization_Id(organization_id);
+                                                                                        .findByOrganization_Id(
+                                                                                                        organization_id);
                                                                 }
 
                                                                 return results.map(this::mapToDto).collectList()
@@ -384,7 +543,8 @@ public class EcritureComptableService {
         @Transactional
         public Mono<EcritureComptableDto> generateFromComptableObject(ComptableObject object) {
                 return ReactiveOrganizationContext.getCurrentOrganizationAsOrganization()
-                                .flatMap(organization -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
+                                .flatMap(organization -> ReactiveOrganizationContext.getCurrentUser()
+                                                .defaultIfEmpty("system")
                                                 .flatMap(current_user -> {
                                                         if (object.get_montant() == null
                                                                         || object.get_montant().doubleValue() <= 0)
@@ -400,7 +560,8 @@ public class EcritureComptableService {
                                                                                 EcritureComptable ecriture = EcritureComptable
                                                                                                 .builder()
                                                                                                 .id(UUID.randomUUID())
-                                                                                                .organizationId(organization.getId())
+                                                                                                .organizationId(organization
+                                                                                                                .getId())
                                                                                                 .numero_ecriture("ECR-"
                                                                                                                 + UUID.randomUUID()
                                                                                                                                 .toString()
@@ -423,7 +584,8 @@ public class EcritureComptableService {
                                                                                                                 .now())
                                                                                                 .created_by(current_user)
                                                                                                 .updated_by(current_user)
-                                                                                                .attachment_ids(object.get_attachment_ids())
+                                                                                                .attachment_ids(object
+                                                                                                                .get_attachment_ids())
                                                                                                 .build();
 
                                                                                 return ecriture_repository
@@ -463,7 +625,8 @@ public class EcritureComptableService {
         @Transactional
         public Mono<Void> deleteEcriture(UUID id) {
                 return ReactiveOrganizationContext.getOrganizationId()
-                                .flatMap(organization_id -> ecriture_repository.findByOrganization_IdAndId(organization_id, id)
+                                .flatMap(organization_id -> ecriture_repository
+                                                .findByOrganization_IdAndId(organization_id, id)
                                                 .switchIfEmpty(Mono.error(
                                                                 new ResourceNotFoundException("Entry", id.toString())))
                                                 .flatMap(ecriture -> {
@@ -539,7 +702,8 @@ public class EcritureComptableService {
         @Transactional
         public Mono<Void> deactivateEcriture(UUID id) {
                 return ReactiveOrganizationContext.getOrganizationId()
-                                .flatMap(organization_id -> ecriture_repository.findByOrganization_IdAndId(organization_id, id)
+                                .flatMap(organization_id -> ecriture_repository
+                                                .findByOrganization_IdAndId(organization_id, id)
                                                 .switchIfEmpty(Mono.error(
                                                                 new ResourceNotFoundException("Entry", id.toString())))
                                                 .flatMap(ecriture -> {
@@ -584,7 +748,8 @@ public class EcritureComptableService {
                                                         .details(savedAudit.getDetails())
                                                         .build();
 
-                                        return kafka_message_service.sendAuditLog(auditDto, organization.getId(), action);
+                                        return kafka_message_service.sendAuditLog(auditDto, organization.getId(),
+                                                        action);
                                 });
         }
 

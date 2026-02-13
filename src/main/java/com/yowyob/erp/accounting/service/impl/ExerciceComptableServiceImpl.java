@@ -43,19 +43,18 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
                                         log.error("Organization ID NOT RESOLVED in createExercice");
                                         return Mono.empty();
                                 }))
-                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser()
+                                                .defaultIfEmpty("system")
                                                 .doOnNext(u -> log.info("User resolved: {}", u))
                                                 .flatMap(user -> {
                                                         log.info("Creating new fiscal year '{}' for organization {}",
                                                                         exercice_dto.getCode(), organization_id);
 
                                                         return validateDates(exercice_dto)
-                                                                        .doOnSuccess(v -> log
-                                                                                        .info("Date validation passed"))
-                                                                        .doOnError(e -> log.error(
-                                                                                        "Date validation failed: {}",
-                                                                                        e.getMessage()))
-                                                                        .then(checkOverlap(exercice_dto, organization_id,
+                                                                        .then(checkNoOtherOpenExercice(organization_id,
+                                                                                        null))
+                                                                        .then(checkOverlap(exercice_dto,
+                                                                                        organization_id,
                                                                                         null))
                                                                         .doOnSuccess(v -> log
                                                                                         .info("Overlap check passed"))
@@ -132,9 +131,11 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
         @Transactional
         public Mono<ExerciceComptableDto> updateExercice(UUID id, ExerciceComptableDto exercice_dto) {
                 return ReactiveOrganizationContext.getOrganizationId()
-                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser()
+                                                .defaultIfEmpty("system")
                                                 .flatMap(user -> exercice_repository.findById(id)
-                                                                .filter(e -> organization_id.equals(e.getOrganizationId()))
+                                                                .filter(e -> organization_id
+                                                                                .equals(e.getOrganizationId()))
                                                                 .switchIfEmpty(
                                                                                 Mono.error(new ResourceNotFoundException(
                                                                                                 "ExerciceComptable",
@@ -147,8 +148,12 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
                                                                         }
 
                                                                         return validateDates(exercice_dto)
+                                                                                        .then(checkNoOtherOpenExercice(
+                                                                                                        organization_id,
+                                                                                                        id))
                                                                                         .then(checkOverlap(exercice_dto,
-                                                                                                        organization_id, id))
+                                                                                                        organization_id,
+                                                                                                        id))
                                                                                         .then(Mono.defer(() -> {
                                                                                                 exercice.setCode(
                                                                                                                 exercice_dto.getCode());
@@ -181,9 +186,11 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
                                         log.error("Service: Organization ID is EMPTY in Reactive Context!");
                                         return Mono.error(new BusinessException("Organization ID missing in context"));
                                 }))
-                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser()
+                                                .defaultIfEmpty("system")
                                                 .flatMap(user -> exercice_repository.findById(id)
-                                                                .filter(e -> organization_id.equals(e.getOrganizationId()))
+                                                                .filter(e -> organization_id
+                                                                                .equals(e.getOrganizationId()))
                                                                 .switchIfEmpty(
                                                                                 Mono.error(new ResourceNotFoundException(
                                                                                                 "ExerciceComptable",
@@ -191,18 +198,37 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
                                                                 .flatMap(exercice -> {
                                                                         log.info("Closing fiscal year: {} / Organization: {}",
                                                                                         id, organization_id);
-                                                                        log.info("Before update - Cloture: {}",
-                                                                                        exercice.getCloture());
 
-                                                                        exercice.setCloture(true);
-                                                                        exercice.setUpdated_at(LocalDateTime.now());
-                                                                        exercice.setUpdated_by(user);
-                                                                        exercice.setNotNew();
+                                                                        return periode_repository
+                                                                                        .countOpenByExerciceId(id)
+                                                                                        .flatMap(count -> {
+                                                                                                if (count > 0) {
+                                                                                                        return Mono.error(
+                                                                                                                        new BusinessException(
+                                                                                                                                        "Cannot close fiscal year: there are "
+                                                                                                                                                        + count
+                                                                                                                                                        + " open periods."));
+                                                                                                }
+                                                                                                return Mono.empty();
+                                                                                        })
+                                                                                        .then(cloture_annuelle_service
+                                                                                                        .executerCloture(
+                                                                                                                        id))
+                                                                                        .then(Mono.defer(() -> {
+                                                                                                log.info("Before update - Cloture: {}",
+                                                                                                                exercice.getCloture());
 
-                                                                        return cloture_annuelle_service
-                                                                                        .executerCloture(id)
-                                                                                        .then(exercice_repository
-                                                                                                        .save(exercice))
+                                                                                                exercice.setCloture(
+                                                                                                                true);
+                                                                                                exercice.setUpdated_at(
+                                                                                                                LocalDateTime.now());
+                                                                                                exercice.setUpdated_by(
+                                                                                                                user);
+                                                                                                exercice.setNotNew();
+
+                                                                                                return exercice_repository
+                                                                                                                .save(exercice);
+                                                                                        }))
                                                                                         .doOnSuccess(saved -> log.info(
                                                                                                         "After save - Cloture: {}",
                                                                                                         saved.getCloture()))
@@ -300,6 +326,15 @@ public class ExerciceComptableServiceImpl implements ExerciceComptableService {
                                 .flatMap(e -> Mono.error(new BusinessException(
                                                 "The fiscal year dates overlap with an existing fiscal year: "
                                                                 + e.getCode())))
+                                .then(Mono.empty());
+        }
+
+        private Mono<Void> checkNoOtherOpenExercice(UUID organization_id, UUID exclude_id) {
+                return exercice_repository.findOpenByOrganizationId(organization_id)
+                                .filter(e -> exclude_id == null || !e.getId().equals(exclude_id))
+                                .next()
+                                .flatMap(e -> Mono.error(new BusinessException(
+                                                "Another fiscal year is already open: " + e.getCode())))
                                 .then(Mono.empty());
         }
 

@@ -41,6 +41,17 @@ public class EcritureComptableController {
                                                 .captureFromThreadLocal());
         }
 
+        @PutMapping("/{id}")
+        @Operation(summary = "Update an existing accounting entry")
+        public Mono<ResponseEntity<ApiResponseWrapper<EcritureComptableDto>>> updateEcriture(
+                        @PathVariable UUID id, @Valid @RequestBody EcritureComptableDto dto) {
+                return ecriture_service.updateEcriture(id, dto)
+                                .map(updated -> ResponseEntity.ok(ApiResponseWrapper.success(updated,
+                                                "Entry updated successfully")))
+                                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext
+                                                .captureFromThreadLocal());
+        }
+
         @PostMapping("/{id}/validate")
         @Operation(summary = "Validate an accounting entry")
         public Mono<ResponseEntity<ApiResponseWrapper<EcritureComptableDto>>> validateEcriture(@PathVariable UUID id,

@@ -21,7 +21,8 @@ public interface EcritureComptableRepository extends R2dbcRepository<EcritureCom
       Flux<EcritureComptable> findByOrganization_Id(@Param("organization_id") UUID organization_id);
 
       @Query("SELECT * FROM ecritures_comptables WHERE organization_id = :organization_id AND id = :id")
-      Mono<EcritureComptable> findByOrganization_IdAndId(@Param("organization_id") UUID organization_id, @Param("id") UUID id);
+      Mono<EcritureComptable> findByOrganization_IdAndId(@Param("organization_id") UUID organization_id,
+                  @Param("id") UUID id);
 
       @Query("SELECT * FROM ecritures_comptables WHERE organization_id = :organization_id AND validee = false")
       Flux<EcritureComptable> findByOrganization_IdAndValideeFalse(@Param("organization_id") UUID organization_id);
@@ -55,4 +56,12 @@ public interface EcritureComptableRepository extends R2dbcRepository<EcritureCom
                   @Param("organization_id") UUID organization_id,
                   @Param("start_date") LocalDate start_date,
                   @Param("end_date") LocalDate end_date);
+
+      @Query("SELECT COUNT(*) FROM ecritures_comptables " +
+                  "WHERE organization_id = :organization_id " +
+                  "AND periode_id = :periode_id " +
+                  "AND validee = false")
+      Mono<Long> countNonValidatedByPeriod(
+                  @Param("organization_id") UUID organization_id,
+                  @Param("periode_id") UUID periode_id);
 }

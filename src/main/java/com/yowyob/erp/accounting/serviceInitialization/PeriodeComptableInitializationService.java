@@ -1,6 +1,7 @@
 package com.yowyob.erp.accounting.serviceInitialization;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import lombok.extern.slf4j.Slf4j;
@@ -9,7 +10,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
-import com.yowyob.erp.accounting.dto.PeriodeComptableDto;
 import com.yowyob.erp.accounting.service.PeriodeComptableService;
 import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import reactor.core.publisher.Flux;
@@ -26,13 +26,16 @@ import reactor.core.publisher.Mono;
 public class PeriodeComptableInitializationService implements CommandLineRunner {
 
     private final PeriodeComptableService periode_service;
+    private final com.yowyob.erp.accounting.repository.PeriodeComptableRepository periode_repository;
     private final com.yowyob.erp.accounting.repository.ExerciceComptableRepository exercice_repository;
     private final UUID organization_id;
 
     public PeriodeComptableInitializationService(PeriodeComptableService periode_service,
+            com.yowyob.erp.accounting.repository.PeriodeComptableRepository periode_repository,
             com.yowyob.erp.accounting.repository.ExerciceComptableRepository exercice_repository,
             @Value("${app.organization.default-organization:4e177ff2-89b8-4d24-926a-5763dfa1b19a}") String organization_id_str) {
         this.periode_service = periode_service;
+        this.periode_repository = periode_repository;
         this.exercice_repository = exercice_repository;
         this.organization_id = UUID.fromString(organization_id_str);
     }
@@ -48,15 +51,22 @@ public class PeriodeComptableInitializationService implements CommandLineRunner 
                                 LocalDate start_date = LocalDate.of(2026, month, 1);
                                 LocalDate end_date = start_date.withDayOfMonth(start_date.lengthOfMonth());
 
-                                PeriodeComptableDto dto = PeriodeComptableDto.builder()
-                                        .exercice_id(exercice_id)
+                                com.yowyob.erp.accounting.entity.PeriodeComptable entity = com.yowyob.erp.accounting.entity.PeriodeComptable
+                                        .builder()
+                                        .id(UUID.randomUUID())
+                                        .organizationId(organization_id)
+                                        .exerciceId(exercice_id)
                                         .code(code)
                                         .date_debut(start_date)
                                         .date_fin(end_date)
                                         .cloturee(false)
+                                        .created_at(LocalDateTime.now())
+                                        .updated_at(LocalDateTime.now())
+                                        .created_by("system")
+                                        .updated_by("system")
                                         .build();
 
-                                return periode_service.createPeriode(dto)
+                                return periode_repository.save(entity)
                                         .onErrorResume(e -> {
                                             log.warn("Error creating period {}: {}", code, e.getMessage());
                                             return Mono.empty();

@@ -18,8 +18,13 @@ public interface ExerciceComptableRepository extends R2dbcRepository<ExerciceCom
     Flux<ExerciceComptable> findByOrganizationId(@Param("organizationId") UUID organizationId);
 
     @Query("SELECT * FROM exercices_comptables WHERE organization_id = :organizationId AND code = :code")
-    Mono<ExerciceComptable> findByOrganizationIdAndCode(@Param("organizationId") UUID organizationId, @Param("code") String code);
+    Mono<ExerciceComptable> findByOrganizationIdAndCode(@Param("organizationId") UUID organizationId,
+            @Param("code") String code);
 
     @Query("SELECT * FROM exercices_comptables WHERE organization_id = :organizationId AND :date BETWEEN date_debut AND date_fin")
-    Mono<ExerciceComptable> findActiveForDate(@Param("organizationId") UUID organizationId, @Param("date") LocalDate date);
+    Mono<ExerciceComptable> findActiveForDate(@Param("organizationId") UUID organizationId,
+            @Param("date") LocalDate date);
+
+    @Query("SELECT * FROM exercices_comptables WHERE organization_id = :organizationId AND cloture = false")
+    Flux<ExerciceComptable> findOpenByOrganizationId(@Param("organizationId") UUID organizationId);
 }

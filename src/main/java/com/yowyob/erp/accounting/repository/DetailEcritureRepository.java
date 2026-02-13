@@ -35,7 +35,8 @@ public interface DetailEcritureRepository extends R2dbcRepository<DetailEcriture
                         @Param("end_date") LocalDateTime end_date);
 
         @Query("SELECT COALESCE(SUM(montant_debit - montant_credit), 0) FROM details_ecritures WHERE organization_id = :organization_id AND compte_id = :compte_id")
-        Mono<Double> calculateAccountBalance(@Param("organization_id") UUID organization_id, @Param("compte_id") UUID compte_id);
+        Mono<Double> calculateAccountBalance(@Param("organization_id") UUID organization_id,
+                        @Param("compte_id") UUID compte_id);
 
         @Query("SELECT * FROM details_ecritures de " +
                         "WHERE de.organization_id = :organization_id " +
@@ -83,5 +84,8 @@ public interface DetailEcritureRepository extends R2dbcRepository<DetailEcriture
                         @Param("account_numbers") java.util.Collection<String> account_numbers,
                         @Param("start_date") LocalDateTime start_date,
                         @Param("end_date") LocalDateTime end_date);
+
+        @Query("DELETE FROM details_ecritures WHERE ecriture_id = :ecriture_id")
+        Mono<Void> deleteByEcriture_id(@Param("ecriture_id") UUID ecriture_id);
 
 }
