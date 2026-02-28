@@ -20,7 +20,7 @@ import java.util.UUID;
  * Reactive Service to initialize basic accounting journals (OHADA).
  */
 @Service
-@Order(1)
+@Order(2)
 @Slf4j
 @DependsOn("liquibase")
 public class JournalComptableInitializationService implements CommandLineRunner {

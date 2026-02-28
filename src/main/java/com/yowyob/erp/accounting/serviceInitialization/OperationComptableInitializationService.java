@@ -25,7 +25,7 @@ import java.util.UUID;
  * Reactive Service to initialize basic accounting operations.
  */
 @Service
-@Order(2)
+@Order(5)
 @Slf4j
 public class OperationComptableInitializationService implements CommandLineRunner {
 

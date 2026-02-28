@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -34,50 +35,61 @@ public class BrouillardComptableService {
     private final ObjectMapper objectMapper;
     private final EcritureComptableService ecritureService;
 
-    // Services methods for processing specific objects will be injected or handled via callbacks/functions
-    // due to circular dependencies potential, we might need a better strategy or use lazy injection
-    // For now, validation logic will need to know how to process the JSON back to an accounting entry.
-    
-    // We can use a registry or strategy pattern here. 
-    // Or simply, pass the processing function during validation? No, validation is async API call.
-    // We likely need references to specific services (InvoiceAccountingService etc) but avoiding cycles.
-    // Let's defer strict typing of validation for a moment and focus on the structure.
+    // Services methods for processing specific objects will be injected or handled
+    // via callbacks/functions
+    // due to circular dependencies potential, we might need a better strategy or
+    // use lazy injection
+    // For now, validation logic will need to know how to process the JSON back to
+    // an accounting entry.
 
+    // We can use a registry or strategy pattern here.
+    // Or simply, pass the processing function during validation? No, validation is
+    // async API call.
+    // We likely need references to specific services (InvoiceAccountingService etc)
+    // but avoiding cycles.
+    // Let's defer strict typing of validation for a moment and focus on the
+    // structure.
 
     /**
      * Process an accounting object (Invoice, Stock Movement, etc.).
-     * Decides whether to create a draft or a direct accounting entry based on settings.
+     * Decides whether to create a draft or a direct accounting entry based on
+     * settings.
      *
      * @param info DTO containing Info for decision (type, amount, journal, etc.)
-     * @param dto The full object DTO
-     * @return Mono<BrouillardComptable> if draft is created, or Mono.empty() if direct entry (handled by caller)
+     * @param dto  The full object DTO
+     * @return Mono<BrouillardComptable> if draft is created, or Mono.empty() if
+     *         direct entry (handled by caller)
      * 
-     * Refactored: simpler approach.
-     * We return a Mono<Object> which is either the created EcritureComptableDto (if auto) or BrouillardComptableDto (if draft).
-     * But mixing return types is messy.
+     *         Refactored: simpler approach.
+     *         We return a Mono<Object> which is either the created
+     *         EcritureComptableDto (if auto) or BrouillardComptableDto (if draft).
+     *         But mixing return types is messy.
      * 
-     * Better: 
-     * Methods in specific services call this service.
-     * "shouldCreateDraft(type, amount...)" -> if true, they call "createDraft(dto...)"
-     * if false, they proceed with their normal logic.
+     *         Better:
+     *         Methods in specific services call this service.
+     *         "shouldCreateDraft(type, amount...)" -> if true, they call
+     *         "createDraft(dto...)"
+     *         if false, they proceed with their normal logic.
      * 
-     * OR: "processAndGetResult" which returns a wrapper.
+     *         OR: "processAndGetResult" which returns a wrapper.
      */
 
-    public Mono<Boolean> shouldCreateDraft(UUID organizationId, BrouillardType type, BigDecimal amount, UUID journalId) {
+    public Mono<Boolean> shouldCreateDraft(UUID organizationId, BrouillardType type, BigDecimal amount,
+            UUID journalId) {
         return settingService.shouldUseBrouillard(organizationId, type, amount, journalId);
     }
-    
-    public Mono<BrouillardComptable> createDraft(UUID organizationId, BrouillardType type, Object sourceDto, 
-                                                 String sourceId, String sourceType, 
-                                                 String numeroPiece, LocalDate datePiece, String libelle,
-                                                 BigDecimal montantTotal, String devise,
-                                                 UUID journalId, UUID periodeId, String user,
-                                                 JsonNode attachmentIds) {
-        
+
+    public Mono<BrouillardComptable> createDraft(UUID organizationId, BrouillardType type, Object sourceDto,
+            String sourceId, String sourceType,
+            String numeroPiece, LocalDate datePiece, String libelle,
+            BigDecimal montantTotal, String devise,
+            UUID journalId, UUID periodeId, String user,
+            JsonNode attachmentIds) {
+
         JsonNode jsonNode = objectMapper.valueToTree(sourceDto);
 
         BrouillardComptable draft = BrouillardComptable.builder()
+                .id(UUID.randomUUID())
                 .organizationId(organizationId)
                 .type(type)
                 .statut(BrouillardStatut.BROUILLON)
@@ -99,17 +111,23 @@ public class BrouillardComptableService {
                 .build();
 
         return repository.save(draft)
-                .flatMap(savedDraft -> notificationService.notifyNewBrouillard(savedDraft).thenReturn(savedDraft));
+                .doOnNext(savedDraft -> notificationService.notifyNewBrouillard(savedDraft)
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .subscribe(
+                                null,
+                                e -> log.error("Error sending async notification for draft {}: {}", savedDraft.getId(),
+                                        e.getMessage())));
     }
 
     public Flux<BrouillardComptable> getAllBrouillards(UUID organizationId, Pageable pageable) {
         return repository.findAllByOrganizationId(organizationId, pageable);
     }
-    
-    public Flux<BrouillardComptable> getBrouillardsByStatut(UUID organizationId, BrouillardStatut statut, Pageable pageable) {
+
+    public Flux<BrouillardComptable> getBrouillardsByStatut(UUID organizationId, BrouillardStatut statut,
+            Pageable pageable) {
         return repository.findAllByOrganizationIdAndStatut(organizationId, statut, pageable);
     }
-    
+
     public Flux<BrouillardComptable> getBrouillardsByType(UUID organizationId, BrouillardType type, Pageable pageable) {
         return repository.findAllByOrganizationIdAndType(organizationId, type, pageable);
     }
@@ -121,8 +139,10 @@ public class BrouillardComptableService {
     @Transactional
     public Mono<BrouillardComptable> rejectBrouillard(UUID id, String user, BrouillardRejectionRequest request) {
         return repository.findById(id)
-                .filter(b -> b.getStatut() == BrouillardStatut.BROUILLON || b.getStatut() == BrouillardStatut.EN_ATTENTE_VALIDATION)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Brouillard not found or not in correct status")))
+                .filter(b -> b.getStatut() == BrouillardStatut.BROUILLON
+                        || b.getStatut() == BrouillardStatut.EN_ATTENTE_VALIDATION)
+                .switchIfEmpty(
+                        Mono.error(new IllegalArgumentException("Brouillard not found or not in correct status")))
                 .flatMap(b -> {
                     b.setStatut(BrouillardStatut.REJETE);
                     b.setRejectedBy(user);
@@ -140,15 +160,17 @@ public class BrouillardComptableService {
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Cannot delete validated or waiting draft")))
                 .flatMap(repository::delete);
     }
-    
+
     // Validation needs to inject logic to create actual accounting entries
-    // We will handle this by returning the stored DTO and Type, letting the controller delegate to the right service?
-    // Or we provide a callback mechanism. 
-    // Let's implement a generic validate method that takes a function to generate the entry.
-    
+    // We will handle this by returning the stored DTO and Type, letting the
+    // controller delegate to the right service?
+    // Or we provide a callback mechanism.
+    // Let's implement a generic validate method that takes a function to generate
+    // the entry.
+
     @Transactional
-    public Mono<BrouillardComptable> validateBrouillard(UUID id, String user, BrouillardValidationRequest request, 
-                                                        Function<JsonNode, Mono<EcritureComptableDto>> entryGenerator) {
+    public Mono<BrouillardComptable> validateBrouillard(UUID id, String user, BrouillardValidationRequest request,
+            Function<JsonNode, Mono<EcritureComptableDto>> entryGenerator) {
         return repository.findById(id)
                 .filter(b -> b.getStatut() != BrouillardStatut.VALIDE)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Draft not found or already validated")))
@@ -159,7 +181,7 @@ public class BrouillardComptableService {
                                 if (ecritureDto.getAttachment_ids() == null) {
                                     ecritureDto.setAttachment_ids(b.getAttachmentIds());
                                 }
-                                
+
                                 // Also allow adding/updating notes from validation request
                                 if (request.getNotes() != null) {
                                     ecritureDto.setNotes(request.getNotes());

@@ -17,7 +17,7 @@ import java.util.UUID;
  * Reactive Service to initialize default Fiscal Years (Exercice Comptable).
  */
 @Service
-@Order(1)
+@Order(3)
 @Slf4j
 public class ExerciceComptableInitializationService implements CommandLineRunner {
 
@@ -33,10 +33,12 @@ public class ExerciceComptableInitializationService implements CommandLineRunner
 
     @Override
     public void run(String... args) {
-        createExerciceIfNotExists("2026", "Exercice 2026",
-                LocalDate.of(2026, 1, 4), LocalDate.of(2026, 12, 31))
-                .doOnSuccess(v -> log.info("✅ Initialization of fiscal year complete"))
-                .doOnError(e -> log.error("❌ Error initializing fiscal year", e))
+        int currentYear = LocalDate.now().getYear();
+        String yearStr = String.valueOf(currentYear);
+        createExerciceIfNotExists(yearStr, "Exercice " + yearStr,
+                LocalDate.of(currentYear, 1, 1), LocalDate.of(currentYear, 12, 31))
+                .doOnSuccess(v -> log.info("✅ Initialization of fiscal year {} complete", yearStr))
+                .doOnError(e -> log.error("❌ Error initializing fiscal year {}", yearStr, e))
                 .block();
     }
 

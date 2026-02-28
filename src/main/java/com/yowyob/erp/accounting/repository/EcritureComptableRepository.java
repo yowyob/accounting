@@ -64,4 +64,7 @@ public interface EcritureComptableRepository extends R2dbcRepository<EcritureCom
       Mono<Long> countNonValidatedByPeriod(
                   @Param("organization_id") UUID organization_id,
                   @Param("periode_id") UUID periode_id);
+
+      @Query("DELETE FROM ecritures_comptables WHERE organization_id = :organization_id")
+      Mono<Void> deleteAllByOrganizationId(@Param("organization_id") UUID organization_id);
 }

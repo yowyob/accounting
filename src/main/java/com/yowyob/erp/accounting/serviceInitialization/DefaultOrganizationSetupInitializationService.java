@@ -24,7 +24,7 @@ import java.util.UUID;
  * Reactive Service to complete the setup for the default organization.
  */
 @Service
-@Order(3)
+@Order(6)
 @Slf4j
 @RequiredArgsConstructor
 public class DefaultOrganizationSetupInitializationService implements CommandLineRunner {

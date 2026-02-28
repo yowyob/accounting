@@ -58,7 +58,7 @@ public class RapportController {
          */
         @Operation(summary = "Generate Balance Sheet")
         @GetMapping("/bilan")
-        public Mono<ResponseEntity<ApiResponseWrapper<Map<String, Object>>>> generateBilan(
+        public Mono<ResponseEntity<ApiResponseWrapper<com.yowyob.erp.accounting.dto.report.BilanDto>>> generateBilan(
                         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date_debut,
                         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date_fin) {
 
@@ -69,7 +69,8 @@ public class RapportController {
 
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMap(organization_id -> rapport_service
-                                                .generateBilan(organization_id, date_debut.toString(), date_fin.toString()))
+                                                .generateBilan(organization_id, date_debut.toString(),
+                                                                date_fin.toString()))
                                 .map(bilan -> {
                                         log.info("📊 Balance sheet generated between {} and {}", date_debut, date_fin);
                                         return ResponseEntity.ok(ApiResponseWrapper.success(bilan,
@@ -83,7 +84,7 @@ public class RapportController {
          */
         @Operation(summary = "Generate Income Statement")
         @GetMapping("/compte-resultat")
-        public Mono<ResponseEntity<ApiResponseWrapper<Map<String, Object>>>> generateCompteResultat(
+        public Mono<ResponseEntity<ApiResponseWrapper<com.yowyob.erp.accounting.dto.report.CompteResultatDto>>> generateCompteResultat(
                         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date_debut,
                         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date_fin) {
 
@@ -101,6 +102,57 @@ public class RapportController {
                                         return ResponseEntity
                                                         .ok(ApiResponseWrapper.success(resultat,
                                                                         "Income statement generated successfully"));
+                                })
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
+        }
+
+        /**
+         * Generates cash flow in JSON format.
+         */
+        @Operation(summary = "Generate Cash Flow")
+        @GetMapping("/flux-tresorerie")
+        public Mono<ResponseEntity<ApiResponseWrapper<com.yowyob.erp.accounting.dto.report.CashFlowDto>>> generateCashFlow(
+                        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date_debut,
+                        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date_fin) {
+
+                if (date_debut.isAfter(date_fin)) {
+                        return Mono.just(ResponseEntity.badRequest()
+                                        .body(ApiResponseWrapper.error("Start date must precede end date")));
+                }
+
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> rapport_service.generateCashFlow(organization_id,
+                                                date_debut.toString(), date_fin.toString()))
+                                .map(cashFlow -> {
+                                        log.info("💸 Cash flow generated between {} and {}", date_debut, date_fin);
+                                        return ResponseEntity.ok(ApiResponseWrapper.success(cashFlow,
+                                                        "Cash flow generated successfully"));
+                                })
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
+        }
+
+        /**
+         * Generates executive summary in JSON format.
+         */
+        @Operation(summary = "Generate Executive Summary")
+        @GetMapping("/resume-executif")
+        public Mono<ResponseEntity<ApiResponseWrapper<com.yowyob.erp.accounting.dto.report.ExecutiveSummaryDto>>> generateExecutiveSummary(
+                        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date_debut,
+                        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date_fin) {
+
+                if (date_debut.isAfter(date_fin)) {
+                        return Mono.just(ResponseEntity.badRequest()
+                                        .body(ApiResponseWrapper.error("Start date must precede end date")));
+                }
+
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> rapport_service.generateExecutiveSummary(organization_id,
+                                                date_debut.toString(), date_fin.toString()))
+                                .map(summary -> {
+                                        log.info("📊 Executive summary generated between {} and {}", date_debut,
+                                                        date_fin);
+                                        return ResponseEntity.ok(ApiResponseWrapper.success(summary,
+                                                        "Executive summary generated successfully"));
                                 })
                                 .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
@@ -160,7 +212,8 @@ public class RapportController {
 
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .flatMap(organization_id -> rapport_service
-                                                .generateBilan(organization_id, date_debut.toString(), date_fin.toString()))
+                                                .generateBilan(organization_id, date_debut.toString(),
+                                                                date_fin.toString()))
                                 .flatMap(bilan -> Mono.fromCallable(() -> {
                                         ByteArrayOutputStream out = new ByteArrayOutputStream();
                                         Document document = new Document(PageSize.A4);
@@ -182,11 +235,18 @@ public class RapportController {
                                         table.addCell(new PdfPCell(new Phrase("Section", section_font)));
                                         table.addCell(new PdfPCell(new Phrase("Amount (FCFA)", section_font)));
 
+                                        java.math.BigDecimal totalActifPdf = bilan.getActifs().stream().map(
+                                                        com.yowyob.erp.accounting.dto.report.ReportItemDto::getSolde)
+                                                        .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+                                        java.math.BigDecimal totalPassifPdf = bilan.getPassifs().stream().map(
+                                                        com.yowyob.erp.accounting.dto.report.ReportItemDto::getSolde)
+                                                        .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+
                                         table.addCell("Total Assets");
-                                        table.addCell(String.valueOf(bilan.getOrDefault("totalActif", 0)));
+                                        table.addCell(String.valueOf(totalActifPdf));
 
                                         table.addCell("Total Liabilities");
-                                        table.addCell(String.valueOf(bilan.getOrDefault("totalPassif", 0)));
+                                        table.addCell(String.valueOf(totalPassifPdf));
 
                                         document.add(table);
                                         document.close();
@@ -240,14 +300,21 @@ public class RapportController {
                                         table.addCell(new PdfPCell(new Phrase("Section", section_font)));
                                         table.addCell(new PdfPCell(new Phrase("Amount (FCFA)", section_font)));
 
+                                        java.math.BigDecimal totalProduitsPdf = compte_resultat.getProduits().stream()
+                                                        .map(com.yowyob.erp.accounting.dto.report.ReportItemDto::getSolde)
+                                                        .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+                                        java.math.BigDecimal totalChargesPdf = compte_resultat.getCharges().stream()
+                                                        .map(com.yowyob.erp.accounting.dto.report.ReportItemDto::getSolde)
+                                                        .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+
                                         table.addCell("Total Products");
-                                        table.addCell(String.valueOf(compte_resultat.getOrDefault("totalProduits", 0)));
+                                        table.addCell(String.valueOf(totalProduitsPdf));
 
                                         table.addCell("Total Expenses");
-                                        table.addCell(String.valueOf(compte_resultat.getOrDefault("totalCharges", 0)));
+                                        table.addCell(String.valueOf(totalChargesPdf));
 
                                         table.addCell("Net Result");
-                                        table.addCell(String.valueOf(compte_resultat.getOrDefault("resultatNet", 0)));
+                                        table.addCell(String.valueOf(totalProduitsPdf.subtract(totalChargesPdf)));
 
                                         document.add(table);
                                         document.close();

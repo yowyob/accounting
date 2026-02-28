@@ -13,7 +13,6 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.UUID;
 
-
 /**
  * Service for interacting with external authentication API
  */
@@ -88,6 +87,7 @@ public class AuthService {
                 .retrieve()
                 .bodyToFlux(OrganizationMember.class)
                 .timeout(Duration.ofMillis(timeout))
-                .doOnError(error -> log.error("Error retrieving members for organization {}", organizationId, error));
+                .doOnError(error -> log.error("Error retrieving members for organization {}", organizationId, error))
+                .onErrorResume(e -> Flux.empty());
     }
 }

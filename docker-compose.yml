@@ -137,25 +137,6 @@ services:
     restart: unless-stopped
 
   # ==========================
-  # Kafka UI
-  # ==========================
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: kafka-ui
-    ports:
-      - "8080:8080"
-    environment:
-      KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
-    networks:
-      - yowyob-network
-    depends_on:
-      kafka:
-        condition: service_healthy
-    restart: unless-stopped
-
-  # ==========================
   # Yowyob ERP Backend (Spring Boot)
   # ==========================
   yowyob-erp-backend:
@@ -208,9 +189,9 @@ volumes:
   zookeeper-data:
   zookeeper-log:
 
-# ==========================
-# Network
-# ==========================
+    # ==========================
+    # Network
+    # ==========================
 networks:
   yowyob-network:
     driver: bridge

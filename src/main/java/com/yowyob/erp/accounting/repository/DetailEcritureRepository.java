@@ -88,4 +88,7 @@ public interface DetailEcritureRepository extends R2dbcRepository<DetailEcriture
         @Query("DELETE FROM details_ecritures WHERE ecriture_id = :ecriture_id")
         Mono<Void> deleteByEcriture_id(@Param("ecriture_id") UUID ecriture_id);
 
+        @Query("DELETE FROM details_ecritures WHERE organization_id = :organization_id")
+        Mono<Void> deleteAllByOrganizationId(@Param("organization_id") UUID organization_id);
+
 }

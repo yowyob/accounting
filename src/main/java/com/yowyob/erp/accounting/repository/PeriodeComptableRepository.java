@@ -45,4 +45,7 @@ public interface PeriodeComptableRepository extends R2dbcRepository<PeriodeCompt
 
        @Query("SELECT COUNT(*) FROM periodes_comptables WHERE exercice_id = :exercice_id AND cloturee = false")
        Mono<Long> countOpenByExerciceId(@Param("exercice_id") UUID exercice_id);
+
+       @Query("DELETE FROM periodes_comptables WHERE organization_id = :organization_id")
+       Mono<Void> deleteAllByOrganizationId(@Param("organization_id") UUID organization_id);
 }

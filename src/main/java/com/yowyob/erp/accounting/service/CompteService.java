@@ -49,7 +49,8 @@ public class CompteService {
         public Mono<CompteDto> createCompte(CompteDto dto) {
                 return ReactiveOrganizationContext.getOrganizationId()
                                 .switchIfEmpty(Mono.error(new IllegalStateException("Organization ID is required")))
-                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentOrganizationAsOrganization()
+                                .flatMap(organization_id -> ReactiveOrganizationContext
+                                                .getCurrentOrganizationAsOrganization()
                                                 .flatMap(organization -> {
                                                         log.info("Creating account for organization {} with number {}",
                                                                         organization_id, dto.getNo_compte());
@@ -65,15 +66,18 @@ public class CompteService {
 
                                                         return compte_repository.save(compte)
                                                                         .flatMap(saved -> redis_template.opsForValue()
-                                                                                        .set(CACHE_PREFIX + organization_id
+                                                                                        .set(CACHE_PREFIX
+                                                                                                        + organization_id
                                                                                                         + ":"
                                                                                                         + saved.getId(),
                                                                                                         saved.getSolde())
-                                                                                        .then(logAudit(organization, "system",
+                                                                                        .then(logAudit(organization,
+                                                                                                        "system",
                                                                                                         "COMPTE_CREATED",
                                                                                                         "Creation of account: "
                                                                                                                         + saved.getNo_compte()))
-                                                                                        .then(invalidateCache(organization_id,
+                                                                                        .then(invalidateCache(
+                                                                                                        organization_id,
                                                                                                         saved.getNo_compte()))
                                                                                         .thenReturn(mapToDto(saved)));
                                                 }));
@@ -202,9 +206,18 @@ public class CompteService {
                                 .flatMap(compte -> {
                                         compte.setLibelle(dto.getLibelle());
                                         compte.setNotes(dto.getNotes());
+                                        compte.setExternal_id(dto.getExternal_id());
+                                        compte.setActif(dto.getActif() != null ? dto.getActif() : compte.getActif());
+                                        compte.setNo_compte(dto.getNo_compte() != null ? dto.getNo_compte()
+                                                        : compte.getNo_compte());
+                                        compte.setClasse(
+                                                        dto.getClasse() != null ? dto.getClasse() : compte.getClasse());
+                                        compte.setType_compte(dto.getType_compte() != null ? dto.getType_compte()
+                                                        : compte.getType_compte());
                                         compte.setUpdated_at(LocalDateTime.now());
                                         compte.setUpdated_by("system");
 
+                                        compte.setNotNew();
                                         return compte_repository.save(compte)
                                                         .flatMap(updated -> redis_template.opsForValue()
                                                                         .set(CACHE_PREFIX + organization_id + ":"
@@ -233,7 +246,8 @@ public class CompteService {
                                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Account", id.toString())))
                                 .flatMap(compte -> compte_repository.delete(compte)
                                                 .then(ReactiveOrganizationContext.getCurrentOrganizationAsOrganization()
-                                                                .flatMap(organization -> logAudit(organization, "system",
+                                                                .flatMap(organization -> logAudit(organization,
+                                                                                "system",
                                                                                 "COMPTE_DELETED",
                                                                                 "Deletion of account: " + compte
                                                                                                 .getNo_compte())))
@@ -271,11 +285,13 @@ public class CompteService {
                                                         compte.setSolde(compte.getSolde().add(delta));
                                                         return compte_repository.save(compte)
                                                                         .flatMap(saved -> redis_template.opsForValue()
-                                                                                        .set(CACHE_PREFIX + organization_id
+                                                                                        .set(CACHE_PREFIX
+                                                                                                        + organization_id
                                                                                                         + ":"
                                                                                                         + saved.getId(),
                                                                                                         saved.getSolde())
-                                                                                        .then(invalidateCache(organization_id,
+                                                                                        .then(invalidateCache(
+                                                                                                        organization_id,
                                                                                                         saved.getNo_compte())));
                                                 }))
                                 .then();
@@ -404,7 +420,8 @@ public class CompteService {
 
         private Mono<String> generateNextAccountNumber(UUID organization_id, String prefix) {
                 return compte_repository
-                                .findTopByOrganization_IdAndNo_compteStartingWithOrderByNo_compteDesc(organization_id, prefix)
+                                .findTopByOrganization_IdAndNo_compteStartingWithOrderByNo_compteDesc(organization_id,
+                                                prefix)
                                 .map(lastAccount -> {
                                         String lastNo = lastAccount.getNo_compte();
                                         if (lastNo.length() > prefix.length()) {
@@ -424,9 +441,11 @@ public class CompteService {
 
         private Mono<Void> invalidateCache(UUID organization_id, String no_compte) {
                 return redis_template.delete(CACHE_ALL_PREFIX + organization_id)
-                                .then(redis_template.delete(CACHE_BY_NO_COMPTE_PREFIX + organization_id + ":" + no_compte))
+                                .then(redis_template
+                                                .delete(CACHE_BY_NO_COMPTE_PREFIX + organization_id + ":" + no_compte))
                                 .then()
-                                .doOnSuccess(v -> log.debug("Cache invalidated for organization {} and account {}", organization_id,
+                                .doOnSuccess(v -> log.debug("Cache invalidated for organization {} and account {}",
+                                                organization_id,
                                                 no_compte));
         }
 
