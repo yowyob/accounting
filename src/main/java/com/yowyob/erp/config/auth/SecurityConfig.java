@@ -47,19 +47,20 @@ public class SecurityConfig {
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
                 .logout(ServerHttpSecurity.LogoutSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/api/auth/**", 
-                                      "/swagger-ui/**", 
-                                      "/swagger-ui.html",
-                                      "/webjars/**", 
-                                      "/v3/api-docs/**", 
-                                      "/actuator/**",
-                                      "/api/public/**", 
-                                      "/api/health",
-                                      "/favicon.ico").permitAll()
+                        .pathMatchers("/api/auth/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/webjars/**",
+                                "/v3/api-docs/**",
+                                "/actuator/**",
+                                "/api/public/**",
+                                "/api/health",
+                                "/favicon.ico")
+                        .permitAll()
                         .pathMatchers("/api/admin/**").hasRole("ADMIN")
                         .pathMatchers("/api/business/**").hasAnyRole("BusinessActor", "SuperAdmin")
                         // TEMP: Allow detailed testing of accounting without token
-                        .pathMatchers("/api/accounting/**").permitAll()
+                        .pathMatchers("/api/accounting/**", "/api/common/attachments/**").permitAll()
                         .pathMatchers("/api/**").authenticated()
                         .anyExchange().permitAll())
                 .addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION)
