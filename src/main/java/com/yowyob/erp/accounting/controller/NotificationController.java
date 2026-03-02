@@ -28,13 +28,20 @@ public class NotificationController {
     @Operation(summary = "Get current user's unread notifications")
     public Mono<ResponseEntity<ApiResponseWrapper<List<Notification>>>> getUnread(
             @AuthenticationPrincipal Jwt jwt) {
-        
+
+        if (jwt == null) {
+            return Mono.just(ResponseEntity.status(401)
+                    .<ApiResponseWrapper<List<Notification>>>build());
+        }
+
         String userId = jwt.getClaimAsString("userId"); // Extract from JWT
-        if (userId == null) userId = jwt.getSubject();
+        if (userId == null)
+            userId = jwt.getSubject();
 
         String finalUserId = userId;
         return ReactiveOrganizationContext.getOrganizationId()
-                .flatMap(organizationId -> notificationService.getUnreadNotifications(organizationId, finalUserId).collectList())
+                .flatMap(organizationId -> notificationService.getUnreadNotifications(organizationId, finalUserId)
+                        .collectList())
                 .map(list -> ResponseEntity.ok(ApiResponseWrapper.success(list)));
     }
 

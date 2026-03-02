@@ -154,12 +154,18 @@ public class BrouillardComptableController {
                             request != null ? request : new BrouillardValidationRequest(),
                             jsonNode -> {
                                 try {
+                                    ObjectMapper lenientMapper = new ObjectMapper()
+                                            .findAndRegisterModules()
+                                            .configure(
+                                                    com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+                                                    false);
+
                                     if (b.getType() == BrouillardType.FACTURE_FOURNISSEUR) {
-                                        SupplierInvoiceDto dto = objectMapper.treeToValue(jsonNode,
+                                        SupplierInvoiceDto dto = lenientMapper.treeToValue(jsonNode,
                                                 SupplierInvoiceDto.class);
                                         return invoiceAccountingService.createDirectSupplierInvoiceEntry(dto);
                                     } else if (b.getType() == BrouillardType.FACTURE_CLIENT) {
-                                        CustomerInvoiceDto dto = objectMapper.treeToValue(jsonNode,
+                                        CustomerInvoiceDto dto = lenientMapper.treeToValue(jsonNode,
                                                 CustomerInvoiceDto.class);
                                         return invoiceAccountingService.createDirectCustomerInvoiceEntry(dto);
                                     }
