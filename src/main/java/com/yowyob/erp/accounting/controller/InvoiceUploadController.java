@@ -12,7 +12,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.codec.multipart.FilePart;
+import reactor.core.publisher.Mono;
 
 /**
  * Controller for handling invoice document uploads and OCR processing.
@@ -40,9 +41,13 @@ public class InvoiceUploadController {
      */
     @Operation(summary = "Upload and analyze an invoice document")
     @PostMapping(value = "/upload", consumes = { "multipart/form-data" })
-    public ResponseEntity<ApiResponseWrapper<FactureComptable>> upload(@RequestPart("file") MultipartFile file) {
-        log.info("📥 Uploading invoice file for analysis: {}", file.getOriginalFilename());
-        FactureComptable facture = facture_service.extractFactureData(file);
-        return ResponseEntity.ok(ApiResponseWrapper.success(facture, "Invoice successfully analyzed"));
+    public Mono<ResponseEntity<ApiResponseWrapper<FactureComptable>>> upload(
+            @RequestPart("file") Mono<FilePart> fileMono) {
+        return fileMono.flatMap(file -> {
+            log.info("📥 Uploading invoice file for analysis: {}", file.filename());
+            return facture_service.extractFactureData(file)
+                    .map(facture -> ResponseEntity
+                            .ok(ApiResponseWrapper.success(facture, "Invoice successfully analyzed")));
+        });
     }
 }

@@ -12,8 +12,12 @@ import com.yowyob.erp.accounting.entity.BrouillardStatut;
 import com.yowyob.erp.accounting.entity.BrouillardType;
 import com.yowyob.erp.accounting.service.BrouillardComptableService;
 import com.yowyob.erp.accounting.service.InvoiceAccountingService;
+import com.yowyob.erp.accounting.service.FactureProcessingService;
+import com.yowyob.erp.accounting.service.AttachmentService;
 import com.yowyob.erp.common.dto.ApiResponseWrapper;
 import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
+import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.http.MediaType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +43,8 @@ public class BrouillardComptableController {
 
     private final BrouillardComptableService brouillardService;
     private final InvoiceAccountingService invoiceAccountingService;
+    private final FactureProcessingService factureProcessingService;
+    private final AttachmentService attachmentService;
     private final ObjectMapper objectMapper;
 
     @GetMapping
@@ -48,7 +54,7 @@ public class BrouillardComptableController {
             @RequestParam(required = false) BrouillardType type,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        
+
         return ReactiveOrganizationContext.getOrganizationId()
                 .flatMapMany(organizationId -> {
                     PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
@@ -74,51 +80,110 @@ public class BrouillardComptableController {
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
+    @PostMapping(value = "/upload", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
+    @Operation(summary = "Upload an invoice/receipt for OCR and create a draft entry")
+    public Mono<ResponseEntity<ApiResponseWrapper<BrouillardComptableDto>>> uploadDraftFromInvoice(
+            @RequestPart("file") Mono<FilePart> fileMono,
+            Authentication authentication) {
+
+        String username = authentication != null ? authentication.getName() : "system";
+
+        return ReactiveOrganizationContext.getOrganizationId()
+                .flatMap(organizationId -> fileMono.flatMap(file ->
+                // 1. Convert to FilePart and save attachment
+                attachmentService.storeFile(file).flatMap(attachmentDto ->
+                // 2. Perform OCR Extraction using the saved file reference (as a hack) or
+                // directly via FilePart
+                factureProcessingService.extractFactureData(file).flatMap(facture -> {
+
+                    // 3. Create JSON array for attachmentIds
+                    var attachmentIdsNode = objectMapper.createArrayNode();
+                    attachmentIdsNode.add(attachmentDto.getId().toString());
+
+                    return brouillardService.createDraft(
+                            organizationId,
+                            facture.is_achat() ? BrouillardType.FACTURE_FOURNISSEUR : BrouillardType.FACTURE_CLIENT,
+                            facture,
+                            UUID.randomUUID().toString(), // SourceID
+                            "OCR_UPLOAD", // SourceType
+                            facture.getId().toString(), // Numéro Pièce par défaut
+                            facture.getDate(), // Date document
+                            facture.getLibelle(), // Libellé
+                            facture.getMontant_ht().add(facture.getMontant_ht().multiply(facture.getTaux_tva())), // Montant
+                                                                                                                  // total
+                                                                                                                  // (TTC)
+                            "XAF", // Devise par défaut
+                            facture.getJournal_comptable_id(), // Journal si détecté
+                            facture.getPeriode_comptable_id(), // Période si détectée
+                            username,
+                            attachmentIdsNode // Attachment ref
+                    ).map(savedDraft -> {
+                        savedDraft.setStatut(BrouillardStatut.EN_ATTENTE_VALIDATION); // Force status
+                        return savedDraft;
+                    }).flatMap(brouillardService::saveBrouillard);
+                }))))
+                .map(this::mapToDto)
+                .map(dto -> ResponseEntity
+                        .ok(ApiResponseWrapper.success(dto, "Facture importée et brouillard créé avec succès.")))
+                .onErrorResume(e -> {
+                    log.error("Failed to upload and create draft from OCR", e);
+                    return Mono.just(ResponseEntity.badRequest()
+                            .body(ApiResponseWrapper.error("Erreur OCR: " + e.getMessage(), null)));
+                });
+    }
+
     @PostMapping("/{id}/validate")
     @Operation(summary = "Validate a draft entry and create accounting entry")
-    //@PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
+    // @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
     public Mono<ResponseEntity<ApiResponseWrapper<BrouillardComptableDto>>> validateBrouillard(
             @PathVariable UUID id,
             @RequestBody(required = false) BrouillardValidationRequest request,
             Authentication authentication) {
-        
-        String username = authentication != null ? authentication.getName() : "system"; // Should retrieve user from context
-        
-        // This logic is tricky because we need to know HOW to process the JSON based on TYPE.
+
+        String username = authentication != null ? authentication.getName() : "system"; // Should retrieve user from
+                                                                                        // context
+
+        // This logic is tricky because we need to know HOW to process the JSON based on
+        // TYPE.
         // And `InvoiceAccountingService` methods currently take DTOs, not JSON.
         // We need to deserialize inside the lambda passed to `validateBrouillard`.
-        
+
         return brouillardService.getBrouillardById(id)
-            .flatMap(b -> {
-                return brouillardService.validateBrouillard(id, username, request != null ? request : new BrouillardValidationRequest(), 
-                    jsonNode -> {
-                       try {
-                           if (b.getType() == BrouillardType.FACTURE_FOURNISSEUR) {
-                               SupplierInvoiceDto dto = objectMapper.treeToValue(jsonNode, SupplierInvoiceDto.class);
-                               return invoiceAccountingService.createDirectSupplierInvoiceEntry(dto);
-                           } else if (b.getType() == BrouillardType.FACTURE_CLIENT) {
-                               CustomerInvoiceDto dto = objectMapper.treeToValue(jsonNode, CustomerInvoiceDto.class);
-                               return invoiceAccountingService.createDirectCustomerInvoiceEntry(dto);
-                           }
-                           return Mono.error(new IllegalArgumentException("Unsupported type for validation: " + b.getType()));
-                       } catch (JsonProcessingException e) {
-                           return Mono.error(new IllegalArgumentException("Invalid JSON data in draft", e));
-                       }
-                    });
-            })
-            .map(this::mapToDto)
-            .map(dto -> ResponseEntity.ok(ApiResponseWrapper.success(dto, "Draft validated successfully")))
-            .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().body(ApiResponseWrapper.error(e.getMessage(), null))));
+                .flatMap(b -> {
+                    return brouillardService.validateBrouillard(id, username,
+                            request != null ? request : new BrouillardValidationRequest(),
+                            jsonNode -> {
+                                try {
+                                    if (b.getType() == BrouillardType.FACTURE_FOURNISSEUR) {
+                                        SupplierInvoiceDto dto = objectMapper.treeToValue(jsonNode,
+                                                SupplierInvoiceDto.class);
+                                        return invoiceAccountingService.createDirectSupplierInvoiceEntry(dto);
+                                    } else if (b.getType() == BrouillardType.FACTURE_CLIENT) {
+                                        CustomerInvoiceDto dto = objectMapper.treeToValue(jsonNode,
+                                                CustomerInvoiceDto.class);
+                                        return invoiceAccountingService.createDirectCustomerInvoiceEntry(dto);
+                                    }
+                                    return Mono.error(new IllegalArgumentException(
+                                            "Unsupported type for validation: " + b.getType()));
+                                } catch (JsonProcessingException e) {
+                                    return Mono.error(new IllegalArgumentException("Invalid JSON data in draft", e));
+                                }
+                            });
+                })
+                .map(this::mapToDto)
+                .map(dto -> ResponseEntity.ok(ApiResponseWrapper.success(dto, "Draft validated successfully")))
+                .onErrorResume(e -> Mono
+                        .just(ResponseEntity.badRequest().body(ApiResponseWrapper.error(e.getMessage(), null))));
     }
 
     @PostMapping("/{id}/reject")
     @Operation(summary = "Reject a draft entry")
-    //@PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
+    // @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
     public Mono<ResponseEntity<ApiResponseWrapper<BrouillardComptableDto>>> rejectBrouillard(
             @PathVariable UUID id,
             @Valid @RequestBody BrouillardRejectionRequest request,
             Authentication authentication) {
-        
+
         String username = authentication != null ? authentication.getName() : "system";
         return brouillardService.rejectBrouillard(id, username, request)
                 .map(this::mapToDto)

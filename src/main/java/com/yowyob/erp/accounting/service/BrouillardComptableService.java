@@ -119,6 +119,10 @@ public class BrouillardComptableService {
                                         e.getMessage())));
     }
 
+    public Mono<BrouillardComptable> saveBrouillard(BrouillardComptable brouillard) {
+        return repository.save(brouillard);
+    }
+
     public Flux<BrouillardComptable> getAllBrouillards(UUID organizationId, Pageable pageable) {
         return repository.findAllByOrganizationId(organizationId, pageable);
     }

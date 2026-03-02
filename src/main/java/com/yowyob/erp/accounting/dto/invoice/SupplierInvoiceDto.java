@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -19,15 +18,15 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SupplierInvoiceDto {
-    private UUID idFacture;
+    private String idFacture;
     private String numeroFacture;
-    private LocalDate dateFacturation;
-    private LocalDate dateEcheance;
+    private LocalDateTime dateFacturation;
+    private LocalDateTime dateEcheance;
     private LocalDateTime dateSysteme;
     private String etat;
     private String type;
-    private UUID idFournisseur;
-    private String nomFournisseru; // Matching user's typo in JSON
+    private String idFournisseur;
+    private String nomFournisseur;
     private String adresseFournisseur;
     private String emailFournisseur;
     private String telephoneFournisseur;
