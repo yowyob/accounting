@@ -34,13 +34,10 @@ services:
           name: yowyob-erp-db
           property: password
 
-      # --- REDIS (Disabled or External) ---
-      # Si vous ajoutez un Redis sur Render, décommentez et remplissez :
-      # - key: SPRING_DATA_REDIS_HOST
-      #   value: red-xxxxxxxx
-      # - key: SPRING_DATA_REDIS_PORT
-      #   value: "6379"
-
+      # --- REDIS (Disabled for free plan) ---
+      - key: SPRING_CACHE_TYPE
+        value: none
+ 
       # --- KAFKA & ELASTIC (Disabled by default for cost/simplicity) ---
       - key: SPRING_KAFKA_ENABLED
         value: "false" 

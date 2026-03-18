@@ -17,11 +17,11 @@ import java.util.UUID;
 @Slf4j
 public class KafkaMessageService {
 
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @org.springframework.beans.factory.annotation.Qualifier("nonTransactionalKafkaTemplate")
+    private KafkaTemplate<String, Object> kafkaTemplate;
 
-    public KafkaMessageService(
-            @org.springframework.beans.factory.annotation.Qualifier("nonTransactionalKafkaTemplate") KafkaTemplate<String, Object> kafkaTemplate) {
-        this.kafkaTemplate = kafkaTemplate;
+    public KafkaMessageService() {
     }
 
     @Value("${app.kafka.topics.accounting-entries}")
@@ -61,6 +61,11 @@ public class KafkaMessageService {
     private String organizationEventsTopic;
 
     public Mono<Void> sendMessage(String topic, String key, Object payload, String eventType, UUID organizationId) {
+        if (kafkaTemplate == null) {
+            log.debug("⏩ Kafka is disabled. Skipping message publication to topic: {}", topic);
+            return Mono.empty();
+        }
+
         return Mono.defer(() -> {
             KafkaMessage message = KafkaMessage.builder()
                     .organizationId(organizationId)
