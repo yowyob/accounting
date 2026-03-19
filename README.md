@@ -1,365 +1,235 @@
-# YOWYOB ERP - Backend
+# YOWYOB ERP — Backend
 
-YOWYOB ERP est un système ERP multi-tenant conforme aux normes OHADA, développé avec Spring Boot. Il prend en charge les opérations CRUD pour les tenants, intègre Apache Kafka pour la gestion des événements, Redis pour le caching, Elasticsearch pour la recherche, et PostgreSQL pour la persistance des données avec Liquibase pour la gestion des migrations. Conçu pour une scalabilité, une isolation robuste des données par tenant, et une conformité comptable OHADA.
+Système ERP multi-tenant conforme aux normes **OHADA**, développé avec **Spring Boot 3** et une stack **réactive** (R2DBC + WebFlux). Déployé sur [Render](https://render.com).
+
+[![Build](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/Delmat237/Yowyob-ERP-Accounting)
+[![Java](https://img.shields.io/badge/Java-21-orange)](https://openjdk.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-green)](https://spring.io/projects/spring-boot)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue)](https://www.postgresql.org/)
+
+---
 
 ## Table des matières
-- [YOWYOB ERP - Backend](#yowyob-erp---backend)
-  - [Table des matières](#table-des-matières)
-  - [Fonctionnalités](#fonctionnalités)
-  - [Architecture](#architecture)
-  - [Prérequis](#prérequis)
-  - [Installation](#installation)
-  - [Technologies](#technologies)
-  - [Configuration](#configuration)
-  - [Exécution de l'application](#exécution-de-lapplication)
-  - [Documentation API](#documentation-api)
-  - [Tests](#tests)
-    - [Tests unitaires et d'intégration](#tests-unitaires-et-dintégration)
-    - [Dépendances de test](#dépendances-de-test)
-  - [Notifications en temps réel](#notifications-en-temps-réel)
-  - [Contribuer](#contribuer)
-  - [Licence](#licence)
+
+- [Fonctionnalités](#fonctionnalités)
+- [Architecture](#architecture)
+- [Technologies](#technologies)
+- [Prérequis](#prérequis)
+- [Installation locale](#installation-locale)
+- [Variables d'environnement](#variables-denvironnement)
+- [Déploiement sur Render](#déploiement-sur-render)
+- [Documentation API](#documentation-api)
+- [Contribuer](#contribuer)
+
+---
 
 ## Fonctionnalités
-- **Multi-tenant** : Isolation des données par tenant avec `TenantContext` et `TenantInterceptor`, support pour plus de 100 tenants simultanés.
-- **Comptabilité OHADA** : Gestion des transactions comptables à double entrée avec un plan comptable standardisé, support polymorphe pour transactions, factures, et mouvements de stock.
-- **Entités Complètes** : 11 entités principales (`Tenant`, `PlanComptable`, `JournalComptable`, `OperationComptable`, `Contrepartie`, `DeclarationFiscale`, `DetailEcriture`, `EcritureComptable`, `JournalAudit`, `PeriodeComptable`, `Transaction`) et extensions pour `FactureComptable` et `MouvementStockComptable`.
-- **Gestion des utilisateurs** : Authentification JWT avec rôles (`ADMIN`, `ACCOUNTANT`, `USER`, `AUDITOR`).
-- **Cache** : Redis pour les sessions utilisateur, tokens JWT, soldes de comptes, et caches spécifiques (ex. `ecrituresAll`).
-- **Événements asynchrones** : Kafka pour les événements (`accounting.entries`, `invoice.events`, `notifications`, `audit.logs`, `stock.movements`).
-- **Recherche avancée** : Elasticsearch pour l'indexation des écritures comptables, factures, et mouvements de stock avec recherche full-text.
-- **API REST** : Plus de 30 endpoints avec validation JSR-303, pagination, et documentation Swagger.
-- **Audit et traçabilité** : Journalisation complète des actions avec `JournalAudit`, incluant l'origine des écritures (transaction, facture, stock).
-- **Performance** : Optimisation avec PostgreSQL pour une persistance fiable et Redis pour le caching.
+
+- **Multi-tenant** : Isolation des données par organisation via header `X-Organization-ID`.
+- **Comptabilité OHADA** : Plan comptable, journaux, écritures à double entrée, lettrage, clôture mensuelle/annuelle.
+- **Réactif** : Stack non-bloquant avec Spring WebFlux + R2DBC (PostgreSQL).
+- **Authentification JWT** : Validation via API externe avec rôles (`ADMIN`, `ACCOUNTANT`, `USER`, `AUDITOR`).
+- **Kafka** *(optionnel)* : Événements asynchrones pour les modules comptabilité, trésorerie, stock, tiers.
+- **Elasticsearch** *(optionnel)* : Indexation des écritures comptables pour la recherche full-text.
+- **Redis** *(optionnel)* : Cache pour les sessions, soldes de comptes, et tokens JWT.
+- **Rapports** : Balance des comptes, grand livre, compte de résultat, bilan, tableau de flux de trésorerie.
+- **Audit** : Journal complet des actions utilisateurs.
+- **Swagger** : Documentation interactive de l'API.
+
+---
 
 ## Architecture
-Le backend suit une architecture multi-tenant optimisée pour la scalabilité :
-- **Framework** : Spring Boot 3.x avec Java 21 (mise à jour récente).
-- **Persistance** : PostgreSQL avec Spring Data JPA pour une gestion robuste des entités.
-- **Migration** : Liquibase pour la gestion des versions de schéma de base de données.
-- **Authentification** : JWT via une API externe avec validation des tokens et caching Redis.
-- **Événements** : Apache Kafka pour la communication asynchrone (ex. : création d'écritures comptables, mise à jour de stock).
-- **Cache** : Redis 7.x pour des accès rapides aux données fréquentes.
-- **Recherche** : Elasticsearch 8.x pour des recherches full-text performantes.
-- **API** : Endpoints REST documentés avec Swagger/OpenAPI.
-- **Audit** : Interface `Auditable` pour standardiser les champs d’audit (`tenant_id`, `created_at`, `updated_at`, `created_by`, `updated_by`).
+
+```
+Spring WebFlux (Reactive HTTP)
+        │
+        ├── Controllers (REST)
+        ├── Services (Business Logic)
+        ├── Repositories (R2DBC — Reactive PostgreSQL)
+        └── Kafka Listeners (Conditional — spring.kafka.enabled)
+
+Liquibase ──► PostgreSQL (migrations via JDBC blocking pool)
+Redis      ──► Cache (désactivé sur free plan Render)
+Kafka      ──► Événements asynchrones (désactivé par défaut)
+Elasticsearch ► Recherche (désactivé par défaut)
+```
 
 Structure du projet :
 ```
 src/main/java/com/yowyob/erp
-├── accounting
-│   ├── controller
-│   │   ├── EcritureComptableController.java
-│   │   ├── FactureComptableController.java
-│   │   ├── MouvementStockController.java
-│   │   ├── OperationComptableController.java
-│   │   ├── PlanComptableController.java
-│   ├── dto
-│   │   ├── BalanceDto.java
-│   │   ├── ContrepartieDto.java
-│   │   ├── DeclarationFiscaleDto.java
-│   │   ├── DetailEcritureDto.java
-│   │   ├── EcritureComptableDto.java
-│   │   ├── FactureComptableDto.java
-│   │   ├── GrandLivreDto.java
-│   │   ├── JournalComptableDto.java
-│   │   ├── MouvementStockDto.java
-│   │   ├── OperationComptableDto.java
-│   │   ├── PeriodeComptableDto.java
-│   │   ├── PlanComptableDto.java
-│   │   ├── TransactionDto.java
-│   ├── entity
-│   │   ├── Contrepartie.java
-│   │   ├── DeclarationFiscale.java
-│   │   ├── DetailEcriture.java
-│   │   ├── EcritureComptable.java
-│   │   ├── FactureComptable.java
-│   │   ├── JournalAudit.java
-│   │   ├── JournalComptable.java
-│   │   ├── MouvementStock.java
-│   │   ├── OperationComptable.java
-│   │   ├── PeriodeComptable.java
-│   │   ├── PlanComptable.java
-│   │   ├── Tenant.java
-│   │   ├── Transaction.java
-│   ├── listener
-│   │   ├── AccountingKafkaListener.java
-│   │   ├── StockKafkaListener.java
-│   ├── repository
-│   │   ├── ContrepartieRepository.java
-│   │   ├── DeclarationFiscaleRepository.java
-│   │   ├── DetailEcritureRepository.java
-│   │   ├── EcritureComptableRepository.java
-│   │   ├── FactureComptableRepository.java
-│   │   ├── JournalAuditRepository.java
-│   │   ├── JournalComptableRepository.java
-│   │   ├── MouvementStockRepository.java
-│   │   ├── OperationComptableRepository.java
-│   │   ├── PeriodeComptableRepository.java
-│   │   ├── PlanComptableRepository.java
-│   │   ├── TransactionRepository.java
-│   ├── service
-│   │   ├── EcritureComptableService.java
-│   │   ├── FactureComptableService.java
-│   │   ├── MouvementStockService.java
-│   │   ├── PlanComptableService.java
-│   │   ├── SynchronizationService.java
-├── common
-│   ├── constants
-│   │   ├── AppConstants.java
-│   ├── controller
-│   │   ├── DebugController.java
-│   │   ├── HealthController.java
-│   ├── dto
-│   │   ├── ApiResponse.java
-│   │   ├── KafkaMessage.java
-│   │   ├── SearchResult.java
-│   ├── entity
-│   │   ├── Auditable.java
-│   ├── exception
-│   │   ├── BusinessException.java
-│   │   ├── GlobalExceptionHandler.java
-│   │   ├── ResourceNotFoundException.java
-│   │   ├── TenantException.java
-│   ├── repository
-│   │   ├── BaseRepository.java
-│   ├── service
-│   │   ├── ValidationService.java
-│   ├── util
-│   │   ├── ValidationUtils.java
-├── config
-│   ├── async
-│   │   ├── AsyncConfig.java
-│   ├── auth
-│   │   ├── AuthService.java
-│   │   ├── AuthValidationResponse.java
-│   │   ├── JwtAuthenticationFilter.java
-│   │   ├── SecurityConfig.java
-│   │   ├── UserInfo.java
-│   │   ├── WebClientConfig.java
-│   ├── elasticsearch
-│   │   ├── ElasticsearchConfig.java
-│   │   ├── ElasticsearchService.java
-│   │   ├── NoElasticsearchConfig.java
-│   ├── jpa
-│   │   ├── JpaConfig.java
-│   ├── kafka
-│   │   ├── KafkaConfig.java
-│   │   ├── KafkaMessageService.java
-│   ├── profile
-│   │   ├── NoKafkaConfiguration.java
-│   ├── redis
-│   │   ├── RedisConfig.java
-│   │   ├── RedisService.java
-│   ├── swagger
-│   │   ├── OpenApiConfig.java
-│   ├── tenant
-│   │   ├── TenantContext.java
-│   │   ├── TenantInterceptor.java
-│   │   ├── TenantWebConfig.java
-├── SwaggerConfig.java
-├── YowyobErpBackendApplication.java
+├── accounting/
+│   ├── controller/   → Endpoints REST par domaine
+│   ├── dto/          → Data Transfer Objects
+│   ├── entity/       → Entités R2DBC
+│   ├── listener/     → Consommateurs Kafka (conditionnels)
+│   ├── repository/   → Interfaces R2DBC
+│   └── service/      → Logique métier
+├── common/
+│   ├── controller/   → HealthController, DebugController
+│   ├── dto/          → ApiResponse, KafkaMessage
+│   └── exception/    → GlobalExceptionHandler
+└── config/
+    ├── auth/         → JWT + SecurityConfig (WebFlux)
+    ├── elasticsearch/ → Config conditionnelle
+    ├── kafka/        → KafkaMessageService + Config conditionnelle
+    └── redis/        → RedisService + Config
 ```
 
-## Prérequis
-- **Java** : JDK 21 ou supérieur
-- **Maven** : 3.9.x ou supérieur
-- **PostgreSQL** : 15.x ou supérieur
-- **Liquibase** : Pour les migrations
-- **Redis** : 7.x ou supérieur
-- **Kafka** : Confluent Platform 7.5.x ou supérieur
-- **Elasticsearch** : 8.x ou supérieur
-- **Docker** : Pour exécuter les services d’infrastructure et les tests avec Testcontainers
-
-## Installation
-
-1. **Cloner le dépôt** :
-   ```bash
-   git clone https://github.com/Delmat237/yowyob-erp-accounting-backend.git
-   cd yowyob-erp-accounting-backend
-   ```
-
-2. **Installer les dépendances** :
-   ```bash
-   mvn clean install
-   ```
-
-3. **Configurer la base de données** :
-   - Lancer PostgreSQL via Docker :
-     ```bash
-     docker run -d --name postgres-yowyob -e POSTGRES_DB=yowyob_erp -e POSTGRES_USER=yowyob_admin -e POSTGRES_PASSWORD=yowyob_secret -p 5433:5432 postgres:15
-     ```
-   - Les migrations Liquibase s'exécutent automatiquement au démarrage de l'application.
-
-4. **Configurer Kafka, Redis, et Elasticsearch** :
-   - Lancer les services via Docker Compose :
-     ```bash
-     docker-compose -f docker-compose.yml up -d
-     ```
+---
 
 ## Technologies
-- **Framework** : Spring Boot 3.x
-- **Base de données** : PostgreSQL (Spring Data JPA)
-- **Messaging** : Apache Kafka (confluentinc/cp-kafka:7.5.0)
-- **Caching** : Redis 7.x
-- **Recherche** : Elasticsearch 8.x
-- **Sécurité** : JWT via une API externe
-- **Documentation** : Swagger (springdoc-openapi)
-- **Validation** : JSR-303 (Jakarta Validation)
-- **Tests** : JUnit 5, Testcontainers
 
-## Configuration
-Mettre à jour le fichier `src/main/resources/application.properties` avec les paramètres de votre environnement :
+| Composant | Technologie |
+|-----------|------------|
+| Framework | Spring Boot 3.x + WebFlux |
+| Runtime | Java 21 |
+| Base de données | PostgreSQL 15 (R2DBC réactif) |
+| Migrations | Liquibase (JDBC) |
+| Cache | Redis 7.x *(optionnel)* |
+| Messaging | Apache Kafka *(optionnel)* |
+| Recherche | Elasticsearch 8.x *(optionnel)* |
+| Sécurité | JWT (API externe) |
+| Documentation | Swagger / springdoc-openapi |
+| Conteneurisation | Docker |
 
-```properties
-# PostgreSQL
-spring.datasource.url=jdbc:postgresql://localhost:5433/yowyob_erp
-spring.datasource.username=yowyob_admin
-spring.datasource.password=yowyob_secret
-spring.datasource.driver-class-name=org.postgresql.Driver
+---
 
-# Liquibase
-spring.liquibase.change-log=classpath:db/changelog/changelog-master.xml
-spring.kafka.bootstrap-servers=localhost:9092
-spring.kafka.consumer.group-id=yowyob-erp-group
-spring.kafka.producer.key-serializer=org.apache.kafka.common.serialization.StringSerializer
-spring.kafka.producer.value-serializer=org.springframework.kafka.support.serializer.JsonSerializer
-spring.kafka.consumer.key-deserializer=org.apache.kafka.common.serialization.StringDeserializer
-spring.kafka.consumer.value-deserializer=org.springframework.kafka.support.serializer.JsonDeserializer
-spring.kafka.consumer.properties.spring.json.trusted.packages=com.yowyob.erp
-spring.kafka.topic.accounting.entries=yowyob.accounting.entries
-spring.kafka.topic.stock.movements=yowyob.stock.movements
+## Prérequis
 
-# Redis
-spring.redis.host=localhost
-spring.redis.port=6379
-spring.redis.password=secret
-spring.cache.redis.time-to-live=600000
-spring.cache.redis.cache-null-values=false
+- **Java** : JDK 21+
+- **Maven** : 3.9.x+
+- **PostgreSQL** : 15.x+ (ou via Docker)
+- **Docker** *(recommandé)* : pour exécuter l'infrastructure localement
 
-# Elasticsearch
-spring.elasticsearch.uris=http://localhost:9200
+---
 
-# JWT
-yowyob.auth.jwt.validation-url=http://auth-service/validate
-yowyob.auth.jwt.cache-ttl=3600
+## Installation locale
 
-# Swagger
-springdoc.api-docs.path=/api-docs
-springdoc.swagger-ui.path=/swagger-ui
-springdoc.swagger-ui.operations-sorter=alpha
-springdoc.swagger-ui.tags-sorter=alpha
-springdoc.info.title=YOWYOB ERP Backend API
-springdoc.info.description=API pour la gestion multi-tenant des opérations comptables OHADA
-springdoc.info.version=1.1.0
+### 1. Cloner le dépôt
+
+```bash
+git clone https://github.com/Delmat237/Yowyob-ERP-Accounting.git
+cd Yowyob-ERP-Accounting/BACKEND
 ```
 
-## Exécution de l'application
-1. **Lancer l'infrastructure** :
-   ```bash
-   docker-compose up -d
-   ```
+### 2. Lancer PostgreSQL via Docker
 
-2. **Lancer l'application** :
-   ```bash
-   mvn spring-boot:run
-   ```
+```bash
+docker run -d \
+  --name postgres-yowyob \
+  -e POSTGRES_DB=yowyob_erp \
+  -e POSTGRES_USER=yowyob_admin \
+  -e POSTGRES_PASSWORD=yowyob_secret \
+  -p 5433:5432 \
+  postgres:15
+```
 
-3. **Accéder aux interfaces** :
-   - API : `http://localhost:8081`
-   - Swagger : `http://localhost:8081/swagger-ui`
-   - Kafka UI : `http://localhost:8080`
-   - PostgreSQL : `docker exec -it postgres-yowyob psql -U yowyob_admin -d yowyob_erp`
+### 3. Compiler et lancer
+
+```bash
+mvn clean compile
+mvn spring-boot:run
+```
+
+Les migrations Liquibase s'exécutent automatiquement au démarrage.
+
+### 4. Accéder à l'application
+
+| Service | URL |
+|---------|-----|
+| API REST | http://localhost:8081 |
+| Swagger UI | http://localhost:8081/swagger-ui |
+| Health check | http://localhost:8081/actuator/health |
+
+---
+
+## Variables d'environnement
+
+Le projet utilise des variables d'environnement pour toute la configuration sensible.
+
+### Base de données (obligatoire)
+
+| Variable | Description | Exemple |
+|----------|-------------|---------|
+| `DB_HOST` | Hôte PostgreSQL | `localhost` |
+| `DB_PORT` | Port PostgreSQL | `5433` |
+| `DB_NAME` | Nom de la base | `yowyob_erp` |
+| `POSTGRES_USER` | Utilisateur PostgreSQL | `yowyob_admin` |
+| `POSTGRES_PASSWORD` | Mot de passe PostgreSQL | `yowyob_secret` |
+
+### Sécurité (obligatoire)
+
+| Variable | Description |
+|----------|-------------|
+| `JWT_SECRET` | Clé secrète pour la validation des tokens JWT |
+| `AUTH_API_URL` | URL de l'API d'authentification externe |
+
+### Services optionnels (désactivés par défaut sur Render)
+
+| Variable | Description | Défaut |
+|----------|-------------|--------|
+| `SPRING_KAFKA_ENABLED` | Active/désactive Kafka | `false` |
+| `SPRING_ELASTICSEARCH_ENABLED` | Active/désactive Elasticsearch | `false` |
+| `SPRING_CACHE_TYPE` | Type de cache (`redis` ou `none`) | `none` |
+| `REDIS_URL` | URL Redis | `redis://localhost:6379` |
+| `KAFKA_BOOTSTRAP` | Serveurs Kafka | `localhost:9092` |
+
+---
+
+## Déploiement sur Render
+
+Le projet inclut un fichier `render.yaml` à la racine du `BACKEND/` pour un déploiement automatique.
+
+### Déployer via Blueprint (recommandé)
+
+1. Pousser le code sur GitHub
+2. Sur [Render Dashboard](https://dashboard.render.com) → **New** → **Blueprint**
+3. Connecter le dépôt — Render détecte automatiquement `render.yaml`
+4. Ajouter les variables secrètes manuellement :
+   - `JWT_SECRET`
+   - `AUTH_API_URL` *(si différent de la valeur par défaut)*
+
+### Déployer manuellement
+
+```bash
+git push origin SQL_VERSION
+```
+Render redéploie automatiquement à chaque push.
+
+> **Note :** Sur le plan gratuit Render, Kafka, Redis et Elasticsearch sont désactivés (`SPRING_KAFKA_ENABLED=false`, `SPRING_CACHE_TYPE=none`). La base PostgreSQL est provisionnée automatiquement par Render.
+
+---
 
 ## Documentation API
-- Accéder à l'interface Swagger à `http://localhost:8081/swagger-ui` pour une documentation détaillée.
-- Endpoints principaux :
-  - `/api/comptable/plan` : Gestion du plan comptable.
-  - `/api/comptable/journal` : Gestion des journaux comptables.
-  - `/api/comptable/operation` : Paramétrage des opérations comptables.
-  - `/api/comptable/ecriture` : Gestion des écritures comptables (transactions, factures, stocks).
-  - `/api/comptable/facture` : Gestion des factures comptables.
-  - `/api/comptable/stock` : Gestion des mouvements de stock.
-  - `/api/comptable/declaration` : Gestion des déclarations fiscales.
-  - `/api/comptable/transaction` : Enregistrement des transactions.
 
-## Tests
+Swagger UI disponible à : `http://localhost:8081/swagger-ui` (local) ou sur l'URL Render de ton service.
 
-### Tests unitaires et d'intégration
-- Le projet utilise JUnit 5 et Testcontainers pour tester avec PostgreSQL, Kafka, Redis, et Elasticsearch.
-- Exécuter les tests :
-  ```bash
-  mvn test
-  ```
-- Classes de test principales :
-  - `PlanComptableServiceTest` : Teste la création et la récupération des comptes.
-  - `EcritureComptableServiceTest` : Teste la validation des écritures comptables (transactions, factures, stocks).
-  - `FactureComptableServiceTest` : Teste la génération d'écritures à partir de factures.
-  - `MouvementStockServiceTest` : Teste les impacts comptables des mouvements de stock.
-  - `DeclarationFiscaleServiceTest` : Teste la gestion des déclarations fiscales.
+Principaux modules d'API :
 
-### Dépendances de test
-Assurez-vous que les dépendances suivantes sont dans votre `pom.xml` :
+| Module | Préfixe |
+|--------|---------|
+| Plan comptable | `/api/accounting/plan-comptable` |
+| Journaux comptables | `/api/accounting/journaux` |
+| Écritures comptables | `/api/accounting/ecritures` |
+| Périodes comptables | `/api/accounting/periodes` |
+| Exercices fiscaux | `/api/accounting/exercices` |
+| Rapports financiers | `/api/accounting/rapports` |
+| Déclarations fiscales | `/api/accounting/declarations` |
+| Lettrage | `/api/accounting/lettrage` |
+| Journal d'audit | `/api/accounting/audit` |
 
-```xml
-<dependencies>
-    <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>testcontainers</artifactId>
-        <version>1.19.3</version>
-        <scope>test</scope>
-    </dependency>
-    <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>postgresql</artifactId>
-        <version>1.19.3</version>
-        <scope>test</scope>
-    </dependency>
-    <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>kafka</artifactId>
-        <version>1.19.3</version>
-        <scope>test</scope>
-    </dependency>
-    <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>elasticsearch</artifactId>
-        <version>1.19.3</version>
-        <scope>test</scope>
-    </dependency>
-    <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>junit-jupiter</artifactId>
-        <version>1.19.3</version>
-        <scope>test</scope>
-    </dependency>
-</dependencies>
-```
-
-## Notifications en temps réel
-- Les événements Kafka (ex. : `yowyob.accounting.entries`, `yowyob.audit.logs`, `yowyob.stock.movements`) sont relayés via WebSocket pour les mises à jour en temps réel.
-- Exemple de connexion client :
-  ```javascript
-  import SockJS from 'sockjs-client';
-  import Stomp from 'stompjs';
-
-  const socket = new SockJS('http://localhost:8081/ws');
-  const stompClient = Stomp.over(socket);
-  stompClient.connect({}, () => {
-      stompClient.subscribe('/topic/notifications', (message) => {
-          console.log('Notification:', message.body);
-      });
-  });
-  ```
+---
 
 ## Contribuer
-1. Forker le dépôt.
-2. Créer une branche pour votre fonctionnalité (`git checkout -b feature/votre-fonctionnalite`).
-3. Commiter vos changements (`git commit -m "Ajout de votre fonctionnalité"`).
-4. Pousser la branche (`git push origin feature/votre-fonctionnalite`).
-5. Ouvrir une pull request avec une description claire des changements.
 
-Respectez les [directives de style de code](https://google.github.io/styleguide/javaguide.html) et assurez-vous que les tests passent avant de soumettre.
+1. Forker le dépôt.
+2. Créer une branche : `git checkout -b feature/ma-fonctionnalite`
+3. Commiter : `git commit -m "feat: description"`
+4. Pousser : `git push origin feature/ma-fonctionnalite`
+5. Ouvrir une Pull Request.
+
+---
 
 ## Licence
+
 Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
