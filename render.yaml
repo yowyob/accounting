@@ -10,9 +10,8 @@ services:
       - key: SPRING_LIQUIBASE_CHANGE_LOG
         value: classpath:db/changelog/db.changelog-master.xml
       
-      # --- POSTGRESQL (Auto-provisioned) ---
-      - key: SPRING_DATASOURCE_URL
-        value: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+      # --- POSTGRESQL (Auto-provisioned by Render) ---
+      # application.properties builds R2DBC and JDBC URLs from these components
       - key: DB_HOST
         fromDatabase:
           name: yowyob-erp-db
@@ -25,6 +24,14 @@ services:
         fromDatabase:
           name: yowyob-erp-db
           property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: yowyob-erp-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: yowyob-erp-db
+          property: password
       - key: SPRING_DATASOURCE_USERNAME
         fromDatabase:
           name: yowyob-erp-db
