@@ -35,7 +35,7 @@ public class OpenApiConfig {
                                                                 .url("https://yowyob.com/license")))
                                 .addSecurityItem(new SecurityRequirement()
                                                 .addList("Bearer Authentication")
-                                                .addList("X-Organization-ID"))
+                                                .addList("X-Tenant-ID"))
                                 .components(new Components()
                                                 .addSecuritySchemes("Bearer Authentication",
                                                                 new SecurityScheme()
@@ -43,11 +43,11 @@ public class OpenApiConfig {
                                                                                 .scheme("bearer")
                                                                                 .bearerFormat("JWT")
                                                                                 .description("JWT Token for authentication"))
-                                                .addSecuritySchemes("X-Organization-ID",
+                                                .addSecuritySchemes("X-Tenant-ID",
                                                                 new SecurityScheme()
                                                                                 .type(Type.APIKEY)
                                                                                 .in(SecurityScheme.In.HEADER)
-                                                                                .name("X-Organization-ID")
-                                                                                .description("Organization ID for multi-tenancy (UUID format)")));
+                                                                                .name("X-Tenant-ID")
+                                                                                .description("Tenant/Organization ID for multi-tenancy (UUID format)")));
         }
 }

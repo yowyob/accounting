@@ -83,7 +83,7 @@ public class AuthService {
         return webClient
                 .get()
                 .uri(authApiUrl + "/employees")
-                .header("X-Organization-ID", organizationId.toString())
+                .header("X-Tenant-ID", organizationId.toString())
                 .retrieve()
                 .bodyToFlux(OrganizationMember.class)
                 .timeout(Duration.ofMillis(timeout))

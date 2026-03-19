@@ -34,6 +34,7 @@ public class BrouillardComptableService {
     private final BrouillardNotificationService notificationService;
     private final ObjectMapper objectMapper;
     private final EcritureComptableService ecritureService;
+    private final com.yowyob.erp.config.kafka.KafkaMessageService kafkaMessageService;
 
     // Services methods for processing specific objects will be injected or handled
     // via callbacks/functions
@@ -154,7 +155,18 @@ public class BrouillardComptableService {
                     b.setRejectionReason(request.getReason());
                     b.setUpdatedAt(LocalDateTime.now());
                     b.setNotNew();
-                    return repository.save(b);
+                    return repository.save(b).flatMap(saved -> {
+                        com.yowyob.erp.accounting.dto.BrouillardFeedbackEvent event = com.yowyob.erp.accounting.dto.BrouillardFeedbackEvent.builder()
+                            .brouillardId(saved.getId())
+                            .sourceId(saved.getSourceId())
+                            .sourceType(saved.getSourceType())
+                            .statut("REJETE")
+                            .motifRejet(saved.getRejectionReason())
+                            .build();
+                        return kafkaMessageService.sendAccountingEvent(event, saved.getOrganizationId(), "BROUILLARD_REJECTED")
+                                .then(notificationService.notifyBrouillardRejected(saved))
+                                .thenReturn(saved);
+                    });
                 });
     }
 
@@ -198,7 +210,17 @@ public class BrouillardComptableService {
                                 b.setValidatedAt(LocalDateTime.now());
                                 b.setUpdatedAt(LocalDateTime.now());
                                 b.setNotNew();
-                                return repository.save(b);
+                                return repository.save(b).flatMap(saved -> {
+                                    com.yowyob.erp.accounting.dto.BrouillardFeedbackEvent event = com.yowyob.erp.accounting.dto.BrouillardFeedbackEvent.builder()
+                                        .brouillardId(saved.getId())
+                                        .sourceId(saved.getSourceId())
+                                        .sourceType(saved.getSourceType())
+                                        .statut("VALIDE")
+                                        .ecritureId(saved.getEcritureId())
+                                        .build();
+                                    return kafkaMessageService.sendAccountingEvent(event, saved.getOrganizationId(), "BROUILLARD_VALIDATED")
+                                            .thenReturn(saved);
+                                });
                             });
                 });
     }

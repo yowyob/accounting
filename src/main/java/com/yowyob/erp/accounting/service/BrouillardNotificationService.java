@@ -68,4 +68,26 @@ public class BrouillardNotificationService {
                     return Mono.when(notificationTasks);
                 });
     }
+
+    public Mono<Void> notifyBrouillardRejected(BrouillardComptable brouillard) {
+        log.info("Notifying about rejected draft: {}", brouillard.getId());
+
+        String title = "Brouillard rejeté : " + brouillard.getNumeroPiece();
+        String message = String.format("Le brouillard (%s) a été rejeté. Motif : %s",
+                brouillard.getLibelle(), brouillard.getRejectionReason());
+
+        // Notify the user who created it, if available
+        if (brouillard.getCreatedBy() != null && !brouillard.getCreatedBy().isEmpty()) {
+            return inAppService.createNotification(
+                    brouillard.getOrganizationId(),
+                    brouillard.getCreatedBy(),
+                    title,
+                    message,
+                    "ERROR",
+                    brouillard.getId().toString()
+            ).then();
+        }
+
+        return Mono.empty();
+    }
 }

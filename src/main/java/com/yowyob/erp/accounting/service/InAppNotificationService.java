@@ -17,6 +17,7 @@ import java.util.UUID;
 public class InAppNotificationService {
 
     private final NotificationRepository repository;
+    private final SseNotificationBroker sseBroker;
 
     public Mono<Notification> createNotification(UUID organizationId, String userId, String title, String message, String type, String referenceId) {
         Notification notification = Notification.builder()
@@ -32,7 +33,11 @@ public class InAppNotificationService {
                 .build();
 
         return repository.save(notification)
-                .doOnSuccess(n -> log.info("In-App Notification created for user {}: {}", userId, title));
+                .doOnSuccess(n -> {
+                    log.info("In-App Notification created for user {}: {}", userId, title);
+                    // Push real-time SSE event to all connected clients of this tenant
+                    sseBroker.emit(organizationId, n);
+                });
     }
 
     public Flux<Notification> getUnreadNotifications(UUID organizationId, String userId) {
