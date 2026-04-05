@@ -178,8 +178,10 @@ public class BrouillardComptableController {
                 })
                 .map(this::mapToDto)
                 .map(dto -> ResponseEntity.ok(ApiResponseWrapper.success(dto, "Draft validated successfully")))
-                .onErrorResume(e -> Mono
-                        .just(ResponseEntity.badRequest().body(ApiResponseWrapper.error(e.getMessage(), null))));
+                .onErrorResume(e -> {
+                    log.error("Failed to validate brouillard: {}", e.getMessage(), e);
+                    return Mono.just(ResponseEntity.badRequest().body(ApiResponseWrapper.error(e.getMessage(), null)));
+                });
     }
 
     @PostMapping("/{id}/reject")
