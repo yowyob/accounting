@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <changeSet id="018-create-regularisations" author="yowyob-system">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="regularisations_comptables"/></not>
+        </preConditions>
+        <comment>
+            Régularisations de fin de période OHADA :
+            CCA (476) — Charges Constatées d'Avance
+            PCA (477) — Produits Constatés d'Avance
+            CAP (408/428/448) — Charges À Payer
+            PAR (418/438) — Produits À Recevoir
+            Chaque enregistrement porte l'écriture initiale et, après extourne,
+            l'écriture d'extourne générée automatiquement en début de période suivante.
+        </comment>
+
+        <createTable tableName="regularisations_comptables">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_regularisations" nullable="false"/>
+            </column>
+            <column name="organization_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type_regularisation" type="VARCHAR(3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="statut" type="VARCHAR(20)" defaultValue="ACTIVE">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Période d'origine -->
+            <column name="periode_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_reg_periode"
+                    referencedTableName="periodes_comptables" referencedColumnNames="id"/>
+            </column>
+            <column name="date_regularisation" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Comptes impliqués -->
+            <column name="compte_charge_produit_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_reg_compte_cp"
+                    referencedTableName="comptes" referencedColumnNames="id"/>
+            </column>
+            <column name="compte_regularisation_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_reg_compte_reg"
+                    referencedTableName="comptes" referencedColumnNames="id"/>
+            </column>
+
+            <!-- Montant et description -->
+            <column name="montant" type="NUMERIC(18,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libelle" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="notes" type="TEXT"/>
+
+            <!-- Écriture initiale générée -->
+            <column name="ecriture_initiale_id" type="UUID">
+                <constraints foreignKeyName="fk_reg_ecriture_init"
+                    referencedTableName="ecritures_comptables" referencedColumnNames="id"/>
+            </column>
+
+            <!-- Extourne : date et écriture générée -->
+            <column name="date_extourne" type="DATE"/>
+            <column name="ecriture_extourne_id" type="UUID">
+                <constraints foreignKeyName="fk_reg_ecriture_ext"
+                    referencedTableName="ecritures_comptables" referencedColumnNames="id"/>
+            </column>
+            <column name="extournee_par" type="VARCHAR(255)"/>
+            <column name="date_extourne_effective" type="TIMESTAMP WITHOUT TIME ZONE"/>
+
+            <!-- Audit -->
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(255)"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+        </createTable>
+
+        <createIndex tableName="regularisations_comptables" indexName="idx_reg_organization">
+            <column name="organization_id"/>
+        </createIndex>
+        <createIndex tableName="regularisations_comptables" indexName="idx_reg_periode">
+            <column name="periode_id"/>
+        </createIndex>
+        <createIndex tableName="regularisations_comptables" indexName="idx_reg_statut">
+            <column name="statut"/>
+        </createIndex>
+        <createIndex tableName="regularisations_comptables" indexName="idx_reg_type">
+            <column name="type_regularisation"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

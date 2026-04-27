@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <changeSet id="019-create-budgets" author="yowyob-system">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="budgets"/></not>
+        </preConditions>
+
+        <createTable tableName="budgets">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_budgets" nullable="false"/>
+            </column>
+            <column name="organization_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="exercice_id" type="UUID">
+                <constraints nullable="false"
+                    foreignKeyName="fk_budget_exercice"
+                    referencedTableName="exercices_comptables" referencedColumnNames="id"/>
+            </column>
+            <column name="periode_id" type="UUID">
+                <constraints foreignKeyName="fk_budget_periode"
+                    referencedTableName="periodes_comptables" referencedColumnNames="id"/>
+            </column>
+            <column name="compte_id" type="UUID">
+                <constraints nullable="false"
+                    foreignKeyName="fk_budget_compte"
+                    referencedTableName="comptes" referencedColumnNames="id"/>
+            </column>
+            <column name="montant_budget" type="NUMERIC(18,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libelle" type="VARCHAR(255)"/>
+            <column name="notes" type="TEXT"/>
+            <column name="type" type="VARCHAR(20)" defaultValue="PREVISIONNEL">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(255)"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+        </createTable>
+
+        <createIndex tableName="budgets" indexName="idx_budget_org">
+            <column name="organization_id"/>
+        </createIndex>
+        <createIndex tableName="budgets" indexName="idx_budget_exercice">
+            <column name="exercice_id"/>
+        </createIndex>
+        <createIndex tableName="budgets" indexName="idx_budget_periode">
+            <column name="periode_id"/>
+        </createIndex>
+        <createIndex tableName="budgets" indexName="idx_budget_compte">
+            <column name="compte_id"/>
+        </createIndex>
+
+        <!-- Colonnes supplémentaires sur immobilisations pour amortissement dégressif/UP -->
+        <addColumn tableName="immobilisations">
+            <column name="coefficient_degressif" type="NUMERIC(8,4)"/>
+        </addColumn>
+        <addColumn tableName="immobilisations">
+            <column name="capacite_totale_production" type="NUMERIC(18,2)"/>
+        </addColumn>
+
+    </changeSet>
+
+</databaseChangeLog>

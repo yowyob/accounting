@@ -507,4 +507,75 @@ public class RapportController {
                                                                 e.getMessage())))
                                 .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
+
+        /**
+         * Balance âgée : créances clients (41x) et dettes fournisseurs (40x)
+         * regroupées par tranches d'ancienneté (0-30j, 31-60j, 61-90j, >90j).
+         */
+        @Operation(summary = "Balance âgée créances/dettes",
+                description = "Classement des soldes clients et fournisseurs par ancienneté")
+        @GetMapping("/balance-agee")
+        public Mono<ResponseEntity<ApiResponseWrapper<com.yowyob.erp.accounting.dto.report.BalanceAgeeDto>>> generateBalanceAgee(
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date_reference) {
+
+                return ReactiveOrganizationContext.getOrganizationId()
+                        .flatMap(organization_id -> rapport_service.generateBalanceAgee(organization_id,
+                                date_reference != null ? date_reference.toString() : null))
+                        .map(ba -> ResponseEntity.ok(ApiResponseWrapper.success(ba, "Balance âgée générée")))
+                        .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
+        }
+
+        /**
+         * Export PDF de la balance âgée.
+         */
+        @Operation(summary = "Export Balance Âgée to PDF")
+        @GetMapping(value = "/balance-agee/export/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+        public Mono<ResponseEntity<byte[]>> exportBalanceAgeePDF(
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date_reference) {
+
+                return ReactiveOrganizationContext.getOrganizationId()
+                        .flatMap(organization_id -> rapport_service.generateBalanceAgee(organization_id,
+                                date_reference != null ? date_reference.toString() : null))
+                        .flatMap(ba -> Mono.fromCallable(() -> {
+                                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                                Document document = new Document(PageSize.A4.rotate());
+                                PdfWriter.getInstance(document, out);
+                                document.open();
+
+                                Font titleFont = new Font(Font.FontFamily.HELVETICA, 16, Font.BOLD);
+                                Font headerFont = new Font(Font.FontFamily.HELVETICA, 10, Font.BOLD);
+                                Font cellFont = new Font(Font.FontFamily.HELVETICA, 9, Font.NORMAL);
+
+                                document.add(new Paragraph("BALANCE ÂGÉE — " + ba.getDateReference(), titleFont));
+                                document.add(new Paragraph(" "));
+
+                                for (String section : new String[]{"CLIENTS (41x)", "FOURNISSEURS (40x)"}) {
+                                        document.add(new Paragraph(section, headerFont));
+                                        PdfPTable table = new PdfPTable(7);
+                                        table.setWidthPercentage(100);
+                                        table.setWidths(new int[]{3, 5, 2, 2, 2, 2, 2});
+                                        for (String h : new String[]{"Compte", "Libellé", "Total", "0-30j", "31-60j", "61-90j", ">90j"})
+                                                table.addCell(new PdfPCell(new Phrase(h, headerFont)));
+
+                                        var lignes = section.startsWith("CLIENTS") ? ba.getClients() : ba.getFournisseurs();
+                                        for (var l : lignes) {
+                                                table.addCell(new Phrase(l.getNoCompte(), cellFont));
+                                                table.addCell(new Phrase(l.getLibelle(), cellFont));
+                                                table.addCell(new Phrase(l.getSoldeTotal().toPlainString(), cellFont));
+                                                table.addCell(new Phrase(l.getTranche0_30().toPlainString(), cellFont));
+                                                table.addCell(new Phrase(l.getTranche31_60().toPlainString(), cellFont));
+                                                table.addCell(new Phrase(l.getTranche61_90().toPlainString(), cellFont));
+                                                table.addCell(new Phrase(l.getTranches90Plus().toPlainString(), cellFont));
+                                        }
+                                        document.add(table);
+                                        document.add(new Paragraph(" "));
+                                }
+
+                                document.close();
+                                HttpHeaders headers = new HttpHeaders();
+                                headers.add("Content-Disposition", "attachment; filename=balance_agee_" + ba.getDateReference() + ".pdf");
+                                return ResponseEntity.ok().headers(headers).contentType(MediaType.APPLICATION_PDF).body(out.toByteArray());
+                        }).subscribeOn(Schedulers.boundedElastic()))
+                        .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
+        }
 }

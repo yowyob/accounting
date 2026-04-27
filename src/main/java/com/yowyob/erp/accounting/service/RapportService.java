@@ -289,31 +289,198 @@ public class RapportService {
                                 }));
         }
 
+        /**
+         * Tableau des Flux de Trésorerie OHADA (TFT) — implémentation réelle.
+         *
+         * Section A — Flux liés aux activités opérationnelles
+         *   A1 : Résultat net de l'exercice (produits cl.7 – charges cl.6)
+         *   A2 : Dotations aux amortissements/provisions (681/685/691)
+         *   A3 : Variation des créances clients (41x : ↑créance = utilisation)
+         *   A4 : Variation des dettes fournisseurs (40x : ↑dette = ressource)
+         *   A5 : Variation des stocks (3x : ↑stock = utilisation)
+         *
+         * Section B — Flux liés aux activités d'investissement
+         *   B1 : Acquisitions d'immobilisations (débit cl.2)
+         *   B2 : Cessions d'immobilisations (crédit cl.2 ou 48x)
+         *
+         * Section C — Flux liés aux activités de financement
+         *   C1 : Augmentation de capital (crédit 10x/11x)
+         *   C2 : Emprunts contractés (crédit 16x)
+         *   C3 : Remboursements d'emprunts (débit 16x)
+         *   C4 : Distribution de dividendes (débit 131 ou crédit 465)
+         */
         public Mono<com.yowyob.erp.accounting.dto.report.CashFlowDto> generateCashFlow(UUID organization_id,
                         String date_debut, String date_fin) {
-                // Placeholder simplified logic for Cash Flow based on class 5 accounts
-                log.info("Generating cash flow logic for organization {} from {} to {}", organization_id, date_debut,
-                                date_fin);
+                LocalDate start = LocalDate.parse(date_debut);
+                LocalDate end = LocalDate.parse(date_fin);
+                log.info("📈 Generating real TFT for organization {} from {} to {}", organization_id, start, end);
 
-                List<com.yowyob.erp.accounting.dto.report.CashFlowDto.CashFlowItemDto> operationnel = new java.util.ArrayList<>();
-                operationnel.add(new com.yowyob.erp.accounting.dto.report.CashFlowDto.CashFlowItemDto("A1",
-                                "Résultat net", BigDecimal.valueOf(100000), "operationnel"));
-                operationnel.add(new com.yowyob.erp.accounting.dto.report.CashFlowDto.CashFlowItemDto("A2",
-                                "Amortissements et provisions", BigDecimal.valueOf(25000), "operationnel"));
+                return detail_repository
+                                .findByOrganization_IdAndDateRange(organization_id, start.atStartOfDay(),
+                                                end.plusDays(1).atStartOfDay())
+                                .collectList()
+                                .flatMap(details -> compte_repository.findAllByOrganization_Id(organization_id)
+                                                .collectList()
+                                                .map(comptes -> {
+                                                        Map<UUID, Compte> compteMap = new HashMap<>();
+                                                        for (Compte c : comptes) compteMap.put(c.getId(), c);
 
-                List<com.yowyob.erp.accounting.dto.report.CashFlowDto.CashFlowItemDto> investissement = new java.util.ArrayList<>();
-                investissement.add(new com.yowyob.erp.accounting.dto.report.CashFlowDto.CashFlowItemDto("B1",
-                                "Acquisitions d'immobilisations", BigDecimal.valueOf(-50000), "investissement"));
+                                                        // ─── Résultat net ───
+                                                        BigDecimal totalProduits = BigDecimal.ZERO;
+                                                        BigDecimal totalCharges = BigDecimal.ZERO;
+                                                        BigDecimal dotAmort = BigDecimal.ZERO;
+                                                        BigDecimal varCreances = BigDecimal.ZERO;
+                                                        BigDecimal varDettes = BigDecimal.ZERO;
+                                                        BigDecimal varStocks = BigDecimal.ZERO;
+                                                        BigDecimal acquisImmo = BigDecimal.ZERO;
+                                                        BigDecimal cessionsImmo = BigDecimal.ZERO;
+                                                        BigDecimal augmCapital = BigDecimal.ZERO;
+                                                        BigDecimal empruntsContractes = BigDecimal.ZERO;
+                                                        BigDecimal rembEmprunt = BigDecimal.ZERO;
+                                                        BigDecimal dividendes = BigDecimal.ZERO;
 
-                List<com.yowyob.erp.accounting.dto.report.CashFlowDto.CashFlowItemDto> financement = new java.util.ArrayList<>();
-                financement.add(new com.yowyob.erp.accounting.dto.report.CashFlowDto.CashFlowItemDto("C1",
-                                "Augmentation de capital", BigDecimal.valueOf(20000), "financement"));
+                                                        for (var d : details) {
+                                                                Compte c = compteMap.get(d.getCompte_id());
+                                                                if (c == null || c.getNo_compte() == null) continue;
+                                                                String no = c.getNo_compte();
+                                                                BigDecimal debit = d.getMontant_debit() != null ? d.getMontant_debit() : BigDecimal.ZERO;
+                                                                BigDecimal credit = d.getMontant_credit() != null ? d.getMontant_credit() : BigDecimal.ZERO;
 
-                return Mono.just(com.yowyob.erp.accounting.dto.report.CashFlowDto.builder()
-                                .operationnel(operationnel)
-                                .investissement(investissement)
-                                .financement(financement)
-                                .build());
+                                                                if (no.startsWith("7")) totalProduits = totalProduits.add(credit.subtract(debit));
+                                                                else if (no.startsWith("6")) {
+                                                                        totalCharges = totalCharges.add(debit.subtract(credit));
+                                                                        if (no.startsWith("681") || no.startsWith("685") || no.startsWith("691"))
+                                                                                dotAmort = dotAmort.add(debit.subtract(credit));
+                                                                }
+                                                                else if (no.startsWith("41")) varCreances = varCreances.add(debit.subtract(credit));
+                                                                else if (no.startsWith("40")) varDettes = varDettes.add(credit.subtract(debit));
+                                                                else if (no.startsWith("3")) varStocks = varStocks.add(debit.subtract(credit));
+                                                                else if (no.startsWith("2") && !no.startsWith("28")) {
+                                                                        acquisImmo = acquisImmo.add(debit);
+                                                                        cessionsImmo = cessionsImmo.add(credit);
+                                                                }
+                                                                else if (no.startsWith("10") || no.startsWith("11"))
+                                                                        augmCapital = augmCapital.add(credit.subtract(debit));
+                                                                else if (no.startsWith("16")) {
+                                                                        empruntsContractes = empruntsContractes.add(credit);
+                                                                        rembEmprunt = rembEmprunt.add(debit);
+                                                                }
+                                                                else if (no.startsWith("131") || no.startsWith("465"))
+                                                                        dividendes = dividendes.add(debit);
+                                                        }
+
+                                                        BigDecimal resultatNet = totalProduits.subtract(totalCharges);
+
+                                                        // ─── Section A ───
+                                                        List<com.yowyob.erp.accounting.dto.report.CashFlowDto.CashFlowItemDto> operationnel = java.util.Arrays.asList(
+                                                                new com.yowyob.erp.accounting.dto.report.CashFlowDto.CashFlowItemDto("A1",
+                                                                        "Résultat net de l'exercice", resultatNet, "operationnel"),
+                                                                new com.yowyob.erp.accounting.dto.report.CashFlowDto.CashFlowItemDto("A2",
+                                                                        "Dotations aux amortissements et provisions", dotAmort, "operationnel"),
+                                                                new com.yowyob.erp.accounting.dto.report.CashFlowDto.CashFlowItemDto("A3",
+                                                                        "Variation des créances clients (41x)", varCreances.negate(), "operationnel"),
+                                                                new com.yowyob.erp.accounting.dto.report.CashFlowDto.CashFlowItemDto("A4",
+                                                                        "Variation des dettes fournisseurs (40x)", varDettes, "operationnel"),
+                                                                new com.yowyob.erp.accounting.dto.report.CashFlowDto.CashFlowItemDto("A5",
+                                                                        "Variation des stocks (3x)", varStocks.negate(), "operationnel")
+                                                        );
+
+                                                        // ─── Section B ───
+                                                        List<com.yowyob.erp.accounting.dto.report.CashFlowDto.CashFlowItemDto> investissement = java.util.Arrays.asList(
+                                                                new com.yowyob.erp.accounting.dto.report.CashFlowDto.CashFlowItemDto("B1",
+                                                                        "Acquisitions d'immobilisations (cl.2)", acquisImmo.negate(), "investissement"),
+                                                                new com.yowyob.erp.accounting.dto.report.CashFlowDto.CashFlowItemDto("B2",
+                                                                        "Cessions d'immobilisations", cessionsImmo, "investissement")
+                                                        );
+
+                                                        // ─── Section C ───
+                                                        List<com.yowyob.erp.accounting.dto.report.CashFlowDto.CashFlowItemDto> financement = java.util.Arrays.asList(
+                                                                new com.yowyob.erp.accounting.dto.report.CashFlowDto.CashFlowItemDto("C1",
+                                                                        "Augmentation de capital (10x/11x)", augmCapital, "financement"),
+                                                                new com.yowyob.erp.accounting.dto.report.CashFlowDto.CashFlowItemDto("C2",
+                                                                        "Emprunts contractés (16x)", empruntsContractes, "financement"),
+                                                                new com.yowyob.erp.accounting.dto.report.CashFlowDto.CashFlowItemDto("C3",
+                                                                        "Remboursements d'emprunts (16x)", rembEmprunt.negate(), "financement"),
+                                                                new com.yowyob.erp.accounting.dto.report.CashFlowDto.CashFlowItemDto("C4",
+                                                                        "Dividendes distribués", dividendes.negate(), "financement")
+                                                        );
+
+                                                        return com.yowyob.erp.accounting.dto.report.CashFlowDto.builder()
+                                                                        .operationnel(operationnel)
+                                                                        .investissement(investissement)
+                                                                        .financement(financement)
+                                                                        .build();
+                                                }));
+        }
+
+        /**
+         * Balance âgée OHADA : créances clients (41x) et dettes fournisseurs (40x)
+         * classées par ancienneté — 0-30j, 31-60j, 61-90j, >90j.
+         */
+        public Mono<com.yowyob.erp.accounting.dto.report.BalanceAgeeDto> generateBalanceAgee(
+                        UUID organization_id, String date_reference_str) {
+                LocalDate dateRef = date_reference_str != null
+                        ? LocalDate.parse(date_reference_str) : LocalDate.now();
+
+                return detail_repository
+                        .findByOrganization_IdAndDateRange(organization_id,
+                                LocalDate.of(2000, 1, 1).atStartOfDay(),
+                                dateRef.plusDays(1).atStartOfDay())
+                        .collectList()
+                        .flatMap(allDetails -> compte_repository.findAllByOrganization_Id(organization_id)
+                                .filter(c -> c.getNo_compte() != null &&
+                                        (c.getNo_compte().startsWith("41") || c.getNo_compte().startsWith("40")))
+                                .collectList()
+                                .map(comptes -> {
+                                        List<com.yowyob.erp.accounting.dto.report.BalanceAgeeDto.LigneBalanceAgeeDto> lignesClients = new java.util.ArrayList<>();
+                                        List<com.yowyob.erp.accounting.dto.report.BalanceAgeeDto.LigneBalanceAgeeDto> lignesFournisseurs = new java.util.ArrayList<>();
+
+                                        for (Compte c : comptes) {
+                                                List<DetailEcriture> details = allDetails.stream()
+                                                        .filter(d -> c.getId().equals(d.getCompte_id()))
+                                                        .collect(java.util.stream.Collectors.toList());
+                                                if (details.isEmpty()) continue;
+
+                                                // Solde non lettré = dette/créance en cours
+                                                BigDecimal soldeTotal = calculateDebit(details, c)
+                                                        .subtract(calculateCredit(details, c));
+                                                if (soldeTotal.compareTo(BigDecimal.ZERO) == 0) continue;
+
+                                                // Répartition par ancienneté basée sur la date de la dernière écriture
+                                                BigDecimal t0_30 = BigDecimal.ZERO, t31_60 = BigDecimal.ZERO,
+                                                        t61_90 = BigDecimal.ZERO, sup90 = BigDecimal.ZERO;
+                                                for (DetailEcriture d : details) {
+                                                        if (d.getDate_ecriture() == null) continue;
+                                                        long age = java.time.temporal.ChronoUnit.DAYS.between(
+                                                                d.getDate_ecriture().toLocalDate(), dateRef);
+                                                        BigDecimal net = (d.getMontant_debit() != null ? d.getMontant_debit() : BigDecimal.ZERO)
+                                                                .subtract(d.getMontant_credit() != null ? d.getMontant_credit() : BigDecimal.ZERO);
+                                                        if (age <= 30) t0_30 = t0_30.add(net);
+                                                        else if (age <= 60) t31_60 = t31_60.add(net);
+                                                        else if (age <= 90) t61_90 = t61_90.add(net);
+                                                        else sup90 = sup90.add(net);
+                                                }
+
+                                                var ligne = com.yowyob.erp.accounting.dto.report.BalanceAgeeDto.LigneBalanceAgeeDto.builder()
+                                                        .noCompte(c.getNo_compte())
+                                                        .libelle(c.getLibelle())
+                                                        .soldeTotal(soldeTotal)
+                                                        .tranche0_30(t0_30)
+                                                        .tranche31_60(t31_60)
+                                                        .tranche61_90(t61_90)
+                                                        .tranches90Plus(sup90)
+                                                        .build();
+
+                                                if (c.getNo_compte().startsWith("41")) lignesClients.add(ligne);
+                                                else lignesFournisseurs.add(ligne);
+                                        }
+
+                                        return com.yowyob.erp.accounting.dto.report.BalanceAgeeDto.builder()
+                                                .dateReference(dateRef)
+                                                .clients(lignesClients)
+                                                .fournisseurs(lignesFournisseurs)
+                                                .build();
+                                }));
         }
 
         public Mono<com.yowyob.erp.accounting.dto.report.ExecutiveSummaryDto> generateExecutiveSummary(

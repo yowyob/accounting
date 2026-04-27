@@ -62,6 +62,14 @@ public class Immobilisation implements SettablePersistable<UUID> {
     @Builder.Default
     private BigDecimal valeurResiduelle = BigDecimal.ZERO;
 
+    /** Coefficient multiplicateur pour la méthode dégressive (ex: 1.5, 2.0, 2.5) */
+    @Column("coefficient_degressif")
+    private BigDecimal coefficientDegressif;
+
+    /** Capacité totale de production pour la méthode unités de production */
+    @Column("capacite_totale_production")
+    private BigDecimal capaciteTotaleProduction;
+
     @Column("created_at")
     private LocalDateTime createdAt;
 
