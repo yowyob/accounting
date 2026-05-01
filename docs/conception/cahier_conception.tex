@@ -1,0 +1,385 @@
+\documentclass[12pt,a4paper]{report}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{float}
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  citecolor=blue
+}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+
+\usepackage{xcolor}
+\usepackage{listings}
+\lstset{
+  basicstyle=\small\ttfamily,
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny,
+  showstringspaces=false
+}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric}
+
+\usepackage{enumitem}
+\setlist[itemize]{label={},leftmargin=*,itemsep=0.2em,topsep=0.2em}
+\setlist[enumerate]{leftmargin=*,itemsep=0.2em,topsep=0.2em}
+
+\title{Cahier de conception\\\large Plateforme Comptabilité --- ERP Yowyob}
+\author{Auteur : AZANGUE LEONEL DELMAT\\Superviseur : Pr Dr Eng Djotio Thomas NDIE}
+\date{\today}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\listoffigures
+
+\chapter{Introduction}
+\section{Objectif}
+Ce document est un \textbf{cahier de conception complet} de la \textbf{plateforme comptabilité} de l'ERP Yowyob.
+Il vise à décrire l'architecture, les modèles de données, les flux applicatifs, l'API, la sécurité et le multi-tenant, ainsi qu'une \textbf{modélisation mathématique} des invariants comptables (double entrée, contraintes de périodes, lettrage, pointage).
+
+\section{Périmètre}
+Le périmètre porte principalement sur le module \texttt{accounting} (comptabilité générale OHADA) et les composants transverses \texttt{common} et \texttt{config}.
+
+\chapter{Vue d'ensemble du système}
+\section{Stack technique}
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{Composant} & \textbf{Choix technologique} \\
+\midrule
+Langage / Runtime & Java 21 \\
+Framework HTTP & Spring Boot 3.5.3, Spring WebFlux (réactif) \\
+Base de données & PostgreSQL, accès réactif via R2DBC \\
+Gestion de schéma & Liquibase (exécuté au démarrage) \\
+Sécurité & Spring Security WebFlux + JWT (validation via service externe) \\
+Composants optionnels & Redis (cache), Kafka (événements/audit), Elasticsearch (recherche) \\
+\bottomrule
+\end{tabularx}
+\caption{Stack technique de la plateforme comptabilité}
+\end{table}
+
+\section{Organisation du code}
+Le code est organisé en trois ensembles cohérents:
+\begin{enumerate}
+  \item \textbf{\texttt{com.yowyob.erp.accounting}}: domaine comptable (API, services, persistance, entités, DTO).
+  \item \textbf{\texttt{com.yowyob.erp.common}}: éléments transverses (wrappers de réponse, exceptions, objets communs).
+  \item \textbf{\texttt{com.yowyob.erp.config}}: configuration technique (auth/JWT, CORS, multi-organisation, R2DBC, Redis, Kafka, Swagger).
+\end{enumerate}
+
+\section{Architecture logique (couches)}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  layer/.style={draw, rounded corners, minimum width=13cm, minimum height=1cm, align=center},
+  arrow/.style={-Latex, thick}
+]
+\node[layer, fill=blue!10] (api) {Couche API \\ \texttt{controller} (REST WebFlux)};
+\node[layer, fill=blue!10, below=0.6cm of api] (svc) {Couche Métier \\ \texttt{service} (règles, validations, workflows)};
+\node[layer, fill=blue!10, below=0.6cm of svc] (repo) {Couche Persistance \\ \texttt{repository} (R2DBC, requêtes SQL)};
+\node[layer, fill=blue!10, below=0.6cm of repo] (db) {Stockage \\ PostgreSQL (schéma versionné par Liquibase)};
+\draw[arrow] (api) -- (svc);
+\draw[arrow] (svc) -- (repo);
+\draw[arrow] (repo) -- (db);
+\end{tikzpicture}
+\caption{Architecture en couches (vue reverse-engineered)}
+\end{figure}
+
+\chapter{Exigences (extraites du code et du README)}
+\section{Exigences fonctionnelles}
+\begin{enumerate}[label=\textbf{RF-\arabic*.}]
+  \item Gestion du plan comptable OHADA, des comptes, journaux, écritures et détails d'écritures.
+  \item Gestion des exercices et périodes comptables, avec mécanismes de clôture.
+  \item Lettrage et pointage des lignes d'écritures.
+  \item Journalisation (audit) des actions et traçabilité des changements.
+  \item Génération d'écritures à partir d'objets métier comptabilisables (\texttt{ComptableObject}).
+\end{enumerate}
+
+\section{Exigences non fonctionnelles}
+\begin{enumerate}[label=\textbf{RNF-\arabic*.}]
+  \item Réactivité et scalabilité (WebFlux + R2DBC) pour supporter des volumes importants d'écritures.
+  \item Isolation multi-organisation: toutes les données métier sont partitionnées par \texttt{organization\_id}.
+  \item Traçabilité: journal d'audit et champs d'audit (\texttt{created\_at}, \texttt{updated\_at}, \texttt{created\_by}, \texttt{updated\_by}).
+  \item Sécurité: authentification JWT, contrôle d'accès par rôles, CORS configurable.
+\end{enumerate}
+
+\chapter{Multi-tenant et isolation des données}
+\section{Principe}
+L'isolation des données est réalisée par propagation d'un identifiant d'organisation (\texttt{organizationId}) dans le \textbf{Reactor Context}.
+Chaque requête API est associée à une organisation déterminée via un header configurable (par défaut \texttt{X-Tenant-ID}) ou un paramètre de requête \texttt{tenantId} (cas SSE).
+
+\section{Résolution du tenant}
+Un \texttt{WebFilter} (\texttt{OrganizationWebFilter}) extrait l'identifiant et l'injecte dans le contexte réactif.
+\subsection{Règles de résolution}
+\begin{enumerate}
+  \item Lire le header \texttt{X-Tenant-ID} (ou nom configuré).
+  \item Sinon, lire le query param \texttt{tenantId}.
+  \item Sinon, utiliser une valeur par défaut (\texttt{app.organization.default-organization}).
+\end{enumerate}
+
+\chapter{Sécurité}
+\section{Authentification}
+L'authentification repose sur un token \texttt{Bearer} dans \texttt{Authorization}. Un filtre (\texttt{JwtAuthenticationFilter}) appelle un service \texttt{AuthService} pour valider le token via une API externe (\texttt{auth.api.url}).
+En cas de succès, il place une authentification avec des autorités \texttt{ROLE\_X} dans le contexte de sécurité réactif.
+
+\section{Autorisation}
+La chaîne de sécurité (\texttt{SecurityWebFilterChain}) définit des règles \texttt{pathMatchers}.
+\textbf{Point critique}: une règle de test autorise \texttt{/api/accounting/**} sans token (mentionnée comme TEMP dans le code).
+
+\section{Gestion des erreurs}
+Les exceptions sont normalisées via \texttt{GlobalExceptionHandler} et retournées sous une forme \texttt{ApiResponseWrapper}.
+
+\chapter{Conception des données}
+\section{Stratégie de migration}
+Le schéma SQL est versionné par Liquibase et orchestré depuis \texttt{db.changelog-master.xml}.
+Une migration importante (\texttt{changeset-017-unify-tenant-org.xml}) unifie les notions \texttt{tenant} et \texttt{organization} et renomme les colonnes \texttt{tenant\_id} en \texttt{organization\_id}.
+
+\section{Entités principales (comptabilité)}
+Ce projet utilise des entités R2DBC annotées \texttt{@Table}.
+Exemples représentatifs:
+\begin{itemize}
+  \item \texttt{EcritureComptable} \(\rightarrow\) \texttt{ecritures\_comptables}
+  \item \texttt{DetailEcriture} \(\rightarrow\) \texttt{details\_ecritures}
+  \item \texttt{Compte} \(\rightarrow\) \texttt{comptes}
+  \item \texttt{JournalComptable} \(\rightarrow\) \texttt{journaux\_comptables}
+  \item \texttt{PeriodeComptable} \(\rightarrow\) \texttt{periodes\_comptables}
+  \item \texttt{JournalAudit} \(\rightarrow\) \texttt{journal\_audit}
+\end{itemize}
+
+\section{Modèle relationnel (extrait)}
+\begin{longtable}{@{}p{4cm}p{10cm}@{}}
+\toprule
+\textbf{Table} & \textbf{Rôle} \\
+\midrule
+\endhead
+\texttt{organizations} & Organisation (tenant). Identité et métadonnées (nom, email, téléphone, tax\_id, etc.). \\
+\texttt{agences} & Agences rattachées à une organisation. \\
+\texttt{comptes} & Comptes comptables (classe OHADA, type, solde). \\
+\texttt{journaux\_comptables} & Journaux (achats, ventes, trésorerie, etc.). \\
+\texttt{exercices\_comptables} & Exercice fiscal/comptable (dates, clôture). \\
+\texttt{periodes\_comptables} & Périodes (liées à un exercice), ouverture/clôture. \\
+\texttt{ecritures\_comptables} & Entête d'écriture comptable (numéro, libellé, totaux, statut, validée). \\
+\texttt{details\_ecritures} & Lignes de débit/crédit par compte (lettrage, pointage). \\
+\texttt{journal\_audit} & Journalisation des actions (création, validation, suppression...). \\
+\bottomrule
+\end{longtable}
+
+\chapter{API REST (reverse engineering) --- Comptabilité}
+\section{Conventions}
+Les endpoints sont regroupés sous le préfixe \texttt{/api/accounting/} (ex: \texttt{/ecritures}, \texttt{/comptes}, \texttt{/journaux}, etc.).
+Les contrôleurs sont annotés \texttt{@RestController} et retournent des \texttt{Mono<ResponseEntity<ApiResponseWrapper<...>>>}.
+
+\section{Exemple: \texttt{/api/accounting/ecritures}}
+Le contrôleur \texttt{EcritureComptableController} expose notamment:
+\begin{itemize}
+  \item \texttt{POST /api/accounting/ecritures} --- création
+  \item \texttt{PUT /api/accounting/ecritures/\{id\}} --- mise à jour
+  \item \texttt{POST /api/accounting/ecritures/\{id\}/validate} --- validation
+  \item \texttt{GET /api/accounting/ecritures} --- liste
+  \item \texttt{GET /api/accounting/ecritures/non-validated} --- non validées
+  \item \texttt{GET /api/accounting/ecritures/search} --- recherche
+  \item \texttt{POST /api/accounting/ecritures/generate} --- génération depuis \texttt{ComptableObject}
+  \item \texttt{PATCH /api/accounting/ecritures/\{id\}/cancel} --- annulation
+  \item \texttt{PATCH /api/accounting/ecritures/\{id\}/deactivate} --- désactivation
+  \item \texttt{DELETE /api/accounting/ecritures/\{id\}} --- suppression
+\end{itemize}
+
+\section{Couverture des contrôleurs du module comptable}
+Le module comptabilité expose (au moment du reverse engineering) les contrôleurs suivants:
+\begin{itemize}
+  \item \texttt{CompteController} \(\rightarrow\) \texttt{/api/accounting/comptes}
+  \item \texttt{PlanComptableController} \(\rightarrow\) \texttt{/api/accounting/plan-comptable}
+  \item \texttt{JournalComptableController} \(\rightarrow\) \texttt{/api/accounting/journals}
+  \item \texttt{EcritureComptableController} \(\rightarrow\) \texttt{/api/accounting/ecritures}
+  \item \texttt{PeriodeComptableController} \(\rightarrow\) \texttt{/api/accounting/periodes}
+  \item \texttt{ExerciceComptableController} \(\rightarrow\) \texttt{/api/accounting/exercices}
+  \item \texttt{RapportController} \(\rightarrow\) \texttt{/api/accounting/rapport}
+  \item \texttt{PointageController} \(\rightarrow\) \texttt{/api/accounting/pointage}
+  \item \texttt{LettrageController} \(\rightarrow\) \texttt{/api/comptable/lettrage} (préfixe atypique)
+  \item Autres contrôleurs du domaine (\texttt{taxes}, \texttt{devises}, \texttt{immobilisations}, \texttt{budgets}, \texttt{paie}, \texttt{brouillards}, etc.)
+\end{itemize}
+
+\section{Annexe API exhaustive}
+La liste exhaustive des endpoints (tous contrôleurs, méthodes, chemins, verbes HTTP) est fournie en annexe.
+
+\chapter{Modélisation mathématique (à ne pas négliger)}
+\section{Notations}
+Soit une organisation \(o \in \mathcal{O}\). Une écriture comptable \(e\) est un couple:
+\[
+e = (H, L)
+\]
+où \(H\) est l'entête (journal, période, date, statut) et \(L\) est l'ensemble des lignes \(l \in L\).
+
+Chaque ligne \(l\) est associée à un compte \(a \in \mathcal{A}\) et porte des montants \((d_l, c_l)\) (débit, crédit) avec \(d_l \ge 0\), \(c_l \ge 0\).
+
+\section{Invariant de la double entrée}
+Une écriture est \textbf{équilibrée} si:
+\[
+\sum_{l \in L} d_l = \sum_{l \in L} c_l
+\]
+Dans l'implémentation, un seuil de tolérance \(\varepsilon = 0{,}01\) est utilisé:
+\[
+\left|\sum d_l - \sum c_l\right| \le \varepsilon
+\]
+Cette contrainte est vérifiée lors de la création/mise à jour/validation (\texttt{validateBalance}).
+
+\section{Balance, grand livre, compte de résultat, bilan (formalisme)}
+\subsection{Grand livre (par compte)}
+Soit un compte \(a\) et une période \([t_0,t_1]\). On définit l'ensemble des lignes:
+\[
+L(a,t_0,t_1)=\{\,l \mid \mathrm{account}(l)=a \wedge t_0 \le \mathrm{date}(l) \le t_1\,\}
+\]
+Les totaux de mouvements sont:
+\[
+D(a)=\sum_{l \in L(a,t_0,t_1)} d_l,\quad C(a)=\sum_{l \in L(a,t_0,t_1)} c_l
+\]
+Le solde de clôture s'exprime à partir d'un solde d'ouverture \(S_0(a)\):
+\[
+S_1(a)=S_0(a)+D(a)-C(a)
+\]
+(la convention de signe peut varier selon la nature du compte; le système peut aussi porter des soldes débit/crédit séparés).
+
+\subsection{Balance des comptes}
+La balance est une agrégation sur un ensemble de comptes \(\mathcal{A}\) produisant, pour chaque \(a\), un quadruplet:
+\[
+\big(S_0(a), D(a), C(a), S_1(a)\big)
+\]
+La contrainte de cohérence globale (si tout est saisi en double entrée) est:
+\[
+\sum_{a \in \mathcal{A}} D(a) = \sum_{a \in \mathcal{A}} C(a)
+\]
+
+\subsection{Compte de résultat}
+Soit \(\mathcal{A}_{\text{prod}}\) l'ensemble des comptes de produits (classe 7, selon paramétrage), et \(\mathcal{A}_{\text{ch}}\) l'ensemble des comptes de charges (classe 6).
+On définit:
+\[
+\mathrm{PRODUITS}=\sum_{a \in \mathcal{A}_{\text{prod}}} (C(a)-D(a)),\quad
+\mathrm{CHARGES}=\sum_{a \in \mathcal{A}_{\text{ch}}} (D(a)-C(a))
+\]
+Le résultat net sur la période est:
+\[
+\mathrm{RN}=\mathrm{PRODUITS}-\mathrm{CHARGES}
+\]
+
+\subsection{Bilan}
+Soit \(\mathcal{A}_{\text{actif}}\) et \(\mathcal{A}_{\text{passif}}\) (classes 1--5 selon mapping OHADA et paramétrage).
+On agrège les soldes:
+\[
+\mathrm{ACTIF}=\sum_{a \in \mathcal{A}_{\text{actif}}} \max(S_1(a),0),\quad
+\mathrm{PASSIF}=\sum_{a \in \mathcal{A}_{\text{passif}}} \max(-S_1(a),0)
+\]
+et une propriété attendue est l'équilibre bilan:
+\[
+\mathrm{ACTIF} = \mathrm{PASSIF}
+\]
+La mise en œuvre concrète dépend des conventions de signe et de la classification des comptes.
+
+\section{Contraintes de période}
+Soit une période \(p\) avec un indicateur \(\mathrm{closed}(p) \in \{0,1\}\).
+La règle métier est:
+\[
+\mathrm{closed}(p)=1 \Rightarrow \neg \mathrm{create}(e) \wedge \neg \mathrm{update}(e)
+\]
+c'est-à-dire: aucune écriture ne peut être créée/modifiée dans une période clôturée.
+
+\section{Machine à états (écritures)}
+Soit \(S = \{\texttt{BROUILLON}, \texttt{VALIDE}, \texttt{ANNULE}\}\).
+Transitions autorisées (extrait des services):
+\[
+\texttt{BROUILLON} \xrightarrow{\mathrm{validate}} \texttt{VALIDE}, \quad
+\texttt{BROUILLON} \xrightarrow{\mathrm{cancel}} \texttt{ANNULE}, \quad
+\texttt{VALIDE} \xrightarrow{\mathrm{cancel}} \texttt{ANNULE}
+\]
+Avec contrainte: \(\mathrm{validate}\) n'est possible que si l'écriture est équilibrée.
+
+\section{Lettrage}
+Chaque ligne peut être lettrée (\texttt{lettree}).
+Une formalisation possible consiste à définir une relation de lettrage \(\mathcal{R}\) sur les lignes d'un même compte:
+\[
+\mathcal{R} \subseteq L \times L
+\]
+et imposer qu'un groupe lettré \(G \subseteq L\) respecte l'équilibre partiel:
+\[
+\sum_{l \in G} d_l = \sum_{l \in G} c_l
+\]
+Le code stocke actuellement l'état de lettrage au niveau des lignes (\texttt{lettree}, \texttt{date\_lettrage}); les règles de groupement peuvent être portées par un service de lettrage.
+
+\section{Pointage bancaire}
+Pour une ligne \(l\), le pointage est \(pointee(l) \in \{0,1\}\) avec une référence bancaire \(\mathrm{ref}(l)\).
+Une contrainte d'unicité métier recommandée est:
+\[
+\forall l_1 \ne l_2,\ \mathrm{ref}(l_1)=\mathrm{ref}(l_2) \wedge pointee(l_1)=pointee(l_2)=1 \Rightarrow \text{invalide}
+\]
+(à implémenter éventuellement via contrainte BD ou règle applicative selon le besoin).
+
+\chapter{Conception des services (extrait)}
+\section{Service des écritures}
+Le service \texttt{EcritureComptableService} illustre les règles métier:
+\begin{itemize}
+  \item création d'une écriture \(\rightarrow\) génération d'un numéro \texttt{ECR-xxxxxxxx}
+  \item contrôle période non clôturée
+  \item validation d'équilibre débit/crédit
+  \item journalisation (table audit) + émission d'événement
+  \item cache Redis (liste, recherche) avec invalidation lors des mutations
+\end{itemize}
+
+\chapter{Déploiement et exploitation}
+\section{Configuration}
+La configuration est centralisée dans \texttt{application.properties} et surchargée par variables d'environnement:
+\begin{itemize}
+  \item DB: \texttt{DB\_HOST}, \texttt{DB\_PORT}, \texttt{DB\_NAME}, \texttt{POSTGRES\_USER}, \texttt{POSTGRES\_PASSWORD}
+  \item Auth: \texttt{AUTH\_API\_URL}, \texttt{JWT\_SECRET}
+  \item Features: \texttt{SPRING\_KAFKA\_ENABLED}, \texttt{SPRING\_ELASTICSEARCH\_ENABLED}, \texttt{SPRING\_CACHE\_TYPE}
+\end{itemize}
+
+\section{Docker / Compose}
+\begin{itemize}
+  \item \texttt{docker-compose.yml} démarre Postgres, Redis, Kafka, Elasticsearch et l'application.
+  \item \texttt{Dockerfile} compile et exécute l'application.
+\end{itemize}
+
+\section{CI/CD}
+Le dépôt contient un workflow GitHub Actions pour construire et publier une image Docker.
+
+\chapter{Risques, dette technique et recommandations}
+\begin{itemize}
+  \item \textbf{Sécurité}: routes comptables temporairement \texttt{permitAll} \(\rightarrow\) à corriger avant production.
+  \item \textbf{Secrets}: éviter tout secret versionné (fichiers \texttt{.env}, mots de passe compose).
+  \item \textbf{Cohérence tenant}: s'assurer que toutes les requêtes filtrent bien par \texttt{organization\_id}.
+  \item \textbf{Transactions réactives}: clarifier les transaction managers (R2DBC vs JDBC/Liquibase).
+  \item \textbf{Observabilité}: compléter Actuator/metrics et corrélation requestId/organizationId.
+\end{itemize}
+
+\appendix
+\chapter{Annexes}
+\input{annexes/annexe_api_exhaustive}
+\input{annexes/annexe_dictionnaire_donnees}
+\section{Principaux fichiers de référence}
+\begin{itemize}
+  \item \texttt{pom.xml}
+  \item \texttt{src/main/resources/application.properties}
+  \item \texttt{src/main/resources/db/changelog/db.changelog-master.xml}
+  \item \texttt{src/main/java/com/yowyob/erp/config/auth/SecurityConfig.java}
+  \item \texttt{src/main/java/com/yowyob/erp/config/organization/OrganizationWebFilter.java}
+\end{itemize}
+
+\end{document}
+

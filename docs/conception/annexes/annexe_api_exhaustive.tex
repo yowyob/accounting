@@ -1,0 +1,119 @@
+\chapter{Annexe A --- Spécification API (exhaustive)}
+\label{annexe:api}
+
+\section{Introduction}
+Cette annexe recense les endpoints \textbf{du module Comptabilité} par contrôleur, tels qu'observés dans le code (\texttt{src/main/java/com/yowyob/erp/accounting/controller}).
+
+\section{\texttt{EcritureComptableController} --- \texttt{/api/accounting/ecritures}}
+\begin{itemize}
+  \item \textbf{POST} \texttt{/api/accounting/ecritures} --- créer une écriture (\texttt{EcritureComptableDto})
+  \item \textbf{PUT} \texttt{/api/accounting/ecritures/\{id\}} --- modifier une écriture (\texttt{EcritureComptableDto})
+  \item \textbf{POST} \texttt{/api/accounting/ecritures/\{id\}/validate} --- valider une écriture
+  \item \textbf{GET} \texttt{/api/accounting/ecritures} --- lister
+  \item \textbf{GET} \texttt{/api/accounting/ecritures/\{id\}} --- obtenir par id
+  \item \textbf{GET} \texttt{/api/accounting/ecritures/non-validated} --- lister non validées
+  \item \textbf{GET} \texttt{/api/accounting/ecritures/search} --- recherche (start/end/journalId)
+  \item \textbf{POST} \texttt{/api/accounting/ecritures/generate} --- générer depuis \texttt{ComptableObject}
+  \item \textbf{DELETE} \texttt{/api/accounting/ecritures/\{id\}} --- supprimer
+  \item \textbf{PATCH} \texttt{/api/accounting/ecritures/\{id\}/cancel} --- annuler
+  \item \textbf{PATCH} \texttt{/api/accounting/ecritures/\{id\}/deactivate} --- désactiver (soft delete)
+\end{itemize}
+
+\section{\texttt{CompteController} --- \texttt{/api/accounting/comptes}}
+\begin{itemize}
+  \item \textbf{POST} \texttt{/api/accounting/comptes} --- créer un compte (\texttt{CompteDto})
+  \item \textbf{POST} \texttt{/api/accounting/comptes/generate} --- générer un compte (tiers etc.)
+  \item \textbf{GET} \texttt{/api/accounting/comptes} --- lister
+  \item \textbf{GET} \texttt{/api/accounting/comptes/\{id\}} --- obtenir par id
+  \item \textbf{GET} \texttt{/api/accounting/comptes/search?no\_compte=...} --- recherche
+  \item \textbf{GET} \texttt{/api/accounting/comptes/clients} --- comptes clients
+  \item \textbf{GET} \texttt{/api/accounting/comptes/suppliers} --- comptes fournisseurs
+  \item \textbf{GET} \texttt{/api/accounting/comptes/banks} --- comptes bancaires
+  \item \textbf{GET} \texttt{/api/accounting/comptes/cash} --- comptes caisse
+  \item \textbf{GET} \texttt{/api/accounting/comptes/type/\{type\}} --- comptes par type
+  \item \textbf{PUT} \texttt{/api/accounting/comptes/\{id\}} --- mise à jour
+  \item \textbf{DELETE} \texttt{/api/accounting/comptes/\{id\}} --- suppression
+\end{itemize}
+
+\section{\texttt{PlanComptableController} --- \texttt{/api/accounting/plan-comptable}}
+\begin{itemize}
+  \item \textbf{POST} \texttt{/api/accounting/plan-comptable/admin/organizations/\{organizationId\}/plan-comptable/init-ohada-2025} --- initialisation OHADA 2025
+  \item \textbf{POST} \texttt{/api/accounting/plan-comptable} --- créer un compte de plan (\texttt{PlanComptableDto})
+  \item \textbf{GET} \texttt{/api/accounting/plan-comptable/\{id\}} --- obtenir par id
+  \item \textbf{GET} \texttt{/api/accounting/plan-comptable} --- lister
+  \item \textbf{GET} \texttt{/api/accounting/plan-comptable/actifs} --- lister actifs
+  \item \textbf{GET} \texttt{/api/accounting/plan-comptable/prefix/\{prefix\}} --- filtrer par préfixe
+  \item \textbf{GET} \texttt{/api/accounting/plan-comptable/classe/\{classe\}} --- filtrer par classe OHADA
+  \item \textbf{PUT} \texttt{/api/accounting/plan-comptable/\{id\}} --- mise à jour
+  \item \textbf{POST} \texttt{/api/accounting/plan-comptable/import} --- import (CSV/XLSX multipart)
+  \item \textbf{DELETE} \texttt{/api/accounting/plan-comptable/\{id\}} --- désactivation (soft delete)
+\end{itemize}
+
+\section{\texttt{JournalComptableController} --- \texttt{/api/accounting/journals}}
+\begin{itemize}
+  \item \textbf{POST} \texttt{/api/accounting/journals} --- créer (\texttt{JournalComptableDto})
+  \item \textbf{PUT} \texttt{/api/accounting/journals/\{id\}} --- mise à jour
+  \item \textbf{GET} \texttt{/api/accounting/journals/\{id\}} --- obtenir
+  \item \textbf{GET} \texttt{/api/accounting/journals/\{id\}/comptes} --- comptes distincts utilisés
+  \item \textbf{GET} \texttt{/api/accounting/journals} --- lister
+  \item \textbf{GET} \texttt{/api/accounting/journals/active} --- lister actifs
+  \item \textbf{DELETE} \texttt{/api/accounting/journals/\{id\}} --- supprimer
+\end{itemize}
+
+\section{\texttt{PeriodeComptableController} --- \texttt{/api/accounting/periodes}}
+\begin{itemize}
+  \item \textbf{POST} \texttt{/api/accounting/periodes} --- créer (\texttt{PeriodeComptableDto})
+  \item \textbf{GET} \texttt{/api/accounting/periodes/\{id\}} --- obtenir
+  \item \textbf{GET} \texttt{/api/accounting/periodes} --- lister
+  \item \textbf{GET} \texttt{/api/accounting/periodes/code/\{code\}} --- obtenir par code
+  \item \textbf{GET} \texttt{/api/accounting/periodes/by-date?date=...} --- obtenir par date
+  \item \textbf{GET} \texttt{/api/accounting/periodes/non-closed} --- lister ouvertes
+  \item \textbf{GET} \texttt{/api/accounting/periodes/range?start\_date=...\&end\_date=...} --- intervalle
+  \item \textbf{PUT} \texttt{/api/accounting/periodes/\{id\}} --- mise à jour
+  \item \textbf{PUT} \texttt{/api/accounting/periodes/\{id\}/close} --- clôture
+  \item \textbf{DELETE} \texttt{/api/accounting/periodes/\{id\}} --- suppression
+\end{itemize}
+
+\section{\texttt{ExerciceComptableController} --- \texttt{/api/accounting/exercices}}
+\begin{itemize}
+  \item \textbf{POST} \texttt{/api/accounting/exercices} --- créer (\texttt{ExerciceComptableDto})
+  \item \textbf{GET} \texttt{/api/accounting/exercices/\{id\}} --- obtenir
+  \item \textbf{GET} \texttt{/api/accounting/exercices/\{id\}/periodes} --- périodes de l'exercice
+  \item \textbf{GET} \texttt{/api/accounting/exercices} --- lister
+  \item \textbf{GET} \texttt{/api/accounting/exercices/active?date=...} --- actif pour date
+  \item \textbf{PUT} \texttt{/api/accounting/exercices/\{id\}} --- mise à jour
+  \item \textbf{POST} \texttt{/api/accounting/exercices/\{id\}/close} --- clôture exercice
+  \item \textbf{DELETE} \texttt{/api/accounting/exercices/\{id\}} --- suppression
+  \item \textbf{PATCH} \texttt{/api/accounting/exercices/\{id\}/deactivate} --- désactivation
+\end{itemize}
+
+\section{\texttt{RapportController} --- \texttt{/api/accounting/rapport}}
+\begin{itemize}
+  \item \textbf{GET} \texttt{/api/accounting/rapport/bilan} --- bilan (JSON)
+  \item \textbf{GET} \texttt{/api/accounting/rapport/compte-resultat} --- compte de résultat (JSON)
+  \item \textbf{GET} \texttt{/api/accounting/rapport/flux-tresorerie} --- flux de trésorerie (JSON)
+  \item \textbf{GET} \texttt{/api/accounting/rapport/resume-executif} --- résumé exécutif (JSON)
+  \item \textbf{GET} \texttt{/api/accounting/rapport/grand-livre} --- grand livre (JSON)
+  \item \textbf{GET} \texttt{/api/accounting/rapport/balance} --- balance (JSON)
+  \item \textbf{GET} \texttt{/api/accounting/rapport/balance-agee} --- balance âgée (JSON)
+  \item \textbf{GET} \texttt{/api/accounting/rapport/bilan/export/pdf} --- bilan (PDF)
+  \item \textbf{GET} \texttt{/api/accounting/rapport/compte-resultat/export/pdf} --- compte résultat (PDF)
+  \item \textbf{GET} \texttt{/api/accounting/rapport/grand-livre/export/pdf} --- grand livre (PDF)
+  \item \textbf{GET} \texttt{/api/accounting/rapport/balance/export/pdf} --- balance (PDF)
+  \item \textbf{GET} \texttt{/api/accounting/rapport/balance-agee/export/pdf} --- balance âgée (PDF)
+\end{itemize}
+
+\section{\texttt{PointageController} --- \texttt{/api/accounting/pointage}}
+\begin{itemize}
+  \item \textbf{POST} \texttt{/api/accounting/pointage/import} --- import relevé bancaire (CSV) + pointage
+\end{itemize}
+
+\section{\texttt{LettrageController} --- \texttt{/api/comptable/lettrage}}
+\begin{itemize}
+  \item \textbf{POST} \texttt{/api/comptable/lettrage/auto} --- lettrage automatique
+  \item \textbf{GET} \texttt{/api/comptable/lettrage/status} --- statut (placeholder)
+\end{itemize}
+
+\section{Note}
+Cette annexe sera étendue au même format pour les autres contrôleurs du domaine (\texttt{taxes}, \texttt{devises}, \texttt{immobilisations}, \texttt{budgets}, \texttt{paie}, \texttt{brouillards}, \texttt{regularisations}, \texttt{rapprochement}, \texttt{releves}, \texttt{notifications}, \texttt{attachments}, etc.).
+

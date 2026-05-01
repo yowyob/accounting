@@ -1,0 +1,92 @@
+\chapter{Annexe B --- Dictionnaire de données (exhaustif)}
+\label{annexe:data}
+
+\section{Principe}
+Le schéma est géré par \textbf{Liquibase}. Une migration structurante (\texttt{changeset-017-unify-tenant-org.xml}) renomme \texttt{tenant\_id} en \texttt{organization\_id} sur la majorité des tables et unifie \texttt{tenants} et \texttt{organizations}.
+
+\section{Tables cœur (comptabilité)}
+\subsection{\texttt{organizations}}
+\begin{itemize}
+  \item \textbf{Rôle}: organisation (tenant) --- unité d'isolation des données.
+  \item \textbf{Identifiant}: \texttt{id} (UUID, PK)
+  \item \textbf{Attributs} (extrait): \texttt{name}, \texttt{email}, \texttt{telephone}, \texttt{address}, \texttt{tax\_id}, timestamps.
+\end{itemize}
+
+\subsection{\texttt{comptes}}
+\begin{itemize}
+  \item \textbf{PK}: \texttt{id} (UUID)
+  \item \textbf{FK}: \texttt{organization\_id} \(\rightarrow\) \texttt{organizations(id)} (après unification)
+  \item \textbf{Champs}: \texttt{no\_compte}, \texttt{libelle}, \texttt{classe}, \texttt{type\_compte}, \texttt{solde}, \texttt{actif}, audit.
+  \item \textbf{Unicité}: \texttt{(organization\_id, no\_compte)} (contrainte unique).
+\end{itemize}
+
+\subsection{\texttt{plans\_comptables}}
+\begin{itemize}
+  \item \textbf{PK}: \texttt{id} (UUID)
+  \item \textbf{FK}: \texttt{organization\_id} \(\rightarrow\) \texttt{organizations(id)}
+  \item \textbf{Champs}: \texttt{classe}, \texttt{no\_compte}, \texttt{libelle}, \texttt{notes}, \texttt{actif}, audit.
+\end{itemize}
+
+\subsection{\texttt{journaux\_comptables}}
+\begin{itemize}
+  \item \textbf{PK}: \texttt{id} (UUID)
+  \item \textbf{FK}: \texttt{organization\_id} \(\rightarrow\) \texttt{organizations(id)}
+  \item \textbf{Champs}: \texttt{code\_journal}, \texttt{libelle}, \texttt{type\_journal}, \texttt{actif}, audit.
+\end{itemize}
+
+\subsection{\texttt{exercices\_comptables}}
+\begin{itemize}
+  \item \textbf{PK}: \texttt{id} (UUID)
+  \item \textbf{FK}: \texttt{organization\_id} \(\rightarrow\) \texttt{organizations(id)}
+  \item \textbf{Champs}: \texttt{code}, \texttt{libelle}, \texttt{date\_debut}, \texttt{date\_fin}, \texttt{cloture}, audit.
+\end{itemize}
+
+\subsection{\texttt{periodes\_comptables}}
+\begin{itemize}
+  \item \textbf{PK}: \texttt{id} (UUID)
+  \item \textbf{FK}: \texttt{organization\_id} \(\rightarrow\) \texttt{organizations(id)}
+  \item \textbf{FK}: \texttt{exercice\_id} \(\rightarrow\) \texttt{exercices\_comptables(id)}
+  \item \textbf{Champs}: \texttt{code}, \texttt{date\_debut}, \texttt{date\_fin}, \texttt{cloturee}, \texttt{date\_cloture}, audit.
+\end{itemize}
+
+\subsection{\texttt{ecritures\_comptables}}
+\begin{itemize}
+  \item \textbf{PK}: \texttt{id} (UUID)
+  \item \textbf{FK}: \texttt{organization\_id} \(\rightarrow\) \texttt{organizations(id)}
+  \item \textbf{FK}: \texttt{journal\_id} \(\rightarrow\) \texttt{journaux\_comptables(id)}
+  \item \textbf{FK}: \texttt{periode\_id} \(\rightarrow\) \texttt{periodes\_comptables(id)}
+  \item \textbf{Champs}: \texttt{numero\_ecriture} (unique), \texttt{libelle}, \texttt{date\_ecriture}, totaux débit/crédit, \texttt{validee}, \texttt{statut}, \texttt{actif}, audit.
+\end{itemize}
+
+\subsection{\texttt{details\_ecritures}}
+\begin{itemize}
+  \item \textbf{PK}: \texttt{id} (UUID)
+  \item \textbf{FK}: \texttt{organization\_id} \(\rightarrow\) \texttt{organizations(id)}
+  \item \textbf{FK}: \texttt{ecriture\_id} \(\rightarrow\) \texttt{ecritures\_comptables(id)}
+  \item \textbf{FK}: \texttt{compte\_id} \(\rightarrow\) \texttt{plans\_comptables(id)} (selon changeset initial)
+  \item \textbf{Champs}: \texttt{sens}, \texttt{montant\_debit}, \texttt{montant\_credit}, \texttt{lettree}, \texttt{date\_lettrage}, \texttt{pointee}, \texttt{reference\_bancaire}, audit.
+\end{itemize}
+
+\subsection{\texttt{journal\_audit}}
+\begin{itemize}
+  \item \textbf{PK}: \texttt{journal\_audit\_id} (UUID) / entité \texttt{JournalAudit}
+  \item \textbf{FK}: \texttt{organization\_id} \(\rightarrow\) \texttt{organizations(id)}
+  \item \textbf{FK}: \texttt{ecriture\_id} \(\rightarrow\) \texttt{ecritures\_comptables(id)} (SET NULL)
+  \item \textbf{Champs}: \texttt{action}, \texttt{date\_action}, \texttt{utilisateur}, \texttt{details}, avant/après, audit.
+\end{itemize}
+
+\section{Tables avancées (extraits)}
+\subsection{\texttt{brouillards\_comptables}}
+Table de brouillard/draft (source externe, pièce, JSONB \texttt{data\_json}, statut, lien optionnel vers \texttt{ecriture\_id}).
+
+\subsection{\texttt{immobilisations} / \texttt{amortissements\_lignes}}
+Gestion des immobilisations et amortissements, avec liens vers des comptes (\texttt{compte\_immo\_id}, \texttt{compte\_amort\_id}, \texttt{compte\_dotation\_id}) et exercice.
+
+\section{Note de complétude}
+Ce dictionnaire est aligné sur les changesets observés (\texttt{001..020}). Il peut être enrichi section par section avec:
+\begin{itemize}
+  \item types exacts, nullabilité et valeurs par défaut,
+  \item index/contraintes (unique, FK, cascade),
+  \item règles métier associées par service.
+\end{itemize}
+
