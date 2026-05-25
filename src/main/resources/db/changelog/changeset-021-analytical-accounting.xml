@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <changeSet id="021-analytical-accounting" author="antigravity">
+        <!-- 1. Création de la table axes_analytiques -->
+        <createTable tableName="axes_analytiques">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_axes_analytiques" nullable="false"/>
+            </column>
+            <column name="organization_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libelle" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="responsable" type="VARCHAR(255)"/>
+            <column name="actif" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(255)"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+        </createTable>
+
+        <createIndex tableName="axes_analytiques" indexName="idx_axes_analytiques_org">
+            <column name="organization_id"/>
+        </createIndex>
+
+        <!-- 2. Création de la table de jointure axe_analytique_comptes (Many-to-Many) -->
+        <createTable tableName="axe_analytique_comptes">
+            <column name="axe_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_axe_compte_axe" referencedTableName="axes_analytiques" referencedColumnNames="id" deleteCascade="true"/>
+            </column>
+            <column name="compte_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_axe_compte_compte" referencedTableName="comptes" referencedColumnNames="id" deleteCascade="true"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="axe_analytique_comptes" columnNames="axe_id, compte_id" constraintName="pk_axe_analytique_comptes"/>
+
+        <!-- 3. Altération de la table budgets pour supporter la hiérarchie -->
+        <dropNotNullConstraint tableName="budgets" columnName="compte_id" columnDataType="UUID"/>
+        
+        <renameColumn tableName="budgets" oldColumnName="montant_budget" newColumnName="montant_alloue" columnDataType="NUMERIC(18,2)"/>
+        <dropNotNullConstraint tableName="budgets" columnName="montant_alloue" columnDataType="NUMERIC(18,2)"/>
+
+        <addColumn tableName="budgets">
+            <column name="parent_id" type="UUID">
+                <constraints foreignKeyName="fk_budget_parent" referencedTableName="budgets" referencedColumnNames="id" deleteCascade="true"/>
+            </column>
+            <column name="code" type="VARCHAR(100)"/>
+            <column name="nom" type="VARCHAR(255)"/>
+            <column name="statut" type="VARCHAR(50)" defaultValue="BROUILLON"/>
+            <column name="seuil_alerte" type="INT" defaultValueNumeric="80"/>
+            <column name="date_debut" type="DATE"/>
+            <column name="date_fin" type="DATE"/>
+        </addColumn>
+
+        <!-- 4. Création de la table de jointure budget_axes (Many-to-Many pour type ANALYTIQUE) -->
+        <createTable tableName="budget_axes">
+            <column name="budget_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_budget_axe_budget" referencedTableName="budgets" referencedColumnNames="id" deleteCascade="true"/>
+            </column>
+            <column name="axe_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_budget_axe_axe" referencedTableName="axes_analytiques" referencedColumnNames="id" deleteCascade="true"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="budget_axes" columnNames="budget_id, axe_id" constraintName="pk_budget_axes"/>
+
+        <!-- 5. Création de la table budget_lignes_comptes (Lignes budgétaires de comptes pour budgets analytiques) -->
+        <createTable tableName="budget_lignes_comptes">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_budget_lignes_comptes" nullable="false"/>
+            </column>
+            <column name="budget_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_ligne_budget" referencedTableName="budgets" referencedColumnNames="id" deleteCascade="true"/>
+            </column>
+            <column name="compte_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_ligne_compte" referencedTableName="comptes" referencedColumnNames="id"/>
+            </column>
+            <column name="montant_alloue" type="NUMERIC(18,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="VARCHAR(255)"/>
+        </createTable>
+
+        <createIndex tableName="budget_lignes_comptes" indexName="idx_budget_lignes_comptes_budget">
+            <column name="budget_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

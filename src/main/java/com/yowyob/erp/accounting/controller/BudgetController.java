@@ -20,14 +20,14 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/accounting/budgets")
 @RequiredArgsConstructor
-@Tag(name = "Budget Management", description = "Gestion des budgets prévisionnels et comparaison budget vs réalisé")
+@Tag(name = "Budget Management", description = "Gestion des budgets prévisionnels hiérarchiques et comparaison budget vs réalisé")
 @SecurityRequirement(name = "BasicAuth")
 public class BudgetController {
 
     private final BudgetService budget_service;
 
     @PostMapping
-    @Operation(summary = "Créer une ligne budgétaire")
+    @Operation(summary = "Créer un budget (hiérarchique ou analytique)")
     public Mono<ResponseEntity<ApiResponseWrapper<BudgetDto>>> create(@Valid @RequestBody BudgetDto dto) {
         return budget_service.create(dto)
             .map(r -> ResponseEntity.status(HttpStatus.CREATED)
@@ -77,5 +77,30 @@ public class BudgetController {
             @PathVariable UUID exerciceId) {
         return budget_service.getBudgetVsRealise(exerciceId)
             .map(r -> ResponseEntity.ok(ApiResponseWrapper.success(r, "Comparatif budget vs réalisé")));
+    }
+
+    // ─────────────────────────────────────────────
+    // WORKFLOW ENDPOINTS
+    // ─────────────────────────────────────────────
+
+    @PutMapping("/{id}/validate")
+    @Operation(summary = "Valider un budget")
+    public Mono<ResponseEntity<ApiResponseWrapper<BudgetDto>>> validate(@PathVariable UUID id) {
+        return budget_service.validate(id)
+            .map(r -> ResponseEntity.ok(ApiResponseWrapper.success(r, "Budget validé")));
+    }
+
+    @PutMapping("/{id}/activate")
+    @Operation(summary = "Activer un budget")
+    public Mono<ResponseEntity<ApiResponseWrapper<BudgetDto>>> activate(@PathVariable UUID id) {
+        return budget_service.activate(id)
+            .map(r -> ResponseEntity.ok(ApiResponseWrapper.success(r, "Budget activé et en cours d'utilisation")));
+    }
+
+    @PutMapping("/{id}/deactivate")
+    @Operation(summary = "Désactiver un budget")
+    public Mono<ResponseEntity<ApiResponseWrapper<BudgetDto>>> deactivate(@PathVariable UUID id) {
+        return budget_service.deactivate(id)
+            .map(r -> ResponseEntity.ok(ApiResponseWrapper.success(r, "Budget désactivé")));
     }
 }

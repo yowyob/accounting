@@ -59,8 +59,9 @@ public class SecurityConfig {
                         .permitAll()
                         .pathMatchers("/api/admin/**").hasRole("ADMIN")
                         .pathMatchers("/api/business/**").hasAnyRole("BusinessActor", "SuperAdmin")
-                        // TEMP: Allow detailed testing of accounting without token
-                        .pathMatchers("/api/accounting/**", "/api/common/attachments/**").permitAll()
+                        // Enforce authentication on all accounting endpoints (enables roles and method-level @PreAuthorize)
+                        .pathMatchers("/api/accounting/**").authenticated()
+                        .pathMatchers("/api/common/attachments/**").permitAll()
                         .pathMatchers("/api/**").authenticated()
                         .anyExchange().permitAll())
                 .addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION)

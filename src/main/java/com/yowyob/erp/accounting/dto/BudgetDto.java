@@ -1,11 +1,12 @@
 package com.yowyob.erp.accounting.dto;
 
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -21,23 +22,55 @@ public class BudgetDto {
 
     private UUID periodeId;
 
-    @NotNull(message = "Le compte est obligatoire")
-    private UUID compteId;
+    private UUID parentId;
+    private String parentNom;
 
+    private UUID compteId;
     private String noCompte;
     private String libelleCompte;
 
-    @NotNull(message = "Le montant budgété est obligatoire")
-    @Positive(message = "Le montant doit être positif")
-    private BigDecimal montantBudget;
+    private String code;
+    
+    @NotNull(message = "Le nom du budget est obligatoire")
+    private String nom;
+
+    private BigDecimal montantAlloue;
+    private BigDecimal montantConsomme;
 
     private String libelle;
     private String notes;
 
-    /** PREVISIONNEL | REVISE */
     @Builder.Default
-    private String type = "PREVISIONNEL";
+    private String type = "EXERCICE"; // EXERCICE | PERIODE | ANALYTIQUE
+
+    @Builder.Default
+    private String statut = "BROUILLON"; // BROUILLON | VALIDE | ACTIF | INACTIF | CLOTURE
+
+    @Builder.Default
+    private Integer seuilAlerte = 80;
+
+    private LocalDate dateDebut;
+    private LocalDate dateFin;
+
+    private List<UUID> axeIds;
+    private String axeLibelles;
+
+    private List<LigneBudgetCompteDto> compteLines;
 
     private LocalDateTime createdAt;
     private String createdBy;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class LigneBudgetCompteDto {
+        private UUID id;
+        private UUID compteId;
+        private String noCompte;
+        private String libelleCompte;
+        private BigDecimal montantAlloue;
+        private BigDecimal montantConsomme;
+        private String description;
+    }
 }

@@ -3,7 +3,9 @@ package com.yowyob.erp.accounting.service;
 import com.yowyob.erp.accounting.dto.BudgetDto;
 import com.yowyob.erp.accounting.dto.BudgetVsRealiseDto;
 import com.yowyob.erp.accounting.entity.Budget;
+import com.yowyob.erp.accounting.entity.BudgetLigneCompte;
 import com.yowyob.erp.accounting.repository.BudgetRepository;
+import com.yowyob.erp.accounting.repository.BudgetLigneCompteRepository;
 import com.yowyob.erp.accounting.repository.CompteRepository;
 import com.yowyob.erp.accounting.repository.DetailEcritureRepository;
 import com.yowyob.erp.accounting.repository.ExerciceComptableRepository;
@@ -19,21 +21,21 @@ import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * Gestion des budgets et comparaison budget vs réalisé.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class BudgetService {
 
     private final BudgetRepository budget_repository;
+    private final BudgetLigneCompteRepository budgetLigneCompteRepository;
     private final CompteRepository compte_repository;
     private final DetailEcritureRepository detail_repository;
     private final ExerciceComptableRepository exercice_repository;
@@ -49,23 +51,60 @@ public class BudgetService {
             .flatMap(tuple -> {
                 UUID orgId = tuple.getT1();
                 String user = tuple.getT2();
+                
                 Budget entity = Budget.builder()
                     .id(UUID.randomUUID())
                     .organizationId(orgId)
                     .exerciceId(dto.getExerciceId())
                     .periodeId(dto.getPeriodeId())
+                    .parentId(dto.getParentId())
                     .compteId(dto.getCompteId())
-                    .montantBudget(dto.getMontantBudget())
+                    .code(dto.getCode())
+                    .nom(dto.getNom())
+                    .montantAlloue(dto.getMontantAlloue())
                     .libelle(dto.getLibelle())
                     .notes(dto.getNotes())
-                    .type(dto.getType() != null ? dto.getType() : "PREVISIONNEL")
+                    .type(dto.getType() != null ? dto.getType() : "EXERCICE")
+                    .statut(dto.getStatut() != null ? dto.getStatut() : "BROUILLON")
+                    .seuilAlerte(dto.getSeuilAlerte() != null ? dto.getSeuilAlerte() : 80)
+                    .dateDebut(dto.getDateDebut())
+                    .dateFin(dto.getDateFin())
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .createdBy(user)
                     .updatedBy(user)
                     .build();
-                return budget_repository.save(entity)
-                    .flatMap(saved -> enrichDto(saved, orgId));
+
+                // Validation de plafond par rapport au parent
+                Mono<Void> validateLimit = validateBudgetLimit(entity);
+
+                return validateLimit.then(budget_repository.save(entity))
+                    .flatMap(saved -> {
+                        Mono<Void> saveAxes = Mono.empty();
+                        if (dto.getAxeIds() != null && !dto.getAxeIds().isEmpty()) {
+                            saveAxes = Flux.fromIterable(dto.getAxeIds())
+                                .flatMap(axeId -> budget_repository.linkAxe(saved.getId(), axeId))
+                                .then();
+                        }
+
+                        Mono<Void> saveLines = Mono.empty();
+                        if ("ANALYTIQUE".equals(saved.getType()) && dto.getCompteLines() != null && !dto.getCompteLines().isEmpty()) {
+                            saveLines = Flux.fromIterable(dto.getCompteLines())
+                                .flatMap(lineDto -> {
+                                    BudgetLigneCompte line = BudgetLigneCompte.builder()
+                                        .id(UUID.randomUUID())
+                                        .budgetId(saved.getId())
+                                        .compteId(lineDto.getCompteId())
+                                        .montantAlloue(lineDto.getMontantAlloue())
+                                        .description(lineDto.getDescription())
+                                        .build();
+                                    return budgetLigneCompteRepository.save(line);
+                                })
+                                .then();
+                        }
+
+                        return saveAxes.then(saveLines).then(enrichDto(saved, orgId));
+                    });
             });
     }
 
@@ -80,14 +119,53 @@ public class BudgetService {
                     .filter(b -> orgId.equals(b.getOrganizationId()))
                     .switchIfEmpty(Mono.error(new ResourceNotFoundException("Budget", id.toString())))
                     .flatMap(existing -> {
-                        existing.setMontantBudget(dto.getMontantBudget());
+                        existing.setNom(dto.getNom());
+                        existing.setMontantAlloue(dto.getMontantAlloue());
                         existing.setLibelle(dto.getLibelle());
                         existing.setNotes(dto.getNotes());
-                        existing.setType(dto.getType() != null ? dto.getType() : existing.getType());
+                        existing.setStatut(dto.getStatut() != null ? dto.getStatut() : existing.getStatut());
+                        existing.setSeuilAlerte(dto.getSeuilAlerte() != null ? dto.getSeuilAlerte() : existing.getSeuilAlerte());
+                        existing.setDateDebut(dto.getDateDebut() != null ? dto.getDateDebut() : existing.getDateDebut());
+                        existing.setDateFin(dto.getDateFin() != null ? dto.getDateFin() : existing.getDateFin());
                         existing.setUpdatedAt(LocalDateTime.now());
                         existing.setUpdatedBy(user);
                         existing.setNotNew();
-                        return budget_repository.save(existing).flatMap(saved -> enrichDto(saved, orgId));
+
+                        Mono<Void> validateLimit = validateBudgetLimit(existing);
+
+                        return validateLimit.then(budget_repository.save(existing))
+                            .flatMap(saved -> {
+                                Mono<Void> updateAxes = budget_repository.unlinkAllAxes(saved.getId())
+                                    .then(Mono.defer(() -> {
+                                        if (dto.getAxeIds() == null || dto.getAxeIds().isEmpty()) {
+                                            return Mono.empty();
+                                        }
+                                        return Flux.fromIterable(dto.getAxeIds())
+                                            .flatMap(axeId -> budget_repository.linkAxe(saved.getId(), axeId))
+                                            .then();
+                                    }));
+
+                                Mono<Void> updateLines = budgetLigneCompteRepository.deleteByBudgetId(saved.getId())
+                                    .then(Mono.defer(() -> {
+                                        if (!"ANALYTIQUE".equals(saved.getType()) || dto.getCompteLines() == null || dto.getCompteLines().isEmpty()) {
+                                            return Mono.empty();
+                                        }
+                                        return Flux.fromIterable(dto.getCompteLines())
+                                            .flatMap(lineDto -> {
+                                                BudgetLigneCompte line = BudgetLigneCompte.builder()
+                                                    .id(UUID.randomUUID())
+                                                    .budgetId(saved.getId())
+                                                    .compteId(lineDto.getCompteId())
+                                                    .montantAlloue(lineDto.getMontantAlloue())
+                                                    .description(lineDto.getDescription())
+                                                    .build();
+                                                return budgetLigneCompteRepository.save(line);
+                                            })
+                                            .then();
+                                    }));
+
+                                return updateAxes.then(updateLines).then(enrichDto(saved, orgId));
+                            });
                     });
             });
     }
@@ -98,7 +176,9 @@ public class BudgetService {
             .flatMap(orgId -> budget_repository.findById(id)
                 .filter(b -> orgId.equals(b.getOrganizationId()))
                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Budget", id.toString())))
-                .flatMap(budget_repository::delete));
+                .flatMap(budget -> budget_repository.unlinkAllAxes(budget.getId())
+                    .then(budgetLigneCompteRepository.deleteByBudgetId(budget.getId()))
+                    .then(budget_repository.delete(budget))));
     }
 
     public Mono<BudgetDto> findById(UUID id) {
@@ -122,24 +202,57 @@ public class BudgetService {
     }
 
     // ─────────────────────────────────────────────
+    // WORKFLOW ACTION
+    // ─────────────────────────────────────────────
+
+    @Transactional
+    public Mono<BudgetDto> validate(UUID id) {
+        return updateStatut(id, "VALIDE");
+    }
+
+    @Transactional
+    public Mono<BudgetDto> activate(UUID id) {
+        return updateStatut(id, "ACTIF");
+    }
+
+    @Transactional
+    public Mono<BudgetDto> deactivate(UUID id) {
+        return updateStatut(id, "INACTIF");
+    }
+
+    private Mono<BudgetDto> updateStatut(UUID id, String status) {
+        return ReactiveOrganizationContext.getOrganizationId()
+            .zipWith(ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system"))
+            .flatMap(tuple -> {
+                UUID orgId = tuple.getT1();
+                String user = tuple.getT2();
+                return budget_repository.findById(id)
+                    .filter(b -> orgId.equals(b.getOrganizationId()))
+                    .switchIfEmpty(Mono.error(new ResourceNotFoundException("Budget", id.toString())))
+                    .flatMap(b -> {
+                        b.setStatut(status);
+                        b.setUpdatedAt(LocalDateTime.now());
+                        b.setUpdatedBy(user);
+                        b.setNotNew();
+                        return budget_repository.save(b).flatMap(saved -> enrichDto(saved, orgId));
+                    });
+            });
+    }
+
+    // ─────────────────────────────────────────────
     // COMPARAISON BUDGET VS RÉALISÉ
     // ─────────────────────────────────────────────
 
-    /**
-     * Compare le budget prévisionnel avec les montants réellement comptabilisés
-     * sur la période de l'exercice donné.
-     */
     public Mono<BudgetVsRealiseDto> getBudgetVsRealise(UUID exerciceId) {
         return ReactiveOrganizationContext.getOrganizationId()
             .flatMap(orgId -> exercice_repository.findById(exerciceId)
                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("ExerciceComptable", exerciceId.toString())))
                 .flatMap(exercice -> {
-                    // 1. Récupère toutes les lignes budgétaires de l'exercice
+                    // Pour garder l'ancienne signature compatible, on récupère les budgets analytiques ou de type PREVISIONNEL
                     Mono<List<Budget>> budgetsMono = budget_repository
                         .findByOrganizationIdAndExerciceId(orgId, exerciceId)
                         .collectList();
 
-                    // 2. Récupère tous les détails d'écritures de l'exercice
                     Mono<Map<UUID, BigDecimal>> realiseByCompteMono = detail_repository
                         .findByOrganization_IdAndDateRange(orgId,
                             exercice.getDate_debut().atStartOfDay(),
@@ -161,32 +274,48 @@ public class BudgetService {
                             List<Budget> budgets = tuple.getT1();
                             Map<UUID, BigDecimal> realiseMap = tuple.getT2();
 
-                            // Enrichissement avec les informations des comptes
                             return compte_repository.findAllByOrganization_Id(orgId)
                                 .collectMap(c -> c.getId(), c -> c)
                                 .map(compteMap -> {
-                                    List<BudgetVsRealiseDto.LigneBudgetVsRealiseDto> lignes = budgets.stream()
-                                        .map(b -> {
+                                    List<BudgetVsRealiseDto.LigneBudgetVsRealiseDto> lignes = new ArrayList<>();
+                                    
+                                    for (Budget b : budgets) {
+                                        if ("ANALYTIQUE".equals(b.getType())) {
+                                            // Pour les budgets analytiques, on peut agréger par compte
+                                            // Nous aurons des lignes dans LigneBudgetVsRealiseDto pour ce budget
+                                            BigDecimal budgetVal = b.getMontantAlloue() != null ? b.getMontantAlloue() : BigDecimal.ZERO;
+                                            BigDecimal totalRealise = BigDecimal.ZERO;
+                                            
+                                            // Remplir une ligne par budget
+                                            lignes.add(BudgetVsRealiseDto.LigneBudgetVsRealiseDto.builder()
+                                                .noCompte(b.getCode() != null ? b.getCode() : "ANA")
+                                                .libelleCompte(b.getNom())
+                                                .montantBudget(budgetVal)
+                                                .montantRealise(BigDecimal.ZERO) // sera calculé via details
+                                                .ecart(budgetVal.negate())
+                                                .tauxRealisation(BigDecimal.ZERO)
+                                                .build());
+                                        } else if (b.getCompteId() != null) {
                                             var compte = compteMap.get(b.getCompteId());
                                             String noCompte = compte != null ? compte.getNo_compte() : "?";
                                             String libelleC = compte != null ? compte.getLibelle() : "?";
-                                            BigDecimal budget = b.getMontantBudget();
+                                            BigDecimal budgetVal = b.getMontantAlloue() != null ? b.getMontantAlloue() : BigDecimal.ZERO;
                                             BigDecimal realise = realiseMap.getOrDefault(b.getCompteId(), BigDecimal.ZERO).abs();
-                                            BigDecimal ecart = realise.subtract(budget);
-                                            BigDecimal taux = budget.compareTo(BigDecimal.ZERO) != 0
-                                                ? realise.divide(budget, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
+                                            BigDecimal ecart = realise.subtract(budgetVal);
+                                            BigDecimal taux = budgetVal.compareTo(BigDecimal.ZERO) != 0
+                                                ? realise.divide(budgetVal, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
                                                 : BigDecimal.ZERO;
 
-                                            return BudgetVsRealiseDto.LigneBudgetVsRealiseDto.builder()
+                                            lignes.add(BudgetVsRealiseDto.LigneBudgetVsRealiseDto.builder()
                                                 .noCompte(noCompte)
                                                 .libelleCompte(libelleC)
-                                                .montantBudget(budget)
+                                                .montantBudget(budgetVal)
                                                 .montantRealise(realise)
                                                 .ecart(ecart)
                                                 .tauxRealisation(taux)
-                                                .build();
-                                        })
-                                        .collect(Collectors.toList());
+                                                .build());
+                                        }
+                                    }
 
                                     BigDecimal totalBudget = lignes.stream()
                                         .map(BudgetVsRealiseDto.LigneBudgetVsRealiseDto::getMontantBudget)
@@ -209,33 +338,157 @@ public class BudgetService {
     }
 
     // ─────────────────────────────────────────────
-    // UTILITAIRE
+    // UTILITAIRES DE VALIDATION ET ENRICHISSEMENT
     // ─────────────────────────────────────────────
 
+    private Mono<Void> validateBudgetLimit(Budget entity) {
+        if (entity.getParentId() == null || entity.getMontantAlloue() == null || "BROUILLON".equals(entity.getStatut())) {
+            return Mono.empty();
+        }
+        
+        return budget_repository.findById(entity.getParentId())
+            .switchIfEmpty(Mono.error(new ResourceNotFoundException("Budget Parent", entity.getParentId().toString())))
+            .flatMap(parent -> {
+                BigDecimal parentMax = parent.getMontantAlloue();
+                if (parentMax == null) {
+                    return Mono.empty();
+                }
+                
+                return budget_repository.findByOrganizationIdAndParentId(entity.getOrganizationId(), parent.getId())
+                    .filter(sibling -> !sibling.getId().equals(entity.getId())) // exclure soi-même en cas d'update
+                    .map(sibling -> sibling.getMontantAlloue() != null ? sibling.getMontantAlloue() : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add)
+                    .flatMap(sumOfSiblings -> {
+                        BigDecimal newTotal = sumOfSiblings.add(entity.getMontantAlloue());
+                        if (newTotal.compareTo(parentMax) > 0) {
+                            return Mono.error(new BusinessException("Le montant total alloué (" + newTotal 
+                                + ") dépasse l'enveloppe allouée du budget parent (" + parentMax + ")"));
+                        }
+                        return Mono.empty();
+                    });
+            });
+    }
+
     private Mono<BudgetDto> enrichDto(Budget b, UUID orgId) {
-        return compte_repository.findById(b.getCompteId())
-            .map(compte -> BudgetDto.builder()
-                .id(b.getId())
-                .exerciceId(b.getExerciceId())
-                .periodeId(b.getPeriodeId())
-                .compteId(b.getCompteId())
-                .noCompte(compte.getNo_compte())
-                .libelleCompte(compte.getLibelle())
-                .montantBudget(b.getMontantBudget())
-                .libelle(b.getLibelle())
-                .notes(b.getNotes())
-                .type(b.getType())
-                .createdAt(b.getCreatedAt())
-                .createdBy(b.getCreatedBy())
-                .build())
-            .defaultIfEmpty(BudgetDto.builder()
-                .id(b.getId())
-                .exerciceId(b.getExerciceId())
-                .periodeId(b.getPeriodeId())
-                .compteId(b.getCompteId())
-                .montantBudget(b.getMontantBudget())
-                .libelle(b.getLibelle())
-                .type(b.getType())
-                .build());
+        // Chargement du nom du parent si présent
+        Mono<String> parentNomMono = Mono.just("");
+        if (b.getParentId() != null) {
+            parentNomMono = budget_repository.findById(b.getParentId())
+                .map(Budget::getNom)
+                .defaultIfEmpty("");
+        }
+
+        // Chargement des axes
+        Mono<List<UUID>> axeIdsMono = budget_repository.findLinkedAxeIds(b.getId()).collectList();
+
+        // Chargement des lignes de comptes avec leurs réalisés respectifs
+        Mono<List<BudgetDto.LigneBudgetCompteDto>> linesMono = Mono.just(new ArrayList<>());
+        if ("ANALYTIQUE".equals(b.getType())) {
+            linesMono = budgetLigneCompteRepository.findByBudgetId(b.getId())
+                .flatMap(line -> compte_repository.findById(line.getCompteId())
+                    .flatMap(compte -> {
+                        // Calcul du réalisé de cette ligne sur la plage de dates
+                        LocalDate start = b.getDateDebut();
+                        LocalDate end = b.getDateFin();
+                        
+                        return getConsumedAmountForAccounts(orgId, List.of(line.getCompteId()), start, end)
+                            .map(consumed -> BudgetDto.LigneBudgetCompteDto.builder()
+                                .id(line.getId())
+                                .compteId(line.getCompteId())
+                                .noCompte(compte.getNo_compte())
+                                .libelleCompte(compte.getLibelle())
+                                .montantAlloue(line.getMontantAlloue())
+                                .montantConsomme(consumed)
+                                .description(line.getDescription())
+                                .build());
+                    }))
+                .collectList();
+        }
+
+        // Pour les budgets EXERCICE ou PERIODE, calcul global du réalisé
+        Mono<BigDecimal> totalConsumedMono = Mono.just(BigDecimal.ZERO);
+        if ("ANALYTIQUE".equals(b.getType())) {
+            totalConsumedMono = linesMono.map(lines -> lines.stream()
+                .map(BudgetDto.LigneBudgetCompteDto::getMontantConsomme)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
+        } else if (b.getDateDebut() != null && b.getDateFin() != null) {
+            // Pour exercice ou période, récupérer tous les comptes budgétés en enfants récursifs
+            totalConsumedMono = getCompteIdsForBudget(orgId, b.getId())
+                .collectList()
+                .flatMap(compteIds -> getConsumedAmountForAccounts(orgId, compteIds, b.getDateDebut(), b.getDateFin()));
+        }
+
+        return Mono.zip(parentNomMono, axeIdsMono, linesMono, totalConsumedMono)
+            .flatMap(tuple -> {
+                String parentNom = tuple.getT1();
+                List<UUID> axeIds = tuple.getT2();
+                List<BudgetDto.LigneBudgetCompteDto> lines = tuple.getT3();
+                BigDecimal totalConsumed = tuple.getT4();
+
+                BudgetDto.BudgetDtoBuilder builder = BudgetDto.builder()
+                    .id(b.getId())
+                    .exerciceId(b.getExerciceId())
+                    .periodeId(b.getPeriodeId())
+                    .parentId(b.getParentId())
+                    .parentNom(parentNom.isEmpty() ? null : parentNom)
+                    .code(b.getCode())
+                    .nom(b.getNom())
+                    .montantAlloue(b.getMontantAlloue())
+                    .montantConsomme(totalConsumed)
+                    .libelle(b.getLibelle())
+                    .notes(b.getNotes())
+                    .type(b.getType())
+                    .statut(b.getStatut())
+                    .seuilAlerte(b.getSeuilAlerte())
+                    .dateDebut(b.getDateDebut())
+                    .dateFin(b.getDateFin())
+                    .axeIds(axeIds.isEmpty() ? null : axeIds)
+                    .compteLines(lines.isEmpty() ? null : lines)
+                    .createdAt(b.getCreatedAt())
+                    .createdBy(b.getCreatedBy());
+
+                if (b.getCompteId() != null) {
+                    return compte_repository.findById(b.getCompteId())
+                        .map(compte -> {
+                            builder.compteId(b.getCompteId());
+                            builder.noCompte(compte.getNo_compte());
+                            builder.libelleCompte(compte.getLibelle());
+                            return builder.build();
+                        })
+                        .defaultIfEmpty(builder.build());
+                }
+
+                return Mono.just(builder.build());
+            });
+    }
+
+    private Flux<UUID> getCompteIdsForBudget(UUID orgId, UUID budgetId) {
+        // Récupérer récursivement les comptes liés aux budgets enfants analytiques
+        return budget_repository.findByOrganizationIdAndParentId(orgId, budgetId)
+            .flatMap(child -> {
+                if ("ANALYTIQUE".equals(child.getType())) {
+                    return budgetLigneCompteRepository.findByBudgetId(child.getId())
+                        .map(BudgetLigneCompte::getCompteId);
+                } else {
+                    return getCompteIdsForBudget(orgId, child.getId());
+                }
+            });
+    }
+
+    private Mono<BigDecimal> getConsumedAmountForAccounts(UUID orgId, List<UUID> compteIds, LocalDate start, LocalDate end) {
+        if (compteIds == null || compteIds.isEmpty() || start == null || end == null) {
+            return Mono.just(BigDecimal.ZERO);
+        }
+        LocalDateTime startLdt = start.atStartOfDay();
+        LocalDateTime endLdt = end.plusDays(1).atStartOfDay();
+
+        return detail_repository.findByOrganization_IdAndDateRange(orgId, startLdt, endLdt)
+            .filter(d -> compteIds.contains(d.getCompte_id()))
+            .map(d -> {
+                BigDecimal deb = d.getMontant_debit() != null ? d.getMontant_debit() : BigDecimal.ZERO;
+                BigDecimal cre = d.getMontant_credit() != null ? d.getMontant_credit() : BigDecimal.ZERO;
+                return deb.subtract(cre).abs();
+            })
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }
