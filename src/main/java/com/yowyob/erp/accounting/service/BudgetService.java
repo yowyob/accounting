@@ -189,6 +189,12 @@ public class BudgetService {
                 .flatMap(b -> enrichDto(b, orgId)));
     }
 
+    public Flux<BudgetDto> getAll() {
+        return ReactiveOrganizationContext.getOrganizationId()
+            .flatMapMany(orgId -> budget_repository.findByOrganizationId(orgId)
+                .flatMap(b -> enrichDto(b, orgId)));
+    }
+
     public Flux<BudgetDto> findByExercice(UUID exerciceId) {
         return ReactiveOrganizationContext.getOrganizationId()
             .flatMapMany(orgId -> budget_repository.findByOrganizationIdAndExerciceId(orgId, exerciceId)

@@ -41,6 +41,13 @@ public class BudgetController {
             .map(r -> ResponseEntity.ok(ApiResponseWrapper.success(r, "Budget trouvé")));
     }
 
+    @GetMapping
+    @Operation(summary = "Lister tous les budgets de l'organisation")
+    public Mono<ResponseEntity<ApiResponseWrapper<List<BudgetDto>>>> getAll() {
+        return budget_service.getAll().collectList()
+            .map(list -> ResponseEntity.ok(ApiResponseWrapper.success(list, list.size() + " budget(s)")));
+    }
+
     @PutMapping("/{id}")
     @Operation(summary = "Modifier un budget")
     public Mono<ResponseEntity<ApiResponseWrapper<BudgetDto>>> update(

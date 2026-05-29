@@ -109,10 +109,12 @@ public class RedisConfig {
 
                 RedisCacheManager manager = RedisCacheManager.builder(connectionFactory)
                                 .cacheDefaults(defaultConfig)
-                                .withCacheConfiguration("ecrituresAll", defaultConfig.entryTtl(Duration.ofMinutes(10)))
-                                .withCacheConfiguration("compteAll", defaultConfig.entryTtl(Duration.ofHours(1)))
-                                .withCacheConfiguration("compteSolde", defaultConfig.entryTtl(Duration.ofMinutes(5)))
-                                .withCacheConfiguration("sessionCache", defaultConfig.entryTtl(Duration.ofHours(2)))
+                                .withCacheConfiguration("ecrituresAll",  defaultConfig.entryTtl(Duration.ofMinutes(10)))
+                                .withCacheConfiguration("compteAll",     defaultConfig.entryTtl(Duration.ofHours(1)))
+                                .withCacheConfiguration("compteSolde",   defaultConfig.entryTtl(Duration.ofMinutes(5)))
+                                .withCacheConfiguration("sessionCache",  defaultConfig.entryTtl(Duration.ofHours(2)))
+                                .withCacheConfiguration("jwt-validation", defaultConfig.entryTtl(Duration.ofMinutes(5)))
+                                .withCacheConfiguration("user-info",     defaultConfig.entryTtl(Duration.ofMinutes(30)))
                                 .build();
 
                 log.info(

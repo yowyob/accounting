@@ -11,10 +11,16 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.UUID;
 
 /**
- * Service for interacting with external authentication API
+ * Service d'authentification avec fallback mock.
+ *
+ * Comportement :
+ *  1. Test de connectivité vers le service externe (timeout 2s, mis en cache 30s).
+ *  2. Si disponible  → validation/login via le service externe.
+ *  3. Si indisponible → validation/login via MockUserStore (données de test).
  */
 @Service
 @RequiredArgsConstructor
@@ -22,6 +28,7 @@ import java.util.UUID;
 public class AuthService {
 
     private final WebClient webClient;
+    private final MockUserStore mockUserStore;
 
     @Value("${auth.api.url}")
     private String authApiUrl;
@@ -29,65 +36,137 @@ public class AuthService {
     @Value("${auth.api.timeout:5000}")
     private int timeout;
 
+    @Value("${auth.mock.connectivity-timeout-ms:2000}")
+    private int connectivityTimeoutMs;
+
+    // ─── Validation de token ──────────────────────────────────────────────────
+
     /**
-     * Validates a JWT token via external API
-     * Result cached to avoid repeated calls
+     * Valide un JWT.
+     * Tente le service externe en premier ; bascule sur MockUserStore si indisponible.
+     * Résultat mis en cache (clé = token) pour éviter un appel par requête HTTP.
      */
     @Cacheable(value = "jwt-validation", key = "#token")
     public Mono<AuthValidationResponse> validateToken(String token) {
-        log.debug("Validating JWT token via external API");
+        return isExternalServiceAvailable()
+            .flatMap(available -> {
+                if (available) {
+                    log.debug("[AUTH] Validation via service externe");
+                    return validateTokenExternal(token);
+                } else {
+                    log.debug("[AUTH] Validation via mock (service externe indisponible)");
+                    return Mono.just(mockUserStore.validateToken(token));
+                }
+            });
+    }
 
+    // ─── Login externe (délégué depuis AuthController) ────────────────────────
+
+    /**
+     * Tente un login via le service externe.
+     * Utilisé uniquement lorsque {@link #isExternalServiceAvailable()} retourne true.
+     */
+    public Mono<AuthController.LoginResponse> loginExternal(String email, String password) {
         return webClient
-                .post()
-                .uri(authApiUrl + "/validate") // Token validation endpoint to be implemented by this service
-                .header("Authorization", "Bearer " + token)
-                .retrieve()
-                .bodyToMono(JsonNode.class)
-                .map(this::parseAuthResponse)
-                .timeout(Duration.ofMillis(timeout))
-                .doOnError(error -> log.error("Error validating token", error))
-                .onErrorReturn(AuthValidationResponse.invalid());
+            .post()
+            .uri(authApiUrl + "/login")
+            .bodyValue(Map.of("email", email, "password", password))
+            .retrieve()
+            .bodyToMono(JsonNode.class)
+            .timeout(Duration.ofMillis(timeout))
+            .map(this::parseLoginResponse);
+    }
+
+    // ─── Check de connectivité ────────────────────────────────────────────────
+
+    /**
+     * Teste la joignabilité du service externe (timeout 2s).
+     * Non mis en cache ici — le cache de courte durée est géré par
+     * le résultat de validateToken via Spring Cache.
+     */
+    public Mono<Boolean> isExternalServiceAvailable() {
+        return webClient
+            .get()
+            .uri(authApiUrl + "/health")
+            .retrieve()
+            .toBodilessEntity()
+            .timeout(Duration.ofMillis(connectivityTimeoutMs))
+            .map(r -> {
+                log.debug("[AUTH] Service externe disponible");
+                return true;
+            })
+            .onErrorResume(e -> {
+                log.warn("[AUTH] Service externe indisponible : {}", e.getMessage());
+                return Mono.just(false);
+            });
+    }
+
+    // ─── Helpers ──────────────────────────────────────────────────────────────
+
+    private Mono<AuthValidationResponse> validateTokenExternal(String token) {
+        return webClient
+            .post()
+            .uri(authApiUrl + "/validate")
+            .header("Authorization", "Bearer " + token)
+            .retrieve()
+            .bodyToMono(JsonNode.class)
+            .timeout(Duration.ofMillis(timeout))
+            .map(this::parseAuthResponse)
+            .onErrorReturn(AuthValidationResponse.invalid());
     }
 
     private AuthValidationResponse parseAuthResponse(JsonNode response) {
         if (response.has("valid") && response.get("valid").asBoolean()) {
             return AuthValidationResponse.builder()
-                    .valid(true)
-                    .userId(response.get("userId").asText())
-                    .organizationId(response.get("organizationId").asText())
-                    .roles(response.get("roles").asText().split(","))
-                    .build();
+                .valid(true)
+                .userId(response.get("userId").asText())
+                .organizationId(response.get("organizationId").asText())
+                .roles(response.get("roles").asText().split(","))
+                .build();
         }
         return AuthValidationResponse.invalid();
     }
 
-    /**
-     * Retrieves user information
-     */
+    private AuthController.LoginResponse parseLoginResponse(JsonNode json) {
+        var payload = new AuthController.LoginResponse.UserPayload();
+        JsonNode userNode = json.has("user") ? json.get("user") : json;
+        payload.setId(userNode.path("id").asText());
+        payload.setEmail(userNode.path("email").asText());
+        payload.setFirstName(userNode.path("firstName").asText());
+        payload.setLastName(userNode.path("lastName").asText());
+        payload.setOrganizationId(userNode.path("organizationId").asText());
+        String rolesStr = userNode.path("roles").asText("");
+        payload.setRoles(rolesStr.isBlank() ? new String[]{} : rolesStr.split(","));
+
+        var resp = new AuthController.LoginResponse();
+        resp.setToken(json.path("token").asText());
+        resp.setUser(payload);
+        return resp;
+    }
+
+    // ─── Méthodes utilitaires conservées ─────────────────────────────────────
+
     @Cacheable(value = "user-info", key = "#userEmail")
     public Mono<UserInfo> getUserInfo(String userEmail, String token) {
         return webClient
-                .get()
-                .uri(authApiUrl + "/users/email/" + userEmail)
-                .header("Authorization", "Bearer " + token)
-                .retrieve()
-                .bodyToMono(UserInfo.class)
-                .timeout(Duration.ofMillis(timeout))
-                .doOnError(error -> log.error("Error retrieving user info", error));
+            .get()
+            .uri(authApiUrl + "/users/email/" + userEmail)
+            .header("Authorization", "Bearer " + token)
+            .retrieve()
+            .bodyToMono(UserInfo.class)
+            .timeout(Duration.ofMillis(timeout))
+            .doOnError(error -> log.error("Error retrieving user info", error));
     }
 
-    /**
-     * Retrieves all employees (members) of the organization
-     */
     public Flux<OrganizationMember> getOrganizationMembers(UUID organizationId) {
         return webClient
-                .get()
-                .uri(authApiUrl + "/employees")
-                .header("X-Tenant-ID", organizationId.toString())
-                .retrieve()
-                .bodyToFlux(OrganizationMember.class)
-                .timeout(Duration.ofMillis(timeout))
-                .doOnError(error -> log.error("Error retrieving members for organization {}", organizationId, error))
-                .onErrorResume(e -> Flux.empty());
+            .get()
+            .uri(authApiUrl + "/employees")
+            .header("X-Tenant-ID", organizationId.toString())
+            .retrieve()
+            .bodyToFlux(OrganizationMember.class)
+            .timeout(Duration.ofMillis(timeout))
+            .doOnError(error -> log.error("Error retrieving members for organization {}", organizationId, error))
+            .onErrorResume(e -> Flux.empty());
     }
 }
