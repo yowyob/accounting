@@ -1,5 +1,5 @@
 package com.yowyob.erp.config.organization;
-import com.yowyob.erp.accounting.repository.OrganizationRepository;
+import com.yowyob.erp.accounting.infrastructure.persistence.repository.OrganizationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class OrganizationContextHolder {

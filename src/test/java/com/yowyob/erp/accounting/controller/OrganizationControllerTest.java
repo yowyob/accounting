@@ -1,8 +1,9 @@
 package com.yowyob.erp.accounting.controller;
 
-import com.yowyob.erp.accounting.dto.OrganizationDto;
-import com.yowyob.erp.accounting.service.OrganizationService;
-import com.yowyob.erp.common.dto.ApiResponseWrapper;
+import com.yowyob.erp.accounting.infrastructure.web.dto.OrganizationDto;
+import com.yowyob.erp.accounting.domain.port.in.OrganizationUseCase;
+import com.yowyob.erp.shared.infrastructure.dto.ApiResponseWrapper;
+import com.yowyob.erp.accounting.infrastructure.web.controller.OrganizationController;
 import com.yowyob.erp.config.auth.AuthService;
 import com.yowyob.erp.config.auth.SecurityConfig;
 import com.yowyob.erp.config.auth.JwtAuthenticationFilter;
@@ -34,7 +35,7 @@ public class OrganizationControllerTest {
         private WebTestClient webTestClient;
 
         @MockitoBean
-        private OrganizationService organizationService;
+        private OrganizationUseCase organizationService;
 
         @MockitoBean
         private AuthService authService;

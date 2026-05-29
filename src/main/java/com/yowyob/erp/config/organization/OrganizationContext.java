@@ -1,8 +1,8 @@
 package com.yowyob.erp.config.organization;
 
-import com.yowyob.erp.accounting.entity.Organization;
-import com.yowyob.erp.accounting.repository.OrganizationRepository;
-import com.yowyob.erp.common.exception.ResourceNotFoundException;
+import com.yowyob.erp.accounting.domain.model.Organization;
+import com.yowyob.erp.accounting.infrastructure.persistence.repository.OrganizationRepository;
+import com.yowyob.erp.shared.domain.exception.ResourceNotFoundException;
 import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

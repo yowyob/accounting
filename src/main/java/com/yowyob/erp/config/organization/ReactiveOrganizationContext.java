@@ -1,6 +1,6 @@
 package com.yowyob.erp.config.organization;
 
-import com.yowyob.erp.accounting.entity.Organization;
+import com.yowyob.erp.accounting.domain.model.Organization;
 import reactor.core.publisher.Mono;
 import reactor.util.context.Context;
 

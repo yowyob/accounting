@@ -1,0 +1,101 @@
+package com.yowyob.erp.accounting.infrastructure.web.controller;
+
+import com.yowyob.erp.accounting.infrastructure.web.dto.TauxChangeDto;
+import com.yowyob.erp.accounting.domain.port.in.TauxChangeUseCase;
+import com.yowyob.erp.shared.infrastructure.dto.ApiResponseWrapper;
+import com.yowyob.erp.shared.domain.exception.ResourceNotFoundException;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
+import reactor.core.publisher.Mono;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Reactive Controller for managing exchange rates.
+ */
+@RestController
+@RequestMapping("/api/accounting/exchange-rates")
+@RequiredArgsConstructor
+@Tag(name = "Exchange Rate Management", description = "Endpoints for managing organization-specific exchange rates")
+@Slf4j
+public class TauxChangeController {
+
+        private final TauxChangeUseCase taux_service;
+
+        /**
+         * Creates a new exchange rate.
+         */
+        @PostMapping
+        @Operation(summary = "Create a new exchange rate")
+        public Mono<ResponseEntity<ApiResponseWrapper<TauxChangeDto>>> createTauxChange(
+                        @Valid @RequestBody TauxChangeDto dto) {
+                log.info("Received request to create exchange rate: {}", dto);
+                return taux_service.createTauxChange(dto)
+                                .map(created -> ResponseEntity.status(HttpStatus.CREATED)
+                                                .body(ApiResponseWrapper.success(created,
+                                                                "Exchange rate created successfully")))
+                                .switchIfEmpty(Mono.error(new RuntimeException(
+                                                "Service returned empty result (possibly missing organization context)")))
+                                .doOnError(e -> log.error("Error creating exchange rate", e))
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
+        }
+
+        /**
+         * Lists all exchange rates for the current organization.
+         */
+        @GetMapping
+        @Operation(summary = "List all exchange rates for the current organization")
+        public Mono<ResponseEntity<ApiResponseWrapper<List<TauxChangeDto>>>> getOrganizationRates() {
+                return taux_service.getOrganizationRates()
+                                .map(rates -> ResponseEntity
+                                                .ok(ApiResponseWrapper.success(rates,
+                                                                "Exchange rates list retrieved successfully")));
+        }
+
+        /**
+         * Retrieves the latest rate for a currency pair.
+         */
+        @GetMapping("/latest")
+        @Operation(summary = "Get the latest rate for a currency pair at a specific date")
+        public Mono<ResponseEntity<ApiResponseWrapper<TauxChangeDto>>> getLatestRate(
+                        @RequestParam UUID sourceId,
+                        @RequestParam UUID targetId,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime date) {
+
+                LocalDateTime targetDate = date != null ? date : LocalDateTime.now();
+                return taux_service.getLatestRate(sourceId, targetId, targetDate)
+                                .map(rate -> ResponseEntity.ok(ApiResponseWrapper.success(rate, "Rate found")))
+                                .switchIfEmpty(
+                                                Mono.error(new ResourceNotFoundException(
+                                                                "Exchange rate not found for this pair and date")));
+        }
+
+        /**
+         * Deletes an exchange rate by its ID.
+         */
+        @DeleteMapping("/{id}")
+        @Operation(summary = "Delete an exchange rate")
+        public Mono<ResponseEntity<ApiResponseWrapper<Void>>> deleteTauxChange(@PathVariable UUID id) {
+                return taux_service.deleteTauxChange(id)
+                                .then(Mono.fromCallable(() -> ResponseEntity
+                                                .ok(ApiResponseWrapper.success(null,
+                                                                "Exchange rate deleted successfully"))));
+        }
+}

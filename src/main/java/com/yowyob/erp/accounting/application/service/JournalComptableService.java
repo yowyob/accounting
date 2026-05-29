@@ -1,0 +1,474 @@
+package com.yowyob.erp.accounting.application.service;
+import com.yowyob.erp.accounting.domain.port.in.JournalComptableUseCase;
+
+import com.yowyob.erp.accounting.infrastructure.web.dto.EcritureComptableDto;
+import com.yowyob.erp.accounting.infrastructure.web.dto.JournalAuditDto;
+import com.yowyob.erp.accounting.infrastructure.web.dto.JournalComptableDto;
+import com.yowyob.erp.accounting.domain.model.EcritureComptable;
+import com.yowyob.erp.accounting.domain.model.JournalAudit;
+import com.yowyob.erp.accounting.domain.model.JournalComptable;
+import com.yowyob.erp.accounting.domain.model.Organization;
+import com.yowyob.erp.accounting.infrastructure.persistence.repository.CompteRepository;
+import com.yowyob.erp.accounting.infrastructure.persistence.repository.DetailEcritureRepository;
+import com.yowyob.erp.accounting.infrastructure.persistence.repository.EcritureComptableRepository;
+import com.yowyob.erp.accounting.infrastructure.persistence.repository.JournalAuditRepository;
+import com.yowyob.erp.accounting.infrastructure.persistence.repository.JournalComptableRepository;
+import com.yowyob.erp.shared.domain.constants.AppConstants;
+import com.yowyob.erp.shared.domain.exception.ResourceNotFoundException;
+import com.yowyob.erp.config.kafka.KafkaMessageService;
+import com.yowyob.erp.config.redis.RedisService;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
+
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Reactive Service for managing accounting journals.
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class JournalComptableService implements JournalComptableUseCase {
+
+        private final JournalComptableRepository journal_repository;
+        private final EcritureComptableRepository ecriture_repository;
+        private final DetailEcritureRepository detail_repository;
+        private final CompteRepository compte_repository;
+        private final JournalAuditRepository audit_repository;
+        private final Validator validator;
+        private final KafkaMessageService kafka_service;
+        private final RedisService redis_service;
+
+        private static final String CACHE_JOURNAL_ALL = "journal:all:";
+        private static final String CACHE_JOURNAL_ACTIVE = "journal:active:";
+
+        /**
+         * Creates a new accounting journal.
+         */
+        @Transactional
+        public Mono<JournalComptableDto> createJournalComptable(JournalComptableDto dto) {
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
+                                                .flatMap(user -> {
+                                                        log.info("📓 Creating accounting journal [{}] for organization {}",
+                                                                        dto.getCode_journal(),
+                                                                        organization_id);
+
+                                                        return validateJournalComptableDto(dto)
+                                                                        .then(journal_repository
+                                                                                        .existsByOrganization_IdAndCode_journal(
+                                                                                                        organization_id,
+                                                                                                        dto.getCode_journal()))
+                                                                        .flatMap(exists -> {
+                                                                                if (Boolean.TRUE.equals(exists)) {
+                                                                                        return Mono.error(
+                                                                                                        new IllegalArgumentException(
+                                                                                                                        "Journal code already in use: "
+                                                                                                                                        + dto.getCode_journal()));
+                                                                                }
+                                                                                return ReactiveOrganizationContext
+                                                                                                .getCurrentOrganizationAsOrganization()
+                                                                                                .flatMap(organization -> {
+                                                                                                        JournalComptable entity = mapToEntity(
+                                                                                                                        dto,
+                                                                                                                        organization);
+                                                                                                        entity.setOrganizationId(
+                                                                                                                        organization.getId());
+                                                                                                        entity.setCreated_at(
+                                                                                                                        LocalDateTime.now());
+                                                                                                        entity.setUpdated_at(
+                                                                                                                        LocalDateTime.now());
+                                                                                                        entity.setCreated_by(
+                                                                                                                        user);
+                                                                                                        entity.setUpdated_by(
+                                                                                                                        user);
+
+                                                                                                        return journal_repository
+                                                                                                                        .save(entity)
+                                                                                                                        .flatMap(saved -> logAudit(
+                                                                                                                                        organization,
+                                                                                                                                        user,
+                                                                                                                                        "JOURNAL_CREATED",
+                                                                                                                                        "Creation of journal "
+                                                                                                                                                        + dto.getCode_journal())
+                                                                                                                                        .then(redis_service
+                                                                                                                                                        .delete(CACHE_JOURNAL_ALL
+                                                                                                                                                                        + organization_id))
+                                                                                                                                        .then(redis_service
+                                                                                                                                                        .delete(CACHE_JOURNAL_ACTIVE
+                                                                                                                                                                        + organization_id))
+                                                                                                                                        .thenReturn(mapToDto(
+                                                                                                                                                        saved)));
+                                                                                                });
+                                                                        });
+                                                }));
+        }
+
+        /**
+         * Retrieves a journal by its ID.
+         */
+        public Mono<JournalComptableDto> getJournalComptable(UUID journal_id) {
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
+                                        log.info("🔍 Retrieving accounting journal [{}] for organization {}", journal_id,
+                                                        organization_id);
+                                        return journal_repository.findByOrganization_IdAndId(organization_id, journal_id)
+                                                        .switchIfEmpty(Mono
+                                                                        .error(new ResourceNotFoundException(
+                                                                                        "JournalComptable",
+                                                                                        journal_id.toString())))
+                                                        .flatMap(journal -> {
+                                                                JournalComptableDto dto = mapToDto(journal);
+                                                                return ecriture_repository
+                                                                                .findByOrganization_IdAndJournal_Id(organization_id,
+                                                                                                journal_id)
+                                                                                .flatMap(this::getFullEcritureDto)
+                                                                                .collectList()
+                                                                                .map(ecritures -> {
+                                                                                        dto.setEcriture_comptable(
+                                                                                                        ecritures);
+                                                                                        return dto;
+                                                                                });
+                                                        });
+                                });
+        }
+
+        /**
+         * Retrieves all journals for the current organization.
+         */
+        @SuppressWarnings("unchecked")
+        public Mono<java.util.List<JournalComptableDto>> getAllJournaux() {
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
+                                        String cache_key = CACHE_JOURNAL_ALL + organization_id;
+                                        return redis_service.get(cache_key, java.util.List.class)
+                                                        .map(list -> (java.util.List<JournalComptableDto>) list)
+                                                        .switchIfEmpty(journal_repository.findByOrganization_Id(organization_id)
+                                                                        .flatMap(journal -> {
+                                                                                JournalComptableDto dto = mapToDto(
+                                                                                                journal);
+                                                                                return ecriture_repository
+                                                                                                .findByOrganization_IdAndJournal_Id(
+                                                                                                                organization_id,
+                                                                                                                journal.getId())
+                                                                                                .flatMap(this::getFullEcritureDto)
+                                                                                                .collectList()
+                                                                                                .map(ecritures -> {
+                                                                                                        dto.setEcriture_comptable(
+                                                                                                                        ecritures);
+                                                                                                        return dto;
+                                                                                                });
+                                                                        })
+                                                                        .collectList()
+                                                                        .flatMap(list -> redis_service
+                                                                                        .save(cache_key, list, Duration
+                                                                                                        .ofMinutes(15))
+                                                                                        .thenReturn(list)));
+                                });
+        }
+
+        @SuppressWarnings("unchecked")
+        public Mono<java.util.List<JournalComptableDto>> getActiveJournaux() {
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> {
+                                        String cache_key = CACHE_JOURNAL_ACTIVE + organization_id;
+                                        return redis_service.get(cache_key, java.util.List.class)
+                                                        .map(list -> (java.util.List<JournalComptableDto>) list)
+                                                        .switchIfEmpty(journal_repository
+                                                                        .findByOrganization_IdAndActifTrue(organization_id)
+                                                                        .flatMap(journal -> {
+                                                                                JournalComptableDto dto = mapToDto(
+                                                                                                journal);
+                                                                                return ecriture_repository
+                                                                                                .findByOrganization_IdAndJournal_Id(
+                                                                                                                organization_id,
+                                                                                                                journal.getId())
+                                                                                                .flatMap(this::getFullEcritureDto)
+                                                                                                .collectList()
+                                                                                                .map(ecritures -> {
+                                                                                                        dto.setEcriture_comptable(
+                                                                                                                        ecritures);
+                                                                                                        return dto;
+                                                                                                });
+                                                                        })
+                                                                        .collectList()
+                                                                        .flatMap(list -> redis_service
+                                                                                        .save(cache_key, list, Duration
+                                                                                                        .ofMinutes(15))
+                                                                                        .thenReturn(list)));
+                                });
+        }
+
+        /**
+         * Updates an existing journal.
+         */
+        @Transactional
+        public Mono<JournalComptableDto> updateJournalComptable(UUID id, JournalComptableDto dto) {
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
+                                                .flatMap(user -> {
+                                                        return journal_repository.findByOrganization_IdAndId(organization_id, id)
+                                                                        .switchIfEmpty(Mono
+                                                                                        .error(new ResourceNotFoundException(
+                                                                                                        "JournalComptable",
+                                                                                                        id.toString())))
+                                                                        .flatMap(existing -> {
+                                                                                return validateJournalComptableDto(dto)
+                                                                                                .then(Mono.defer(() -> {
+                                                                                                        existing.setCode_journal(
+                                                                                                                        dto.getCode_journal());
+                                                                                                        existing.setLibelle(
+                                                                                                                        dto.getLibelle());
+                                                                                                        existing.setType_journal(
+                                                                                                                        dto.getType_journal());
+                                                                                                        existing.setNotes(
+                                                                                                                        dto.getNotes());
+                                                                                                        existing.setActif(
+                                                                                                                        dto.getActif());
+                                                                                                        existing.setUpdated_by(
+                                                                                                                        user);
+                                                                                                        existing.setUpdated_at(
+                                                                                                                        LocalDateTime.now());
+
+                                                                                                        return journal_repository
+                                                                                                                        .save(existing)
+                                                                                                                        .flatMap(saved -> ReactiveOrganizationContext
+                                                                                                                                        .getCurrentOrganizationAsOrganization()
+                                                                                                                                        .flatMap(organization -> logAudit(
+                                                                                                                                                        organization,
+                                                                                                                                                        user,
+                                                                                                                                                        "JOURNAL_UPDATED",
+                                                                                                                                                        "Update of journal "
+                                                                                                                                                                        + dto.getCode_journal()))
+                                                                                                                                        .then(redis_service
+                                                                                                                                                        .delete(CACHE_JOURNAL_ALL
+                                                                                                                                                                        + organization_id))
+                                                                                                                                        .then(redis_service
+                                                                                                                                                        .delete(CACHE_JOURNAL_ACTIVE
+                                                                                                                                                                        + organization_id))
+                                                                                                                                        .thenReturn(mapToDto(
+                                                                                                                                                        saved)));
+                                                                                                }));
+                                                                        });
+                                                }));
+        }
+
+        /**
+         * Deletes a journal by its ID.
+         */
+        @Transactional
+        public Mono<Void> deleteJournalComptable(UUID id) {
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
+                                                .flatMap(user -> {
+                                                        return journal_repository.findByOrganization_IdAndId(organization_id, id)
+                                                                        .switchIfEmpty(Mono
+                                                                                        .error(new ResourceNotFoundException(
+                                                                                                        "JournalComptable",
+                                                                                                        id.toString())))
+                                                                        .flatMap(journal -> {
+                                                                                return journal_repository
+                                                                                                .delete(journal)
+                                                                                                .then(ReactiveOrganizationContext
+                                                                                                                .getCurrentOrganizationAsOrganization()
+                                                                                                                .flatMap(organization -> logAudit(
+                                                                                                                                organization,
+                                                                                                                                user,
+                                                                                                                                "JOURNAL_DELETED",
+                                                                                                                                "Deletion of journal "
+                                                                                                                                                + journal.getCode_journal())))
+                                                                                                .then(redis_service
+                                                                                                                .delete(CACHE_JOURNAL_ALL
+                                                                                                                                + organization_id))
+                                                                                                .then(redis_service
+                                                                                                                .delete(CACHE_JOURNAL_ACTIVE
+                                                                                                                                + organization_id))
+                                                                                                .then();
+                                                                        });
+                                                }));
+        }
+
+        /**
+         * Validates a journal DTO.
+         */
+        private Mono<Void> validateJournalComptableDto(JournalComptableDto dto) {
+                return Mono.defer(() -> {
+                        var violations = validator.validate(dto);
+                        if (!violations.isEmpty())
+                                return Mono.error(new ConstraintViolationException(violations));
+
+                        if (!dto.getCode_journal().matches("^[A-Z]{1,5}$")) {
+                                return Mono.error(
+                                                new IllegalArgumentException(
+                                                                "Invalid journal code: must contain 1 to 5 uppercase letters."));
+                        }
+
+                        List<String> valid_types = List.of(
+                                        AppConstants.JournalTypes.SALES,
+                                        AppConstants.JournalTypes.PURCHASES,
+                                        AppConstants.JournalTypes.CASH,
+                                        AppConstants.JournalTypes.BANK,
+                                        AppConstants.JournalTypes.GENERAL);
+
+                        if (!valid_types.contains(dto.getType_journal())) {
+                                return Mono.error(new IllegalArgumentException(
+                                                "Invalid journal type: " + dto.getType_journal()));
+                        }
+                        return Mono.empty();
+                });
+        }
+
+        /**
+         * Logs an audit entry.
+         */
+        private Mono<Void> logAudit(Organization organization, String utilisateur, String action, String details) {
+                JournalAudit audit = JournalAudit.builder()
+                                .id(UUID.randomUUID())
+                                .organizationId(organization.getId())
+                                .action(action)
+                                .utilisateur(utilisateur)
+                                .details(details)
+                                .date_action(LocalDateTime.now())
+                                .created_at(LocalDateTime.now())
+                                .updated_at(LocalDateTime.now())
+                                .created_by(utilisateur)
+                                .updated_by(utilisateur)
+                                .build();
+
+                return audit_repository.save(audit)
+                                .flatMap(savedAudit -> {
+                                        JournalAuditDto auditDto = JournalAuditDto.builder()
+                                                        .id(savedAudit.getId())
+                                                        .action(savedAudit.getAction())
+                                                        .date_action(savedAudit.getDate_action())
+                                                        .utilisateur(savedAudit.getUtilisateur())
+                                                        .details(savedAudit.getDetails())
+                                                        .created_at(savedAudit.getCreated_at())
+                                                        .updated_at(savedAudit.getUpdated_at())
+                                                        .created_by(savedAudit.getCreated_by())
+                                                        .updated_by(savedAudit.getUpdated_by())
+                                                        .build();
+
+                                        return kafka_service.sendAuditLog(auditDto, organization.getId(), action);
+                                });
+        }
+
+        /**
+         * Maps a DTO and organization to a JournalComptable entity.
+         */
+        private JournalComptable mapToEntity(JournalComptableDto dto, Organization organization) {
+                JournalComptable j = new JournalComptable();
+                j.setId(dto.getId() != null ? dto.getId() : UUID.randomUUID());
+                j.setOrganizationId(organization.getId());
+                j.setCode_journal(dto.getCode_journal());
+                j.setLibelle(dto.getLibelle());
+                j.setType_journal(dto.getType_journal());
+                j.setNotes(dto.getNotes());
+                j.setActif(dto.getActif() != null ? dto.getActif() : true);
+                j.setCreated_at(dto.getCreated_at() != null ? dto.getCreated_at() : LocalDateTime.now());
+                j.setUpdated_at(dto.getUpdated_at() != null ? dto.getUpdated_at() : LocalDateTime.now());
+                return j;
+        }
+
+        /**
+         * Maps a JournalComptable entity to its DTO.
+         */
+        private JournalComptableDto mapToDto(JournalComptable entity) {
+                return JournalComptableDto.builder()
+                                .id(entity.getId())
+                                .code_journal(entity.getCode_journal())
+                                .libelle(entity.getLibelle())
+                                .type_journal(entity.getType_journal())
+                                .notes(entity.getNotes())
+                                .actif(entity.getActif())
+                                .created_at(entity.getCreated_at())
+                                .updated_at(entity.getUpdated_at())
+                                .build();
+        }
+
+        /**
+         * Maps an EcritureComptable entity to its DTO.
+         */
+        private EcritureComptableDto mapEcritureToDto(EcritureComptable e) {
+                return EcritureComptableDto.builder()
+                                .id(e.getId())
+                                .numero_ecriture(e.getNumero_ecriture())
+                                .libelle(e.getLibelle())
+                                .date_ecriture(e.getDate_ecriture())
+                                .journal_comptable_id(e.getJournal_id())
+                                .periode_comptable_id(e.getPeriode_id())
+                                .montant_total_debit(e.getMontant_total_debit())
+                                .montant_total_credit(e.getMontant_total_credit())
+                                .validee(e.getValidee())
+                                .date_validation(e.getDate_validation())
+                                .validated_by(e.getValidated_by())
+                                .reference_externe(e.getReference_externe())
+                                .notes(e.getNotes())
+                                .created_at(e.getCreated_at())
+                                .updated_at(e.getUpdated_at())
+                                .details_ecriture(new ArrayList<>())
+                                .build();
+        }
+
+        /**
+         * Fetches an entry and its details, returning a complete DTO.
+         */
+        private Mono<EcritureComptableDto> getFullEcritureDto(EcritureComptable e) {
+                EcritureComptableDto dto = mapEcritureToDto(e);
+                return detail_repository.findByOrganization_IdAndEcriture_Id(e.getOrganizationId(), e.getId())
+                                .map(this::mapDetailToDto)
+                                .collectList()
+                                .map(details -> {
+                                        dto.setDetails_ecriture(details);
+                                        return dto;
+                                });
+        }
+
+        private com.yowyob.erp.accounting.infrastructure.web.dto.DetailEcritureDto mapDetailToDto(
+                        com.yowyob.erp.accounting.domain.model.DetailEcriture d) {
+                return com.yowyob.erp.accounting.infrastructure.web.dto.DetailEcritureDto.builder()
+                                .id(d.getId())
+                                .ecriture_comptable_id(d.getEcriture_id())
+                                .compte_comptable_id(d.getCompte_id())
+                                .libelle(d.getLibelle())
+                                .sens(d.getSens() != null ? d.getSens().name() : null)
+                                .montant_debit(d.getMontant_debit())
+                                .montant_credit(d.getMontant_credit())
+                                .notes(d.getNotes())
+                                .lettree(d.getLettree())
+                                .date_lettrage(d.getDate_lettrage())
+                                .pointee(d.getPointee())
+                                .reference_bancaire(d.getReference_bancaire())
+                                .date_ecriture(d.getDate_ecriture())
+                                .build();
+        }
+
+        /**
+         * Retrieves unique ledger accounts used in a specific journal.
+         */
+        public Mono<List<com.yowyob.erp.accounting.infrastructure.web.dto.CompteDto>> getComptesByJournal(UUID journalId) {
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> journal_repository.findByOrganization_IdAndId(organization_id, journalId)
+                                                .switchIfEmpty(Mono.error(new ResourceNotFoundException(
+                                                                "JournalComptable", journalId.toString())))
+                                                .thenMany(compte_repository.findDistinctComptesByJournalId(organization_id,
+                                                                journalId))
+                                                .map(c -> com.yowyob.erp.accounting.infrastructure.web.dto.CompteDto.builder()
+                                                                .id(c.getId())
+                                                                .no_compte(c.getNo_compte())
+                                                                .libelle(c.getLibelle())
+                                                                .type_compte(c.getType_compte())
+                                                                .build())
+                                                .collectList());
+        }
+}

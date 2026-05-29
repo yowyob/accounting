@@ -1,6 +1,6 @@
 package com.yowyob.erp.config.r2dbc;
 
-import com.yowyob.erp.common.persistence.SettablePersistable;
+import com.yowyob.erp.shared.infrastructure.persistence.SettablePersistable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.r2dbc.mapping.event.AfterConvertCallback;

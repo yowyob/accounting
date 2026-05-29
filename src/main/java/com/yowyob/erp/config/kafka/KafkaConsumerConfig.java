@@ -19,7 +19,7 @@ import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 
-import com.yowyob.erp.common.dto.KafkaMessage;
+import com.yowyob.erp.shared.infrastructure.dto.KafkaMessage;
 
 /**
  * Kafka Consumer Configuration.
@@ -65,7 +65,7 @@ public class KafkaConsumerConfig {
     private Deserializer<Object> kafkaMessageErrorHandlingDeserializer() {
         // 1. Internal deserializer (real domain type is KafkaMessage)
         JsonDeserializer<KafkaMessage> json_delegate = new JsonDeserializer<>(
-                com.yowyob.erp.common.dto.KafkaMessage.class);
+                com.yowyob.erp.shared.infrastructure.dto.KafkaMessage.class);
         json_delegate.addTrustedPackages("com.yowyob.erp.*");
 
         // 2. Wrap JSON deserializer in ErrorHandlingDeserializer
