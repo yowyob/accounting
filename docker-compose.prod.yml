@@ -1,0 +1,117 @@
+# ==============================================================
+# 🏭 YOWYOB ERP — COMPOSE PRODUCTION
+# ==============================================================
+# Ce fichier est utilisé en production UNIQUEMENT.
+# Il suppose que KSM_Kernel_Layer est déjà démarré et expose
+# le réseau Docker externe "iwm-network".
+#
+# Usage :
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+# ==============================================================
+
+services:
+
+  # ─────────────────────────────────────────────────────────
+  # YOWYOB ERP Backend — Spring Boot OHADA
+  # ─────────────────────────────────────────────────────────
+  yowyob-erp-backend:
+    image: yowyob-erp-backend:${ERP_IMAGE_TAG:-latest}
+    container_name: yowyob-erp-backend
+    restart: always
+
+    # Secrets Docker (fichiers injectés dans /run/secrets/)
+    secrets:
+      - erp_postgres_password
+      - erp_jwt_secret
+      - erp_redis_password
+
+    environment:
+      # ── Application ──────────────────────────────────────
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SERVER_PORT: ${SERVER_PORT:-8081}
+      JAVA_OPTS: >-
+        -XX:+UseContainerSupport
+        -XX:MaxRAMPercentage=75.0
+        -XX:InitialRAMPercentage=25.0
+        -XX:+ExitOnOutOfMemoryError
+        -Djava.security.egd=file:/dev/./urandom
+
+      # ── Base de données R2DBC (réactif) ──────────────────
+      # Connexion à la base yowyob_erp sur le PostgreSQL du Kernel
+      DB_HOST: ${DB_HOST:-iwm-postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME:-yowyob_erp}
+      POSTGRES_USER: ${POSTGRES_USER:-yowyob_admin}
+      POSTGRES_PASSWORD_FILE: /run/secrets/erp_postgres_password
+
+      # ── Liquibase (migrations — JDBC) ────────────────────
+      LIQUIBASE_URL: jdbc:postgresql://${DB_HOST:-iwm-postgres}:${DB_PORT:-5432}/${DB_NAME:-yowyob_erp}
+      LIQUIBASE_USER: ${POSTGRES_USER:-yowyob_admin}
+      LIQUIBASE_PASSWORD_FILE: /run/secrets/erp_postgres_password
+
+      # ── Redis ─────────────────────────────────────────────
+      REDIS_HOST: ${REDIS_HOST:-iwm-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      SPRING_CACHE_TYPE: ${SPRING_CACHE_TYPE:-redis}
+
+      # ── Kafka ─────────────────────────────────────────────
+      KAFKA_BOOTSTRAP: ${KAFKA_BOOTSTRAP:-iwm-kafka:29092}
+      SPRING_KAFKA_ENABLED: ${SPRING_KAFKA_ENABLED:-true}
+
+      # ── Elasticsearch ─────────────────────────────────────
+      ELASTICSEARCH_URI: ${ELASTICSEARCH_URI:-http://iwm-elasticsearch:9200}
+      SPRING_ELASTICSEARCH_ENABLED: ${SPRING_ELASTICSEARCH_ENABLED:-true}
+
+      # ── Auth / JWT ────────────────────────────────────────
+      AUTH_API_URL: ${AUTH_API_URL:-http://app:8080}
+      AUTH_API_TIMEOUT: ${AUTH_API_TIMEOUT:-5000}
+      AUTH_API_RETRIES: ${AUTH_API_RETRIES:-3}
+      JWT_SECRET_FILE: /run/secrets/erp_jwt_secret
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+
+      # ── Multi-tenant ──────────────────────────────────────
+      TENANT_DEFAULT: ${TENANT_DEFAULT}
+
+    ports:
+      - "${SERVER_PORT:-8081}:8081"
+
+    # Health check de l'application
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/actuator/health > /dev/null"]
+      interval: 20s
+      timeout: 10s
+      retries: 15
+      start_period: 90s
+
+    # Logging structuré JSON pour production
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+    # Le BACKEND rejoint le réseau externe du Kernel
+    networks:
+      - iwm-network
+
+# ──────────────────────────────────────────────────────────────
+# Secrets Docker (fichiers sur le filesystem du host)
+# Ces fichiers doivent exister AVANT docker compose up
+# Emplacement recommandé : ./ops/secrets/prod/
+# ──────────────────────────────────────────────────────────────
+secrets:
+  erp_postgres_password:
+    file: ./ops/secrets/prod/erp_postgres_password.txt
+  erp_jwt_secret:
+    file: ./ops/secrets/prod/erp_jwt_secret.txt
+  erp_redis_password:
+    file: ./ops/secrets/prod/erp_redis_password.txt
+
+# ──────────────────────────────────────────────────────────────
+# Réseau Docker EXTERNE — créé par KSM_Kernel_Layer
+# IMPORTANT : Ne pas recréer ce réseau ici, il est "external"
+# ──────────────────────────────────────────────────────────────
+networks:
+  iwm-network:
+    external: true
+    name: iwm-network
