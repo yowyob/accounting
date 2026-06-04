@@ -26,7 +26,7 @@ public class OrganizationWebFilter implements WebFilter {
     @Value("${app.organization.header-name:X-Tenant-ID}")
     private String organizationHeaderName;
 
-    @Value("${app.organization.default-organization:550e8400-e29b-41d4-a716-446655440000}")
+    @Value("${app.organization.default-organization:4e177ff2-89b8-4d24-926a-5763dfa1b19a}")
     private String defaultOrganizationId;
 
     @Override

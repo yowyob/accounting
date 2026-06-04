@@ -2,6 +2,7 @@ package com.yowyob.erp.config.auth;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -41,37 +42,45 @@ public class MockUserStore {
         }
     }
 
-    // Utilisateurs de test prédéfinis
-    private final List<MockUser> mockUsers = List.of(
-        new MockUser(
-            "mock-user-admin-001",
-            "admin@ksm.dev", "admin123",
-            "Admin", "KSM",
-            "mock-org-001",
-            "ADMIN", "RESPONSABLE_COMPTABLE"
-        ),
-        new MockUser(
-            "mock-user-comptable-001",
-            "comptable@ksm.dev", "comptable123",
-            "Jean", "Dupont",
-            "mock-org-001",
-            "COMPTABLE"
-        ),
-        new MockUser(
-            "mock-user-aide-001",
-            "aide@ksm.dev", "aide123",
-            "Marie", "Martin",
-            "mock-org-001",
-            "AIDE_COMPTABLE"
-        ),
-        new MockUser(
-            "mock-user-daf-001",
-            "daf@ksm.dev", "daf123",
-            "Paul", "Bernard",
-            "mock-org-001",
-            "RESPONSABLE_COMPTABLE"
-        )
-    );
+    // Utilisateurs de test prédéfinis. Tous rattachés à l'organisation par défaut
+    // (= ORGANIZATION_DEFAULT) pour que le tenant déduit du token corresponde aux
+    // données seedées. Construite dans le constructeur à partir de la valeur injectée.
+    private final List<MockUser> mockUsers;
+
+    public MockUserStore(
+            @Value("${app.organization.default-organization:4e177ff2-89b8-4d24-926a-5763dfa1b19a}")
+            String defaultOrganizationId) {
+        this.mockUsers = List.of(
+            new MockUser(
+                "mock-user-admin-001",
+                "admin@ksm.dev", "admin123",
+                "Admin", "KSM",
+                defaultOrganizationId,
+                "ADMIN", "RESPONSABLE_COMPTABLE"
+            ),
+            new MockUser(
+                "mock-user-comptable-001",
+                "comptable@ksm.dev", "comptable123",
+                "Jean", "Dupont",
+                defaultOrganizationId,
+                "COMPTABLE"
+            ),
+            new MockUser(
+                "mock-user-aide-001",
+                "aide@ksm.dev", "aide123",
+                "Marie", "Martin",
+                defaultOrganizationId,
+                "AIDE_COMPTABLE"
+            ),
+            new MockUser(
+                "mock-user-daf-001",
+                "daf@ksm.dev", "daf123",
+                "Paul", "Bernard",
+                defaultOrganizationId,
+                "RESPONSABLE_COMPTABLE"
+            )
+        );
+    }
 
     // Map token → utilisateur (tokens émis lors des logins mock)
     private final Map<String, MockUser> issuedTokens = new ConcurrentHashMap<>();
