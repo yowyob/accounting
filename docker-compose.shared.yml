@@ -1,0 +1,65 @@
+# ============================================================================
+# docker-compose.shared.yml
+# ----------------------------------------------------------------------------
+# Lance UNIQUEMENT le backend Yowyob ERP et le branche sur les services
+# d'infrastructure DEJA lances par KSM_Kernel_Layer (reseau "iwm-network").
+#
+#   - postgres        -> alias "postgres"      (conteneur iwm-postgres)
+#   - redis           -> alias "redis"         (conteneur iwm-redis, SANS password)
+#   - kafka           -> alias "kafka"         (conteneur iwm-kafka, listener interne 29092)
+#   - elasticsearch   -> alias "elasticsearch" (conteneur iwm-elasticsearch)
+#
+# Base de donnees dediee "yowyob_erp" (user yowyob_admin) creee dans le
+# postgres partage pour ne pas polluer la base "iwm" du Kernel Layer.
+#
+# Les variables ci-dessous correspondent aux placeholders de
+# src/main/resources/application.properties et surchargent celles du .env.
+#
+# Usage :
+#   docker compose -f docker-compose.shared.yml up --build -d
+#   docker compose -f docker-compose.shared.yml logs -f yowyob-erp-backend
+#   docker compose -f docker-compose.shared.yml down
+# ============================================================================
+services:
+  yowyob-erp-backend:
+    build:
+      context: .
+    container_name: yowyob-erp-backend
+    ports:
+      - "8081:8081"
+    volumes:
+      - ~/.m2:/root/.m2
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: "8081"
+
+      # --- PostgreSQL : base dediee dans le postgres partage (iwm-postgres) ---
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: yowyob_erp
+      POSTGRES_USER: yowyob_admin
+      POSTGRES_PASSWORD: yowyob_secret
+
+      # --- Redis : le redis partage n'a PAS de password.
+      #     spring.data.redis.url a la priorite sur host/port/password,
+      #     donc on l'ecrase explicitement (sans mot de passe). ---
+      REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ""
+
+      # --- Kafka : listener INTERNE du broker partage = kafka:29092 ---
+      KAFKA_BOOTSTRAP: kafka:29092
+
+      # --- Elasticsearch ---
+      ELASTICSEARCH_URI: http://elasticsearch:9200
+    networks:
+      - iwm-network
+    restart: unless-stopped
+
+# Reseau externe deja cree par KSM_Kernel_Layer
+networks:
+  iwm-network:
+    external: true
