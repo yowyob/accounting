@@ -91,7 +91,12 @@ public class JwtAuthenticationFilter implements WebFilter {
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
-        return null; // Return null if not found or invalid format
+        // EventSource (SSE) cannot send custom headers — token is passed as query param
+        String queryToken = exchange.getRequest().getQueryParams().getFirst("token");
+        if (queryToken != null && !queryToken.isBlank()) {
+            return queryToken.trim();
+        }
+        return null;
     }
 
     private UsernamePasswordAuthenticationToken createAuthentication(AuthValidationResponse authResponse) {

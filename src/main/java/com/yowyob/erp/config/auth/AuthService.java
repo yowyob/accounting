@@ -48,6 +48,11 @@ public class AuthService {
      */
     @Cacheable(value = "jwt-validation", key = "#token")
     public Mono<AuthValidationResponse> validateToken(String token) {
+        // Local mock tokens always stay on the in-memory store (SSE + dev login)
+        if (token != null && token.startsWith("mock-")) {
+            return Mono.just(mockUserStore.validateToken(token));
+        }
+
         return isExternalServiceAvailable()
             .flatMap(available -> {
                 if (available) {

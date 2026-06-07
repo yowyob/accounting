@@ -53,23 +53,36 @@ public class PlanComptableService implements PlanComptableUseCase {
 
                 return ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
                                 .flatMap(current_user -> template_repository.findAll()
-                                                .map(template -> PlanComptable.builder()
-                                                                .organizationId(organization_id)
-                                                                .no_compte(template.getNumero())
-                                                                .classe(template.getClasse())
-                                                                .libelle(template.getLibelle())
-                                                                .notes(template.getNotes())
-                                                                .actif(true)
-                                                                .created_at(LocalDateTime.now())
-                                                                .updated_at(LocalDateTime.now())
-                                                                .created_by(current_user)
-                                                                .updated_by(current_user)
-                                                                .build())
                                                 .collectList()
-                                                .flatMap(accounts -> account_repository.saveAll(accounts).then())
-                                                .doOnSuccess(v -> log.info(
-                                                                "Successfully initialized plan for organization {}",
-                                                                organization_id)));
+                                                .flatMap(templates -> {
+                                                        if (templates.isEmpty()) {
+                                                                return Mono.error(new BusinessException(
+                                                                                "Le modèle OHADA n'est pas disponible. "
+                                                                                                + "Redémarrez le backend pour charger plan_comptable_ohada_713.csv."));
+                                                        }
+                                                        List<PlanComptable> accounts = templates.stream()
+                                                                        .map(template -> PlanComptable.builder()
+                                                                                        .organizationId(organization_id)
+                                                                                        .no_compte(template.getNumero())
+                                                                                        .classe(template.getClasse())
+                                                                                        .libelle(template.getLibelle())
+                                                                                        .notes(template.getNotes())
+                                                                                        .actif(true)
+                                                                                        .created_at(LocalDateTime.now())
+                                                                                        .updated_at(LocalDateTime.now())
+                                                                                        .created_by(current_user)
+                                                                                        .updated_by(current_user)
+                                                                                        .build())
+                                                                        .toList();
+                                                        return account_repository.saveAll(accounts)
+                                                                        .then()
+                                                                        .then(redis_service.delete(CACHE_ALL + organization_id))
+                                                                        .then(redis_service.delete(CACHE_ACTIVE + organization_id))
+                                                                        .then()
+                                                                        .doOnSuccess(v -> log.info(
+                                                                                        "Successfully initialized {} accounts for organization {}",
+                                                                                        accounts.size(), organization_id));
+                                                }));
         }
 
         @Transactional

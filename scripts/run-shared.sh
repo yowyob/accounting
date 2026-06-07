@@ -46,6 +46,46 @@ export REDIS_PASSWORD=
 export KAFKA_BOOTSTRAP=localhost:9092
 export ELASTICSEARCH_URI=http://localhost:9200
 
+# --- S'assurer que l'infra partagee KSM_Kernel (conteneurs iwm-*) tourne ---
+# Si les conteneurs existent mais sont arretes (ex: apres reboot/arret Docker),
+# on les redemarre automatiquement puis on attend que Postgres accepte les
+# connexions avant de lancer le backend (sinon Liquibase echoue au demarrage).
+INFRA_CONTAINERS=(iwm-postgres iwm-redis iwm-kafka iwm-elasticsearch)
+if command -v docker >/dev/null 2>&1; then
+  to_start=()
+  for c in "${INFRA_CONTAINERS[@]}"; do
+    # le conteneur existe-t-il ?
+    if docker ps -a --format '{{.Names}}' | grep -qx "${c}"; then
+      # tourne-t-il deja ?
+      if ! docker ps --format '{{.Names}}' | grep -qx "${c}"; then
+        to_start+=("${c}")
+      fi
+    else
+      echo ">> ATTENTION : conteneur '${c}' introuvable. Lance d'abord l'infra KSM_Kernel_Layer." >&2
+    fi
+  done
+
+  if [[ ${#to_start[@]} -gt 0 ]]; then
+    echo ">> Demarrage des conteneurs infra arretes : ${to_start[*]}"
+    docker start "${to_start[@]}" >/dev/null
+  fi
+
+  # Attendre que Postgres accepte les connexions (max ~40s)
+  if docker ps --format '{{.Names}}' | grep -qx "iwm-postgres"; then
+    echo -n ">> Attente de Postgres "
+    for _ in $(seq 1 20); do
+      if docker exec iwm-postgres pg_isready -U "${POSTGRES_USER}" -d "${DB_NAME}" 2>/dev/null | grep -q 'accepting'; then
+        echo " OK"
+        break
+      fi
+      echo -n "."
+      sleep 2
+    done
+  fi
+else
+  echo ">> ATTENTION : docker introuvable, impossible de verifier l'infra partagee." >&2
+fi
+
 # --- Build du JAR si absent ---
 JAR=$(ls -1 target/*.jar 2>/dev/null | head -1 || true)
 if [[ -z "${JAR}" && "${SKIP_BUILD:-0}" != "1" ]]; then

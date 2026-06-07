@@ -35,9 +35,9 @@ public class PlanComptableTemplateInitializationService implements CommandLineRu
 
         Mono.fromCallable(() -> {
             List<String[]> rows = new ArrayList<>();
-            try (InputStream input_stream = getClass().getResourceAsStream("/comptes_comptables.csv")) {
+            try (InputStream input_stream = getClass().getResourceAsStream("/plan_comptable_ohada_713.csv")) {
                 if (input_stream == null) {
-                    log.error("Reference CSV for accounting plan not found!");
+                    log.error("Reference CSV for accounting plan not found (plan_comptable_ohada_713.csv)!");
                     return rows;
                 }
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(input_stream))) {
@@ -48,7 +48,7 @@ public class PlanComptableTemplateInitializationService implements CommandLineRu
                             first_line = false;
                             continue;
                         }
-                        String[] data = line.split("\\|");
+                        String[] data = line.split(";", -1);
                         if (data.length >= 3) {
                             rows.add(data);
                         }

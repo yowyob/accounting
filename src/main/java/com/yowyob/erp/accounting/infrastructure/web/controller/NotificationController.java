@@ -8,6 +8,7 @@ import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.ServerSentEvent;
@@ -17,7 +18,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -36,24 +39,32 @@ public class NotificationController {
 
     /**
      * SSE stream — frontend connects here to receive real-time push notifications.
-     * The tenant is resolved from the X-Tenant-ID header (ReactiveOrganizationContext).
-     * A heartbeat is sent every 30s to keep the connection alive.
+     * EventSource cannot send headers: token + tenantId are passed as query params.
      */
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "SSE stream for real-time notifications (connect once per session)")
-    public Flux<ServerSentEvent<Notification>> stream() {
-        return ReactiveOrganizationContext.getOrganizationId()
-                .flatMapMany(tenantId -> {
-                    Flux<ServerSentEvent<Notification>> notifications = sseBroker.streamForTenant(tenantId);
+    public Flux<ServerSentEvent<Notification>> stream(
+            @RequestParam(name = "tenantId", required = false) UUID tenantIdParam) {
 
-                    // Heartbeat every 30s to prevent proxies/Vercel from closing idle connections
-                    Flux<ServerSentEvent<Notification>> heartbeat = Flux.interval(Duration.ofSeconds(30))
-                            .map(tick -> ServerSentEvent.<Notification>builder()
-                                    .comment("heartbeat")
-                                    .build());
+        Mono<UUID> tenantMono = tenantIdParam != null
+                ? Mono.just(tenantIdParam)
+                : ReactiveOrganizationContext.getOrganizationId()
+                        .switchIfEmpty(Mono.error(new ResponseStatusException(
+                                HttpStatus.BAD_REQUEST, "tenantId is required")));
 
-                    return Flux.merge(notifications, heartbeat);
-                });
+        return tenantMono.flatMapMany(tenantId -> {
+            Flux<ServerSentEvent<Notification>> notifications = sseBroker.streamForTenant(tenantId);
+
+            Flux<ServerSentEvent<Notification>> heartbeat = Flux.interval(Duration.ZERO, Duration.ofSeconds(30))
+                    .map(tick -> ServerSentEvent.<Notification>builder()
+                            .comment("heartbeat")
+                            .build());
+
+            return Flux.merge(notifications, heartbeat)
+                    .startWith(ServerSentEvent.<Notification>builder()
+                            .comment("connected")
+                            .build());
+        });
     }
 
     @GetMapping("/unread")

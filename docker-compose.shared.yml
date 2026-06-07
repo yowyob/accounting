@@ -55,6 +55,9 @@ services:
 
       # --- Elasticsearch ---
       ELASTICSEARCH_URI: http://elasticsearch:9200
+
+      # --- CORS (frontend Next.js) ---
+      CORS_ALLOWED_ORIGINS: http://localhost:3000
     networks:
       - iwm-network
     restart: unless-stopped

@@ -27,7 +27,7 @@ public class PlanComptableDto {
     private UUID id;
 
     @NotBlank(message = "The account number is required")
-    @Pattern(regexp = "^[1-8][0-9]{4,7}$", message = "Invalid OHADA account number format")
+    @Pattern(regexp = "^[0-9]{1,7}$", message = "Invalid OHADA account number format (1-7 digits)")
     @JsonProperty("noCompte")
     private String no_compte;
 
