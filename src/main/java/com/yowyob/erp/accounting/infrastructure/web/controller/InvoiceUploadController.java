@@ -2,6 +2,7 @@ package com.yowyob.erp.accounting.infrastructure.web.controller;
 
 import com.yowyob.erp.accounting.domain.model.FactureComptable;
 import com.yowyob.erp.accounting.application.service.FactureProcessingService;
+import com.yowyob.erp.accounting.infrastructure.web.dto.EcritureComptableDto;
 import com.yowyob.erp.shared.infrastructure.dto.ApiResponseWrapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -48,6 +49,26 @@ public class InvoiceUploadController {
             return facture_service.extractFactureData(file)
                     .map(facture -> ResponseEntity
                             .ok(ApiResponseWrapper.success(facture, "Invoice successfully analyzed")));
+        });
+    }
+
+    /**
+     * Uploads an invoice file (PDF or image), extracts its data via OCR and
+     * directly records it: the matching accounting journal is resolved and a
+     * balanced OHADA accounting entry is generated and persisted.
+     *
+     * @param fileMono the uploaded multipart file
+     * @return a wrapped response containing the generated accounting entry
+     */
+    @Operation(summary = "Upload, analyze and record an invoice (generates the accounting entry)")
+    @PostMapping(value = "/upload/comptabiliser", consumes = { "multipart/form-data" })
+    public Mono<ResponseEntity<ApiResponseWrapper<EcritureComptableDto>>> uploadAndComptabiliser(
+            @RequestPart("file") Mono<FilePart> fileMono) {
+        return fileMono.flatMap(file -> {
+            log.info("📥 Uploading invoice file for analysis + comptabilisation: {}", file.filename());
+            return facture_service.extractAndComptabiliser(file)
+                    .map(ecriture -> ResponseEntity.ok(ApiResponseWrapper.success(
+                            ecriture, "Invoice analyzed and recorded — accounting entry generated")));
         });
     }
 }

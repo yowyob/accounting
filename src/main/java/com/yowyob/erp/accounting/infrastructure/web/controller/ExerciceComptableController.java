@@ -1,7 +1,9 @@
 package com.yowyob.erp.accounting.infrastructure.web.controller;
 
 import com.yowyob.erp.accounting.infrastructure.web.dto.ExerciceComptableDto;
+import com.yowyob.erp.accounting.infrastructure.web.dto.EcritureComptableDto;
 import com.yowyob.erp.accounting.domain.port.in.ExerciceComptableUseCase;
+import com.yowyob.erp.accounting.domain.port.in.EcritureComptableUseCase;
 import com.yowyob.erp.shared.infrastructure.dto.ApiResponseWrapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -37,6 +39,7 @@ import java.util.UUID;
 public class ExerciceComptableController {
 
     private final ExerciceComptableUseCase exercice_service;
+    private final EcritureComptableUseCase ecriture_service;
 
     @PostMapping
     @Operation(summary = "Create a new fiscal year")
@@ -60,6 +63,14 @@ public class ExerciceComptableController {
             @PathVariable UUID id) {
         return exercice_service.getPeriodesByExercice(id)
                 .map(periodes -> ResponseEntity.ok(ApiResponseWrapper.success(periodes, "Periods retrieved")));
+    }
+
+    @GetMapping("/{id}/ecritures")
+    @Operation(summary = "Get all accounting entries for a fiscal year")
+    public Mono<ResponseEntity<ApiResponseWrapper<List<EcritureComptableDto>>>> getEcritures(
+            @PathVariable UUID id) {
+        return ecriture_service.getByExercice(id)
+                .map(ecritures -> ResponseEntity.ok(ApiResponseWrapper.success(ecritures, "Entries retrieved")));
     }
 
     @GetMapping

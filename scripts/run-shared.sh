@@ -7,7 +7,7 @@
 # localhost. Utile quand le build Docker est bloque (pull des images de base
 # impossible).
 #
-#   postgres      -> localhost:5433  (base dediee "yowyob_erp")
+#   postgres      -> localhost:5433  (base Kernel "iwm", schema "public")
 #   redis         -> localhost:6380  (SANS password)
 #   kafka         -> localhost:9092  (listener PLAINTEXT_HOST)
 #   elasticsearch -> localhost:9200
@@ -33,9 +33,9 @@ export SERVER_PORT=8081
 
 export DB_HOST=localhost
 export DB_PORT=5433
-export DB_NAME=yowyob_erp
-export POSTGRES_USER=yowyob_admin
-export POSTGRES_PASSWORD=yowyob_secret
+export DB_NAME=iwm
+export POSTGRES_USER=iwm
+export POSTGRES_PASSWORD=iwm
 
 # Redis partage : pas de mot de passe -> url sans credentials
 export REDIS_URL=redis://localhost:6380

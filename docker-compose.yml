@@ -6,9 +6,9 @@ services:
     image: postgres:16
     container_name: postgres
     environment:
-      POSTGRES_DB: yowyob_erp
-      POSTGRES_USER: yowyob_admin
-      POSTGRES_PASSWORD: yowyob_secret
+      POSTGRES_DB: iwm
+      POSTGRES_USER: iwm
+      POSTGRES_PASSWORD: iwm
     ports:
       - "5433:5432"
     volumes:
@@ -16,7 +16,7 @@ services:
     networks:
       - yowyob-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U yowyob_admin -d yowyob_erp" ]
+      test: [ "CMD-SHELL", "pg_isready -U iwm -d iwm" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -152,13 +152,13 @@ services:
       - .env
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      spring.datasource.url: jdbc:postgresql://postgres:5432/yowyob_erp
-      spring.datasource.username: yowyob_admin
-      spring.datasource.password: yowyob_secret
+      spring.datasource.url: jdbc:postgresql://postgres:5432/iwm
+      spring.datasource.username: iwm
+      spring.datasource.password: iwm
       spring.datasource.driver-class-name: org.postgresql.Driver
-      spring.r2dbc.url: r2dbc:postgresql://postgres:5432/yowyob_erp
-      spring.r2dbc.username: yowyob_admin
-      spring.r2dbc.password: yowyob_secret
+      spring.r2dbc.url: r2dbc:postgresql://postgres:5432/iwm
+      spring.r2dbc.username: iwm
+      spring.r2dbc.password: iwm
       spring.data.redis.host: redis
       spring.data.redis.port: 6379
       spring.data.redis.password: azaleodel

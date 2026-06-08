@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import org.springframework.stereotype.Service;
@@ -46,9 +47,12 @@ class InvoiceTextParser {
         String t = normalize(text);
 
         // --- Montant HT (using BigDecimal) ---
-        BigDecimal montant_ht = findBigDecimal(t, "(?i)montant\\s*ht\\s*[:\\-]??\\s*([0-9\\s.,]+)");
+        BigDecimal montant_ht = findMoney(t,
+                "(?i)(?:subtotal|sous\\s*total|total)\\s*ht\\s*[:\\-]?\\s*([0-9][0-9\\s.,]*)\\s*(?:xaf|fcfa)?");
         if (montant_ht == null)
-            montant_ht = findBigDecimal(t, "(?i)ht\\s*[:\\-]??\\s*([0-9\\s.,]+)");
+            montant_ht = findMoney(t, "(?i)montant\\s*ht\\s*[:\\-]??\\s*([0-9][0-9\\s.,]*)");
+        if (montant_ht == null)
+            montant_ht = findMoney(t, "(?i)ht\\s*[:\\-]??\\s*([0-9][0-9\\s.,]*)\\s*(?:xaf|fcfa)?");
 
         // --- Taux TVA (using Double for calculation) ---
         Double tva_pct = findDouble(t, "(?i)tva\\s*[:\\-]??\\s*([0-9\\s.,]+)\\s*%"); // ex: 18 %
@@ -62,6 +66,10 @@ class InvoiceTextParser {
         LocalDate date = findDate(t, "(?i)date\\s*[:\\-]??\\s*([0-9]{2}/[0-9]{2}/[0-9]{4})");
         if (date == null) {
             date = findDate(t, "(?i)le\\s*([0-9]{2}/[0-9]{2}/[0-9]{4})");
+        }
+        if (date == null) {
+            date = findDate(t, "(?i)(?:issue\\s*date|date\\s*d['’]?emission)\\s*[:\\-]?\\s*([0-9]{1,2}\\s+[A-Za-z]{3,9}\\s+[0-9]{4})",
+                    DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH));
         }
 
         // --- Libelle/Description ---
@@ -119,6 +127,54 @@ class InvoiceTextParser {
         return d != null ? BigDecimal.valueOf(d) : null;
     }
 
+    private BigDecimal findMoney(String text, String regex) {
+        Matcher m = Pattern.compile(regex).matcher(text);
+        if (!m.find()) {
+            return null;
+        }
+        return parseMoney(m.group(1));
+    }
+
+    private BigDecimal parseMoney(String raw) {
+        if (raw == null) {
+            return null;
+        }
+
+        String value = raw
+                .replace("\u00A0", "")
+                .replace(" ", "")
+                .trim();
+
+        if (value.isEmpty()) {
+            return null;
+        }
+
+        int lastComma = value.lastIndexOf(',');
+        int lastDot = value.lastIndexOf('.');
+
+        if (lastComma >= 0 && lastDot >= 0) {
+            if (lastComma > lastDot) {
+                value = value.replace(".", "").replace(",", ".");
+            } else {
+                value = value.replace(",", "");
+            }
+        } else if (lastComma >= 0) {
+            int digitsAfter = value.length() - lastComma - 1;
+            value = digitsAfter == 3 ? value.replace(",", "") : value.replace(",", ".");
+        } else if (lastDot >= 0) {
+            int digitsAfter = value.length() - lastDot - 1;
+            if (digitsAfter == 3) {
+                value = value.replace(".", "");
+            }
+        }
+
+        try {
+            return new BigDecimal(value);
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
     private String findString(String text, String regex) {
         Matcher m = Pattern.compile(regex).matcher(text);
         // Group 1 or 2 is used depending on the complexity of the regex (e.g., if group
@@ -135,11 +191,15 @@ class InvoiceTextParser {
     }
 
     private LocalDate findDate(String text, String regex) {
+        return findDate(text, regex, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+    }
+
+    private LocalDate findDate(String text, String regex, DateTimeFormatter formatter) {
         Matcher m = Pattern.compile(regex).matcher(text);
         if (m.find()) {
             String raw = m.group(1);
             try {
-                return LocalDate.parse(raw, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                return LocalDate.parse(raw, formatter);
             } catch (DateTimeParseException ignored) {
             }
         }

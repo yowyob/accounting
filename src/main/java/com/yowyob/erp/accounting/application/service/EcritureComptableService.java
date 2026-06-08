@@ -446,6 +446,39 @@ public class EcritureComptableService implements EcritureComptableUseCase {
         }
 
         /**
+         * Retrieves all entries attached to the periods of a given fiscal year
+         * (exercice), for the current organization.
+         */
+        public Mono<java.util.List<EcritureComptableDto>> getByExercice(UUID exercice_id) {
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(organization_id -> periode_repository.findByExerciceId(exercice_id)
+                                                .map(periode -> periode.getId())
+                                                .collect(java.util.stream.Collectors.toSet())
+                                                .flatMap(periode_ids -> {
+                                                        if (periode_ids.isEmpty()) {
+                                                                return Mono.just(java.util.Collections
+                                                                                .<EcritureComptableDto>emptyList());
+                                                        }
+                                                        return ecriture_repository
+                                                                        .findByOrganization_Id(organization_id)
+                                                                        .filter(ecriture -> periode_ids
+                                                                                        .contains(ecriture.getPeriode_id()))
+                                                                        .flatMap(ecriture -> detail_repository
+                                                                                        .findByOrganization_IdAndEcriture_Id(
+                                                                                                        organization_id,
+                                                                                                        ecriture.getId())
+                                                                                        .collectList()
+                                                                                        .map(details -> {
+                                                                                                ecriture.setDetails(
+                                                                                                                details);
+                                                                                                return ecriture;
+                                                                                        }))
+                                                                        .map(this::mapToDto)
+                                                                        .collectList();
+                                                }));
+        }
+
+        /**
          * Retrieves non-validated entries for the current organization.
          */
         @SuppressWarnings("unchecked")
@@ -564,6 +597,7 @@ public class EcritureComptableService implements EcritureComptableUseCase {
                                                                                 EcritureComptable ecriture = EcritureComptable
                                                                                                 .builder()
                                                                                                 .id(UUID.randomUUID())
+                                                                                                .organization(organization)
                                                                                                 .organizationId(organization
                                                                                                                 .getId())
                                                                                                 .numero_ecriture("ECR-"

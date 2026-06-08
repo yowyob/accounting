@@ -29,6 +29,7 @@ public interface EcritureComptableUseCase {
     Mono<java.util.List<EcritureComptableDto>> getNonValidated();
     Mono<EcritureComptableDto> getById(UUID id);
     Mono<java.util.List<EcritureComptableDto>> searchEcritures(LocalDateTime start_date, LocalDateTime end_date, UUID journal_id);
+    Mono<java.util.List<EcritureComptableDto>> getByExercice(UUID exercice_id);
     Mono<EcritureComptableDto> generateFromComptableObject(ComptableObject object);
     Mono<Void> deleteEcriture(UUID id);
     Mono<EcritureComptableDto> cancelEcriture(UUID id, String user);

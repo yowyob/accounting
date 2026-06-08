@@ -1,6 +1,13 @@
 package com.yowyob.erp.accounting.application.service;
 
 import com.yowyob.erp.accounting.domain.model.FactureComptable;
+import com.yowyob.erp.accounting.domain.model.JournalComptable;
+import com.yowyob.erp.accounting.domain.port.in.EcritureComptableUseCase;
+import com.yowyob.erp.accounting.infrastructure.persistence.repository.JournalComptableRepository;
+import com.yowyob.erp.accounting.infrastructure.web.dto.EcritureComptableDto;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
+import com.yowyob.erp.shared.domain.constants.AppConstants;
+import com.yowyob.erp.shared.domain.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.tess4j.Tesseract;
@@ -46,6 +53,49 @@ public class FactureProcessingService {
     private String ocr_lang;
 
     private final InvoiceTextParser parser;
+    private final EcritureComptableUseCase ecriture_service;
+    private final JournalComptableRepository journal_repository;
+
+    /**
+     * Full pipeline: extracts invoice data via OCR, resolves the appropriate
+     * accounting journal (ACHAT/VENTE), then generates and persists the OHADA
+     * accounting entry.
+     *
+     * @param filePart the uploaded file (PDF or image)
+     * @return a Mono with the generated accounting entry
+     */
+    public Mono<EcritureComptableDto> extractAndComptabiliser(FilePart filePart) {
+        return extractFactureData(filePart)
+                .flatMap(facture -> resolveJournalId(facture.is_achat())
+                        .map(journal_id -> {
+                            facture.setJournal_comptable_id(journal_id);
+                            return facture;
+                        }))
+                .flatMap(ecriture_service::generateFromComptableObject)
+                .doOnSuccess(ecriture -> log.info("✅ Invoice recorded — accounting entry {} generated",
+                        ecriture.getNumero_ecriture()));
+    }
+
+    /**
+     * Resolves the active accounting journal matching the invoice nature
+     * (purchase → ACHAT journal, sale → VENTE journal) for the current
+     * organization.
+     *
+     * @param is_achat true for a purchase invoice, false for a sale
+     * @return a Mono with the resolved journal id
+     */
+    private Mono<UUID> resolveJournalId(boolean is_achat) {
+        String type = is_achat ? AppConstants.JournalTypes.PURCHASES : AppConstants.JournalTypes.SALES;
+        return ReactiveOrganizationContext.getOrganizationId()
+                .flatMap(organization_id -> journal_repository
+                        .findByOrganization_IdAndType_journal(organization_id, type)
+                        .filter(j -> Boolean.TRUE.equals(j.getActif()))
+                        .next()
+                        .map(JournalComptable::getId)
+                        .switchIfEmpty(Mono.error(new BusinessException(
+                                "No active '" + type
+                                        + "' journal found for this organization. Please initialize accounting journals first."))));
+    }
 
     /**
      * /**

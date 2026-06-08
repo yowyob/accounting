@@ -17,7 +17,8 @@ import java.util.Map;
 
 /**
  * Contrôleur d'authentification exposé sur /api/auth/*.
- * Tente d'abord le service externe ; bascule sur les mock data si indisponible.
+ * Tente d'abord le service externe ; bascule sur les mock data uniquement
+ * si AUTH_MOCK_ENABLED=true.
  * Endpoints permis sans token (voir SecurityConfig).
  */
 @RestController
@@ -59,7 +60,7 @@ public class AuthController {
      * Authentifie un utilisateur.
      * 1. Vérifie la disponibilité du service externe.
      * 2. Si disponible  → délègue au service externe.
-     * 3. Si indisponible → authentifie via MockUserStore.
+     * 3. Si indisponible et mock autorisé → authentifie via MockUserStore.
      */
     @PostMapping("/login")
     public Mono<ResponseEntity<LoginResponse>> login(@RequestBody LoginRequest request) {
@@ -67,10 +68,15 @@ public class AuthController {
             .flatMap(available -> {
                 if (available) {
                     return loginViaExternalService(request);
-                } else {
+                }
+
+                if (authService.isMockAuthEnabled()) {
                     log.warn("[MOCK AUTH] Service externe indisponible — utilisation des mock data");
                     return Mono.just(loginViaMock(request));
                 }
+
+                log.error("[AUTH] Service Kernel indisponible et mock désactivé");
+                return Mono.just(ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(null));
             });
     }
 
@@ -84,8 +90,9 @@ public class AuthController {
         return authService.isExternalServiceAvailable()
             .map(available -> ResponseEntity.ok(Map.of(
                 "externalAuthAvailable", available,
-                "mode", available ? "external" : "mock",
-                "mockUsersCount", mockUserStore.getAllUsers().size()
+                "mode", available ? "external" : (authService.isMockAuthEnabled() ? "mock" : "unavailable"),
+                "mockAuthEnabled", authService.isMockAuthEnabled(),
+                "mockUsersCount", authService.isMockAuthEnabled() ? mockUserStore.getAllUsers().size() : 0
             )));
     }
 
@@ -97,6 +104,10 @@ public class AuthController {
      */
     @GetMapping("/mock-users")
     public ResponseEntity<?> listMockUsers() {
+        if (!authService.isMockAuthEnabled()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
         var users = mockUserStore.getAllUsers().stream().map(u -> Map.of(
             "email", u.getEmail(),
             "roles", Arrays.asList(u.getRoles()),
@@ -113,8 +124,13 @@ public class AuthController {
         return authService.loginExternal(request.getEmail(), request.getPassword())
             .map(ResponseEntity::ok)
             .onErrorResume(e -> {
-                log.warn("[AUTH] Échec service externe ({}), bascule mock", e.getMessage());
-                return Mono.just(loginViaMock(request));
+                if (authService.isMockAuthEnabled()) {
+                    log.warn("[AUTH] Échec service externe ({}), bascule mock", e.getMessage());
+                    return Mono.just(loginViaMock(request));
+                }
+
+                log.error("[AUTH] Échec service externe et mock désactivé : {}", e.getMessage());
+                return Mono.just(ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(null));
             });
     }
 

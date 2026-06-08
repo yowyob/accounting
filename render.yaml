@@ -61,5 +61,5 @@ services:
 databases:
   - name: yowyob-erp-db
     plan: free
-    databaseName: yowyob_erp
-    user: yowyob_admin
+    databaseName: iwm
+    user: iwm

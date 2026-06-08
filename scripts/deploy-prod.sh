@@ -111,12 +111,12 @@ else
   warn "Le déploiement continue — le BACKEND réessaiera au démarrage."
 fi
 
-# ── Création de la base de données yowyob_erp ─────────────────
-step "Vérification/création de la base de données yowyob_erp..."
+# ── Vérification de la base de données Kernel partagée ─────────
+step "Vérification de la base de données Kernel partagée..."
 DB_HOST_VAL="${DB_HOST:-iwm-postgres}"
 DB_PORT_VAL="${DB_PORT:-5432}"
-DB_NAME_VAL="${DB_NAME:-yowyob_erp}"
-PG_USER="${POSTGRES_USER:-yowyob_admin}"
+DB_NAME_VAL="${DB_NAME:-iwm}"
+PG_USER="${POSTGRES_USER:-iwm}"
 
 # Lire le mot de passe depuis le fichier secret si disponible
 PG_PASS_FILE="${ROOT_DIR}/ops/secrets/prod/erp_postgres_password.txt"
