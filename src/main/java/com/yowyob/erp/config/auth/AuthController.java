@@ -36,6 +36,7 @@ public class AuthController {
     public static class LoginRequest {
         private String email;
         private String password;
+        private String tenantId;
     }
 
     @Data
@@ -58,26 +59,12 @@ public class AuthController {
 
     /**
      * Authentifie un utilisateur.
-     * 1. Vérifie la disponibilité du service externe.
-     * 2. Si disponible  → délègue au service externe.
-     * 3. Si indisponible et mock autorisé → authentifie via MockUserStore.
+     * 1. Tente toujours le login Kernel.
+     * 2. Si le Kernel échoue et que le mock est autorisé → authentifie via MockUserStore.
      */
     @PostMapping("/login")
     public Mono<ResponseEntity<LoginResponse>> login(@RequestBody LoginRequest request) {
-        return authService.isExternalServiceAvailable()
-            .flatMap(available -> {
-                if (available) {
-                    return loginViaExternalService(request);
-                }
-
-                if (authService.isMockAuthEnabled()) {
-                    log.warn("[MOCK AUTH] Service externe indisponible — utilisation des mock data");
-                    return Mono.just(loginViaMock(request));
-                }
-
-                log.error("[AUTH] Service Kernel indisponible et mock désactivé");
-                return Mono.just(ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(null));
-            });
+        return loginViaExternalService(request);
     }
 
     // ─── GET /api/auth/health ─────────────────────────────────────────────────
@@ -121,7 +108,7 @@ public class AuthController {
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private Mono<ResponseEntity<LoginResponse>> loginViaExternalService(LoginRequest request) {
-        return authService.loginExternal(request.getEmail(), request.getPassword())
+        return authService.loginExternal(request.getEmail(), request.getPassword(), request.getTenantId())
             .map(ResponseEntity::ok)
             .onErrorResume(e -> {
                 if (authService.isMockAuthEnabled()) {

@@ -66,6 +66,9 @@ public class AuthService {
     @Value("${auth.jwt.issuer:}")
     private String expectedIssuer;
 
+    @Value("${auth.api.default-tenant-id:}")
+    private String defaultTenantId;
+
     // Clé publique RSA du Kernel — chargée au démarrage et rechargeable
     private final AtomicReference<RSASSAVerifier> kernelVerifier = new AtomicReference<>();
 
@@ -228,10 +231,12 @@ public class AuthService {
      * Délègue le login au Kernel via le vrai endpoint /api/auth/login.
      * Le Kernel retourne un token JWT RS256 + infos utilisateur.
      */
-    public Mono<AuthController.LoginResponse> loginExternal(String email, String password) {
+    public Mono<AuthController.LoginResponse> loginExternal(String email, String password, String tenantId) {
+        String resolvedTenantId = resolveTenantId(tenantId);
         return webClient
             .post()
             .uri(authApiUrl + "/api/auth/login")
+            .header("X-Tenant-Id", resolvedTenantId)
             .bodyValue(Map.of("principal", email, "password", password))
             .retrieve()
             .bodyToMono(JsonNode.class)
@@ -308,7 +313,7 @@ public class AuthService {
     private AuthController.LoginResponse parseKernelLoginResponse(JsonNode json) {
         // Le Kernel enveloppe les réponses dans { "data": { ... } }
         JsonNode data = json.has("data") ? json.get("data") : json;
-        String token = data.path("token").asText("");
+        String token = data.path("accessToken").asText(data.path("token").asText(""));
 
         JsonNode userNode = data.has("user") ? data.get("user") : data;
 
@@ -336,6 +341,18 @@ public class AuthService {
         resp.setToken(token);
         resp.setUser(payload);
         return resp;
+    }
+
+    private String resolveTenantId(String tenantId) {
+        String resolved = normalize(tenantId);
+        if (resolved != null) {
+            return resolved;
+        }
+        resolved = normalize(defaultTenantId);
+        if (resolved != null) {
+            return resolved;
+        }
+        throw new IllegalArgumentException("tenantId is required for Kernel login");
     }
 
     private UserInfo parseUserInfo(JsonNode json) {
