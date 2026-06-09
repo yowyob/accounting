@@ -233,6 +233,7 @@ public class AuthService {
      */
     public Mono<AuthController.LoginResponse> loginExternal(String email, String password, String tenantId) {
         String resolvedTenantId = resolveTenantId(tenantId);
+        log.info("[AUTH] Calling external Kernel login: email={}, tenantId={}, resolvedTenantId={}, authApiUrl={}", email, tenantId, resolvedTenantId, authApiUrl);
         return webClient
             .post()
             .uri(authApiUrl + "/api/auth/login")
@@ -346,12 +347,15 @@ public class AuthService {
     private String resolveTenantId(String tenantId) {
         String resolved = normalize(tenantId);
         if (resolved != null) {
+            log.info("[AUTH] Resolved tenantId from parameter: {}", resolved);
             return resolved;
         }
         resolved = normalize(defaultTenantId);
         if (resolved != null) {
+            log.info("[AUTH] Resolved tenantId from defaultTenantId: {}", resolved);
             return resolved;
         }
+        log.warn("[AUTH] Failed to resolve tenantId: input tenantId={}, defaultTenantId={}", tenantId, defaultTenantId);
         throw new IllegalArgumentException("tenantId is required for Kernel login");
     }
 
