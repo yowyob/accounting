@@ -83,11 +83,17 @@ services:
         max-file: "5"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.accounting.rule=Host(`accounting.yowyob.com`)"
-      - "traefik.http.routers.accounting.entrypoints=websecure"
-      - "traefik.http.routers.accounting.tls=true"
-      - "traefik.http.routers.accounting.tls.certresolver=letsencrypt"
-      - "traefik.http.services.accounting.loadbalancer.server.port=8081"
+      # Routage par chemin : un seul domaine accounting.yowyob.com.
+      #   /accounting-api/** -> ce backend (préfixe retiré avant transmission)
+      #   /**                -> réservé au futur front accounting (même domaine)
+      - "traefik.http.routers.accounting-api.rule=Host(`accounting.yowyob.com`) && PathPrefix(`/accounting-api`)"
+      - "traefik.http.routers.accounting-api.entrypoints=websecure"
+      - "traefik.http.routers.accounting-api.tls=true"
+      - "traefik.http.routers.accounting-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.accounting-api.priority=100"
+      - "traefik.http.middlewares.accounting-api-strip.stripprefix.prefixes=/accounting-api"
+      - "traefik.http.routers.accounting-api.middlewares=accounting-api-strip"
+      - "traefik.http.services.accounting-api.loadbalancer.server.port=8081"
       - "traefik.docker.network=yowyob"
     depends_on:
       accounting-redis:
