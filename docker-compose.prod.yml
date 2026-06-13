@@ -21,6 +21,9 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: "prod"
       SERVER_PORT: "8081"
+      # Derrière le path-routing Traefik (/accounting-api + stripprefix), honorer
+      # X-Forwarded-Prefix pour que springdoc/Swagger préfixe correctement ses URLs.
+      SERVER_FORWARD_HEADERS_STRATEGY: "framework"
 
       # ── PostgreSQL : base dédiée "accounting" (R2DBC + Liquibase JDBC) ──
       DB_HOST: "database"
