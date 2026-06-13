@@ -34,6 +34,16 @@ public class KafkaProducerConfig {
     @Value("${spring.kafka.producer.transaction-id-prefix}")
     private String transaction_id_prefix;
 
+    // SASL optionnel : vide en local (Kafka en clair), renseigné en prod yowyob (SASL_PLAINTEXT/SCRAM).
+    @Value("${spring.kafka.security.protocol:}")
+    private String security_protocol;
+
+    @Value("${spring.kafka.properties.sasl.mechanism:}")
+    private String sasl_mechanism;
+
+    @Value("${spring.kafka.properties.sasl.jaas.config:}")
+    private String sasl_jaas_config;
+
     /**
      * Basic Producer Configuration.
      */
@@ -52,6 +62,8 @@ public class KafkaProducerConfig {
 
         // Required for transactional ProducerFactory
         props.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transaction_id_prefix);
+
+        KafkaSecuritySupport.apply(props, security_protocol, sasl_mechanism, sasl_jaas_config);
 
         return props;
     }

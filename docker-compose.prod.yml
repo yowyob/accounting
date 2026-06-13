@@ -1,122 +1,124 @@
 # ==============================================================
-# 🏭 YOWYOB ERP — COMPOSE PRODUCTION
+# 🏭 YOWYOB-ERP-ACCOUNTING — PRODUCTION sur le serveur yowyob
 # ==============================================================
-# Ce fichier est utilisé en production UNIQUEMENT.
-# Il suppose que KSM_Kernel_Layer est déjà démarré et expose
-# le réseau Docker externe "iwm-network".
-#
-# Usage :
-#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+# Build LOCAL par le runner GitLab (pas de registry). Branché sur l'infra
+# EXISTANTE du serveur (réseau "yowyob") :
+#   - PostgreSQL  "database:5432"  -> base dédiée "accounting"
+#   - Kafka       "kafka:29092"    -> SASL_PLAINTEXT / SCRAM-SHA-256 (user dédié accounting)
+#   - kernel-core "kernel-core-kernel-layer-1:8080" -> validation auth (client dédié)
+#   - Traefik (providers.docker.network=yowyob) -> accounting.yowyob.com
+# Redis : sidecar privé (cache + AuthService). Elasticsearch & OCR : désactivés.
+# Secrets (mots de passe) : dans .env côté serveur (gitignoré) — cette app ne lit pas les *_FILE.
 # ==============================================================
-
 services:
 
-  # ─────────────────────────────────────────────────────────
-  # YOWYOB ERP Backend — Spring Boot OHADA
-  # ─────────────────────────────────────────────────────────
-  yowyob-erp-backend:
-    image: yowyob-erp-backend:${ERP_IMAGE_TAG:-latest}
-    container_name: yowyob-erp-backend
-    restart: always
-
-    # Secrets Docker (fichiers injectés dans /run/secrets/)
-    secrets:
-      - erp_postgres_password
-      - erp_jwt_secret
-      - erp_redis_password
-
+  erp-accounting-backend:
+    image: "${ACCOUNTING_IMAGE:?ACCOUNTING_IMAGE requis - ex accounting/backend:main}"
+    container_name: erp-accounting-backend
+    pull_policy: never            # image construite localement par le job CI build
+    restart: unless-stopped
+    env_file: [.env]
     environment:
-      # ── Application ──────────────────────────────────────
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
-      SERVER_PORT: ${SERVER_PORT:-8081}
-      JAVA_OPTS: >-
-        -XX:+UseContainerSupport
-        -XX:MaxRAMPercentage=75.0
-        -XX:InitialRAMPercentage=25.0
-        -XX:+ExitOnOutOfMemoryError
-        -Djava.security.egd=file:/dev/./urandom
+      SPRING_PROFILES_ACTIVE: "prod"
+      SERVER_PORT: "8081"
 
-      # ── Base de données R2DBC (réactif) ──────────────────
-      # Connexion à la même base PostgreSQL que le Kernel
-      DB_HOST: ${DB_HOST:-iwm-postgres}
-      DB_PORT: ${DB_PORT:-5432}
-      DB_NAME: ${DB_NAME:-iwm}
-      POSTGRES_USER: ${POSTGRES_USER:-iwm}
-      POSTGRES_PASSWORD_FILE: /run/secrets/erp_postgres_password
+      # ── PostgreSQL : base dédiée "accounting" (R2DBC + Liquibase JDBC) ──
+      DB_HOST: "database"
+      DB_PORT: "5432"
+      DB_NAME: "accounting"
+      POSTGRES_USER: "accounting"
+      POSTGRES_PASSWORD: "${ACCOUNTING_DB_PASSWORD:?ACCOUNTING_DB_PASSWORD requis dans .env}"
+      LIQUIBASE_URL: "jdbc:postgresql://database:5432/accounting"
+      LIQUIBASE_USER: "accounting"
+      LIQUIBASE_PASSWORD: "${ACCOUNTING_DB_PASSWORD:?ACCOUNTING_DB_PASSWORD requis dans .env}"
 
-      # ── Liquibase (migrations — JDBC) ────────────────────
-      LIQUIBASE_URL: jdbc:postgresql://${DB_HOST:-iwm-postgres}:${DB_PORT:-5432}/${DB_NAME:-iwm}
-      LIQUIBASE_USER: ${POSTGRES_USER:-iwm}
-      LIQUIBASE_PASSWORD_FILE: /run/secrets/erp_postgres_password
+      # ── Redis sidecar privé ──
+      REDIS_HOST: "accounting-redis"
+      REDIS_PORT: "6379"
+      REDIS_URL: "redis://accounting-redis:6379"
+      SPRING_CACHE_TYPE: "redis"
 
-      # ── Redis ─────────────────────────────────────────────
-      REDIS_HOST: ${REDIS_HOST:-iwm-redis}
-      REDIS_PORT: ${REDIS_PORT:-6379}
-      SPRING_CACHE_TYPE: ${SPRING_CACHE_TYPE:-redis}
+      # ── Kafka du serveur = SASL_PLAINTEXT / SCRAM-SHA-256 (user dédié accounting) ──
+      KAFKA_BOOTSTRAP: "kafka:29092"
+      SPRING_KAFKA_ENABLED: "true"
+      SPRING_KAFKA_SECURITY_PROTOCOL: "SASL_PLAINTEXT"
+      SPRING_KAFKA_PROPERTIES_SASL_MECHANISM: "SCRAM-SHA-256"
+      SPRING_KAFKA_PROPERTIES_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.scram.ScramLoginModule required username="accounting" password="${ACCOUNTING_KAFKA_PASSWORD:?ACCOUNTING_KAFKA_PASSWORD requis dans .env}";'
 
-      # ── Kafka ─────────────────────────────────────────────
-      KAFKA_BOOTSTRAP: ${KAFKA_BOOTSTRAP:-iwm-kafka:29092}
-      SPRING_KAFKA_ENABLED: ${SPRING_KAFKA_ENABLED:-true}
+      # ── Elasticsearch : NON utilisé (aucun @Document) -> coupé ──
+      SPRING_ELASTICSEARCH_ENABLED: "false"
+      ELASTICSEARCH_URI: ""
+      # ── OCR factures : lib native Tesseract absente de l'image -> coupé ──
+      INVOICE_OCR_ENABLED: "false"
 
-      # ── Elasticsearch ─────────────────────────────────────
-      ELASTICSEARCH_URI: ${ELASTICSEARCH_URI:-http://iwm-elasticsearch:9200}
-      SPRING_ELASTICSEARCH_ENABLED: ${SPRING_ELASTICSEARCH_ENABLED:-true}
-
-      # ── Auth / JWT ────────────────────────────────────────
-      AUTH_API_URL: ${AUTH_API_URL:-http://app:8080}
-      AUTH_API_HEALTH_URL: ${AUTH_API_HEALTH_URL:-http://app:8081/actuator/health}
-      AUTH_API_TIMEOUT: ${AUTH_API_TIMEOUT:-5000}
-      AUTH_API_RETRIES: ${AUTH_API_RETRIES:-3}
-      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-iwm-backend}
+      # ── Auth : validée contre kernel-core (client dédié accounting-backend) ──
+      AUTH_API_URL: "http://kernel-core-kernel-layer-1:8080"
+      AUTH_API_HEALTH_URL: "http://kernel-core-kernel-layer-1:8081/actuator/health/readiness"
+      AUTH_API_TIMEOUT: "5000"
+      AUTH_API_RETRIES: "3"
+      AUTH_JWT_ISSUER: "kernel-core"
       AUTH_MOCK_ENABLED: "false"
-      KERNEL_CLIENT_ID: ${KERNEL_CLIENT_ID:?KERNEL_CLIENT_ID is required}
-      KERNEL_CLIENT_SECRET: ${KERNEL_CLIENT_SECRET:?KERNEL_CLIENT_SECRET is required}
-      JWT_SECRET_FILE: /run/secrets/erp_jwt_secret
-      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      KERNEL_CLIENT_ID: "accounting-backend"
+      KERNEL_CLIENT_SECRET: "${ACCOUNTING_KERNEL_CLIENT_SECRET:?ACCOUNTING_KERNEL_CLIENT_SECRET requis dans .env}"
+      KERNEL_TENANT_ID: "${ACCOUNTING_TENANT_ID:-11111111-1111-1111-1111-111111111111}"
 
-      # ── Multi-tenant ──────────────────────────────────────
-      TENANT_DEFAULT: ${TENANT_DEFAULT}
+      # ── JWT applicatif local ──
+      JWT_SECRET: "${ACCOUNTING_JWT_SECRET:?ACCOUNTING_JWT_SECRET requis dans .env}"
+      JWT_EXPIRATION: "86400000"
 
-    ports:
-      - "${SERVER_PORT:-8081}:8081"
+      # ── Multi-tenant + CORS ──
+      TENANT_DEFAULT: "${ACCOUNTING_TENANT_ID:-11111111-1111-1111-1111-111111111111}"
+      CORS_ALLOWED_ORIGINS: "${ACCOUNTING_CORS_ORIGINS:-https://accounting.yowyob.com}"
 
-    # Health check de l'application
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/actuator/health > /dev/null"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/actuator/health >/dev/null"]
       interval: 20s
       timeout: 10s
       retries: 15
-      start_period: 90s
-
-    # Logging structuré JSON pour production
+      start_period: 120s
     logging:
       driver: "json-file"
       options:
         max-size: "50m"
         max-file: "5"
-
-    # Le BACKEND rejoint le réseau externe du Kernel
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.accounting.rule=Host(`accounting.yowyob.com`)"
+      - "traefik.http.routers.accounting.entrypoints=websecure"
+      - "traefik.http.routers.accounting.tls=true"
+      - "traefik.http.routers.accounting.tls.certresolver=letsencrypt"
+      - "traefik.http.services.accounting.loadbalancer.server.port=8081"
+      - "traefik.docker.network=yowyob"
+    depends_on:
+      accounting-redis:
+        condition: service_healthy
     networks:
-      - iwm-network
+      - yowyob          # PostgreSQL + Kafka + kernel-core + exposition Traefik
+      - accounting      # privé : backend <-> redis
 
-# ──────────────────────────────────────────────────────────────
-# Secrets Docker (fichiers sur le filesystem du host)
-# Ces fichiers doivent exister AVANT docker compose up
-# Emplacement recommandé : ./ops/secrets/prod/
-# ──────────────────────────────────────────────────────────────
-secrets:
-  erp_postgres_password:
-    file: ./ops/secrets/prod/erp_postgres_password.txt
-  erp_jwt_secret:
-    file: ./ops/secrets/prod/erp_jwt_secret.txt
-  erp_redis_password:
-    file: ./ops/secrets/prod/erp_redis_password.txt
+  accounting-redis:
+    image: redis:8.6.2-alpine
+    pull_policy: if_not_present
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - accounting-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - accounting
 
-# ──────────────────────────────────────────────────────────────
-# Réseau Docker EXTERNE — créé par KSM_Kernel_Layer
-# IMPORTANT : Ne pas recréer ce réseau ici, il est "external"
-# ──────────────────────────────────────────────────────────────
+volumes:
+  accounting-redis-data:
+
 networks:
-  iwm-network:
+  # Réseau partagé EXISTANT du serveur (Traefik / PostgreSQL / Kafka / kernel-core).
+  yowyob:
     external: true
-    name: iwm-network
+    name: yowyob
+  # Réseau privé interne backend <-> redis (créé par ce compose).
+  accounting:
+    name: accounting-net

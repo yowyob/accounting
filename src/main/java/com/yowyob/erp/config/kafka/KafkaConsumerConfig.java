@@ -40,9 +40,19 @@ public class KafkaConsumerConfig {
     @Value("${spring.kafka.consumer.group-id:yowyob-erp-group}")
     private String group_id;
 
+    // SASL optionnel : vide en local (Kafka en clair), renseigné en prod yowyob (SASL_PLAINTEXT/SCRAM).
+    @Value("${spring.kafka.security.protocol:}")
+    private String security_protocol;
+
+    @Value("${spring.kafka.properties.sasl.mechanism:}")
+    private String sasl_mechanism;
+
+    @Value("${spring.kafka.properties.sasl.jaas.config:}")
+    private String sasl_jaas_config;
+
     /**
      * Common consumer configuration properties.
-     * 
+     *
      * @return a map of properties
      */
     @Bean
@@ -51,6 +61,8 @@ public class KafkaConsumerConfig {
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap_servers);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, group_id);
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+
+        KafkaSecuritySupport.apply(props, security_protocol, sasl_mechanism, sasl_jaas_config);
 
         return props;
     }
