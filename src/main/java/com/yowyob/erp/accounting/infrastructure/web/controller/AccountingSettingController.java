@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import com.yowyob.erp.config.auth.AccountingAuthorities;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -61,7 +62,7 @@ public class AccountingSettingController {
 
     @PutMapping
     @Operation(summary = "Update or create an accounting setting")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize(AccountingAuthorities.SUPERVISE)
     public Mono<ResponseEntity<ApiResponseWrapper<AccountingSettingDto>>> updateSetting(
             @Valid @RequestBody AccountingSettingDto dto) {
         

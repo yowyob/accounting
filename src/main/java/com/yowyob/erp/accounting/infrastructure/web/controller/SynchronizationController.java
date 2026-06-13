@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import com.yowyob.erp.config.auth.AccountingAuthorities;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,7 +42,7 @@ public class SynchronizationController {
          * @return synchronization result with indexed entries count
          */
         @PostMapping("/elasticsearch")
-        @PreAuthorize("hasRole('ADMIN')")
+        @PreAuthorize(AccountingAuthorities.ADMIN_ONLY)
         @Operation(summary = "Forcer la synchronisation Elasticsearch", description = "Réindexe toutes les écritures comptables dans Elasticsearch (Admin uniquement)")
         @ApiResponses(value = {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Synchronisation effectuée"),
@@ -65,7 +66,7 @@ public class SynchronizationController {
          * @return cache clearing result
          */
         @PostMapping("/redis/clear")
-        @PreAuthorize("hasRole('ADMIN')")
+        @PreAuthorize(AccountingAuthorities.ADMIN_ONLY)
         @Operation(summary = "Vider le cache Redis", description = "Supprime tous les caches Redis du organization (Admin uniquement)")
         @ApiResponses(value = {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Cache vidé"),
@@ -89,7 +90,7 @@ public class SynchronizationController {
          * @return synchronization statistics
          */
         @GetMapping("/status")
-        @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
+        @PreAuthorize(AccountingAuthorities.MANAGE)
         @Operation(summary = "Statut de la synchronisation", description = "Retourne les statistiques de synchronisation Elasticsearch et Redis")
         @ApiResponses(value = {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Statut récupéré"),

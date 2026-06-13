@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import com.yowyob.erp.config.auth.AccountingAuthorities;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -42,7 +43,7 @@ public class LettrageController {
          * @return number of reconciled entry pairs
          */
         @PostMapping("/auto")
-        @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
+        @PreAuthorize(AccountingAuthorities.MANAGE)
         @Operation(summary = "Lancer le lettrage automatique", description = "Rapproche automatiquement les écritures débit/crédit avec le même compte et montant")
         @ApiResponses(value = {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Lettrage effectué avec succès"),
@@ -65,7 +66,7 @@ public class LettrageController {
          * @return reconciliation statistics
          */
         @GetMapping("/status")
-        @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT', 'USER')")
+        @PreAuthorize(AccountingAuthorities.READ)
         @Operation(summary = "Obtenir le statut du lettrage", description = "Retourne les statistiques de lettrage pour le organization")
         @ApiResponses(value = {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Statut récupéré"),

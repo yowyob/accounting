@@ -30,10 +30,13 @@ public class BrouillardNotificationService {
         String message = String.format("Un nouveau brouillard (%s) pour un montant de %s %s est en attente de validation.",
                 brouillard.getLibelle(), brouillard.getMontantTotal(), brouillard.getDevise());
 
-        // Notify both ADMIN and ACCOUNTANT roles
+        // Notifie les rôles habilités à valider un brouillard (cf. matrice journal_entries.validate) :
+        // COMPTABLE, RESPONSABLE_COMPTABLE, et l'ADMIN transverse.
         return authService.getOrganizationMembers(brouillard.getOrganizationId())
-                .filter(member -> member.isActive() && 
-                        ("ADMIN".equalsIgnoreCase(member.getRoleName()) || "ACCOUNTANT".equalsIgnoreCase(member.getRoleName())))
+                .filter(member -> member.isActive() &&
+                        ("ADMIN".equalsIgnoreCase(member.getRoleName())
+                                || "COMPTABLE".equalsIgnoreCase(member.getRoleName())
+                                || "RESPONSABLE_COMPTABLE".equalsIgnoreCase(member.getRoleName())))
                 .collectList()
                 .flatMap(members -> {
                     if (members.isEmpty()) {

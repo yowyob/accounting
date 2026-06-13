@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import com.yowyob.erp.config.auth.AccountingAuthorities;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,7 +46,7 @@ public class ClotureMensuelleController {
          * @return closure result with generated entries
          */
         @PostMapping("/mensuelle/{periodeId}")
-        @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
+        @PreAuthorize(AccountingAuthorities.SUPERVISE)
         @Operation(summary = "Clôturer une période mensuelle", description = "Valide toutes les écritures et génère les écritures de clôture")
         @ApiResponses(value = {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Période clôturée avec succès"),
@@ -79,7 +80,7 @@ public class ClotureMensuelleController {
          * @return eligibility status and validation details
          */
         @GetMapping("/status/{periodeId}")
-        @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT', 'USER')")
+        @PreAuthorize(AccountingAuthorities.READ)
         @Operation(summary = "Vérifier l'éligibilité à la clôture", description = "Vérifie si une période peut être clôturée (toutes les écritures validées, etc.)")
         @ApiResponses(value = {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Statut récupéré"),
@@ -107,7 +108,7 @@ public class ClotureMensuelleController {
          * @return cancellation result
          */
         @PostMapping("/annuler/{periodeId}")
-        @PreAuthorize("hasRole('ADMIN')")
+        @PreAuthorize(AccountingAuthorities.SUPERVISE)
         @Operation(summary = "Annuler une clôture", description = "Réouvre une période clôturée (réservé aux administrateurs)")
         @ApiResponses(value = {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Clôture annulée"),

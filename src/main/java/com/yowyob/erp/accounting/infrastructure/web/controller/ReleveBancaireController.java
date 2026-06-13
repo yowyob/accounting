@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import com.yowyob.erp.config.auth.AccountingAuthorities;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -42,7 +43,7 @@ public class ReleveBancaireController {
          * Uploads and parses a bank statement CSV file reactively.
          */
         @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-        @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
+        @PreAuthorize(AccountingAuthorities.MANAGE)
         @Operation(summary = "Upload d'un relevé bancaire CSV", description = "Parse un fichier CSV de relevé bancaire et retourne les transactions détectées")
         public Mono<ResponseEntity<ApiResponseWrapper<List<Map<String, Object>>>>> uploadReleve(
                         @RequestPart("file") FilePart file,
@@ -61,7 +62,7 @@ public class ReleveBancaireController {
          * Gets the list of uploaded bank statements reactively.
          */
         @GetMapping("/list")
-        @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT', 'USER')")
+        @PreAuthorize(AccountingAuthorities.READ)
         @Operation(summary = "Liste des relevés importés", description = "Retourne la liste des relevés bancaires uploadés pour le organization")
         public Mono<ResponseEntity<ApiResponseWrapper<List<Map<String, Object>>>>> getListeReleves() {
                 log.info("📋 Getting bank statements list");
@@ -78,7 +79,7 @@ public class ReleveBancaireController {
          * Imports bank statement transactions as accounting entries reactively.
          */
         @PostMapping("/import/{releveId}")
-        @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
+        @PreAuthorize(AccountingAuthorities.MANAGE)
         @Operation(summary = "Importer un relevé en écritures", description = "Convertit les transactions d'un relevé en écritures comptables")
         public Mono<ResponseEntity<ApiResponseWrapper<Map<String, Object>>>> importerReleve(
                         @PathVariable UUID releveId) {

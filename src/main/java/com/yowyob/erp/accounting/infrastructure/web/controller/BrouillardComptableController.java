@@ -26,6 +26,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import com.yowyob.erp.config.auth.AccountingAuthorities;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -142,7 +143,7 @@ public class BrouillardComptableController {
 
     @PostMapping("/{id}/validate")
     @Operation(summary = "Validate a draft entry and create accounting entry")
-    // @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
+    @PreAuthorize(AccountingAuthorities.MANAGE)
     public Mono<ResponseEntity<ApiResponseWrapper<BrouillardComptableDto>>> validateBrouillard(
             @PathVariable UUID id,
             @RequestBody(required = false) BrouillardValidationRequest request,
@@ -194,7 +195,7 @@ public class BrouillardComptableController {
 
     @PostMapping("/{id}/reject")
     @Operation(summary = "Reject a draft entry")
-    // @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
+    @PreAuthorize(AccountingAuthorities.MANAGE)
     public Mono<ResponseEntity<ApiResponseWrapper<BrouillardComptableDto>>> rejectBrouillard(
             @PathVariable UUID id,
             @Valid @RequestBody BrouillardRejectionRequest request,
@@ -209,7 +210,7 @@ public class BrouillardComptableController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete a draft entry")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize(AccountingAuthorities.MANAGE)
     public Mono<ResponseEntity<Void>> deleteBrouillard(@PathVariable UUID id) {
         return brouillardService.deleteBrouillard(id)
                 .then(Mono.just(ResponseEntity.noContent().build()));

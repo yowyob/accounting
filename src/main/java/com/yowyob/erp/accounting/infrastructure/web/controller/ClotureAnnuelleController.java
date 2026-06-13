@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import com.yowyob.erp.config.auth.AccountingAuthorities;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,7 +27,7 @@ public class ClotureAnnuelleController {
     private final ClotureAnnuelleUseCase cloture_annuelle_service;
 
     @PostMapping("/annuelle/{exerciceId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize(AccountingAuthorities.SUPERVISE)
     @Operation(summary = "Exécuter la clôture annuelle d'un exercice comptable",
         description = """
             Processus complet OHADA de clôture de fin d'exercice :
