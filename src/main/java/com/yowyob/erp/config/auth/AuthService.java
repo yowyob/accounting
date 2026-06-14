@@ -325,18 +325,27 @@ public class AuthService {
         payload.setLastName(userNode.path("lastName").asText());
         payload.setOrganizationId(userNode.path("organizationId").asText(""));
 
-        // Le Kernel retourne les permissions, pas des "roles" legacy
-        JsonNode permsNode = userNode.path("permissions");
-        String[] roles;
-        if (permsNode.isArray()) {
-            roles = new String[permsNode.size()];
-            for (int i = 0; i < permsNode.size(); i++) {
-                roles[i] = permsNode.get(i).asText();
+        // Le Kernel renvoie les rôles dans "authorities" (variantes ROLE_/#SCOPE incluses)
+        // et non dans un champ "permissions". On normalise chaque entrée en code de rôle brut
+        // attendu par le frontend : "ROLE_COMPTABLE#TENANT" -> "COMPTABLE" (dédupliqué).
+        JsonNode rolesNode = userNode.has("authorities") ? userNode.path("authorities") : userNode.path("permissions");
+        java.util.Set<String> roleSet = new java.util.LinkedHashSet<>();
+        if (rolesNode.isArray()) {
+            for (JsonNode node : rolesNode) {
+                String code = node.asText("");
+                int hash = code.indexOf('#');
+                if (hash >= 0) {
+                    code = code.substring(0, hash);
+                }
+                if (code.startsWith("ROLE_")) {
+                    code = code.substring("ROLE_".length());
+                }
+                if (!code.isBlank()) {
+                    roleSet.add(code);
+                }
             }
-        } else {
-            roles = new String[0];
         }
-        payload.setRoles(roles);
+        payload.setRoles(roleSet.toArray(new String[0]));
 
         var resp = new AuthController.LoginResponse();
         resp.setToken(token);
