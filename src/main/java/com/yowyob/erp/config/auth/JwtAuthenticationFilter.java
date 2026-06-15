@@ -3,7 +3,6 @@ package com.yowyob.erp.config.auth;
 import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -19,6 +18,17 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Authenticates the request from the kernel-issued JWT and binds the <b>tenant</b> derived from the
+ * token's {@code tid} claim to the reactive context (as a fallback when no {@code X-Tenant-Id}
+ * header is present — {@link com.yowyob.erp.config.organization.OrganizationWebFilter} takes
+ * precedence).
+ *
+ * <p>This filter no longer resolves the <b>organization</b>: organization is a per-request concept
+ * carried by the {@code X-Organization-Id} header (the kernel JWT has no organization claim), and is
+ * resolved solely by {@code OrganizationWebFilter}. Conflating the tenant header with the
+ * organization is exactly the bug this change removes.
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -26,16 +36,12 @@ public class JwtAuthenticationFilter implements WebFilter {
 
     private final AuthService authService;
 
-    @Value("${app.organization.header-name:X-Tenant-ID}")
-    private String organizationHeaderName;
-
     @Override
     @NonNull
     public Mono<Void> filter(@NonNull ServerWebExchange exchange, @NonNull WebFilterChain chain) {
         String token = extractToken(exchange);
 
         if (token != null) {
-            boolean hasExplicitTenant = hasExplicitTenant(exchange);
             return authService.validateToken(token)
                     .flatMap(authResponse -> {
                         if (!authResponse.isValid()) {
@@ -45,13 +51,12 @@ public class JwtAuthenticationFilter implements WebFilter {
                         Mono<Void> downstream = chain.filter(exchange)
                                 .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
 
-                        // Derive the tenant from the authenticated user's organization,
-                        // unless the request carries an explicit X-Tenant-ID header /
-                        // tenantId param (which keeps precedence for cross-org access).
-                        UUID organizationId = parseOrganizationId(authResponse.getOrganizationId());
-                        if (!hasExplicitTenant && organizationId != null) {
+                        // Bind the tenant from the JWT `tid` claim as a fallback. The outer
+                        // OrganizationWebFilter overrides this with the X-Tenant-Id header when present.
+                        UUID tenantId = parseUuid(authResponse.getTenantId());
+                        if (tenantId != null) {
                             downstream = downstream.contextWrite(ctx ->
-                                    ctx.put(ReactiveOrganizationContext.ORGANIZATION_ID_KEY, organizationId));
+                                    ctx.put(ReactiveOrganizationContext.TENANT_ID_KEY, tenantId));
                         }
                         return downstream;
                     })
@@ -64,24 +69,14 @@ public class JwtAuthenticationFilter implements WebFilter {
         return chain.filter(exchange);
     }
 
-    /** True when the request explicitly targets a tenant via header or query param. */
-    private boolean hasExplicitTenant(ServerWebExchange exchange) {
-        String header = exchange.getRequest().getHeaders().getFirst(organizationHeaderName);
-        if (header != null && !header.isEmpty()) {
-            return true;
-        }
-        String queryParam = exchange.getRequest().getQueryParams().getFirst("tenantId");
-        return queryParam != null && !queryParam.isEmpty();
-    }
-
-    private UUID parseOrganizationId(String organizationId) {
-        if (organizationId == null || organizationId.isEmpty()) {
+    private UUID parseUuid(String value) {
+        if (value == null || value.isEmpty()) {
             return null;
         }
         try {
-            return UUID.fromString(organizationId);
+            return UUID.fromString(value);
         } catch (IllegalArgumentException e) {
-            log.warn("Authenticated user has a non-UUID organizationId: {}", organizationId);
+            log.warn("JWT carries a non-UUID tenant id: {}", value);
             return null;
         }
     }

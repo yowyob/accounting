@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
@@ -68,6 +69,14 @@ public class AuthService {
 
     @Value("${auth.api.default-tenant-id:}")
     private String defaultTenantId;
+
+    // Identification de l'application cliente backend auprès du Kernel.
+    // Le Kernel (notamment en prod) exige X-Client-Id + X-Api-Key sur /api/**.
+    @Value("${kernel.client.id:}")
+    private String kernelClientId;
+
+    @Value("${kernel.client.secret:}")
+    private String kernelClientSecret;
 
     // Clé publique RSA du Kernel — chargée au démarrage et rechargeable
     private final AtomicReference<RSASSAVerifier> kernelVerifier = new AtomicReference<>();
@@ -212,6 +221,7 @@ public class AuthService {
             return AuthValidationResponse.builder()
                 .valid(true)
                 .userId(userId)
+                .tenantId(tenantId != null ? tenantId : "")
                 .organizationId(organizationId != null ? organizationId : "")
                 .roles(roles)
                 .build();
@@ -238,6 +248,7 @@ public class AuthService {
             .post()
             .uri(authApiUrl + "/api/auth/login")
             .header("X-Tenant-Id", resolvedTenantId)
+            .headers(this::addClientCredentials)
             .bodyValue(Map.of("principal", email, "password", password))
             .retrieve()
             .bodyToMono(JsonNode.class)
@@ -258,6 +269,7 @@ public class AuthService {
             .get()
             .uri(authApiUrl + "/api/users/me")
             .header("Authorization", "Bearer " + token)
+            .headers(this::addClientCredentials)
             .retrieve()
             .bodyToMono(JsonNode.class)
             .timeout(Duration.ofMillis(timeout))
@@ -351,6 +363,22 @@ public class AuthService {
         resp.setToken(token);
         resp.setUser(payload);
         return resp;
+    }
+
+    /**
+     * Ajoute les en-têtes d'identification de l'application cliente backend
+     * (X-Client-Id / X-Api-Key) requis par le Kernel sur /api/**.
+     * N'ajoute rien si les credentials ne sont pas configurés.
+     */
+    private void addClientCredentials(HttpHeaders headers) {
+        String clientId = normalize(kernelClientId);
+        String apiKey = normalize(kernelClientSecret);
+        if (clientId != null) {
+            headers.set("X-Client-Id", clientId);
+        }
+        if (apiKey != null) {
+            headers.set("X-Api-Key", apiKey);
+        }
     }
 
     private String resolveTenantId(String tenantId) {
