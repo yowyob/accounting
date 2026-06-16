@@ -128,6 +128,42 @@ public class BrouillardComptableService implements BrouillardComptableUseCase {
         return repository.save(brouillard);
     }
 
+    /**
+     * Updates an editable draft (amounts, VAT, libellé, journal, période) before it is
+     * validated. The UI recomputes the figures (e.g. after the user edits the VAT rate)
+     * and sends the new {@code dataJson}/{@code montantTotal}; we persist them so the
+     * generated accounting entry reflects the corrected values. A validated draft is
+     * immutable.
+     */
+    public Mono<BrouillardComptable> updateDraft(UUID id,
+            com.yowyob.erp.accounting.infrastructure.web.dto.BrouillardComptableDto update) {
+        return repository.findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Draft not found")))
+                .flatMap(b -> {
+                    if (b.getStatut() == BrouillardStatut.VALIDE) {
+                        return Mono.error(new IllegalStateException("Cannot edit a validated draft"));
+                    }
+                    if (update.getDataJson() != null) {
+                        b.setDataJson(update.getDataJson());
+                    }
+                    if (update.getMontantTotal() != null) {
+                        b.setMontantTotal(update.getMontantTotal());
+                    }
+                    if (update.getLibelle() != null) {
+                        b.setLibelle(update.getLibelle());
+                    }
+                    if (update.getJournalId() != null) {
+                        b.setJournalId(update.getJournalId());
+                    }
+                    if (update.getPeriodeId() != null) {
+                        b.setPeriodeId(update.getPeriodeId());
+                    }
+                    b.setUpdatedAt(LocalDateTime.now());
+                    b.setNotNew();
+                    return repository.save(b);
+                });
+    }
+
     public Flux<BrouillardComptable> getAllBrouillards(UUID organizationId, Pageable pageable) {
         return repository.findAllByOrganizationId(organizationId, pageable);
     }
@@ -197,8 +233,13 @@ public class BrouillardComptableService implements BrouillardComptableUseCase {
                 .flatMap(b -> {
                     return entryGenerator.apply(b.getDataJson())
                             .flatMap(ecritureDto -> {
-                                // Transfer attachments from draft to new entry if not already set by generator
-                                if (ecritureDto.getAttachment_ids() == null) {
+                                // Transfer attachments from draft to new entry if not already set by
+                                // generator. valueToTree(null) yields a NullNode (not Java null), and an
+                                // empty array carries no document, so fall back in those cases too — the
+                                // source file must end up linked to the accounting entry.
+                                var generatedAttachments = ecritureDto.getAttachment_ids();
+                                if (generatedAttachments == null || generatedAttachments.isNull()
+                                        || generatedAttachments.isEmpty()) {
                                     ecritureDto.setAttachment_ids(b.getAttachmentIds());
                                 }
 
