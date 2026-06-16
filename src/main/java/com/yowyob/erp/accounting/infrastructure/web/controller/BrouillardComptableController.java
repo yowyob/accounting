@@ -128,6 +128,9 @@ public class BrouillardComptableController {
                             attachmentIdsNode // Attachment ref
                     ).map(savedDraft -> {
                         savedDraft.setStatut(BrouillardStatut.EN_ATTENTE_VALIDATION); // Force status
+                        // createDraft a déjà persisté l'entité (INSERT). Ce 2e save ne doit donc
+                        // PAS refaire un INSERT (même id → duplicate key) mais un UPDATE du statut.
+                        savedDraft.setNotNew();
                         return savedDraft;
                     }).flatMap(brouillardService::saveBrouillard);
                 }))))

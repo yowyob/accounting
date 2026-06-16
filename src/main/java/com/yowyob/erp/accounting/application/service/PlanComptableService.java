@@ -9,6 +9,7 @@ import com.yowyob.erp.accounting.domain.model.Organization;
 import com.yowyob.erp.accounting.infrastructure.persistence.repository.PlanComptableRepository;
 import com.yowyob.erp.accounting.infrastructure.persistence.repository.PlanComptableTemplateRepository;
 import com.yowyob.erp.accounting.infrastructure.persistence.repository.JournalAuditRepository;
+import com.yowyob.erp.accounting.infrastructure.persistence.repository.OrganizationRepository;
 import com.yowyob.erp.shared.domain.exception.BusinessException;
 import com.yowyob.erp.shared.domain.exception.ResourceNotFoundException;
 import com.yowyob.erp.shared.application.service.ValidationService;
@@ -40,6 +41,7 @@ public class PlanComptableService implements PlanComptableUseCase {
         private final KafkaMessageService kafka_service;
         private final RedisService redis_service;
         private final JournalAuditRepository audit_repository;
+        private final OrganizationRepository organization_repository;
 
         private static final String CACHE_ALL = "plancomptable:all:";
         private static final String CACHE_ACTIVE = "plancomptable:active:";
@@ -51,7 +53,8 @@ public class PlanComptableService implements PlanComptableUseCase {
         public Mono<Void> initializePlanComptableForOrganization(UUID organization_id) {
                 log.info("Initializing accounting plan for organization: {}", organization_id);
 
-                return ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system")
+                return ensureOrganizationExists(organization_id)
+                                .then(ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system"))
                                 .flatMap(current_user -> template_repository.findAll()
                                                 .collectList()
                                                 .flatMap(templates -> {
@@ -83,6 +86,32 @@ public class PlanComptableService implements PlanComptableUseCase {
                                                                                         "Successfully initialized {} accounts for organization {}",
                                                                                         accounts.size(), organization_id));
                                                 }));
+        }
+
+        /**
+         * Garantit que la ligne parente existe dans la table {@code organizations}
+         * avant tout insert contraint par une FK (ex. plans_comptables). L'organisation
+         * provient du kernel et n'est pas forcément déjà provisionnée côté comptabilité ;
+         * on crée alors une ligne minimale pour satisfaire la contrainte.
+         */
+        private Mono<Void> ensureOrganizationExists(UUID organization_id) {
+                return organization_repository.existsById(organization_id)
+                                .flatMap(exists -> {
+                                        if (Boolean.TRUE.equals(exists)) {
+                                                return Mono.empty();
+                                        }
+                                        log.info("Organization {} absente côté accounting, provisionnement d'une ligne minimale.",
+                                                        organization_id);
+                                        Organization organization = Organization.builder()
+                                                        .id(organization_id)
+                                                        .code("ORG-" + organization_id)
+                                                        .name("Organization " + organization_id)
+                                                        .created_at(LocalDateTime.now())
+                                                        .updated_at(LocalDateTime.now())
+                                                        .build();
+                                        organization.setNew(true);
+                                        return organization_repository.save(organization).then();
+                                });
         }
 
         @Transactional
