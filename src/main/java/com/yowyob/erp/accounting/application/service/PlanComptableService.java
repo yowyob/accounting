@@ -10,6 +10,7 @@ import com.yowyob.erp.accounting.infrastructure.persistence.repository.PlanCompt
 import com.yowyob.erp.accounting.infrastructure.persistence.repository.PlanComptableTemplateRepository;
 import com.yowyob.erp.accounting.infrastructure.persistence.repository.JournalAuditRepository;
 import com.yowyob.erp.accounting.infrastructure.persistence.repository.OrganizationRepository;
+import com.yowyob.erp.accounting.infrastructure.initialization.OperationComptableInitializationService;
 import com.yowyob.erp.shared.domain.exception.BusinessException;
 import com.yowyob.erp.shared.domain.exception.ResourceNotFoundException;
 import com.yowyob.erp.shared.application.service.ValidationService;
@@ -42,6 +43,7 @@ public class PlanComptableService implements PlanComptableUseCase {
         private final RedisService redis_service;
         private final JournalAuditRepository audit_repository;
         private final OrganizationRepository organization_repository;
+        private final OperationComptableInitializationService accounting_provisioning;
 
         private static final String CACHE_ALL = "plancomptable:all:";
         private static final String CACHE_ACTIVE = "plancomptable:active:";
@@ -53,39 +55,67 @@ public class PlanComptableService implements PlanComptableUseCase {
         public Mono<Void> initializePlanComptableForOrganization(UUID organization_id) {
                 log.info("Initializing accounting plan for organization: {}", organization_id);
 
+                return provisionPlanComptableForOrganization(organization_id)
+                                // Always (re)ensure the essential ledger accounts and the standard
+                                // operation templates (ACHAT/VENTE/PAIEMENT) so the billing→accounting
+                                // chain can generate entries for THIS organization — not only the default
+                                // one — and so existing organizations get them retroactively. Idempotent.
+                                .then(accounting_provisioning.provisionForOrganization(organization_id));
+        }
+
+        /**
+         * Idempotently creates the full OHADA chart of accounts ({@link PlanComptable}) for the
+         * organization from the loaded template, when it has none yet. Returns the number of accounts
+         * created (0 if the plan was already present). Does NOT provision operation templates — call
+         * {@code OperationComptableInitializationService#provisionForOrganization} for those.
+         */
+        public Mono<Long> provisionPlanComptableForOrganization(UUID organization_id) {
                 return ensureOrganizationExists(organization_id)
                                 .then(ReactiveOrganizationContext.getCurrentUser().defaultIfEmpty("system"))
-                                .flatMap(current_user -> template_repository.findAll()
-                                                .collectList()
-                                                .flatMap(templates -> {
-                                                        if (templates.isEmpty()) {
-                                                                return Mono.error(new BusinessException(
-                                                                                "Le modèle OHADA n'est pas disponible. "
-                                                                                                + "Redémarrez le backend pour charger plan_comptable_ohada_713.csv."));
+                                .flatMap(current_user -> account_repository.findByOrganization_Id(organization_id)
+                                                .hasElements()
+                                                .flatMap(planExists -> {
+                                                        if (Boolean.TRUE.equals(planExists)) {
+                                                                log.info("Plan comptable already present for organization {} — skipping creation.",
+                                                                                organization_id);
+                                                                return Mono.just(0L);
                                                         }
-                                                        List<PlanComptable> accounts = templates.stream()
-                                                                        .map(template -> PlanComptable.builder()
-                                                                                        .organizationId(organization_id)
-                                                                                        .no_compte(template.getNumero())
-                                                                                        .classe(template.getClasse())
-                                                                                        .libelle(template.getLibelle())
-                                                                                        .notes(template.getNotes())
-                                                                                        .actif(true)
-                                                                                        .created_at(LocalDateTime.now())
-                                                                                        .updated_at(LocalDateTime.now())
-                                                                                        .created_by(current_user)
-                                                                                        .updated_by(current_user)
-                                                                                        .build())
-                                                                        .toList();
-                                                        return account_repository.saveAll(accounts)
-                                                                        .then()
-                                                                        .then(redis_service.delete(CACHE_ALL + organization_id))
-                                                                        .then(redis_service.delete(CACHE_ACTIVE + organization_id))
-                                                                        .then()
-                                                                        .doOnSuccess(v -> log.info(
-                                                                                        "Successfully initialized {} accounts for organization {}",
-                                                                                        accounts.size(), organization_id));
+                                                        return createPlanFromTemplate(organization_id, current_user);
                                                 }));
+        }
+
+        private Mono<Long> createPlanFromTemplate(UUID organization_id, String current_user) {
+                return template_repository.findAll()
+                                .collectList()
+                                .flatMap(templates -> {
+                                        if (templates.isEmpty()) {
+                                                return Mono.error(new BusinessException(
+                                                                "Le modèle OHADA n'est pas disponible. "
+                                                                                + "Redémarrez le backend pour charger plan_comptable_ohada_713.csv."));
+                                        }
+                                        List<PlanComptable> accounts = templates.stream()
+                                                        .map(template -> PlanComptable.builder()
+                                                                        .organizationId(organization_id)
+                                                                        .no_compte(template.getNumero())
+                                                                        .classe(template.getClasse())
+                                                                        .libelle(template.getLibelle())
+                                                                        .notes(template.getNotes())
+                                                                        .actif(true)
+                                                                        .created_at(LocalDateTime.now())
+                                                                        .updated_at(LocalDateTime.now())
+                                                                        .created_by(current_user)
+                                                                        .updated_by(current_user)
+                                                                        .build())
+                                                        .toList();
+                                        return account_repository.saveAll(accounts)
+                                                        .then()
+                                                        .then(redis_service.delete(CACHE_ALL + organization_id))
+                                                        .then(redis_service.delete(CACHE_ACTIVE + organization_id))
+                                                        .thenReturn((long) accounts.size())
+                                                        .doOnSuccess(n -> log.info(
+                                                                        "Successfully initialized {} accounts for organization {}",
+                                                                        n, organization_id));
+                                });
         }
 
         /**

@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -27,6 +28,7 @@ import java.util.UUID;
 @Order(6)
 @Slf4j
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "app.organization.seed-default", havingValue = "true", matchIfMissing = false)
 public class DefaultOrganizationSetupInitializationService implements CommandLineRunner {
 
     private final PlanComptableUseCase planComptableService;

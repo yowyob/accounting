@@ -7,6 +7,7 @@ import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,7 @@ import reactor.core.publisher.Mono;
 @Service
 @Order(4)
 @Slf4j
+@ConditionalOnProperty(name = "app.organization.seed-default", havingValue = "true", matchIfMissing = false)
 public class PeriodeComptableInitializationService implements CommandLineRunner {
 
     private final PeriodeComptableUseCase periode_service;
