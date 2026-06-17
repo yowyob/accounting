@@ -58,7 +58,7 @@ public class OrganizationWebFilter implements WebFilter {
             // /api/kernel = reverse-proxy Kernel : le backend ne consomme pas le contexte org,
             // il relaie tel quel l'éventuel X-Organization-Id au Kernel qui gère sa propre logique.
             "/api/kernel",
-            "/api/auth", "/.well-known", "/actuator", "/swagger", "/v3/api-docs", "/webjars", "/favicon");
+            "/api/auth", "/.well-known", "/actuator", "/swagger", "/api-docs", "/v3/api-docs", "/webjars", "/favicon");
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
