@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import java.util.UUID;
 @Order(0)
 @RequiredArgsConstructor
 @DependsOn("liquibase")
+@ConditionalOnProperty(name = "app.organization.seed-default", havingValue = "true", matchIfMissing = false)
 public class OrganizationInitializationService implements CommandLineRunner {
 
     private final OrganizationRepository organization_repository;

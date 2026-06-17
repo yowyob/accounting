@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -41,6 +42,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import jakarta.validation.Valid;
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @RestController
@@ -109,18 +111,58 @@ public class BrouillardComptableController {
                     var attachmentIdsNode = objectMapper.createArrayNode();
                     attachmentIdsNode.add(attachmentDto.getId().toString());
 
+                    // Store the draft payload (data_json) in the invoice-DTO shape expected
+                    // by BOTH the UI preview and the validation step
+                    // (CustomerInvoiceDto/SupplierInvoiceDto), instead of the raw
+                    // FactureComptable whose field names (montant_ht, taux_tva…) don't match
+                    // — which previously left all amounts null on validation.
+                    BigDecimal montantHT = facture.getMontant_ht();
+                    BigDecimal tauxTva = facture.getTaux_tva() != null ? facture.getTaux_tva() : BigDecimal.ZERO;
+                    BigDecimal montantTVA = montantHT.multiply(tauxTva);
+                    BigDecimal montantTTC = montantHT.add(montantTVA);
+                    boolean achat = facture.is_achat();
+                    String numeroPiece = facture.getId() != null ? facture.getId().toString() : null;
+                    var dateFacturation = facture.getDate() != null ? facture.getDate().atStartOfDay() : null;
+
+                    // Carry the uploaded attachment on the invoice payload so the generated
+                    // accounting entry is directly linked to the source document.
+                    java.util.List<UUID> attachmentIds = java.util.List.of(UUID.fromString(attachmentDto.getId()));
+
+                    Object sourceDto = achat
+                            ? SupplierInvoiceDto.builder()
+                                    .idFacture(numeroPiece)
+                                    .numeroFacture(numeroPiece)
+                                    .dateFacturation(dateFacturation)
+                                    .montantHT(montantHT)
+                                    .montantTVA(montantTVA)
+                                    .montantTTC(montantTTC)
+                                    .montantTotal(montantTTC)
+                                    .attachmentIds(attachmentIds)
+                                    .build()
+                            : CustomerInvoiceDto.builder()
+                                    .idFacture(numeroPiece)
+                                    .numeroFacture(numeroPiece)
+                                    .dateFacturation(dateFacturation)
+                                    .idClient(facture.getClient_id() != null
+                                            ? facture.getClient_id().toString()
+                                            : null)
+                                    .montantHT(montantHT)
+                                    .montantTVA(montantTVA)
+                                    .montantTTC(montantTTC)
+                                    .montantTotal(montantTTC)
+                                    .attachmentIds(attachmentIds)
+                                    .build();
+
                     return brouillardService.createDraft(
                             organizationId,
-                            facture.is_achat() ? BrouillardType.FACTURE_FOURNISSEUR : BrouillardType.FACTURE_CLIENT,
-                            facture,
+                            achat ? BrouillardType.FACTURE_FOURNISSEUR : BrouillardType.FACTURE_CLIENT,
+                            sourceDto,
                             UUID.randomUUID().toString(), // SourceID
                             "OCR_UPLOAD", // SourceType
-                            facture.getId().toString(), // Numéro Pièce par défaut
+                            numeroPiece, // Numéro Pièce par défaut
                             facture.getDate(), // Date document
                             facture.getLibelle(), // Libellé
-                            facture.getMontant_ht().add(facture.getMontant_ht().multiply(facture.getTaux_tva())), // Montant
-                                                                                                                  // total
-                                                                                                                  // (TTC)
+                            montantTTC, // Montant total (TTC)
                             "XAF", // Devise par défaut
                             facture.getJournal_comptable_id(), // Journal si détecté
                             facture.getPeriode_comptable_id(), // Période si détectée
@@ -128,6 +170,9 @@ public class BrouillardComptableController {
                             attachmentIdsNode // Attachment ref
                     ).map(savedDraft -> {
                         savedDraft.setStatut(BrouillardStatut.EN_ATTENTE_VALIDATION); // Force status
+                        // createDraft a déjà persisté l'entité (INSERT). Ce 2e save ne doit donc
+                        // PAS refaire un INSERT (même id → duplicate key) mais un UPDATE du statut.
+                        savedDraft.setNotNew();
                         return savedDraft;
                     }).flatMap(brouillardService::saveBrouillard);
                 }))))
@@ -138,6 +183,22 @@ public class BrouillardComptableController {
                     log.error("Failed to upload and create draft from OCR", e);
                     return Mono.just(ResponseEntity.badRequest()
                             .body(ApiResponseWrapper.error("Erreur OCR: " + e.getMessage(), null)));
+                });
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Update an editable draft (amounts, VAT, journal…) before validation")
+    @PreAuthorize(AccountingAuthorities.MANAGE)
+    public Mono<ResponseEntity<ApiResponseWrapper<BrouillardComptableDto>>> updateBrouillard(
+            @PathVariable UUID id,
+            @RequestBody BrouillardComptableDto update) {
+        return brouillardService.updateDraft(id, update)
+                .map(this::mapToDto)
+                .map(dto -> ResponseEntity.ok(ApiResponseWrapper.success(dto, "Brouillard mis à jour.")))
+                .onErrorResume(e -> {
+                    log.error("Failed to update brouillard {}: {}", id, e.getMessage(), e);
+                    return Mono.just(ResponseEntity.badRequest()
+                            .body(ApiResponseWrapper.error(e.getMessage(), null)));
                 });
     }
 

@@ -19,6 +19,7 @@ import reactor.core.publisher.Mono;
  */
 public interface PlanComptableUseCase {
     Mono<Void> initializePlanComptableForOrganization(UUID organization_id);
+    Mono<Long> provisionPlanComptableForOrganization(UUID organization_id);
     Mono<PlanComptableDto> createAccount(PlanComptableDto dto);
     Mono<List<PlanComptableDto>> getAllAccounts();
     Mono<List<PlanComptableDto>> getAllActiveAccounts();

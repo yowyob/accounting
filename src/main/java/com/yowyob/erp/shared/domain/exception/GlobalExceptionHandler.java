@@ -135,8 +135,25 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles authorization denials from method security (@PreAuthorize) and the
+     * security filter chain. Without this, an AccessDeniedException falls through to
+     * the generic handler and returns 500 instead of 403. Covers Spring Security 6's
+     * AuthorizationDeniedException, which extends AccessDeniedException.
+     *
+     * @param ex the access denied exception
+     * @return forbidden response
+     */
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ApiResponseWrapper<Object>> handleAccessDeniedException(
+            org.springframework.security.access.AccessDeniedException ex) {
+        log.warn("Access denied: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponseWrapper.error("You do not have permission to perform this action"));
+    }
+
+    /**
      * Handles any other unexpected exceptions.
-     * 
+     *
      * @param ex the exception
      * @return internal server error response
      */

@@ -23,6 +23,7 @@ public interface BrouillardComptableUseCase {
     Mono<Boolean> shouldCreateDraft(UUID organizationId, BrouillardType type, BigDecimal amount, UUID journalId);
     Mono<BrouillardComptable> createDraft(UUID organizationId, BrouillardType type, Object sourceDto, String sourceId, String sourceType, String numeroPiece, LocalDate datePiece, String libelle, BigDecimal montantTotal, String devise, UUID journalId, UUID periodeId, String user, JsonNode attachmentIds);
     Mono<BrouillardComptable> saveBrouillard(BrouillardComptable brouillard);
+    Mono<BrouillardComptable> updateDraft(UUID id, com.yowyob.erp.accounting.infrastructure.web.dto.BrouillardComptableDto update);
     Flux<BrouillardComptable> getAllBrouillards(UUID organizationId, Pageable pageable);
     Flux<BrouillardComptable> getBrouillardsByStatut(UUID organizationId, BrouillardStatut statut, Pageable pageable);
     Flux<BrouillardComptable> getBrouillardsByType(UUID organizationId, BrouillardType type, Pageable pageable);

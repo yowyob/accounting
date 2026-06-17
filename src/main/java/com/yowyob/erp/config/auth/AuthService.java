@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
@@ -36,7 +37,6 @@ import java.util.stream.Collectors;
  *  2. Valide chaque JWT localement (RS256 + expiration + issuer + audience)
  *  3. Extrait les claims : sub (userId), tid (tenantId), oid (organizationId), permissions
  *  4. Pour le login, délègue à POST /api/auth/login du Kernel
- *  5. Fallback sur MockUserStore si le Kernel est indisponible
  */
 @Service
 @RequiredArgsConstructor
@@ -46,7 +46,6 @@ public class AuthService {
     private static final String KERNEL_AUDIENCE = "iwm-api";
 
     private final WebClient webClient;
-    private final MockUserStore mockUserStore;
 
     @Value("${auth.api.url}")
     private String authApiUrl;
@@ -57,17 +56,22 @@ public class AuthService {
     @Value("${auth.api.timeout:5000}")
     private int timeout;
 
-    @Value("${auth.mock.connectivity-timeout-ms:2000}")
+    @Value("${auth.connectivity-timeout-ms:2000}")
     private int connectivityTimeoutMs;
-
-    @Value("${auth.mock.enabled:true}")
-    private boolean mockAuthEnabled;
 
     @Value("${auth.jwt.issuer:}")
     private String expectedIssuer;
 
     @Value("${auth.api.default-tenant-id:}")
     private String defaultTenantId;
+
+    // Identification de l'application cliente backend auprès du Kernel.
+    // Le Kernel (notamment en prod) exige X-Client-Id + X-Api-Key sur /api/**.
+    @Value("${kernel.client.id:}")
+    private String kernelClientId;
+
+    @Value("${kernel.client.secret:}")
+    private String kernelClientSecret;
 
     // Clé publique RSA du Kernel — chargée au démarrage et rechargeable
     private final AtomicReference<RSASSAVerifier> kernelVerifier = new AtomicReference<>();
@@ -81,8 +85,8 @@ public class AuthService {
                 kernelVerifier.set(verifier);
                 log.info("[AUTH] Clé publique RS256 du Kernel chargée depuis {}/.well-known/jwks.json", authApiUrl);
             })
-            .doOnError(e -> log.warn("[AUTH] Impossible de charger la clé publique du Kernel : {} — fallback mock {}",
-                e.getMessage(), mockAuthEnabled ? "actif" : "désactivé"))
+            .doOnError(e -> log.warn("[AUTH] Impossible de charger la clé publique du Kernel : {} — les tokens seront rejetés tant qu'elle n'est pas chargée",
+                e.getMessage()))
             .onErrorResume(e -> Mono.empty())
             .subscribe();
     }
@@ -110,24 +114,13 @@ public class AuthService {
     /**
      * Valide un JWT émis par KSM_Kernel_Layer.
      *
-     * Ordre de priorité :
-     *  1. Tokens mock (préfixe "mock-") → MockUserStore
-     *  2. JWT valide + clé publique Kernel chargée → validation locale RS256
-     *  3. Clé publique absente → tente de la recharger, puis fallback mock
+     * Validation locale RS256 avec la clé publique du Kernel (chargée au démarrage,
+     * rechargée à la volée si absente). Aucun token n'est accepté sans clé publique.
      *
      * Résultat mis en cache (clé = token) pour éviter un appel par requête.
      */
     @Cacheable(value = "jwt-validation", key = "#token")
     public Mono<AuthValidationResponse> validateToken(String token) {
-        // Tokens mock du store local (développement / test)
-        if (token != null && token.startsWith("mock-")) {
-            if (!mockAuthEnabled) {
-                log.warn("[AUTH] Token mock rejeté car AUTH_MOCK_ENABLED=false");
-                return Mono.just(AuthValidationResponse.invalid());
-            }
-            return Mono.just(mockUserStore.validateToken(token));
-        }
-
         RSASSAVerifier verifier = kernelVerifier.get();
         if (verifier != null) {
             // Validation locale RS256 — aucun appel réseau
@@ -139,13 +132,8 @@ public class AuthService {
             .doOnSuccess(v -> kernelVerifier.set(v))
             .map(v -> validateJwtLocally(token, v))
             .onErrorResume(e -> {
-                if (!mockAuthEnabled) {
-                    log.warn("[AUTH] Clé publique Kernel indisponible — token rejeté : {}", e.getMessage());
-                    return Mono.just(AuthValidationResponse.invalid());
-                }
-
-                log.warn("[AUTH] Clé publique Kernel indisponible — fallback mock : {}", e.getMessage());
-                return Mono.just(mockUserStore.validateToken(token));
+                log.warn("[AUTH] Clé publique Kernel indisponible — token rejeté : {}", e.getMessage());
+                return Mono.just(AuthValidationResponse.invalid());
             });
     }
 
@@ -212,6 +200,7 @@ public class AuthService {
             return AuthValidationResponse.builder()
                 .valid(true)
                 .userId(userId)
+                .tenantId(tenantId != null ? tenantId : "")
                 .organizationId(organizationId != null ? organizationId : "")
                 .roles(roles)
                 .build();
@@ -238,6 +227,7 @@ public class AuthService {
             .post()
             .uri(authApiUrl + "/api/auth/login")
             .header("X-Tenant-Id", resolvedTenantId)
+            .headers(this::addClientCredentials)
             .bodyValue(Map.of("principal", email, "password", password))
             .retrieve()
             .bodyToMono(JsonNode.class)
@@ -258,6 +248,7 @@ public class AuthService {
             .get()
             .uri(authApiUrl + "/api/users/me")
             .header("Authorization", "Bearer " + token)
+            .headers(this::addClientCredentials)
             .retrieve()
             .bodyToMono(JsonNode.class)
             .timeout(Duration.ofMillis(timeout))
@@ -285,10 +276,6 @@ public class AuthService {
                 log.warn("[AUTH] Kernel indisponible : {}", e.getMessage());
                 return Mono.just(false);
             });
-    }
-
-    public boolean isMockAuthEnabled() {
-        return mockAuthEnabled;
     }
 
     // ─── getOrganizationMembers — non disponible dans le Kernel ──────────────
@@ -325,23 +312,48 @@ public class AuthService {
         payload.setLastName(userNode.path("lastName").asText());
         payload.setOrganizationId(userNode.path("organizationId").asText(""));
 
-        // Le Kernel retourne les permissions, pas des "roles" legacy
-        JsonNode permsNode = userNode.path("permissions");
-        String[] roles;
-        if (permsNode.isArray()) {
-            roles = new String[permsNode.size()];
-            for (int i = 0; i < permsNode.size(); i++) {
-                roles[i] = permsNode.get(i).asText();
+        // Le Kernel renvoie les rôles dans "authorities" (variantes ROLE_/#SCOPE incluses)
+        // et non dans un champ "permissions". On normalise chaque entrée en code de rôle brut
+        // attendu par le frontend : "ROLE_COMPTABLE#TENANT" -> "COMPTABLE" (dédupliqué).
+        JsonNode rolesNode = userNode.has("authorities") ? userNode.path("authorities") : userNode.path("permissions");
+        java.util.Set<String> roleSet = new java.util.LinkedHashSet<>();
+        if (rolesNode.isArray()) {
+            for (JsonNode node : rolesNode) {
+                String code = node.asText("");
+                int hash = code.indexOf('#');
+                if (hash >= 0) {
+                    code = code.substring(0, hash);
+                }
+                if (code.startsWith("ROLE_")) {
+                    code = code.substring("ROLE_".length());
+                }
+                if (!code.isBlank()) {
+                    roleSet.add(code);
+                }
             }
-        } else {
-            roles = new String[0];
         }
-        payload.setRoles(roles);
+        payload.setRoles(roleSet.toArray(new String[0]));
 
         var resp = new AuthController.LoginResponse();
         resp.setToken(token);
         resp.setUser(payload);
         return resp;
+    }
+
+    /**
+     * Ajoute les en-têtes d'identification de l'application cliente backend
+     * (X-Client-Id / X-Api-Key) requis par le Kernel sur /api/**.
+     * N'ajoute rien si les credentials ne sont pas configurés.
+     */
+    private void addClientCredentials(HttpHeaders headers) {
+        String clientId = normalize(kernelClientId);
+        String apiKey = normalize(kernelClientSecret);
+        if (clientId != null) {
+            headers.set("X-Client-Id", clientId);
+        }
+        if (apiKey != null) {
+            headers.set("X-Api-Key", apiKey);
+        }
     }
 
     private String resolveTenantId(String tenantId) {

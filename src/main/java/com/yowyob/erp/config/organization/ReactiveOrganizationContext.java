@@ -13,7 +13,21 @@ import java.util.UUID;
 public class ReactiveOrganizationContext {
 
     public static final String ORGANIZATION_ID_KEY = "organizationId";
+    public static final String TENANT_ID_KEY = "tenantId";
     public static final String USER_ID_KEY = "userId";
+
+    /**
+     * Gets the tenant ID from the Reactor Context.
+     *
+     * <p>Tenant and organization are distinct concepts (aligned with the kernel):
+     * the tenant identifies the platform customer (JWT {@code tid} / {@code X-Tenant-Id}),
+     * while the organization identifies the business unit within that tenant
+     * ({@code X-Organization-Id}). Returns empty when no tenant is bound to the context.
+     */
+    public static Mono<UUID> getTenantId() {
+        return Mono.deferContextual(ctx ->
+                ctx.hasKey(TENANT_ID_KEY) ? Mono.just(ctx.get(TENANT_ID_KEY)) : Mono.empty());
+    }
 
     /**
      * Gets the organization ID from the Reactor Context.
