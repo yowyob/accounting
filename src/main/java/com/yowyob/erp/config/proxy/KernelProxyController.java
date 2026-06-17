@@ -66,9 +66,14 @@ public class KernelProxyController {
         URI incoming = exchange.getRequest().getURI();
 
         // On conserve l'encodage d'origine (rawPath/rawQuery) pour ne pas ré-encoder.
+        // Derrière un reverse-proxy à préfixe (Traefik /accounting-api +
+        // SERVER_FORWARD_HEADERS_STRATEGY=framework), rawPath réintègre le préfixe
+        // (/accounting-api/api/kernel/...). On localise donc /api/kernel par indexOf
+        // au lieu de supposer qu'il est en tête, sinon la cible serait malformée.
         String rawPath = incoming.getRawPath();
-        String forwardedPath = rawPath.length() > PROXY_PREFIX.length()
-                ? rawPath.substring(PROXY_PREFIX.length())
+        int prefixIdx = rawPath.indexOf(PROXY_PREFIX);
+        String forwardedPath = prefixIdx >= 0 && rawPath.length() > prefixIdx + PROXY_PREFIX.length()
+                ? rawPath.substring(prefixIdx + PROXY_PREFIX.length())
                 : "";
         if (!forwardedPath.startsWith("/")) {
             forwardedPath = "/" + forwardedPath;
