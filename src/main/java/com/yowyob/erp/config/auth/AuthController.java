@@ -42,6 +42,8 @@ public class AuthController {
     public static class LoginResponse {
         private String token;
         private UserPayload user;
+        /** Tenant retenu lors d'un login multi-contexte (null pour le login simple). */
+        private String tenantId;
 
         @Data
         public static class UserPayload {
@@ -54,6 +56,26 @@ public class AuthController {
         }
     }
 
+    @Data
+    public static class IdentifyRequest {
+        private String principal;
+    }
+
+    /** Découverte de contextes : email + mot de passe, SANS tenant (le Kernel le résout). */
+    @Data
+    public static class DiscoverContextsRequest {
+        private String email;
+        private String password;
+    }
+
+    /** Sélection d'un contexte (tenant) et éventuellement d'une organisation. */
+    @Data
+    public static class SelectContextRequest {
+        private String selectionToken;
+        private String contextId;
+        private String organizationId;
+    }
+
     // ─── POST /api/auth/login ─────────────────────────────────────────────────
 
     /**
@@ -64,6 +86,38 @@ public class AuthController {
     @PostMapping("/login")
     public Mono<ResponseEntity<?>> login(@RequestBody LoginRequest request) {
         return authService.loginExternal(request.getEmail(), request.getPassword(), request.getTenantId())
+            .<ResponseEntity<?>>map(ResponseEntity::ok)
+            .onErrorResume(e -> Mono.just(toLoginError(e)));
+    }
+
+    // ─── Login multi-contexte (multi-tenant / multi-org) ─────────────────────
+    // Le navigateur n'envoie jamais de tenant ni de clé Kernel : le backend
+    // injecte X-Client-Id/X-Api-Key et le Kernel découvre les tenants du compte.
+
+    /** Indique si le compte existe et quelle est l'étape suivante (optionnel). */
+    @PostMapping("/identify")
+    public Mono<ResponseEntity<?>> identify(@RequestBody IdentifyRequest request) {
+        return authService.identify(request.getPrincipal())
+            .<ResponseEntity<?>>map(ResponseEntity::ok)
+            .onErrorResume(e -> Mono.just(toLoginError(e)));
+    }
+
+    /**
+     * Découvre les contextes de connexion (tenants + organisations) du compte.
+     * Renvoie {@code {selectionToken, expiresInSeconds, contexts:[...]}}.
+     */
+    @PostMapping("/discover-contexts")
+    public Mono<ResponseEntity<?>> discoverContexts(@RequestBody DiscoverContextsRequest request) {
+        return authService.discoverContexts(request.getEmail(), request.getPassword())
+            .<ResponseEntity<?>>map(ResponseEntity::ok)
+            .onErrorResume(e -> Mono.just(toLoginError(e)));
+    }
+
+    /** Finalise le login pour le contexte (et l'organisation) choisi → {token, user, tenantId}. */
+    @PostMapping("/select-context")
+    public Mono<ResponseEntity<?>> selectContext(@RequestBody SelectContextRequest request) {
+        return authService.selectContext(request.getSelectionToken(), request.getContextId(),
+                request.getOrganizationId())
             .<ResponseEntity<?>>map(ResponseEntity::ok)
             .onErrorResume(e -> Mono.just(toLoginError(e)));
     }
