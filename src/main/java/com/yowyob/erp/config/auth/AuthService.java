@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
  *  2. Valide chaque JWT localement (RS256 + expiration + issuer + audience)
  *  3. Extrait les claims : sub (userId), tid (tenantId), oid (organizationId), permissions
  *  4. Pour le login, délègue à POST /api/auth/login du Kernel
- *  5. Fallback sur MockUserStore si le Kernel est indisponible
  */
 @Service
 @RequiredArgsConstructor
@@ -47,7 +46,6 @@ public class AuthService {
     private static final String KERNEL_AUDIENCE = "iwm-api";
 
     private final WebClient webClient;
-    private final MockUserStore mockUserStore;
 
     @Value("${auth.api.url}")
     private String authApiUrl;
@@ -58,11 +56,8 @@ public class AuthService {
     @Value("${auth.api.timeout:5000}")
     private int timeout;
 
-    @Value("${auth.mock.connectivity-timeout-ms:2000}")
+    @Value("${auth.connectivity-timeout-ms:2000}")
     private int connectivityTimeoutMs;
-
-    @Value("${auth.mock.enabled:true}")
-    private boolean mockAuthEnabled;
 
     @Value("${auth.jwt.issuer:}")
     private String expectedIssuer;
@@ -90,8 +85,8 @@ public class AuthService {
                 kernelVerifier.set(verifier);
                 log.info("[AUTH] Clé publique RS256 du Kernel chargée depuis {}/.well-known/jwks.json", authApiUrl);
             })
-            .doOnError(e -> log.warn("[AUTH] Impossible de charger la clé publique du Kernel : {} — fallback mock {}",
-                e.getMessage(), mockAuthEnabled ? "actif" : "désactivé"))
+            .doOnError(e -> log.warn("[AUTH] Impossible de charger la clé publique du Kernel : {} — les tokens seront rejetés tant qu'elle n'est pas chargée",
+                e.getMessage()))
             .onErrorResume(e -> Mono.empty())
             .subscribe();
     }
@@ -119,24 +114,13 @@ public class AuthService {
     /**
      * Valide un JWT émis par KSM_Kernel_Layer.
      *
-     * Ordre de priorité :
-     *  1. Tokens mock (préfixe "mock-") → MockUserStore
-     *  2. JWT valide + clé publique Kernel chargée → validation locale RS256
-     *  3. Clé publique absente → tente de la recharger, puis fallback mock
+     * Validation locale RS256 avec la clé publique du Kernel (chargée au démarrage,
+     * rechargée à la volée si absente). Aucun token n'est accepté sans clé publique.
      *
      * Résultat mis en cache (clé = token) pour éviter un appel par requête.
      */
     @Cacheable(value = "jwt-validation", key = "#token")
     public Mono<AuthValidationResponse> validateToken(String token) {
-        // Tokens mock du store local (développement / test)
-        if (token != null && token.startsWith("mock-")) {
-            if (!mockAuthEnabled) {
-                log.warn("[AUTH] Token mock rejeté car AUTH_MOCK_ENABLED=false");
-                return Mono.just(AuthValidationResponse.invalid());
-            }
-            return Mono.just(mockUserStore.validateToken(token));
-        }
-
         RSASSAVerifier verifier = kernelVerifier.get();
         if (verifier != null) {
             // Validation locale RS256 — aucun appel réseau
@@ -148,13 +132,8 @@ public class AuthService {
             .doOnSuccess(v -> kernelVerifier.set(v))
             .map(v -> validateJwtLocally(token, v))
             .onErrorResume(e -> {
-                if (!mockAuthEnabled) {
-                    log.warn("[AUTH] Clé publique Kernel indisponible — token rejeté : {}", e.getMessage());
-                    return Mono.just(AuthValidationResponse.invalid());
-                }
-
-                log.warn("[AUTH] Clé publique Kernel indisponible — fallback mock : {}", e.getMessage());
-                return Mono.just(mockUserStore.validateToken(token));
+                log.warn("[AUTH] Clé publique Kernel indisponible — token rejeté : {}", e.getMessage());
+                return Mono.just(AuthValidationResponse.invalid());
             });
     }
 
@@ -297,10 +276,6 @@ public class AuthService {
                 log.warn("[AUTH] Kernel indisponible : {}", e.getMessage());
                 return Mono.just(false);
             });
-    }
-
-    public boolean isMockAuthEnabled() {
-        return mockAuthEnabled;
     }
 
     // ─── getOrganizationMembers — non disponible dans le Kernel ──────────────

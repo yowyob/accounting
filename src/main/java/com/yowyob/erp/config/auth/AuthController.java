@@ -12,13 +12,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
-import java.util.Arrays;
 import java.util.Map;
 
 /**
  * Contrôleur d'authentification exposé sur /api/auth/*.
- * Tente d'abord le service externe ; bascule sur les mock data uniquement
- * si AUTH_MOCK_ENABLED=true.
+ * Délègue le login au Kernel (KSM_Kernel_Layer).
  * Endpoints permis sans token (voir SecurityConfig).
  */
 @RestController
@@ -28,7 +26,6 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
-    private final MockUserStore mockUserStore;
 
     // ─── DTOs ────────────────────────────────────────────────────────────────
 
@@ -58,91 +55,30 @@ public class AuthController {
     // ─── POST /api/auth/login ─────────────────────────────────────────────────
 
     /**
-     * Authentifie un utilisateur.
-     * 1. Tente toujours le login Kernel.
-     * 2. Si le Kernel échoue et que le mock est autorisé → authentifie via MockUserStore.
+     * Authentifie un utilisateur en déléguant au Kernel.
+     * En cas d'échec du Kernel, renvoie 502 Bad Gateway.
      */
     @PostMapping("/login")
     public Mono<ResponseEntity<LoginResponse>> login(@RequestBody LoginRequest request) {
-        return loginViaExternalService(request);
+        return authService.loginExternal(request.getEmail(), request.getPassword(), request.getTenantId())
+            .map(ResponseEntity::ok)
+            .onErrorResume(e -> {
+                log.error("[AUTH] Échec du login Kernel : {}", e.getMessage());
+                return Mono.just(ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(null));
+            });
     }
 
     // ─── GET /api/auth/health ─────────────────────────────────────────────────
 
     /**
-     * Indique si le service d'authentification externe est joignable.
+     * Indique si le service d'authentification externe (Kernel) est joignable.
      */
     @GetMapping("/health")
     public Mono<ResponseEntity<Map<String, Object>>> health() {
         return authService.isExternalServiceAvailable()
             .map(available -> ResponseEntity.ok(Map.of(
                 "externalAuthAvailable", available,
-                "mode", available ? "external" : (authService.isMockAuthEnabled() ? "mock" : "unavailable"),
-                "mockAuthEnabled", authService.isMockAuthEnabled(),
-                "mockUsersCount", authService.isMockAuthEnabled() ? mockUserStore.getAllUsers().size() : 0
+                "mode", available ? "external" : "unavailable"
             )));
-    }
-
-    // ─── GET /api/auth/mock-users ─────────────────────────────────────────────
-
-    /**
-     * Liste les comptes mock disponibles (utile en développement).
-     * Ne renvoie jamais les mots de passe.
-     */
-    @GetMapping("/mock-users")
-    public ResponseEntity<?> listMockUsers() {
-        if (!authService.isMockAuthEnabled()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
-        var users = mockUserStore.getAllUsers().stream().map(u -> Map.of(
-            "email", u.getEmail(),
-            "roles", Arrays.asList(u.getRoles()),
-            "firstName", u.getFirstName(),
-            "lastName", u.getLastName(),
-            "hint", "password = " + u.getPassword().charAt(0) + "***"
-        )).toList();
-        return ResponseEntity.ok(Map.of("mockUsers", users));
-    }
-
-    // ─── Helpers ──────────────────────────────────────────────────────────────
-
-    private Mono<ResponseEntity<LoginResponse>> loginViaExternalService(LoginRequest request) {
-        return authService.loginExternal(request.getEmail(), request.getPassword(), request.getTenantId())
-            .map(ResponseEntity::ok)
-            .onErrorResume(e -> {
-                if (authService.isMockAuthEnabled()) {
-                    log.warn("[AUTH] Échec service externe ({}), bascule mock", e.getMessage());
-                    return Mono.just(loginViaMock(request));
-                }
-
-                log.error("[AUTH] Échec service externe et mock désactivé : {}", e.getMessage());
-                return Mono.just(ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(null));
-            });
-    }
-
-    private ResponseEntity<LoginResponse> loginViaMock(LoginRequest request) {
-        var tokenOpt = mockUserStore.authenticate(request.getEmail(), request.getPassword());
-
-        if (tokenOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        String token = tokenOpt.get();
-        MockUserStore.MockUser user = mockUserStore.findByToken(token).orElseThrow();
-
-        var payload = new LoginResponse.UserPayload();
-        payload.setId(user.getUserId());
-        payload.setEmail(user.getEmail());
-        payload.setFirstName(user.getFirstName());
-        payload.setLastName(user.getLastName());
-        payload.setOrganizationId(user.getOrganizationId());
-        payload.setRoles(user.getRoles());
-
-        var response = new LoginResponse();
-        response.setToken(token);
-        response.setUser(payload);
-
-        return ResponseEntity.ok(response);
     }
 }
