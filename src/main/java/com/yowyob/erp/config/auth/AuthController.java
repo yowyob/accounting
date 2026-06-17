@@ -4,12 +4,14 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
@@ -56,16 +58,34 @@ public class AuthController {
 
     /**
      * Authentifie un utilisateur en déléguant au Kernel.
-     * En cas d'échec du Kernel, renvoie 502 Bad Gateway.
+     * - identifiants refusés par le Kernel (4xx, ex. 401) → on relaie le statut ;
+     * - Kernel injoignable / timeout / erreur interne (5xx) → 502 Bad Gateway.
      */
     @PostMapping("/login")
-    public Mono<ResponseEntity<LoginResponse>> login(@RequestBody LoginRequest request) {
+    public Mono<ResponseEntity<?>> login(@RequestBody LoginRequest request) {
         return authService.loginExternal(request.getEmail(), request.getPassword(), request.getTenantId())
-            .map(ResponseEntity::ok)
-            .onErrorResume(e -> {
-                log.error("[AUTH] Échec du login Kernel : {}", e.getMessage());
-                return Mono.just(ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(null));
-            });
+            .<ResponseEntity<?>>map(ResponseEntity::ok)
+            .onErrorResume(e -> Mono.just(toLoginError(e)));
+    }
+
+    /**
+     * Traduit une erreur de login Kernel en réponse HTTP :
+     * un refus authentification (4xx) est relayé tel quel (le front peut afficher
+     * « identifiants invalides »), tandis qu'une panne réseau/timeout/5xx devient 502.
+     */
+    private ResponseEntity<?> toLoginError(Throwable e) {
+        if (e instanceof WebClientResponseException wcre && wcre.getStatusCode().is4xxClientError()) {
+            HttpStatusCode status = wcre.getStatusCode();
+            log.warn("[AUTH] Login refusé par le Kernel ({}) : {}", status.value(), wcre.getMessage());
+            return ResponseEntity.status(status).body(Map.of(
+                "error", "authentication_failed",
+                "message", "Identifiants invalides ou requête refusée par le service d'authentification"));
+        }
+
+        log.error("[AUTH] Kernel injoignable lors du login : {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of(
+            "error", "kernel_unavailable",
+            "message", "Service d'authentification indisponible, réessayez plus tard"));
     }
 
     // ─── GET /api/auth/health ─────────────────────────────────────────────────
