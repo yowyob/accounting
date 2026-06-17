@@ -22,6 +22,7 @@ import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -236,6 +237,80 @@ public class AuthService {
             .doOnError(e -> log.error("[AUTH] Erreur login Kernel : {}", e.getMessage()));
     }
 
+    // ─── Login multi-contexte (multi-tenant / multi-org) ─────────────────────
+    // Le Kernel résout lui-même le ou les tenants d'un principal : le front n'a
+    // donc PAS besoin de connaître le tenant à l'avance (ni de le coder en dur).
+    // Tous ces appels passent par addClientCredentials → les clés Kernel restent
+    // côté serveur, jamais exposées au navigateur.
+
+    /**
+     * Étape 1 (optionnelle) : indique si le compte existe et l'étape suivante.
+     * Délègue à POST /api/auth/identify. Retourne le bloc {@code data} brut.
+     */
+    public Mono<JsonNode> identify(String principal) {
+        return webClient
+            .post()
+            .uri(authApiUrl + "/api/auth/identify")
+            .headers(this::addClientCredentials)
+            .bodyValue(Map.of("principal", principal == null ? "" : principal))
+            .retrieve()
+            .bodyToMono(JsonNode.class)
+            .timeout(Duration.ofMillis(timeout))
+            .map(this::unwrapData)
+            .doOnError(e -> log.error("[AUTH] Erreur identify Kernel : {}", e.getMessage()));
+    }
+
+    /**
+     * Étape 2 : découvre les contextes de connexion (tenants + organisations)
+     * du principal. Délègue à POST /api/auth/discover-contexts. Retourne le bloc
+     * {@code data} brut : {@code {selectionToken, expiresInSeconds, contexts:[...]}}.
+     */
+    public Mono<JsonNode> discoverContexts(String principal, String password) {
+        return webClient
+            .post()
+            .uri(authApiUrl + "/api/auth/discover-contexts")
+            .headers(this::addClientCredentials)
+            .bodyValue(Map.of(
+                "principal", principal == null ? "" : principal,
+                "password", password == null ? "" : password))
+            .retrieve()
+            .bodyToMono(JsonNode.class)
+            .timeout(Duration.ofMillis(timeout))
+            .map(this::unwrapData)
+            .doOnError(e -> log.error("[AUTH] Erreur discover-contexts Kernel : {}", e.getMessage()));
+    }
+
+    /**
+     * Étape 3 : sélectionne un contexte (et éventuellement une organisation) puis
+     * finalise le login. Délègue à POST /api/auth/select-context. Le tenant et
+     * l'organisation retenus sont propagés dans la réponse pour que le front les
+     * stocke en session (X-Tenant-Id / X-Organization-Id).
+     */
+    public Mono<AuthController.LoginResponse> selectContext(String selectionToken, String contextId,
+                                                            String organizationId) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("selectionToken", selectionToken);
+        body.put("contextId", contextId);
+        String org = normalize(organizationId);
+        if (org != null) {
+            body.put("organizationId", org);
+        }
+        return webClient
+            .post()
+            .uri(authApiUrl + "/api/auth/select-context")
+            .headers(this::addClientCredentials)
+            .bodyValue(body)
+            .retrieve()
+            .bodyToMono(JsonNode.class)
+            .timeout(Duration.ofMillis(timeout))
+            .map(this::parseKernelContextualLoginResponse)
+            .doOnError(e -> log.error("[AUTH] Erreur select-context Kernel : {}", e.getMessage()));
+    }
+
+    private JsonNode unwrapData(JsonNode json) {
+        return json != null && json.has("data") ? json.get("data") : json;
+    }
+
     // ─── Récupération du profil utilisateur (GET /api/users/me) ──────────────
 
     /**
@@ -337,6 +412,30 @@ public class AuthService {
         var resp = new AuthController.LoginResponse();
         resp.setToken(token);
         resp.setUser(payload);
+        return resp;
+    }
+
+    /**
+     * Parse la réponse de {@code /api/auth/select-context} :
+     * {@code data:{ selectedTenantId, selectedOrganizationId, session:{ accessToken, user, ... } }}.
+     * Réutilise {@link #parseKernelLoginResponse} sur la {@code session}, puis complète
+     * avec le tenant et l'organisation effectivement sélectionnés.
+     */
+    private AuthController.LoginResponse parseKernelContextualLoginResponse(JsonNode json) {
+        JsonNode data = unwrapData(json);
+        String selectedTenantId = data.path("selectedTenantId").asText("");
+        String selectedOrganizationId = data.path("selectedOrganizationId").asText("");
+        JsonNode session = data.has("session") ? data.get("session") : data;
+
+        AuthController.LoginResponse resp = parseKernelLoginResponse(session);
+        if (!selectedTenantId.isBlank()) {
+            resp.setTenantId(selectedTenantId);
+        }
+        if (resp.getUser() != null
+                && (resp.getUser().getOrganizationId() == null || resp.getUser().getOrganizationId().isBlank())
+                && !selectedOrganizationId.isBlank()) {
+            resp.getUser().setOrganizationId(selectedOrganizationId);
+        }
         return resp;
     }
 

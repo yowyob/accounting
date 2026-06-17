@@ -4,12 +4,14 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
@@ -40,6 +42,8 @@ public class AuthController {
     public static class LoginResponse {
         private String token;
         private UserPayload user;
+        /** Tenant retenu lors d'un login multi-contexte (null pour le login simple). */
+        private String tenantId;
 
         @Data
         public static class UserPayload {
@@ -52,20 +56,90 @@ public class AuthController {
         }
     }
 
+    @Data
+    public static class IdentifyRequest {
+        private String principal;
+    }
+
+    /** Découverte de contextes : email + mot de passe, SANS tenant (le Kernel le résout). */
+    @Data
+    public static class DiscoverContextsRequest {
+        private String email;
+        private String password;
+    }
+
+    /** Sélection d'un contexte (tenant) et éventuellement d'une organisation. */
+    @Data
+    public static class SelectContextRequest {
+        private String selectionToken;
+        private String contextId;
+        private String organizationId;
+    }
+
     // ─── POST /api/auth/login ─────────────────────────────────────────────────
 
     /**
      * Authentifie un utilisateur en déléguant au Kernel.
-     * En cas d'échec du Kernel, renvoie 502 Bad Gateway.
+     * - identifiants refusés par le Kernel (4xx, ex. 401) → on relaie le statut ;
+     * - Kernel injoignable / timeout / erreur interne (5xx) → 502 Bad Gateway.
      */
     @PostMapping("/login")
-    public Mono<ResponseEntity<LoginResponse>> login(@RequestBody LoginRequest request) {
+    public Mono<ResponseEntity<?>> login(@RequestBody LoginRequest request) {
         return authService.loginExternal(request.getEmail(), request.getPassword(), request.getTenantId())
-            .map(ResponseEntity::ok)
-            .onErrorResume(e -> {
-                log.error("[AUTH] Échec du login Kernel : {}", e.getMessage());
-                return Mono.just(ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(null));
-            });
+            .<ResponseEntity<?>>map(ResponseEntity::ok)
+            .onErrorResume(e -> Mono.just(toLoginError(e)));
+    }
+
+    // ─── Login multi-contexte (multi-tenant / multi-org) ─────────────────────
+    // Le navigateur n'envoie jamais de tenant ni de clé Kernel : le backend
+    // injecte X-Client-Id/X-Api-Key et le Kernel découvre les tenants du compte.
+
+    /** Indique si le compte existe et quelle est l'étape suivante (optionnel). */
+    @PostMapping("/identify")
+    public Mono<ResponseEntity<?>> identify(@RequestBody IdentifyRequest request) {
+        return authService.identify(request.getPrincipal())
+            .<ResponseEntity<?>>map(ResponseEntity::ok)
+            .onErrorResume(e -> Mono.just(toLoginError(e)));
+    }
+
+    /**
+     * Découvre les contextes de connexion (tenants + organisations) du compte.
+     * Renvoie {@code {selectionToken, expiresInSeconds, contexts:[...]}}.
+     */
+    @PostMapping("/discover-contexts")
+    public Mono<ResponseEntity<?>> discoverContexts(@RequestBody DiscoverContextsRequest request) {
+        return authService.discoverContexts(request.getEmail(), request.getPassword())
+            .<ResponseEntity<?>>map(ResponseEntity::ok)
+            .onErrorResume(e -> Mono.just(toLoginError(e)));
+    }
+
+    /** Finalise le login pour le contexte (et l'organisation) choisi → {token, user, tenantId}. */
+    @PostMapping("/select-context")
+    public Mono<ResponseEntity<?>> selectContext(@RequestBody SelectContextRequest request) {
+        return authService.selectContext(request.getSelectionToken(), request.getContextId(),
+                request.getOrganizationId())
+            .<ResponseEntity<?>>map(ResponseEntity::ok)
+            .onErrorResume(e -> Mono.just(toLoginError(e)));
+    }
+
+    /**
+     * Traduit une erreur de login Kernel en réponse HTTP :
+     * un refus authentification (4xx) est relayé tel quel (le front peut afficher
+     * « identifiants invalides »), tandis qu'une panne réseau/timeout/5xx devient 502.
+     */
+    private ResponseEntity<?> toLoginError(Throwable e) {
+        if (e instanceof WebClientResponseException wcre && wcre.getStatusCode().is4xxClientError()) {
+            HttpStatusCode status = wcre.getStatusCode();
+            log.warn("[AUTH] Login refusé par le Kernel ({}) : {}", status.value(), wcre.getMessage());
+            return ResponseEntity.status(status).body(Map.of(
+                "error", "authentication_failed",
+                "message", "Identifiants invalides ou requête refusée par le service d'authentification"));
+        }
+
+        log.error("[AUTH] Kernel injoignable lors du login : {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of(
+            "error", "kernel_unavailable",
+            "message", "Service d'authentification indisponible, réessayez plus tard"));
     }
 
     // ─── GET /api/auth/health ─────────────────────────────────────────────────
