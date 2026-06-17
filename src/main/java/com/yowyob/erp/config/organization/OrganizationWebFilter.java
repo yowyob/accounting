@@ -78,7 +78,7 @@ public class OrganizationWebFilter implements WebFilter {
             // CORS preflight (OPTIONS) never carries custom headers, and infrastructure paths
             // (auth, health, docs…) don't need an organization — let them through.
             if (org.springframework.http.HttpMethod.OPTIONS.equals(request.getMethod())
-                    || isExempt(request.getPath().value())) {
+                    || isExempt(request)) {
                 return writeContext(chain.filter(exchange), null, tenantId);
             }
             if (requireExplicit) {
@@ -111,8 +111,20 @@ public class OrganizationWebFilter implements WebFilter {
         });
     }
 
-    private boolean isExempt(String path) {
-        return EXEMPT_PREFIXES.stream().anyMatch(path::startsWith);
+    private boolean isExempt(ServerHttpRequest request) {
+        String path = request.getPath().value();
+        // Derrière Traefik (stripprefix /accounting-api + SERVER_FORWARD_HEADERS_STRATEGY=framework),
+        // le chemin vu ici réintègre le préfixe via X-Forwarded-Prefix. On le retire avant de tester
+        // l'exemption, sinon /accounting-api/actuator/health ne matcherait plus /actuator.
+        String forwardedPrefix = request.getHeaders().getFirst("X-Forwarded-Prefix");
+        if (forwardedPrefix != null && !forwardedPrefix.isBlank() && path.startsWith(forwardedPrefix)) {
+            path = path.substring(forwardedPrefix.length());
+            if (path.isEmpty()) {
+                path = "/";
+            }
+        }
+        final String effectivePath = path;
+        return EXEMPT_PREFIXES.stream().anyMatch(effectivePath::startsWith);
     }
 
     private static String firstNonBlank(String a, String b) {
