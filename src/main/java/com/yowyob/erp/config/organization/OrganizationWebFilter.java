@@ -113,18 +113,22 @@ public class OrganizationWebFilter implements WebFilter {
 
     private boolean isExempt(ServerHttpRequest request) {
         String path = request.getPath().value();
-        // Derrière Traefik (stripprefix /accounting-api + SERVER_FORWARD_HEADERS_STRATEGY=framework),
-        // le chemin vu ici réintègre le préfixe via X-Forwarded-Prefix. On le retire avant de tester
-        // l'exemption, sinon /accounting-api/actuator/health ne matcherait plus /actuator.
-        String forwardedPrefix = request.getHeaders().getFirst("X-Forwarded-Prefix");
-        if (forwardedPrefix != null && !forwardedPrefix.isBlank() && path.startsWith(forwardedPrefix)) {
-            path = path.substring(forwardedPrefix.length());
-            if (path.isEmpty()) {
-                path = "/";
-            }
+        if (matchesExempt(path)) {
+            return true;
         }
-        final String effectivePath = path;
-        return EXEMPT_PREFIXES.stream().anyMatch(effectivePath::startsWith);
+        // Derrière Traefik (stripprefix /accounting-api + SERVER_FORWARD_HEADERS_STRATEGY=framework),
+        // le chemin vu ici réintègre le préfixe d'UN segment (/accounting-api) et l'en-tête
+        // X-Forwarded-Prefix est déjà consommé par le framework. On retire donc le 1er segment de
+        // chemin et on re-teste, afin que /accounting-api/actuator/health matche bien /actuator.
+        int secondSlash = path.indexOf('/', 1);
+        if (secondSlash > 0 && matchesExempt(path.substring(secondSlash))) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean matchesExempt(String path) {
+        return EXEMPT_PREFIXES.stream().anyMatch(path::startsWith);
     }
 
     private static String firstNonBlank(String a, String b) {
