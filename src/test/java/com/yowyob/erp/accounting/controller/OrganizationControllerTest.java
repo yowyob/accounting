@@ -40,6 +40,11 @@ public class OrganizationControllerTest {
         @MockitoBean
         private AuthService authService;
 
+        // Le multi-org (OrganizationWebFilter, require-explicit=true) exige un contexte
+        // organisation/tenant explicite sur chaque requête (anti-fuite cross-org).
+        private static final String TENANT_ID = "11111111-1111-1111-1111-111111111111";
+        private static final String ORGANIZATION_ID = "22222222-2222-2222-2222-222222222222";
+
         @Test
         @WithMockUser
         public void testCreateOrganization() {
@@ -59,6 +64,8 @@ public class OrganizationControllerTest {
 
                 webTestClient.post()
                                 .uri("/api/accounting/organizations")
+                                .header("X-Tenant-Id", TENANT_ID)
+                                .header("X-Organization-Id", ORGANIZATION_ID)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .bodyValue(dto)
                                 .exchange()
@@ -81,6 +88,8 @@ public class OrganizationControllerTest {
 
                 webTestClient.get()
                                 .uri("/api/accounting/organizations/{id}", id)
+                                .header("X-Tenant-Id", TENANT_ID)
+                                .header("X-Organization-Id", ORGANIZATION_ID)
                                 .exchange()
                                 .expectStatus().isOk()
                                 .expectBody()
@@ -98,6 +107,8 @@ public class OrganizationControllerTest {
 
                 webTestClient.get()
                                 .uri("/api/accounting/organizations")
+                                .header("X-Tenant-Id", TENANT_ID)
+                                .header("X-Organization-Id", ORGANIZATION_ID)
                                 .exchange()
                                 .expectStatus().isOk()
                                 .expectBody()
@@ -118,6 +129,8 @@ public class OrganizationControllerTest {
 
                 webTestClient.put()
                                 .uri("/api/accounting/organizations/{id}", id)
+                                .header("X-Tenant-Id", TENANT_ID)
+                                .header("X-Organization-Id", ORGANIZATION_ID)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .bodyValue(dto)
                                 .exchange()
@@ -135,6 +148,8 @@ public class OrganizationControllerTest {
 
                 webTestClient.delete()
                                 .uri("/api/accounting/organizations/{id}", id)
+                                .header("X-Tenant-Id", TENANT_ID)
+                                .header("X-Organization-Id", ORGANIZATION_ID)
                                 .exchange()
                                 .expectStatus().isOk();
         }
