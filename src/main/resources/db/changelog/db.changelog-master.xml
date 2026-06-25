@@ -33,5 +33,6 @@
     <include file="changeset-019-create-budgets.xml" relativeToChangelogFile="true"/>
     <include file="changeset-020-create-paie.xml" relativeToChangelogFile="true"/>
     <include file="changeset-021-analytical-accounting.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-022-create-accounting-subscriptions.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>
