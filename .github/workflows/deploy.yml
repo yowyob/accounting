@@ -1,0 +1,52 @@
+name: Deploy (server)
+
+# Déploie le backend accounting sur le serveur APRÈS publication GHCR.
+# Le serveur ne reçoit que docker-compose.prod.yml puis pull (image GHCR) + up.
+on:
+  workflow_run:
+    workflows: ["Publish Docker image (GHCR)"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-accounting
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ github.repository == 'yowyob/accounting' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - id: img
+        run: |
+          SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
+          REPO="${GITHUB_REPOSITORY,,}"
+          echo "image=ghcr.io/${REPO}:sha-${SHA:0:7}" >> "$GITHUB_OUTPUT"
+      - name: Préparer la clé SSH
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -H "${{ vars.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Copier docker-compose.prod.yml
+        run: |
+          scp -i ~/.ssh/id_deploy docker-compose.prod.yml \
+            "${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}:${{ vars.DEPLOY_DIR }}/docker-compose.prod.yml"
+      - name: Pull + up
+        env:
+          ACCOUNTING_IMAGE: ${{ steps.img.outputs.image }}
+        run: |
+          ssh -i ~/.ssh/id_deploy "${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}" "
+            set -e
+            cd '${{ vars.DEPLOY_DIR }}'
+            export ACCOUNTING_IMAGE='${ACCOUNTING_IMAGE}'
+            docker pull \"\$ACCOUNTING_IMAGE\"
+            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml ps
+            docker image prune -f
+          "

@@ -1,0 +1,41 @@
+name: Mirror from source
+
+# Synchronise le code depuis Delmat237/Yowyob-ERP-Accounting@HEXAGONAL vers ce dépôt (main),
+# en PRÉSERVANT .github/ (workflows yowyob). Le push sur main déclenche publish -> deploy.
+# Source publique : aucun secret requis. Auto (cron) + manuel (workflow_dispatch).
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: mirror-accounting
+  cancel-in-progress: true
+
+jobs:
+  mirror:
+    if: github.repository == 'yowyob/accounting'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      UPSTREAM: https://github.com/Delmat237/Yowyob-ERP-Accounting.git
+      UPSTREAM_BRANCH: HEXAGONAL
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Synchroniser depuis l'upstream (en préservant .github/)
+        run: |
+          git config user.name "yowyob-mirror"
+          git config user.email "mirror@yowyob.local"
+          git remote add upstream "$UPSTREAM"
+          git fetch --quiet upstream "$UPSTREAM_BRANCH"
+          # Arbre = upstream, SAUF .github/ (workflows propres à yowyob)
+          git checkout upstream/"$UPSTREAM_BRANCH" -- . ':!.github'
+          if git diff --cached --quiet; then
+            echo "Aucun changement upstream."; exit 0
+          fi
+          git commit -m "mirror: sync depuis Delmat237/Yowyob-ERP-Accounting@${UPSTREAM_BRANCH}"
+          git push origin HEAD:main
