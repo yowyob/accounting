@@ -26,7 +26,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Synchroniser depuis l'upstream (en préservant .github/)
+        env:
+          # PAT : un push par GITHUB_TOKEN ne déclenche PAS docker-publish.
+          MIRROR_PUSH_TOKEN: ${{ secrets.UPSTREAM_TOKEN }}
         run: |
           git config user.name "yowyob-mirror"
           git config user.email "mirror@yowyob.local"
@@ -38,4 +42,4 @@ jobs:
             echo "Aucun changement upstream."; exit 0
           fi
           git commit -m "mirror: sync depuis Delmat237/Yowyob-ERP-Accounting@${UPSTREAM_BRANCH}"
-          git push origin HEAD:main
+          git push "https://x-access-token:${MIRROR_PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
