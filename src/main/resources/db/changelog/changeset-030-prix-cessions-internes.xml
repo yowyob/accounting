@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <changeSet id="030-prix-cessions-internes" author="yowyob">
+
+        <createTable tableName="prix_cessions_internes">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_prix_cessions_internes" nullable="false"/>
+            </column>
+            <column name="organization_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="centre_cedant_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_prix_cession_cedant" referencedTableName="axes_analytiques" referencedColumnNames="id"/>
+            </column>
+            <column name="centre_beneficiaire_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_prix_cession_beneficiaire" referencedTableName="axes_analytiques" referencedColumnNames="id"/>
+            </column>
+            <column name="prestation_libelle" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="methode" type="VARCHAR(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="prix_unitaire" type="NUMERIC(18,4)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="unite_id" type="UUID">
+                <constraints foreignKeyName="fk_prix_cession_unite" referencedTableName="unites_oeuvre" referencedColumnNames="id"/>
+            </column>
+            <column name="date_debut" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_fin" type="DATE"/>
+            <column name="has_imputations" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="created_by" type="VARCHAR(255)"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+        </createTable>
+
+        <createIndex tableName="prix_cessions_internes" indexName="idx_prix_cessions_org">
+            <column name="organization_id"/>
+        </createIndex>
+        <createIndex tableName="prix_cessions_internes" indexName="idx_prix_cessions_cedant">
+            <column name="centre_cedant_id"/>
+        </createIndex>
+        <createIndex tableName="prix_cessions_internes" indexName="idx_prix_cessions_beneficiaire">
+            <column name="centre_beneficiaire_id"/>
+        </createIndex>
+
+        <createTable tableName="prix_cession_versions">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_prix_cession_versions" nullable="false"/>
+            </column>
+            <column name="prix_cession_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_prix_cession_version" referencedTableName="prix_cessions_internes" referencedColumnNames="id" deleteCascade="true"/>
+            </column>
+            <column name="prix_unitaire" type="NUMERIC(18,4)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="methode" type="VARCHAR(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_debut" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_fin" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="prix_cession_versions" indexName="idx_prix_cession_versions_cession">
+            <column name="prix_cession_id"/>
+        </createIndex>
+
+    </changeSet>
+
+</databaseChangeLog>

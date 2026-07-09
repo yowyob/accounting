@@ -1,26 +1,17 @@
 package com.yowyob.erp.accounting.domain.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import com.yowyob.erp.shared.infrastructure.persistence.SettablePersistable;
 import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.data.relational.core.mapping.Column;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Table(name = "axes_analytiques")
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class AxeAnalytique implements SettablePersistable<UUID> {
+@Table(name = "journaux_analytiques")
+@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+public class JournalAnalytique implements SettablePersistable<UUID> {
 
     @Id
     private UUID id;
@@ -35,23 +26,7 @@ public class AxeAnalytique implements SettablePersistable<UUID> {
     private String libelle;
 
     @Column("type")
-    private String type; // DEPARTEMENT, PROJET, ACTIVITE, CENTRE_COUT
-
-    @Column("responsable")
-    private String responsable;
-
-    @Column("parent_id")
-    private UUID parentId;
-
-    @Builder.Default
-    @Column("type_centre")
-    private String typeCentre = "PRINCIPAL"; // PRINCIPAL, AUXILIAIRE, FICTIF
-
-    @Column("budget_annuel")
-    private java.math.BigDecimal budgetAnnuel;
-
-    @Column("unite_oeuvre_code")
-    private String uniteOeuvreCode;
+    private String type; // CHARGES, PRODUITS, REPARTITION, CORRECTION
 
     @Builder.Default
     @Column("actif")
@@ -73,14 +48,9 @@ public class AxeAnalytique implements SettablePersistable<UUID> {
     @Builder.Default
     private boolean isNew = true;
 
-    @Override
-    @Transient
-    public boolean isNew() {
-        return isNew || id == null;
-    }
+    @Override @Transient
+    public boolean isNew() { return isNew || id == null; }
 
     @Override
-    public void setNotNew() {
-        this.isNew = false;
-    }
+    public void setNotNew() { this.isNew = false; }
 }

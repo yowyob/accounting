@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <changeSet id="034-regles-incorporation" author="yowyob">
+
+        <createTable tableName="regles_incorporation">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_regles_incorporation" nullable="false"/>
+            </column>
+            <column name="organization_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="compte_cg_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="compte_cg_no" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libelle" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="mode" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="taux_substitution" type="NUMERIC(8,4)"/>
+            <column name="montant_substitution" type="NUMERIC(18,2)"/>
+            <column name="base_calcul" type="VARCHAR(500)"/>
+            <column name="justification" type="VARCHAR(500)"/>
+            <column name="compte_ecart97" type="VARCHAR(20)"/>
+            <column name="periode_id" type="UUID"/>
+            <column name="date_debut" type="DATE"/>
+            <column name="date_fin" type="DATE"/>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="created_by" type="VARCHAR(255)"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+        </createTable>
+
+        <addUniqueConstraint
+            tableName="regles_incorporation"
+            columnNames="organization_id, compte_cg_id"
+            constraintName="uk_regles_incorporation_org_compte"/>
+
+        <createIndex tableName="regles_incorporation" indexName="idx_regles_incorporation_org">
+            <column name="organization_id"/>
+        </createIndex>
+        <createIndex tableName="regles_incorporation" indexName="idx_regles_incorporation_compte_no">
+            <column name="compte_cg_no"/>
+        </createIndex>
+
+    </changeSet>
+
+    <changeSet id="034-configuration-analytique" author="yowyob">
+
+        <createTable tableName="configuration_analytique">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_configuration_analytique" nullable="false"/>
+            </column>
+            <column name="organization_id" type="UUID">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_configuration_analytique_org"/>
+            </column>
+            <column name="devise" type="VARCHAR(10)" defaultValue="FCFA">
+                <constraints nullable="false"/>
+            </column>
+            <column name="precision" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="separateur_milliers" type="VARCHAR(5)" defaultValue=" ">
+                <constraints nullable="false"/>
+            </column>
+            <column name="bloquer_apres_cloture_cg" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="jours_grace_cloture" type="INT" defaultValueNumeric="5">
+                <constraints nullable="false"/>
+            </column>
+            <column name="autoriser_saisie_retroactive" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="methode_valorisation_stocks" type="VARCHAR(10)" defaultValue="CUMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="import_comptabilite_generale_active" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="created_by" type="VARCHAR(255)"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+        </createTable>
+
+    </changeSet>
+
+</databaseChangeLog>

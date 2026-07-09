@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <changeSet id="029-lignes-concordance" author="yowyob">
+
+        <createTable tableName="lignes_concordance">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_lignes_concordance" nullable="false"/>
+            </column>
+            <column name="organization_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="periode_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="VARCHAR(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="label" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="signe" type="CHAR(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="montant" type="NUMERIC(18,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="charge_ventilee_id" type="UUID">
+                <constraints foreignKeyName="fk_ligne_concordance_charge" referencedTableName="charges_ventilees" referencedColumnNames="id"/>
+            </column>
+            <column name="auto_generee" type="BOOLEAN" defaultValueBoolean="false"/>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="created_by" type="VARCHAR(255)"/>
+        </createTable>
+
+        <createIndex tableName="lignes_concordance" indexName="idx_lignes_concordance_org_periode">
+            <column name="organization_id"/>
+            <column name="periode_id"/>
+        </createIndex>
+
+    </changeSet>
+
+</databaseChangeLog>

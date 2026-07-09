@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <changeSet id="024-enrich-axes-analytiques" author="leonel">
+        <addColumn tableName="axes_analytiques">
+            <column name="parent_id" type="UUID">
+                <constraints foreignKeyName="fk_axe_analytique_parent" referencedTableName="axes_analytiques" referencedColumnNames="id" deleteCascade="true"/>
+            </column>
+            <column name="type_centre" type="VARCHAR(50)" defaultValue="PRINCIPAL"/>
+            <column name="budget_annuel" type="NUMERIC(18,2)"/>
+            <column name="unite_oeuvre_code" type="VARCHAR(50)"/>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

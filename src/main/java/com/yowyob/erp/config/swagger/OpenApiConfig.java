@@ -21,6 +21,8 @@ public class OpenApiConfig {
         @Bean
         public OpenAPI customOpenAPI() {
                 return new OpenAPI()
+                                .addServersItem(new Server().url("https://accounting.yowyob.com/accounting-api")
+                                                .description("Production Server"))
                                 .addServersItem(new Server().url("http://localhost:8081")
                                                 .description("Local Development Server"))
                                 .info(new Info()

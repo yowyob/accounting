@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <changeSet id="027-ecritures-analytiques" author="leonel">
+
+        <!-- 1. Écritures analytiques (tête) -->
+        <createTable tableName="ecritures_analytiques">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_ecritures_analytiques" nullable="false"/>
+            </column>
+            <column name="organization_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="journal_id" type="UUID">
+                <constraints foreignKeyName="fk_ecriture_analytique_journal" referencedTableName="journaux_analytiques" referencedColumnNames="id"/>
+            </column>
+            <column name="periode_id" type="UUID">
+                <constraints foreignKeyName="fk_ecriture_analytique_periode" referencedTableName="periodes_analytiques" referencedColumnNames="id"/>
+            </column>
+            <column name="numero_piece" type="VARCHAR(50)"/>
+            <column name="libelle" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_effet" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="origine" type="VARCHAR(20)" defaultValue="MANUELLE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="statut" type="VARCHAR(20)" defaultValue="BROUILLON">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ecriture_cg_ref" type="UUID">
+                <constraints foreignKeyName="fk_ecriture_analytique_cg" referencedTableName="ecritures_comptables" referencedColumnNames="id"/>
+            </column>
+            <column name="montant_total" type="NUMERIC(18,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nature_charge_id" type="UUID">
+                <constraints foreignKeyName="fk_ecriture_analytique_nature" referencedTableName="comptes_analytiques" referencedColumnNames="id"/>
+            </column>
+            <column name="validated_at" type="TIMESTAMP WITHOUT TIME ZONE"/>
+            <column name="validated_by" type="VARCHAR(255)"/>
+            <column name="reject_reason" type="TEXT"/>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(255)"/>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+        </createTable>
+
+        <createIndex tableName="ecritures_analytiques" indexName="idx_ecritures_analytiques_org">
+            <column name="organization_id"/>
+        </createIndex>
+        <createIndex tableName="ecritures_analytiques" indexName="idx_ecritures_analytiques_statut">
+            <column name="statut"/>
+        </createIndex>
+
+        <!-- 2. Lignes d'imputation -->
+        <createTable tableName="lignes_imputation">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_lignes_imputation" nullable="false"/>
+            </column>
+            <column name="ecriture_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_ligne_imputation_ecriture" referencedTableName="ecritures_analytiques" referencedColumnNames="id" deleteCascade="true"/>
+            </column>
+            <column name="centre_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_ligne_imputation_centre" referencedTableName="axes_analytiques" referencedColumnNames="id"/>
+            </column>
+            <column name="unite_oeuvre_id" type="UUID">
+                <constraints foreignKeyName="fk_ligne_imputation_uo" referencedTableName="unites_oeuvre" referencedColumnNames="id"/>
+            </column>
+            <column name="montant" type="NUMERIC(18,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quantite_uo" type="NUMERIC(18,4)"/>
+            <column name="sens" type="VARCHAR(10)" defaultValue="DEBIT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libelle" type="VARCHAR(255)"/>
+            <column name="cle_repartition_id" type="UUID"/>
+        </createTable>
+
+        <createIndex tableName="lignes_imputation" indexName="idx_lignes_imputation_ecriture">
+            <column name="ecriture_id"/>
+        </createIndex>
+        <createIndex tableName="lignes_imputation" indexName="idx_lignes_imputation_centre">
+            <column name="centre_id"/>
+        </createIndex>
+
+        <!-- 3. Clés de répartition -->
+        <createTable tableName="cles_repartition">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_cles_repartition" nullable="false"/>
+            </column>
+            <column name="organization_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libelle" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="actif" type="BOOLEAN" defaultValueBoolean="true"/>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="created_by" type="VARCHAR(255)"/>
+        </createTable>
+
+        <createTable tableName="cles_repartition_lignes">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_cles_repartition_lignes" nullable="false"/>
+            </column>
+            <column name="cle_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_cle_repartition_ligne_cle" referencedTableName="cles_repartition" referencedColumnNames="id" deleteCascade="true"/>
+            </column>
+            <column name="centre_destinataire_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_cle_repartition_centre" referencedTableName="axes_analytiques" referencedColumnNames="id"/>
+            </column>
+            <column name="pourcentage" type="NUMERIC(5,2)"/>
+            <column name="unite_oeuvre_id" type="UUID">
+                <constraints foreignKeyName="fk_cle_repartition_uo" referencedTableName="unites_oeuvre" referencedColumnNames="id"/>
+            </column>
+        </createTable>
+
+    </changeSet>
+</databaseChangeLog>

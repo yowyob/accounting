@@ -24,6 +24,11 @@ public class AxeAnalytiqueDto {
     
     private String responsable;
     
+    private UUID parentId;
+    private String typeCentre; // PRINCIPAL, AUXILIAIRE, FICTIF
+    private java.math.BigDecimal budgetAnnuel;
+    private String uniteOeuvreCode;
+    
     @Builder.Default
     private Boolean actif = true;
     

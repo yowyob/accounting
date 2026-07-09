@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <changeSet id="026-journaux-periodes-analytiques" author="leonel">
+
+        <!-- 1. Journaux analytiques -->
+        <createTable tableName="journaux_analytiques">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_journaux_analytiques" nullable="false"/>
+            </column>
+            <column name="organization_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libelle" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="actif" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(255)"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+        </createTable>
+
+        <addUniqueConstraint tableName="journaux_analytiques" columnNames="organization_id, code" constraintName="uq_journaux_analytiques_org_code"/>
+        <createIndex tableName="journaux_analytiques" indexName="idx_journaux_analytiques_org">
+            <column name="organization_id"/>
+        </createIndex>
+
+        <!-- 2. Périodes analytiques -->
+        <createTable tableName="periodes_analytiques">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_periodes_analytiques" nullable="false"/>
+            </column>
+            <column name="organization_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="exercice_id" type="UUID">
+                <constraints foreignKeyName="fk_periode_analytique_exercice" referencedTableName="exercices_comptables" referencedColumnNames="id" deleteCascade="true"/>
+            </column>
+            <column name="code" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libelle" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_debut" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_fin" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="statut" type="VARCHAR(20)" defaultValue="OUVERTE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="created_by" type="VARCHAR(255)"/>
+        </createTable>
+
+        <createIndex tableName="periodes_analytiques" indexName="idx_periodes_analytiques_org">
+            <column name="organization_id"/>
+        </createIndex>
+
+    </changeSet>
+</databaseChangeLog>

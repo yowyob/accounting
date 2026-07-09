@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <changeSet id="028-charges-ventilees" author="yowyob">
+
+        <createTable tableName="charges_ventilees">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_charges_ventilees" nullable="false"/>
+            </column>
+            <column name="organization_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="charge_source_id" type="VARCHAR(255)"/>
+            <column name="compte_cg" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="libelle" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="montant_total" type="NUMERIC(18,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="incorporable" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="periode_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="periode_cg_id" type="UUID"/>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="created_by" type="VARCHAR(255)"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+        </createTable>
+
+        <createIndex tableName="charges_ventilees" indexName="idx_charges_ventilees_org">
+            <column name="organization_id"/>
+        </createIndex>
+        <createIndex tableName="charges_ventilees" indexName="idx_charges_ventilees_periode">
+            <column name="periode_id"/>
+        </createIndex>
+        <createIndex tableName="charges_ventilees" indexName="idx_charges_ventilees_incorporable">
+            <column name="incorporable"/>
+        </createIndex>
+
+        <createTable tableName="ventilations_charge">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_ventilations_charge" nullable="false"/>
+            </column>
+            <column name="charge_ventilee_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_ventilation_charge" referencedTableName="charges_ventilees" referencedColumnNames="id" deleteCascade="true"/>
+            </column>
+            <column name="axe_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_ventilation_axe" referencedTableName="axes_analytiques" referencedColumnNames="id"/>
+            </column>
+            <column name="centre_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_ventilation_centre" referencedTableName="axes_analytiques" referencedColumnNames="id"/>
+            </column>
+            <column name="pourcentage" type="NUMERIC(5,2)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="ventilations_charge" indexName="idx_ventilations_charge_charge">
+            <column name="charge_ventilee_id"/>
+        </createIndex>
+
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,26 +1,19 @@
 package com.yowyob.erp.accounting.domain.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import com.yowyob.erp.shared.infrastructure.persistence.SettablePersistable;
 import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.data.relational.core.mapping.Column;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Table(name = "axes_analytiques")
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class AxeAnalytique implements SettablePersistable<UUID> {
+@Table(name = "unites_oeuvre")
+@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+public class UniteOeuvre implements SettablePersistable<UUID> {
 
     @Id
     private UUID id;
@@ -34,24 +27,14 @@ public class AxeAnalytique implements SettablePersistable<UUID> {
     @Column("libelle")
     private String libelle;
 
-    @Column("type")
-    private String type; // DEPARTEMENT, PROJET, ACTIVITE, CENTRE_COUT
+    @Column("unite")
+    private String unite; // HEURE_MACHINE, KG, KWH, M2, HEURE_MOD, etc.
 
-    @Column("responsable")
-    private String responsable;
+    @Column("centre_id")
+    private UUID centreId;
 
-    @Column("parent_id")
-    private UUID parentId;
-
-    @Builder.Default
-    @Column("type_centre")
-    private String typeCentre = "PRINCIPAL"; // PRINCIPAL, AUXILIAIRE, FICTIF
-
-    @Column("budget_annuel")
-    private java.math.BigDecimal budgetAnnuel;
-
-    @Column("unite_oeuvre_code")
-    private String uniteOeuvreCode;
+    @Column("cout_unitaire_previsionnel")
+    private BigDecimal coutUnitairePrevisionnel;
 
     @Builder.Default
     @Column("actif")
@@ -75,12 +58,8 @@ public class AxeAnalytique implements SettablePersistable<UUID> {
 
     @Override
     @Transient
-    public boolean isNew() {
-        return isNew || id == null;
-    }
+    public boolean isNew() { return isNew || id == null; }
 
     @Override
-    public void setNotNew() {
-        this.isNew = false;
-    }
+    public void setNotNew() { this.isNew = false; }
 }

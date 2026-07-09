@@ -34,5 +34,17 @@
     <include file="changeset-020-create-paie.xml" relativeToChangelogFile="true"/>
     <include file="changeset-021-analytical-accounting.xml" relativeToChangelogFile="true"/>
     <include file="changeset-022-create-accounting-subscriptions.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-023-comptes-analytiques.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-024-enrich-axes-analytiques.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-025-create-unites-oeuvre.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-026-journaux-periodes-analytiques.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-027-ecritures-analytiques.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-028-charges-ventilees.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-029-lignes-concordance.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-030-prix-cessions-internes.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-031-couts-produits-fiches.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-032-ecritures-analytiques-idempotence.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-033-analytique-parametrage.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-034-analytique-incorporation-config.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

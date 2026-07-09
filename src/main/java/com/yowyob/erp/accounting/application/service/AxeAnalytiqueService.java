@@ -40,6 +40,10 @@ public class AxeAnalytiqueService implements AxeAnalytiqueUseCase {
                     .libelle(dto.getLibelle())
                     .type(dto.getType())
                     .responsable(dto.getResponsable())
+                    .parentId(dto.getParentId())
+                    .typeCentre(dto.getTypeCentre() != null ? dto.getTypeCentre() : "PRINCIPAL")
+                    .budgetAnnuel(dto.getBudgetAnnuel())
+                    .uniteOeuvreCode(dto.getUniteOeuvreCode())
                     .actif(dto.getActif() != null ? dto.getActif() : true)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
@@ -75,6 +79,10 @@ public class AxeAnalytiqueService implements AxeAnalytiqueUseCase {
                         existing.setLibelle(dto.getLibelle());
                         existing.setType(dto.getType());
                         existing.setResponsable(dto.getResponsable());
+                        existing.setParentId(dto.getParentId());
+                        existing.setTypeCentre(dto.getTypeCentre() != null ? dto.getTypeCentre() : existing.getTypeCentre());
+                        existing.setBudgetAnnuel(dto.getBudgetAnnuel());
+                        existing.setUniteOeuvreCode(dto.getUniteOeuvreCode());
                         existing.setActif(dto.getActif() != null ? dto.getActif() : existing.getActif());
                         existing.setUpdatedAt(LocalDateTime.now());
                         existing.setUpdatedBy(user);
@@ -128,30 +136,30 @@ public class AxeAnalytiqueService implements AxeAnalytiqueUseCase {
         return axeRepository.findLinkedCompteIds(axe.getId())
             .collectList()
             .flatMap(compteIds -> {
+                AxeAnalytiqueDto dto = AxeAnalytiqueDto.builder()
+                    .id(axe.getId())
+                    .code(axe.getCode())
+                    .libelle(axe.getLibelle())
+                    .type(axe.getType())
+                    .responsable(axe.getResponsable())
+                    .parentId(axe.getParentId())
+                    .typeCentre(axe.getTypeCentre())
+                    .budgetAnnuel(axe.getBudgetAnnuel())
+                    .uniteOeuvreCode(axe.getUniteOeuvreCode())
+                    .actif(axe.getActif())
+                    .compteIds(compteIds)
+                    .build();
+
                 if (compteIds.isEmpty()) {
-                    return Mono.just(AxeAnalytiqueDto.builder()
-                        .id(axe.getId())
-                        .code(axe.getCode())
-                        .libelle(axe.getLibelle())
-                        .type(axe.getType())
-                        .responsable(axe.getResponsable())
-                        .actif(axe.getActif())
-                        .compteIds(compteIds)
-                        .build());
+                    return Mono.just(dto);
                 }
                 return compteRepository.findAllById(compteIds)
                     .map(compte -> compte.getNo_compte() + " - " + compte.getLibelle())
                     .collectList()
-                    .map(compteLibelles -> AxeAnalytiqueDto.builder()
-                        .id(axe.getId())
-                        .code(axe.getCode())
-                        .libelle(axe.getLibelle())
-                        .type(axe.getType())
-                        .responsable(axe.getResponsable())
-                        .actif(axe.getActif())
-                        .compteIds(compteIds)
-                        .compteLibelles(compteLibelles)
-                        .build());
+                    .map(compteLibelles -> {
+                        dto.setCompteLibelles(compteLibelles);
+                        return dto;
+                    });
             });
     }
 }

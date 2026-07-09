@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <changeSet id="031-couts-produits-fiches" author="yowyob">
+
+        <createTable tableName="couts_produits">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_couts_produits" nullable="false"/>
+            </column>
+            <column name="organization_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="produit_code" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="produit_libelle" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cout_achat" type="NUMERIC(18,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cout_production" type="NUMERIC(18,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cout_revient" type="NUMERIC(18,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="methode_stock" type="VARCHAR(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="periode_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="created_by" type="VARCHAR(255)"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+        </createTable>
+
+        <createIndex tableName="couts_produits" indexName="idx_couts_produits_org">
+            <column name="organization_id"/>
+        </createIndex>
+        <createIndex tableName="couts_produits" indexName="idx_couts_produits_periode">
+            <column name="periode_id"/>
+        </createIndex>
+        <createIndex tableName="couts_produits" indexName="idx_couts_produits_code_periode" unique="true">
+            <column name="organization_id"/>
+            <column name="produit_code"/>
+            <column name="periode_id"/>
+        </createIndex>
+
+        <createTable tableName="fiches_cout_standard">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_fiches_cout_standard" nullable="false"/>
+            </column>
+            <column name="organization_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="produit_code" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="produit_libelle" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="periode_ref_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="plan_analytique_id" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="periode_commencee" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="created_by" type="VARCHAR(255)"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+        </createTable>
+
+        <createIndex tableName="fiches_cout_standard" indexName="idx_fiches_cout_standard_org">
+            <column name="organization_id"/>
+        </createIndex>
+        <createIndex tableName="fiches_cout_standard" indexName="idx_fiches_cout_standard_periode">
+            <column name="periode_ref_id"/>
+        </createIndex>
+
+        <createTable tableName="lignes_cout_standard">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_lignes_cout_standard" nullable="false"/>
+            </column>
+            <column name="fiche_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_ligne_cout_standard_fiche" referencedTableName="fiches_cout_standard" referencedColumnNames="id" deleteCascade="true"/>
+            </column>
+            <column name="composante" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="centre_id" type="UUID">
+                <constraints foreignKeyName="fk_ligne_cout_standard_centre" referencedTableName="axes_analytiques" referencedColumnNames="id"/>
+            </column>
+            <column name="libelle" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quantite_standard" type="NUMERIC(18,4)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cout_unitaire_standard" type="NUMERIC(18,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cout_standard_total" type="NUMERIC(18,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="activite_normale" type="NUMERIC(18,4)"/>
+        </createTable>
+
+        <createIndex tableName="lignes_cout_standard" indexName="idx_lignes_cout_standard_fiche">
+            <column name="fiche_id"/>
+        </createIndex>
+
+    </changeSet>
+
+</databaseChangeLog>

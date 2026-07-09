@@ -23,7 +23,7 @@ Build-image:
   script:
     - docker build -t "$IMAGE:$IMMUTABLE_TAG" -t "$IMAGE:$CI_COMMIT_BRANCH" .
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "HEXAGONAL"'
 
 deploy:
   stage: deploy
@@ -48,4 +48,4 @@ deploy:
         docker image prune -f
       "
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "HEXAGONAL"'

@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <changeSet id="033-charges-analytiques" author="yowyob">
+
+        <createTable tableName="charges_analytiques">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_charges_analytiques" nullable="false"/>
+            </column>
+            <column name="organization_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nature" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="montant" type="NUMERIC(18,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="incorporable" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="centre_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_charge_analytique_centre" referencedTableName="axes_analytiques" referencedColumnNames="id"/>
+            </column>
+            <column name="periode_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="VARCHAR(500)"/>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="created_by" type="VARCHAR(255)"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+        </createTable>
+
+        <createIndex tableName="charges_analytiques" indexName="idx_charges_analytiques_org">
+            <column name="organization_id"/>
+        </createIndex>
+        <createIndex tableName="charges_analytiques" indexName="idx_charges_analytiques_periode">
+            <column name="periode_id"/>
+        </createIndex>
+        <createIndex tableName="charges_analytiques" indexName="idx_charges_analytiques_type">
+            <column name="type"/>
+        </createIndex>
+
+    </changeSet>
+
+    <changeSet id="033-regles-valorisation-stock" author="yowyob">
+
+        <createTable tableName="regles_valorisation_stock">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_regles_valorisation_stock" nullable="false"/>
+            </column>
+            <column name="organization_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="famille_id" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="famille_libelle" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="methode" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_application" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="actif" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="created_by" type="VARCHAR(255)"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+        </createTable>
+
+        <createIndex tableName="regles_valorisation_stock" indexName="idx_regles_valorisation_stock_org">
+            <column name="organization_id"/>
+        </createIndex>
+
+        <createTable tableName="historique_valorisation_stock">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_historique_valorisation_stock" nullable="false"/>
+            </column>
+            <column name="regle_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_historique_valorisation_regle" referencedTableName="regles_valorisation_stock" referencedColumnNames="id" deleteCascade="true"/>
+            </column>
+            <column name="methode" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_du" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_au" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="historique_valorisation_stock" indexName="idx_historique_valorisation_regle">
+            <column name="regle_id"/>
+        </createIndex>
+
+    </changeSet>
+
+    <changeSet id="033-methodes-calcul-cout" author="yowyob">
+
+        <createTable tableName="methodes_calcul_cout">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_methodes_calcul_cout" nullable="false"/>
+            </column>
+            <column name="organization_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="methode" type="VARCHAR(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="plan_analytique_id" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_application" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="statut" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="VARCHAR(500)"/>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="created_by" type="VARCHAR(255)"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+        </createTable>
+
+        <createIndex tableName="methodes_calcul_cout" indexName="idx_methodes_calcul_cout_org">
+            <column name="organization_id"/>
+        </createIndex>
+        <createIndex tableName="methodes_calcul_cout" indexName="idx_methodes_calcul_cout_plan">
+            <column name="plan_analytique_id"/>
+        </createIndex>
+
+        <createTable tableName="activites_normales_methode">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_activites_normales_methode" nullable="false"/>
+            </column>
+            <column name="methode_calcul_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_activite_normale_methode" referencedTableName="methodes_calcul_cout" referencedColumnNames="id" deleteCascade="true"/>
+            </column>
+            <column name="centre_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_activite_normale_centre" referencedTableName="axes_analytiques" referencedColumnNames="id"/>
+            </column>
+            <column name="centre_libelle" type="VARCHAR(255)"/>
+            <column name="activite_normale" type="NUMERIC(18,4)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="unite" type="VARCHAR(50)"/>
+        </createTable>
+
+        <createIndex tableName="activites_normales_methode" indexName="idx_activites_normales_methode">
+            <column name="methode_calcul_id"/>
+        </createIndex>
+
+    </changeSet>
+
+</databaseChangeLog>

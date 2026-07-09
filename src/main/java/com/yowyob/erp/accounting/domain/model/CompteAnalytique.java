@@ -14,13 +14,13 @@ import org.springframework.data.relational.core.mapping.Column;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Table(name = "axes_analytiques")
+@Table(name = "comptes_analytiques")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AxeAnalytique implements SettablePersistable<UUID> {
+public class CompteAnalytique implements SettablePersistable<UUID> {
 
     @Id
     private UUID id;
@@ -34,24 +34,14 @@ public class AxeAnalytique implements SettablePersistable<UUID> {
     @Column("libelle")
     private String libelle;
 
-    @Column("type")
-    private String type; // DEPARTEMENT, PROJET, ACTIVITE, CENTRE_COUT
+    @Column("classe")
+    private String classe;
 
-    @Column("responsable")
-    private String responsable;
+    @Column("nature")
+    private String nature; // CHARGE_DIRECTE, CHARGE_INDIRECTE, PRODUIT
 
-    @Column("parent_id")
-    private UUID parentId;
-
-    @Builder.Default
-    @Column("type_centre")
-    private String typeCentre = "PRINCIPAL"; // PRINCIPAL, AUXILIAIRE, FICTIF
-
-    @Column("budget_annuel")
-    private java.math.BigDecimal budgetAnnuel;
-
-    @Column("unite_oeuvre_code")
-    private String uniteOeuvreCode;
+    @Column("compte_general_id")
+    private UUID compteGeneralId;
 
     @Builder.Default
     @Column("actif")
@@ -68,6 +58,9 @@ public class AxeAnalytique implements SettablePersistable<UUID> {
 
     @Column("updated_at")
     private LocalDateTime updatedAt;
+
+    @Transient
+    private Compte compteGeneral;
 
     @Transient
     @Builder.Default
