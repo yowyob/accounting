@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -97,6 +98,15 @@ public class KernelProxyController {
                             headers.set(name, value);
                         }
                     }
+                    // Le client généré envoie parfois X-Tenant-ID ; le Kernel lit X-Tenant-Id.
+                    if (!headers.containsKey("X-Tenant-Id")) {
+                        String tenantId = firstNonBlank(
+                                incomingHeaders.getFirst("X-Tenant-Id"),
+                                incomingHeaders.getFirst("X-Tenant-ID"));
+                        if (tenantId != null) {
+                            headers.set("X-Tenant-Id", tenantId);
+                        }
+                    }
                 });
 
         WebClient.RequestHeadersSpec<?> spec =
@@ -110,6 +120,21 @@ public class KernelProxyController {
                         builder.contentType(contentType);
                     }
                     return builder.body(entity.getBody());
-                }));
+                }))
+                .onErrorResume(WebClientResponseException.class, ex -> Mono.just(
+                        ResponseEntity.status(ex.getStatusCode())
+                                .contentType(ex.getHeaders().getContentType())
+                                .body(ex.getResponseBodyAsByteArray())))
+                .onErrorResume(error -> Mono.just(
+                        ResponseEntity.status(502)
+                                .contentType(MediaType.TEXT_PLAIN)
+                                .body(("Kernel unreachable: " + error.getMessage()).getBytes())));
+    }
+
+    private static String firstNonBlank(String a, String b) {
+        if (a != null && !a.isBlank()) {
+            return a;
+        }
+        return (b != null && !b.isBlank()) ? b : null;
     }
 }

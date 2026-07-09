@@ -135,7 +135,7 @@ public class PlanComptableService implements PlanComptableUseCase {
                                         Organization organization = Organization.builder()
                                                         .id(organization_id)
                                                         .code("ORG-" + organization_id)
-                                                        .name("Organization " + organization_id)
+                                                        .name("Organization")
                                                         .created_at(LocalDateTime.now())
                                                         .updated_at(LocalDateTime.now())
                                                         .build();

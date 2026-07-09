@@ -2,6 +2,7 @@ package com.yowyob.erp.accounting.controller;
 
 import com.yowyob.erp.accounting.infrastructure.web.dto.OrganizationDto;
 import com.yowyob.erp.accounting.domain.port.in.OrganizationUseCase;
+import com.yowyob.erp.accounting.application.service.OrganizationNameEnricher;
 import com.yowyob.erp.shared.infrastructure.dto.ApiResponseWrapper;
 import com.yowyob.erp.accounting.infrastructure.web.controller.OrganizationController;
 import com.yowyob.erp.config.auth.AuthService;
@@ -36,6 +37,9 @@ public class OrganizationControllerTest {
 
         @MockitoBean
         private OrganizationUseCase organizationService;
+
+        @MockitoBean
+        private OrganizationNameEnricher organizationNameEnricher;
 
         @MockitoBean
         private AuthService authService;
@@ -85,6 +89,12 @@ public class OrganizationControllerTest {
                                 .build();
 
                 when(organizationService.getOrganization(id)).thenReturn(Mono.just(dto));
+                when(organizationNameEnricher.enrichIfNeeded(
+                        Mockito.any(OrganizationDto.class),
+                        Mockito.any(),
+                        Mockito.any(),
+                        Mockito.any()))
+                        .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
                 webTestClient.get()
                                 .uri("/api/accounting/organizations/{id}", id)
