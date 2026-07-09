@@ -163,6 +163,7 @@ public class AccountingSetupService {
 
     private Mono<StepResult> provisionPeriodes(UUID organizationId, int year, String user) {
         // Periods require a fiscal year — ensure it exists first (idempotent).
+        LocalDate today = LocalDate.now();
         return ensureExercice(organizationId, year, user)
                 .flatMap(exercice -> Flux.range(1, 12)
                         .concatMap(month -> {
@@ -170,13 +171,17 @@ public class AccountingSetupService {
                             return periodeRepository.findByOrganization_IdAndCode(organizationId, code)
                                     .map(p -> 0)
                                     .switchIfEmpty(Mono.defer(() -> periodeRepository
-                                            .save(buildPeriode(organizationId, exercice.getId(), year, month, user))
+                                            .save(buildPeriode(organizationId, exercice.getId(), year, month, user, today))
                                             .thenReturn(1)));
                         })
                         .reduce(0, Integer::sum)
+                        .flatMap(created -> normalizeSingleOpenPeriod(exercice.getId(), year, today)
+                                .thenReturn(created))
                         .map(created -> step("periodes", "Périodes mensuelles " + year,
                                 created > 0 ? "CREATED" : "ALREADY_PRESENT",
-                                created > 0 ? created + " période(s) mensuelle(s) créée(s)" : "12 périodes déjà présentes")));
+                                created > 0
+                                        ? created + " période(s) mensuelle(s) créée(s) (une seule ouverte)"
+                                        : "12 périodes déjà présentes (état d'ouverture normalisé)")));
     }
 
     private Mono<StepResult> provisionOperations(UUID organizationId) {
@@ -228,9 +233,11 @@ public class AccountingSetupService {
                 .build();
     }
 
-    private PeriodeComptable buildPeriode(UUID organizationId, UUID exerciceId, int year, int month, String user) {
+    private PeriodeComptable buildPeriode(UUID organizationId, UUID exerciceId, int year, int month, String user,
+            LocalDate today) {
         LocalDate start = LocalDate.of(year, month, 1);
         LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
+        boolean open = isActivePeriod(start, end, year, today);
         return PeriodeComptable.builder()
                 .id(UUID.randomUUID())
                 .organizationId(organizationId)
@@ -238,12 +245,48 @@ public class AccountingSetupService {
                 .code(String.format("%d-%02d", year, month))
                 .date_debut(start)
                 .date_fin(end)
-                .cloturee(false)
+                .cloturee(!open)
                 .created_at(LocalDateTime.now())
                 .updated_at(LocalDateTime.now())
                 .created_by(user)
                 .updated_by(user)
                 .build();
+    }
+
+    /**
+     * Une seule période peut être ouverte à la fois : celle qui contient la date du jour
+     * lorsque l'exercice est en cours. Les autres (passées, futures ou hors exercice) sont clôturées.
+     */
+    private boolean isActivePeriod(LocalDate start, LocalDate end, int exerciceYear, LocalDate today) {
+        LocalDate yearStart = LocalDate.of(exerciceYear, 1, 1);
+        LocalDate yearEnd = LocalDate.of(exerciceYear, 12, 31);
+        if (today.isBefore(yearStart) || today.isAfter(yearEnd)) {
+            return false;
+        }
+        return !today.isBefore(start) && !today.isAfter(end);
+    }
+
+    /** Corrige les périodes déjà créées (ex. 12 ouvertes) pour n'en laisser qu'une seule ouverte. */
+    private Mono<Void> normalizeSingleOpenPeriod(UUID exerciceId, int year, LocalDate today) {
+        return periodeRepository.findByExerciceId(exerciceId)
+                .flatMap(periode -> {
+                    boolean shouldBeOpen = isActivePeriod(
+                            periode.getDate_debut(), periode.getDate_fin(), year, today);
+                    boolean isOpen = !Boolean.TRUE.equals(periode.getCloturee());
+                    if (shouldBeOpen == isOpen) {
+                        return Mono.empty();
+                    }
+                    periode.setCloturee(!shouldBeOpen);
+                    if (!shouldBeOpen) {
+                        periode.setDate_cloture(today);
+                    } else {
+                        periode.setDate_cloture(null);
+                    }
+                    periode.setUpdated_at(LocalDateTime.now());
+                    periode.setNotNew();
+                    return periodeRepository.save(periode).then();
+                })
+                .then();
     }
 
     private static StepResult step(String key, String label, String status, String detail) {
