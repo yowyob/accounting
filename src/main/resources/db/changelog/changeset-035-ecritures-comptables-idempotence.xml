@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <changeSet id="035-ecritures-comptables-idempotence" author="yowyob">
+
+        <addColumn tableName="ecritures_comptables">
+            <column name="client_id" type="VARCHAR(255)"/>
+        </addColumn>
+
+        <createIndex tableName="ecritures_comptables" indexName="idx_ecritures_comptables_client_id" unique="true">
+            <column name="organization_id"/>
+            <column name="client_id"/>
+        </createIndex>
+
+    </changeSet>
+</databaseChangeLog>

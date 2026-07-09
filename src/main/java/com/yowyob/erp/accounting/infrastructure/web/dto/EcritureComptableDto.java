@@ -88,4 +88,8 @@ public class EcritureComptableDto {
 
     @JsonProperty("updatedAt")
     private LocalDateTime updated_at;
+
+    /** Identifiant stable généré côté client (sync offline). */
+    @JsonProperty("clientId")
+    private String client_id;
 }

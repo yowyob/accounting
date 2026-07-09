@@ -99,6 +99,10 @@ public class EcritureComptable implements SettablePersistable<UUID> {
     @Column("validated_by")
     private String validated_by;
 
+    @Size(max = 255)
+    @Column("client_id")
+    private String clientId;
+
     @Transient
     private Organization organization;
 

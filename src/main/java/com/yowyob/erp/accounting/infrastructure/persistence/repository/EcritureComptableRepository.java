@@ -25,6 +25,11 @@ public interface EcritureComptableRepository extends R2dbcRepository<EcritureCom
       Mono<EcritureComptable> findByOrganization_IdAndId(@Param("organization_id") UUID organization_id,
                   @Param("id") UUID id);
 
+      @Query("SELECT * FROM ecritures_comptables WHERE organization_id = :organization_id AND client_id = :client_id")
+      Mono<EcritureComptable> findByOrganization_IdAndClientId(
+                  @Param("organization_id") UUID organization_id,
+                  @Param("client_id") String client_id);
+
       @Query("SELECT * FROM ecritures_comptables WHERE organization_id = :organization_id AND validee = false")
       Flux<EcritureComptable> findByOrganization_IdAndValideeFalse(@Param("organization_id") UUID organization_id);
 

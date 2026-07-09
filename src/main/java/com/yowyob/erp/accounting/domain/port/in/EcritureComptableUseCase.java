@@ -6,6 +6,7 @@ import com.yowyob.erp.accounting.domain.model.EcritureComptable;
 import com.yowyob.erp.accounting.domain.model.EcritureStatut;
 import com.yowyob.erp.accounting.domain.model.JournalAudit;
 import com.yowyob.erp.accounting.domain.model.Organization;
+import com.yowyob.erp.accounting.application.service.CreateEcritureComptableResult;
 import com.yowyob.erp.accounting.infrastructure.web.dto.EcritureComptableDto;
 import com.yowyob.erp.accounting.infrastructure.web.dto.JournalAuditDto;
 import com.yowyob.erp.shared.domain.exception.BusinessException;
@@ -22,7 +23,11 @@ import reactor.core.publisher.Mono;
  * Use case port defining the EcritureComptable operations.
  */
 public interface EcritureComptableUseCase {
-    Mono<EcritureComptableDto> createEcriture(EcritureComptableDto dto);
+    Mono<CreateEcritureComptableResult> createEcriture(EcritureComptableDto dto, String idempotencyKey);
+
+    default Mono<EcritureComptableDto> createEcriture(EcritureComptableDto dto) {
+        return createEcriture(dto, null).map(CreateEcritureComptableResult::getDto);
+    }
     Mono<EcritureComptableDto> updateEcriture(UUID id, EcritureComptableDto dto);
     Mono<EcritureComptableDto> validateEcriture(UUID id, String user);
     Mono<java.util.List<EcritureComptableDto>> getAll();

@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,11 +42,18 @@ public class EcritureComptableController {
         @PostMapping
         @Operation(summary = "Create a new accounting entry")
         public Mono<ResponseEntity<ApiResponseWrapper<EcritureComptableDto>>> createEcriture(
-                        @Valid @RequestBody EcritureComptableDto dto) {
-                return ecriture_service.createEcriture(dto)
-                                .map(created -> ResponseEntity.status(HttpStatus.CREATED)
-                                                .body(ApiResponseWrapper.success(created,
-                                                                "Entry created successfully")))
+                        @Valid @RequestBody EcritureComptableDto dto,
+                        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+                return ecriture_service.createEcriture(dto, idempotencyKey)
+                                .map(result -> {
+                                        if (result.isAlreadyProcessed()) {
+                                                return ResponseEntity.ok(ApiResponseWrapper.success(
+                                                                result.getDto(), "ALREADY_PROCESSED"));
+                                        }
+                                        return ResponseEntity.status(HttpStatus.CREATED)
+                                                        .body(ApiResponseWrapper.success(result.getDto(),
+                                                                        "Entry created successfully"));
+                                })
                                 .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext
                                                 .captureFromThreadLocal());
         }
