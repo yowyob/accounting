@@ -434,9 +434,9 @@ public class EcritureComptableService implements EcritureComptableUseCase {
                                                         .switchIfEmpty(Mono.error(new ResourceNotFoundException("Entry",
                                                                         id.toString())))
                                                         .flatMap(ecriture -> {
+                                                                // Idempotent : rejeu offline d'une validation déjà faite.
                                                                 if (Boolean.TRUE.equals(ecriture.getValidee())) {
-                                                                        return Mono.error(new BusinessException(
-                                                                                        "Entry already validated"));
+                                                                        return Mono.just(mapToDto(ecriture));
                                                                 }
 
                                                                 return detail_repository

@@ -60,6 +60,7 @@ public class DeviseService implements DeviseUseCase {
                                                                         .est_nationale(dto.isEst_nationale())
                                                                         .actif(true)
                                                                         .created_at(LocalDateTime.now())
+                                                                        .updated_at(LocalDateTime.now())
                                                                         .isNew(true)
                                                                         .build();
 
@@ -93,12 +94,22 @@ public class DeviseService implements DeviseUseCase {
                                                                                                                                 + dto.getCode()));
                                                                         }
 
+                                                                        if (dto.getUpdated_at() != null
+                                                                                        && existing.getUpdated_at() != null
+                                                                                        && existing.getUpdated_at()
+                                                                                                        .isAfter(dto.getUpdated_at())) {
+                                                                                return Mono.error(
+                                                                                                new com.yowyob.erp.shared.domain.exception.ConflictException(
+                                                                                                                "La devise a été modifiée sur le serveur (conflit offline)"));
+                                                                        }
+
                                                                         existing.setCode(dto.getCode());
                                                                         existing.setNom(dto.getNom());
                                                                         existing.setSymbole(dto.getSymbole());
                                                                         existing.setEst_nationale(
                                                                                         dto.isEst_nationale());
                                                                         existing.setActif(dto.isActif());
+                                                                        existing.setUpdated_at(LocalDateTime.now());
                                                                         existing.setNotNew();
 
                                                                         return devise_repository.save(existing)
@@ -187,6 +198,7 @@ public class DeviseService implements DeviseUseCase {
                                 .est_nationale(entity.isEst_nationale())
                                 .actif(entity.isActif())
                                 .created_at(entity.getCreated_at())
+                                .updated_at(entity.getUpdated_at())
                                 .build();
         }
 

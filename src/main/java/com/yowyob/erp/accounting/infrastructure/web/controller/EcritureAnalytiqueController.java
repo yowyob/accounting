@@ -62,10 +62,31 @@ public class EcritureAnalytiqueController {
             .map(r -> ResponseEntity.ok(ApiResponseWrapper.success(r, "Écriture trouvée")));
     }
 
+    @PutMapping("/{id}")
+    @Operation(summary = "Mettre à jour une écriture analytique (brouillon uniquement)")
+    public Mono<ResponseEntity<ApiResponseWrapper<EcritureAnalytiqueDto>>> update(
+            @PathVariable UUID id,
+            @Valid @RequestBody EcritureAnalytiqueDto dto,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        return service.update(id, dto)
+            .map(r -> ResponseEntity.ok(ApiResponseWrapper.success(r, "Écriture mise à jour")));
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Supprimer une écriture analytique (brouillon uniquement)")
+    public Mono<ResponseEntity<ApiResponseWrapper<Object>>> delete(
+            @PathVariable UUID id,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        return service.delete(id)
+            .thenReturn(ResponseEntity.ok(ApiResponseWrapper.success(null, "Écriture supprimée")));
+    }
+
     @PostMapping("/{id}/valider")
     @Operation(summary = "Valider une écriture analytique (BROUILLON → VALIDEE)")
-    public Mono<ResponseEntity<ApiResponseWrapper<EcritureAnalytiqueDto>>> valider(@PathVariable UUID id) {
-        return service.valider(id)
+    public Mono<ResponseEntity<ApiResponseWrapper<EcritureAnalytiqueDto>>> valider(
+            @PathVariable UUID id,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        return service.valider(id, idempotencyKey)
             .map(r -> ResponseEntity.ok(ApiResponseWrapper.success(r, "Écriture validée")));
     }
 
@@ -82,9 +103,10 @@ public class EcritureAnalytiqueController {
     @Operation(summary = "Rejeter une écriture analytique (BROUILLON → REJETEE)")
     public Mono<ResponseEntity<ApiResponseWrapper<EcritureAnalytiqueDto>>> rejeter(
             @PathVariable UUID id,
-            @RequestBody Map<String, String> body) {
+            @RequestBody Map<String, String> body,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         String raison = body.getOrDefault("raison", "Rejet sans motif");
-        return service.rejeter(id, raison)
+        return service.rejeter(id, raison, idempotencyKey)
             .map(r -> ResponseEntity.ok(ApiResponseWrapper.success(r, "Écriture rejetée")));
     }
 }

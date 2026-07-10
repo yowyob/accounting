@@ -2,6 +2,7 @@ package com.yowyob.erp.accounting.infrastructure.web.controller;
 
 import com.yowyob.erp.accounting.infrastructure.web.dto.DeviseDto;
 import com.yowyob.erp.accounting.domain.port.in.DeviseUseCase;
+import com.yowyob.erp.shared.application.service.IdempotentCreateSupport;
 import com.yowyob.erp.shared.infrastructure.dto.ApiResponseWrapper;
 import com.yowyob.erp.shared.domain.exception.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -37,16 +39,29 @@ import java.util.UUID;
 public class DeviseController {
 
     private final DeviseUseCase devise_service;
+    private final IdempotentCreateSupport idempotentCreate;
 
     /**
      * Creates a new currency.
      */
     @PostMapping
     @Operation(summary = "Create a new currency")
-    public Mono<ResponseEntity<ApiResponseWrapper<DeviseDto>>> createDevise(@Valid @RequestBody DeviseDto dto) {
-        return devise_service.createDevise(dto)
-                .map(created -> ResponseEntity.status(HttpStatus.CREATED)
-                        .body(ApiResponseWrapper.success(created, "Currency created successfully")))
+    public Mono<ResponseEntity<ApiResponseWrapper<DeviseDto>>> createDevise(
+            @Valid @RequestBody DeviseDto dto,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        return ReactiveOrganizationContext.getOrganizationId()
+                .flatMap(orgId -> idempotentCreate.create(
+                        orgId,
+                        idempotencyKey,
+                        "devise",
+                        devise_service::getDevise,
+                        () -> devise_service.createDevise(dto),
+                        DeviseDto::getId
+                ))
+                .map(result -> result.alreadyProcessed()
+                        ? ResponseEntity.ok(ApiResponseWrapper.success(result.data(), "ALREADY_PROCESSED"))
+                        : ResponseEntity.status(HttpStatus.CREATED)
+                                .body(ApiResponseWrapper.success(result.data(), "Currency created successfully")))
                 .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
     }
 

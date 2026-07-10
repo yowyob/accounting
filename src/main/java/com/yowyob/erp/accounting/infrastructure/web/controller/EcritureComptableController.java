@@ -72,7 +72,9 @@ public class EcritureComptableController {
         @PostMapping("/{id}/validate")
         @Operation(summary = "Validate an accounting entry")
         public Mono<ResponseEntity<ApiResponseWrapper<EcritureComptableDto>>> validateEcriture(@PathVariable UUID id,
-                        @RequestParam(required = false) String user) {
+                        @RequestParam(required = false) String user,
+                        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+                // idempotencyKey réservé pour alignement contrat offline (rejeu safe via statut déjà validé)
                 return ecriture_service.validateEcriture(id, user)
                                 .map(validated -> ResponseEntity
                                                 .ok(ApiResponseWrapper.success(validated,

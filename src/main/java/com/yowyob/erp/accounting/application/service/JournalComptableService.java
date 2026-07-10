@@ -223,6 +223,14 @@ public class JournalComptableService implements JournalComptableUseCase {
                                                                                                         "JournalComptable",
                                                                                                         id.toString())))
                                                                         .flatMap(existing -> {
+                                                                                if (dto.getUpdated_at() != null
+                                                                                                && existing.getUpdated_at() != null
+                                                                                                && existing.getUpdated_at()
+                                                                                                                .isAfter(dto.getUpdated_at())) {
+                                                                                        return Mono.error(
+                                                                                                        new com.yowyob.erp.shared.domain.exception.ConflictException(
+                                                                                                                        "Le journal a été modifié sur le serveur (conflit offline)"));
+                                                                                }
                                                                                 return validateJournalComptableDto(dto)
                                                                                                 .then(Mono.defer(() -> {
                                                                                                         existing.setCode_journal(

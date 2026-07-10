@@ -2,9 +2,11 @@ package com.yowyob.erp.accounting.infrastructure.web.controller;
 
 import com.yowyob.erp.accounting.infrastructure.web.dto.OperationComptableDto;
 import com.yowyob.erp.accounting.domain.port.in.OperationComptableUseCase;
+import com.yowyob.erp.shared.application.service.IdempotentCreateSupport;
 import com.yowyob.erp.shared.infrastructure.dto.ApiResponseWrapper;
 import com.yowyob.erp.shared.domain.exception.BusinessException;
 import com.yowyob.erp.shared.domain.exception.ResourceNotFoundException;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -15,6 +17,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,11 +26,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,6 +48,7 @@ import java.util.UUID;
 public class OperationComptableController {
 
     private final OperationComptableUseCase operation_service;
+    private final IdempotentCreateSupport idempotentCreate;
 
     /**
      * Creates a new accounting operation for the current organization.
@@ -54,14 +60,27 @@ public class OperationComptableController {
     })
     @PostMapping
     public Mono<ResponseEntity<ApiResponseWrapper<OperationComptableDto>>> createOperationComptable(
-            @Valid @RequestBody OperationComptableDto dto) {
-        return operation_service.createOperation(dto)
-                .map(created -> ResponseEntity.status(HttpStatus.CREATED)
-                        .body(ApiResponseWrapper.success(created, "Accounting operation created successfully")))
+            @Valid @RequestBody OperationComptableDto dto,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        return ReactiveOrganizationContext.getOrganizationId()
+                .flatMap(orgId -> idempotentCreate.create(
+                        orgId,
+                        idempotencyKey,
+                        "operation_comptable",
+                        operation_service::getOperation,
+                        () -> operation_service.createOperation(dto),
+                        OperationComptableDto::getId
+                ))
+                .map(result -> result.alreadyProcessed()
+                        ? ResponseEntity.ok(ApiResponseWrapper.success(result.data(), "ALREADY_PROCESSED"))
+                        : ResponseEntity.status(HttpStatus.CREATED)
+                                .body(ApiResponseWrapper.success(result.data(),
+                                        "Accounting operation created successfully")))
                 .onErrorResume(e -> {
                     log.error("❌ Error creating operation: {}", e.getMessage());
                     return Mono.error(new BusinessException("Error during creation: " + e.getMessage()));
-                });
+                })
+                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
     }
 
     /**
@@ -85,10 +104,18 @@ public class OperationComptableController {
      */
     @Operation(summary = "List all accounting operations")
     @GetMapping
-    public Mono<ResponseEntity<ApiResponseWrapper<List<OperationComptableDto>>>> getAllOperationsComptables() {
+    public Mono<ResponseEntity<ApiResponseWrapper<List<OperationComptableDto>>>> getAllOperationsComptables(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime since) {
         return operation_service.getAllOperations()
-                .map(operations -> ResponseEntity
-                        .ok(ApiResponseWrapper.success(operations, "List of accounting operations retrieved")));
+                .map(operations -> {
+                    if (since != null) {
+                        operations = operations.stream()
+                                .filter(o -> o.getUpdated_at() != null && !o.getUpdated_at().isBefore(since))
+                                .toList();
+                    }
+                    return ResponseEntity
+                            .ok(ApiResponseWrapper.success(operations, "List of accounting operations retrieved"));
+                });
     }
 
     /**

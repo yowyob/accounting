@@ -2,12 +2,14 @@ package com.yowyob.erp.accounting.infrastructure.web.controller;
 
 import com.yowyob.erp.accounting.infrastructure.web.dto.JournalComptableDto;
 import com.yowyob.erp.accounting.domain.port.in.JournalComptableUseCase;
+import com.yowyob.erp.shared.application.service.IdempotentCreateSupport;
 import com.yowyob.erp.shared.infrastructure.dto.ApiResponseWrapper;
 import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,10 +18,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,15 +38,28 @@ import java.util.UUID;
 public class JournalComptableController {
 
         private final JournalComptableUseCase journal_service;
+        private final IdempotentCreateSupport idempotentCreate;
 
         @PostMapping
         @Operation(summary = "Create a new journal")
         public Mono<ResponseEntity<ApiResponseWrapper<JournalComptableDto>>> createJournal(
-                        @Valid @RequestBody JournalComptableDto dto) {
-                return journal_service.createJournalComptable(dto)
-                                .map(created -> ResponseEntity.status(HttpStatus.CREATED)
-                                                .body(ApiResponseWrapper.success(created,
-                                                                "Journal created successfully")))
+                        @Valid @RequestBody JournalComptableDto dto,
+                        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(orgId -> idempotentCreate.create(
+                                                orgId,
+                                                idempotencyKey,
+                                                "journal_comptable",
+                                                journal_service::getJournalComptable,
+                                                () -> journal_service.createJournalComptable(dto),
+                                                JournalComptableDto::getId
+                                ))
+                                .map(result -> result.alreadyProcessed()
+                                                ? ResponseEntity.ok(ApiResponseWrapper.success(result.data(),
+                                                                "ALREADY_PROCESSED"))
+                                                : ResponseEntity.status(HttpStatus.CREATED)
+                                                                .body(ApiResponseWrapper.success(result.data(),
+                                                                                "Journal created successfully")))
                                 .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
@@ -77,10 +95,19 @@ public class JournalComptableController {
 
         @GetMapping
         @Operation(summary = "List all journals for the current organization")
-        public Mono<ResponseEntity<ApiResponseWrapper<List<JournalComptableDto>>>> getAllJournals() {
+        public Mono<ResponseEntity<ApiResponseWrapper<List<JournalComptableDto>>>> getAllJournals(
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime since) {
                 return journal_service.getAllJournaux()
-                                .map(list -> ResponseEntity
-                                                .ok(ApiResponseWrapper.success(list, "Journals list retrieved")))
+                                .map(list -> {
+                                        if (since != null) {
+                                                list = list.stream()
+                                                                .filter(j -> j.getUpdated_at() != null
+                                                                                && !j.getUpdated_at().isBefore(since))
+                                                                .toList();
+                                        }
+                                        return ResponseEntity
+                                                        .ok(ApiResponseWrapper.success(list, "Journals list retrieved"));
+                                })
                                 .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 

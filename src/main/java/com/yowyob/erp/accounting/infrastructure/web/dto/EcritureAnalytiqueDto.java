@@ -50,6 +50,9 @@ public class EcritureAnalytiqueDto {
     private String validatedBy;
     private String rejectReason;
 
+    /** Horodatage serveur pour détection de conflit offline (409). */
+    private LocalDateTime updatedAt;
+
     /** Lignes d'imputation par centre */
     private List<LigneImputationDto> lignes;
 }

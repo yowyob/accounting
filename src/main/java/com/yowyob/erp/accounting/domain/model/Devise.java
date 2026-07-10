@@ -51,6 +51,9 @@ public class Devise implements com.yowyob.erp.shared.infrastructure.persistence.
     @Column("created_at")
     private LocalDateTime created_at = LocalDateTime.now();
 
+    @Column("updated_at")
+    private LocalDateTime updated_at;
+
     @Transient
     @Builder.Default
     private boolean isNew = true;

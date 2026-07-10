@@ -4,6 +4,7 @@ import com.yowyob.erp.accounting.infrastructure.web.dto.ImportResult;
 import com.yowyob.erp.accounting.infrastructure.web.dto.PlanComptableDto;
 import com.yowyob.erp.accounting.domain.port.in.PlanComptableUseCase;
 import com.yowyob.erp.accounting.application.service.PlanComptableImportService;
+import com.yowyob.erp.shared.application.service.IdempotentCreateSupport;
 import com.yowyob.erp.shared.infrastructure.dto.ApiResponseWrapper;
 import com.yowyob.erp.shared.domain.exception.BusinessException;
 import com.yowyob.erp.shared.domain.exception.ResourceNotFoundException;
@@ -18,6 +19,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -30,11 +32,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -51,6 +56,7 @@ public class PlanComptableController {
 
         private final PlanComptableUseCase plan_service;
         private final PlanComptableImportService planImportService;
+        private final IdempotentCreateSupport idempotentCreate;
 
         /**
          * Initializes the accounting plan for a specific organization.
@@ -80,16 +86,29 @@ public class PlanComptableController {
         })
         @PostMapping
         public Mono<ResponseEntity<ApiResponseWrapper<PlanComptableDto>>> createPlanComptable(
-                        @Valid @RequestBody PlanComptableDto dto) {
-                return plan_service.createAccount(dto)
-                                .map(created -> ResponseEntity.status(HttpStatus.CREATED)
-                                                .body(ApiResponseWrapper.success(created,
-                                                                "Accounting account created successfully")))
+                        @Valid @RequestBody PlanComptableDto dto,
+                        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+                return ReactiveOrganizationContext.getOrganizationId()
+                                .flatMap(orgId -> idempotentCreate.create(
+                                                orgId,
+                                                idempotencyKey,
+                                                "plan_comptable",
+                                                plan_service::getAccountById,
+                                                () -> plan_service.createAccount(dto),
+                                                PlanComptableDto::getId
+                                ))
+                                .map(result -> result.alreadyProcessed()
+                                                ? ResponseEntity.ok(ApiResponseWrapper.success(result.data(),
+                                                                "ALREADY_PROCESSED"))
+                                                : ResponseEntity.status(HttpStatus.CREATED)
+                                                                .body(ApiResponseWrapper.success(result.data(),
+                                                                                "Accounting account created successfully")))
                                 .onErrorResume(e -> {
                                         log.error("Error creating account: {}", e.getMessage());
                                         return Mono.error(new BusinessException(
                                                         "Error during account creation: " + e.getMessage()));
-                                });
+                                })
+                                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
         }
 
         /**
@@ -115,11 +134,20 @@ public class PlanComptableController {
          */
         @Operation(summary = "List all accounting accounts")
         @GetMapping
-        public Mono<ResponseEntity<ApiResponseWrapper<List<PlanComptableDto>>>> getAllPlanComptables() {
+        public Mono<ResponseEntity<ApiResponseWrapper<List<PlanComptableDto>>>> getAllPlanComptables(
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime since) {
                 return plan_service.getAllAccounts()
-                                .map(accounts -> ResponseEntity
-                                                .ok(ApiResponseWrapper.success(accounts,
-                                                                "Accounts retrieved successfully")));
+                                .map(accounts -> {
+                                        if (since != null) {
+                                                accounts = accounts.stream()
+                                                                .filter(a -> a.getUpdated_at() != null
+                                                                                && !a.getUpdated_at().isBefore(since))
+                                                                .toList();
+                                        }
+                                        return ResponseEntity
+                                                        .ok(ApiResponseWrapper.success(accounts,
+                                                                        "Accounts retrieved successfully"));
+                                });
         }
 
         /**

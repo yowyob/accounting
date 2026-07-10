@@ -2,9 +2,11 @@ package com.yowyob.erp.accounting.infrastructure.web.controller;
 
 import com.yowyob.erp.accounting.infrastructure.web.dto.PeriodeComptableDto;
 import com.yowyob.erp.accounting.domain.port.in.PeriodeComptableUseCase;
+import com.yowyob.erp.shared.application.service.IdempotentCreateSupport;
 import com.yowyob.erp.shared.infrastructure.dto.ApiResponseWrapper;
 import com.yowyob.erp.shared.domain.exception.BusinessException;
 import com.yowyob.erp.shared.domain.exception.ResourceNotFoundException;
+import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -24,12 +26,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -45,6 +49,7 @@ import java.util.UUID;
 public class PeriodeComptableController {
 
     private final PeriodeComptableUseCase periode_service;
+    private final IdempotentCreateSupport idempotentCreate;
 
     /**
      * Creates a new accounting period.
@@ -56,16 +61,28 @@ public class PeriodeComptableController {
     })
     @PostMapping
     public Mono<ResponseEntity<ApiResponseWrapper<PeriodeComptableDto>>> createPeriodeComptable(
-            @Valid @RequestBody PeriodeComptableDto dto) {
+            @Valid @RequestBody PeriodeComptableDto dto,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         log.info("Controller: createPeriodeComptable received request for code: {}", dto.getCode());
-        return periode_service.createPeriode(dto)
-                .map(created -> ResponseEntity.status(HttpStatus.CREATED)
-                        .body(ApiResponseWrapper.success(created, "Accounting period created successfully")))
+        return ReactiveOrganizationContext.getOrganizationId()
+                .flatMap(orgId -> idempotentCreate.create(
+                        orgId,
+                        idempotencyKey,
+                        "periode_comptable",
+                        periode_service::getPeriode,
+                        () -> periode_service.createPeriode(dto),
+                        PeriodeComptableDto::getId
+                ))
+                .map(result -> result.alreadyProcessed()
+                        ? ResponseEntity.ok(ApiResponseWrapper.success(result.data(), "ALREADY_PROCESSED"))
+                        : ResponseEntity.status(HttpStatus.CREATED)
+                                .body(ApiResponseWrapper.success(result.data(),
+                                        "Accounting period created successfully")))
                 .onErrorResume(e -> {
                     log.error("Error creating period: {}", e.getMessage());
                     return Mono.error(new BusinessException("Error creating period: " + e.getMessage()));
                 })
-                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext.captureFromThreadLocal());
+                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
     }
 
     /**
@@ -85,11 +102,19 @@ public class PeriodeComptableController {
      */
     @Operation(summary = "List all accounting periods")
     @GetMapping
-    public Mono<ResponseEntity<ApiResponseWrapper<List<PeriodeComptableDto>>>> getAllPeriodeComptables() {
+    public Mono<ResponseEntity<ApiResponseWrapper<List<PeriodeComptableDto>>>> getAllPeriodeComptables(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime since) {
         return periode_service.getAllPeriodes()
-                .map(periodes -> ResponseEntity.ok(ApiResponseWrapper.success(periodes,
-                        "Complete list of accounting periods retrieved successfully")))
-                .contextWrite(com.yowyob.erp.config.organization.ReactiveOrganizationContext.captureFromThreadLocal());
+                .map(periodes -> {
+                    if (since != null) {
+                        periodes = periodes.stream()
+                                .filter(p -> p.getUpdated_at() != null && !p.getUpdated_at().isBefore(since))
+                                .toList();
+                    }
+                    return ResponseEntity.ok(ApiResponseWrapper.success(periodes,
+                            "Complete list of accounting periods retrieved successfully"));
+                })
+                .contextWrite(ReactiveOrganizationContext.captureFromThreadLocal());
     }
 
     /**

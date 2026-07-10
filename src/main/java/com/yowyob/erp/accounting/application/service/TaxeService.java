@@ -77,6 +77,7 @@ public class TaxeService implements TaxeUseCase {
                                                                                                 .getDate_fin_validite())
                                                                                 .actif(true)
                                                                                 .created_at(LocalDateTime.now())
+                                                                                .updated_at(LocalDateTime.now())
                                                                                 .isNew(true)
                                                                                 .build();
 
@@ -123,6 +124,15 @@ public class TaxeService implements TaxeUseCase {
                                                                                                                                         + dto.getCode()));
                                                                                 }
 
+                                                                                if (dto.getUpdated_at() != null
+                                                                                                && existing.getUpdated_at() != null
+                                                                                                && existing.getUpdated_at()
+                                                                                                                .isAfter(dto.getUpdated_at())) {
+                                                                                        return Mono.error(
+                                                                                                        new com.yowyob.erp.shared.domain.exception.ConflictException(
+                                                                                                                        "La taxe a été modifiée sur le serveur (conflit offline)"));
+                                                                                }
+
                                                                                 existing.setCode(dto.getCode());
                                                                                 existing.setLibelle(dto.getLibelle());
                                                                                 existing.setTaux(dto.getTaux());
@@ -136,6 +146,7 @@ public class TaxeService implements TaxeUseCase {
                                                                                 existing.setDate_fin_validite(dto
                                                                                                 .getDate_fin_validite());
                                                                                 existing.setActif(dto.isActif());
+                                                                                existing.setUpdated_at(LocalDateTime.now());
                                                                                 existing.setNotNew();
 
                                                                                 return taxe_repository.save(existing)
@@ -255,6 +266,7 @@ public class TaxeService implements TaxeUseCase {
                                 .date_fin_validite(entity.getDate_fin_validite())
                                 .actif(entity.isActif())
                                 .created_at(entity.getCreated_at())
+                                .updated_at(entity.getUpdated_at())
                                 .build();
         }
 

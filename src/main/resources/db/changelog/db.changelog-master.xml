@@ -47,5 +47,6 @@
     <include file="changeset-033-analytique-parametrage.xml" relativeToChangelogFile="true"/>
     <include file="changeset-034-analytique-incorporation-config.xml" relativeToChangelogFile="true"/>
     <include file="changeset-035-ecritures-comptables-idempotence.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-036-taxes-devises-updated-at.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

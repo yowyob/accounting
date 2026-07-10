@@ -30,4 +30,5 @@ public class DeviseDto {
     private boolean est_nationale;
     private boolean actif;
     private LocalDateTime created_at;
+    private LocalDateTime updated_at;
 }

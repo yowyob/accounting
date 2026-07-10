@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <changeSet id="036-taxes-devises-updated-at" author="yowyob">
+
+        <addColumn tableName="taxes">
+            <column name="updated_at" type="TIMESTAMP"/>
+        </addColumn>
+
+        <addColumn tableName="devises">
+            <column name="updated_at" type="TIMESTAMP"/>
+        </addColumn>
+
+        <sql>
+            UPDATE taxes SET updated_at = COALESCE(created_at, CURRENT_TIMESTAMP) WHERE updated_at IS NULL;
+            UPDATE devises SET updated_at = COALESCE(created_at, CURRENT_TIMESTAMP) WHERE updated_at IS NULL;
+        </sql>
+
+    </changeSet>
+</databaseChangeLog>

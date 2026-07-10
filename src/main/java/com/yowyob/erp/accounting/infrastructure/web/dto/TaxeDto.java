@@ -48,4 +48,5 @@ public class TaxeDto {
     private LocalDate date_fin_validite;
     private boolean actif;
     private LocalDateTime created_at;
+    private LocalDateTime updated_at;
 }

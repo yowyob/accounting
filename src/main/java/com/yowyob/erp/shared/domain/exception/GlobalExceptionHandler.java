@@ -37,6 +37,13 @@ public class GlobalExceptionHandler {
                 .body(ApiResponseWrapper.error(ex.getMessage()));
     }
 
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ApiResponseWrapper<Object>> handleConflictException(ConflictException ex) {
+        log.warn("Conflict: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponseWrapper.error(ex.getMessage(), 409));
+    }
+
     /**
      * Handles ResourceNotFoundException.
      * 

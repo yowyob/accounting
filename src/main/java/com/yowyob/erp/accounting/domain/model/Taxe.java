@@ -75,6 +75,9 @@ public class Taxe implements com.yowyob.erp.shared.infrastructure.persistence.Se
     @Column("created_at")
     private LocalDateTime created_at = LocalDateTime.now();
 
+    @Column("updated_at")
+    private LocalDateTime updated_at;
+
     @Transient
     private Organization organization;
 
