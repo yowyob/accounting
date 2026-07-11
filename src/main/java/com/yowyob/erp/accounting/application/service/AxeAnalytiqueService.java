@@ -148,6 +148,7 @@ public class AxeAnalytiqueService implements AxeAnalytiqueUseCase {
                     .uniteOeuvreCode(axe.getUniteOeuvreCode())
                     .actif(axe.getActif())
                     .compteIds(compteIds)
+                    .updatedAt(axe.getUpdatedAt())
                     .build();
 
                 if (compteIds.isEmpty()) {

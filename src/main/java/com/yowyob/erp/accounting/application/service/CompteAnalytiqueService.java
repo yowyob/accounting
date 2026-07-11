@@ -125,6 +125,7 @@ public class CompteAnalytiqueService implements CompteAnalytiqueUseCase {
             .nature(compte.getNature())
             .compteGeneralId(compte.getCompteGeneralId())
             .actif(compte.getActif())
+            .updatedAt(compte.getUpdatedAt())
             .build();
 
         if (compte.getCompteGeneralId() == null) {

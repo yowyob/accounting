@@ -5,6 +5,7 @@ import com.yowyob.erp.accounting.domain.port.in.*;
 import com.yowyob.erp.accounting.infrastructure.web.dto.*;
 import com.yowyob.erp.config.organization.ReactiveOrganizationContext;
 import com.yowyob.erp.shared.application.service.IdempotentCreateSupport;
+import com.yowyob.erp.shared.domain.exception.ConflictException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,28 +31,50 @@ public class OfflineSyncService {
     private final PlanComptableUseCase planService;
     private final PeriodeComptableUseCase periodeService;
     private final EcritureComptableUseCase ecritureService;
+    private final AxeAnalytiqueUseCase axeAnalytiqueService;
+    private final CompteAnalytiqueUseCase compteAnalytiqueService;
+    private final ChargeAnalytiqueService chargeAnalytiqueService;
+    private final JournalAnalytiqueService journalAnalytiqueService;
+    private final EcritureAnalytiqueService ecritureAnalytiqueService;
     private final IdempotentCreateSupport idempotentCreate;
     private final ObjectMapper objectMapper;
 
     public Mono<SyncPullResponseDto> pull(LocalDateTime since) {
         LocalDateTime effectiveSince = since != null ? since : LocalDateTime.MIN;
+
+        Mono<List<?>> cgJournaux = journalService.getAllJournaux().defaultIfEmpty(List.of()).map(l -> l);
+        Mono<List<?>> cgTaxes = taxeService.getAllTaxes().defaultIfEmpty(List.of()).map(l -> l);
+        Mono<List<?>> cgDevises = deviseService.getAllDevises().defaultIfEmpty(List.of()).map(l -> l);
+        Mono<List<?>> cgOperations = operationService.getAllOperations().defaultIfEmpty(List.of()).map(l -> l);
+        Mono<List<?>> cgPlan = planService.getAllAccounts().defaultIfEmpty(List.of()).map(l -> l);
+        Mono<List<?>> cgPeriodes = periodeService.getAllPeriodes().defaultIfEmpty(List.of()).map(l -> l);
+        Mono<List<?>> cgEcritures = ecritureService.getAll().defaultIfEmpty(List.of()).map(l -> l);
+
+        Mono<List<?>> caCentres = toList(axeAnalytiqueService.getAll());
+        Mono<List<?>> caComptes = toList(compteAnalytiqueService.getAll());
+        Mono<List<?>> caCharges = toList(chargeAnalytiqueService.getAll(null, null));
+        Mono<List<?>> caJournaux = toList(journalAnalytiqueService.getAll());
+        Mono<List<?>> caEcritures = toList(ecritureAnalytiqueService.getAll(null, null));
+
         return Mono.zip(
-                journalService.getAllJournaux().defaultIfEmpty(List.of()),
-                taxeService.getAllTaxes().defaultIfEmpty(List.of()),
-                deviseService.getAllDevises().defaultIfEmpty(List.of()),
-                operationService.getAllOperations().defaultIfEmpty(List.of()),
-                planService.getAllAccounts().defaultIfEmpty(List.of()),
-                periodeService.getAllPeriodes().defaultIfEmpty(List.of()),
-                ecritureService.getAll().defaultIfEmpty(List.of())
-        ).map(tuple -> {
+                Mono.zip(cgJournaux, cgTaxes, cgDevises, cgOperations, cgPlan, cgPeriodes, cgEcritures),
+                Mono.zip(caCentres, caComptes, caCharges, caJournaux, caEcritures)
+        ).map(t -> {
+            var cg = t.getT1();
+            var ca = t.getT2();
             Map<String, List<?>> changes = new HashMap<>();
-            changes.put("cg.journaux", filterSince(tuple.getT1(), effectiveSince));
-            changes.put("cg.taxes", filterSince(tuple.getT2(), effectiveSince));
-            changes.put("cg.devises", filterSince(tuple.getT3(), effectiveSince));
-            changes.put("cg.operations", filterSince(tuple.getT4(), effectiveSince));
-            changes.put("cg.plan_comptable", filterSince(tuple.getT5(), effectiveSince));
-            changes.put("cg.periodes", filterSince(tuple.getT6(), effectiveSince));
-            changes.put("ecriture_comptable", filterSince(tuple.getT7(), effectiveSince));
+            changes.put("cg.journaux", filterSince(cg.getT1(), effectiveSince));
+            changes.put("cg.taxes", filterSince(cg.getT2(), effectiveSince));
+            changes.put("cg.devises", filterSince(cg.getT3(), effectiveSince));
+            changes.put("cg.operations", filterSince(cg.getT4(), effectiveSince));
+            changes.put("cg.plan_comptable", filterSince(cg.getT5(), effectiveSince));
+            changes.put("cg.periodes", filterSince(cg.getT6(), effectiveSince));
+            changes.put("ecriture_comptable", filterSince(cg.getT7(), effectiveSince));
+            changes.put("ca.centres", filterSince(ca.getT1(), effectiveSince));
+            changes.put("ca.comptes", filterSince(ca.getT2(), effectiveSince));
+            changes.put("ca.charges", filterSince(ca.getT3(), effectiveSince));
+            changes.put("ca.journaux", filterSince(ca.getT4(), effectiveSince));
+            changes.put("ecriture_analytique", filterSince(ca.getT5(), effectiveSince));
             return SyncPullResponseDto.builder()
                     .serverTime(LocalDateTime.now())
                     .since(effectiveSince)
@@ -88,16 +111,22 @@ public class OfflineSyncService {
                 });
     }
 
+    private <T> Mono<List<?>> toList(Flux<T> flux) {
+        return flux.collectList().defaultIfEmpty(List.of()).map(l -> l);
+    }
+
     private Mono<SyncPushResponseDto.SyncPushItemResultDto> processOne(
             SyncPushRequestDto.SyncPushOperationDto op) {
         return ReactiveOrganizationContext.getOrganizationId()
                 .flatMap(orgId -> dispatch(orgId, op))
                 .onErrorResume(err -> {
                     log.warn("Sync push failed for {} {}: {}", op.getEntity(), op.getAction(), err.getMessage());
+                    boolean conflict = err instanceof ConflictException
+                            || (err.getMessage() != null && err.getMessage().toLowerCase().contains("conflit"));
                     return Mono.just(SyncPushResponseDto.SyncPushItemResultDto.builder()
                             .clientMutationId(op.getClientMutationId())
                             .entityId(op.getEntityId())
-                            .status("FAILED")
+                            .status(conflict ? "CONFLICT" : "FAILED")
                             .message(err.getMessage())
                             .build());
                 });
@@ -143,6 +172,36 @@ public class OfflineSyncService {
                 case "CREATE" -> createPeriode(orgId, op);
                 case "UPDATE" -> updatePeriode(op);
                 case "DELETE" -> deletePeriode(op);
+                default -> skipped(op, "Action non supportée: " + action);
+            };
+            case "ca.centres" -> switch (action) {
+                case "CREATE" -> createAxe(orgId, op);
+                case "UPDATE" -> updateAxe(op);
+                case "DELETE" -> deleteAxe(op);
+                default -> skipped(op, "Action non supportée: " + action);
+            };
+            case "ca.comptes", "ca.plan_comptes" -> switch (action) {
+                case "CREATE" -> createCompteAnalytique(orgId, op);
+                case "UPDATE" -> updateCompteAnalytique(op);
+                case "DELETE" -> deleteCompteAnalytique(op);
+                default -> skipped(op, "Action non supportée: " + action);
+            };
+            case "ca.charges" -> switch (action) {
+                case "CREATE" -> createCharge(orgId, op);
+                case "UPDATE" -> updateCharge(op);
+                case "DELETE" -> deleteCharge(op);
+                default -> skipped(op, "Action non supportée: " + action);
+            };
+            case "ca.journaux" -> switch (action) {
+                case "CREATE" -> createJournalAnalytique(orgId, op);
+                case "UPDATE" -> updateJournalAnalytique(op);
+                case "DELETE" -> deleteJournalAnalytique(op);
+                default -> skipped(op, "Action non supportée: " + action);
+            };
+            case "ecriture_analytique" -> switch (action) {
+                case "CREATE" -> createEcritureAnalytique(op);
+                case "UPDATE" -> updateEcritureAnalytique(op);
+                case "DELETE" -> deleteEcritureAnalytique(op);
                 default -> skipped(op, "Action non supportée: " + action);
             };
             default -> skipped(op, "Entity not supported in batch: " + entity);
@@ -322,6 +381,113 @@ public class OfflineSyncService {
                         () -> periodeService.createPeriode(dto),
                         PeriodeComptableDto::getId)
                 .map(r -> toResult(op, r));
+    }
+
+    private Mono<SyncPushResponseDto.SyncPushItemResultDto> createAxe(
+            UUID orgId, SyncPushRequestDto.SyncPushOperationDto op) {
+        AxeAnalytiqueDto dto = objectMapper.convertValue(op.getPayload(), AxeAnalytiqueDto.class);
+        return idempotentCreate.create(orgId, op.getClientMutationId(), "axe_analytique",
+                        axeAnalytiqueService::findById,
+                        () -> axeAnalytiqueService.create(dto),
+                        AxeAnalytiqueDto::getId)
+                .map(r -> toResult(op, r));
+    }
+
+    private Mono<SyncPushResponseDto.SyncPushItemResultDto> updateAxe(
+            SyncPushRequestDto.SyncPushOperationDto op) {
+        AxeAnalytiqueDto dto = objectMapper.convertValue(op.getPayload(), AxeAnalytiqueDto.class);
+        return axeAnalytiqueService.update(parseEntityId(op), dto).flatMap(data -> ok(op, data, "OK"));
+    }
+
+    private Mono<SyncPushResponseDto.SyncPushItemResultDto> deleteAxe(
+            SyncPushRequestDto.SyncPushOperationDto op) {
+        return axeAnalytiqueService.delete(parseEntityId(op)).then(deleted(op));
+    }
+
+    private Mono<SyncPushResponseDto.SyncPushItemResultDto> createCompteAnalytique(
+            UUID orgId, SyncPushRequestDto.SyncPushOperationDto op) {
+        CompteAnalytiqueDto dto = objectMapper.convertValue(op.getPayload(), CompteAnalytiqueDto.class);
+        return idempotentCreate.create(orgId, op.getClientMutationId(), "compte_analytique",
+                        compteAnalytiqueService::findById,
+                        () -> compteAnalytiqueService.create(dto),
+                        CompteAnalytiqueDto::getId)
+                .map(r -> toResult(op, r));
+    }
+
+    private Mono<SyncPushResponseDto.SyncPushItemResultDto> updateCompteAnalytique(
+            SyncPushRequestDto.SyncPushOperationDto op) {
+        CompteAnalytiqueDto dto = objectMapper.convertValue(op.getPayload(), CompteAnalytiqueDto.class);
+        return compteAnalytiqueService.update(parseEntityId(op), dto).flatMap(data -> ok(op, data, "OK"));
+    }
+
+    private Mono<SyncPushResponseDto.SyncPushItemResultDto> deleteCompteAnalytique(
+            SyncPushRequestDto.SyncPushOperationDto op) {
+        return compteAnalytiqueService.delete(parseEntityId(op)).then(deleted(op));
+    }
+
+    private Mono<SyncPushResponseDto.SyncPushItemResultDto> createCharge(
+            UUID orgId, SyncPushRequestDto.SyncPushOperationDto op) {
+        ChargeAnalytiqueDto dto = objectMapper.convertValue(op.getPayload(), ChargeAnalytiqueDto.class);
+        return idempotentCreate.create(orgId, op.getClientMutationId(), "charge_analytique",
+                        chargeAnalytiqueService::findById,
+                        () -> chargeAnalytiqueService.create(dto),
+                        ChargeAnalytiqueDto::getId)
+                .map(r -> toResult(op, r));
+    }
+
+    private Mono<SyncPushResponseDto.SyncPushItemResultDto> updateCharge(
+            SyncPushRequestDto.SyncPushOperationDto op) {
+        ChargeAnalytiqueDto dto = objectMapper.convertValue(op.getPayload(), ChargeAnalytiqueDto.class);
+        return chargeAnalytiqueService.update(parseEntityId(op), dto).flatMap(data -> ok(op, data, "OK"));
+    }
+
+    private Mono<SyncPushResponseDto.SyncPushItemResultDto> deleteCharge(
+            SyncPushRequestDto.SyncPushOperationDto op) {
+        return chargeAnalytiqueService.delete(parseEntityId(op)).then(deleted(op));
+    }
+
+    private Mono<SyncPushResponseDto.SyncPushItemResultDto> createJournalAnalytique(
+            UUID orgId, SyncPushRequestDto.SyncPushOperationDto op) {
+        JournalAnalytiqueDto dto = objectMapper.convertValue(op.getPayload(), JournalAnalytiqueDto.class);
+        return idempotentCreate.create(orgId, op.getClientMutationId(), "journal_analytique",
+                        journalAnalytiqueService::findById,
+                        () -> journalAnalytiqueService.create(dto),
+                        JournalAnalytiqueDto::getId)
+                .map(r -> toResult(op, r));
+    }
+
+    private Mono<SyncPushResponseDto.SyncPushItemResultDto> updateJournalAnalytique(
+            SyncPushRequestDto.SyncPushOperationDto op) {
+        JournalAnalytiqueDto dto = objectMapper.convertValue(op.getPayload(), JournalAnalytiqueDto.class);
+        return journalAnalytiqueService.update(parseEntityId(op), dto).flatMap(data -> ok(op, data, "OK"));
+    }
+
+    private Mono<SyncPushResponseDto.SyncPushItemResultDto> deleteJournalAnalytique(
+            SyncPushRequestDto.SyncPushOperationDto op) {
+        return journalAnalytiqueService.delete(parseEntityId(op)).then(deleted(op));
+    }
+
+    private Mono<SyncPushResponseDto.SyncPushItemResultDto> createEcritureAnalytique(
+            SyncPushRequestDto.SyncPushOperationDto op) {
+        EcritureAnalytiqueDto dto = objectMapper.convertValue(op.getPayload(), EcritureAnalytiqueDto.class);
+        return ecritureAnalytiqueService.create(dto, op.getClientMutationId())
+                .map(r -> SyncPushResponseDto.SyncPushItemResultDto.builder()
+                        .clientMutationId(op.getClientMutationId())
+                        .entityId(r.getDto().getId() != null ? r.getDto().getId().toString() : op.getEntityId())
+                        .status(r.isAlreadyProcessed() ? "ALREADY_PROCESSED" : "CREATED")
+                        .data(r.getDto())
+                        .build());
+    }
+
+    private Mono<SyncPushResponseDto.SyncPushItemResultDto> updateEcritureAnalytique(
+            SyncPushRequestDto.SyncPushOperationDto op) {
+        EcritureAnalytiqueDto dto = objectMapper.convertValue(op.getPayload(), EcritureAnalytiqueDto.class);
+        return ecritureAnalytiqueService.update(parseEntityId(op), dto).flatMap(data -> ok(op, data, "OK"));
+    }
+
+    private Mono<SyncPushResponseDto.SyncPushItemResultDto> deleteEcritureAnalytique(
+            SyncPushRequestDto.SyncPushOperationDto op) {
+        return ecritureAnalytiqueService.delete(parseEntityId(op)).then(deleted(op));
     }
 
     private <T> SyncPushResponseDto.SyncPushItemResultDto toResult(

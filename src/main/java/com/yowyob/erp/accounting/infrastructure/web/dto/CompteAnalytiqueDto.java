@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -32,4 +33,6 @@ public class CompteAnalytiqueDto {
     
     @Builder.Default
     private Boolean actif = true;
+
+    private LocalDateTime updatedAt;
 }

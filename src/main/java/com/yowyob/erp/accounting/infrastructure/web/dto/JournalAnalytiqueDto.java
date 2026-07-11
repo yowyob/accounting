@@ -2,6 +2,8 @@ package com.yowyob.erp.accounting.infrastructure.web.dto;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
@@ -19,4 +21,6 @@ public class JournalAnalytiqueDto {
 
     @Builder.Default
     private Boolean actif = true;
+
+    private LocalDateTime updatedAt;
 }

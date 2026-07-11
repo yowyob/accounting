@@ -3,6 +3,7 @@ package com.yowyob.erp.accounting.infrastructure.web.dto;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,4 +35,6 @@ public class AxeAnalytiqueDto {
     
     private List<UUID> compteIds;
     private List<String> compteLibelles;
+
+    private LocalDateTime updatedAt;
 }

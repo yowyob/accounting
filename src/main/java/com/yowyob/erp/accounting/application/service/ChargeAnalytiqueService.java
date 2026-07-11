@@ -141,6 +141,7 @@ public class ChargeAnalytiqueService {
                 .centreLibelle(lib)
                 .periodeId(entity.getPeriodeId())
                 .description(entity.getDescription())
+                .updatedAt(entity.getUpdatedAt())
                 .build());
     }
 }

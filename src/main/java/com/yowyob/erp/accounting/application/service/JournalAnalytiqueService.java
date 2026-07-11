@@ -106,6 +106,7 @@ public class JournalAnalytiqueService {
             .libelle(entity.getLibelle())
             .type(entity.getType())
             .actif(entity.getActif())
+            .updatedAt(entity.getUpdatedAt())
             .build();
     }
 }
