@@ -1,6 +1,9 @@
 package com.yowyob.erp.config.organization;
 
 import com.yowyob.erp.accounting.domain.model.Organization;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import reactor.core.publisher.Mono;
 import reactor.util.context.Context;
 
@@ -66,7 +69,11 @@ public class ReactiveOrganizationContext {
             if (ctx.hasKey(USER_ID_KEY)) {
                 return Mono.just(ctx.get(USER_ID_KEY));
             }
-            return Mono.just("system");
+            return ReactiveSecurityContextHolder.getContext()
+                    .map(SecurityContext::getAuthentication)
+                    .filter(auth -> auth != null && auth.isAuthenticated())
+                    .map(Authentication::getName)
+                    .switchIfEmpty(Mono.just("system"));
         });
     }
 

@@ -66,21 +66,27 @@ public class CompteService implements CompteUseCase {
                                                         compte.setActif(true);
 
                                                         return compte_repository.save(compte)
-                                                                        .flatMap(saved -> redis_template.opsForValue()
-                                                                                        .set(CACHE_PREFIX
-                                                                                                        + organization_id
-                                                                                                        + ":"
-                                                                                                        + saved.getId(),
-                                                                                                        saved.getSolde())
-                                                                                        .then(logAudit(organization,
-                                                                                                        "system",
-                                                                                                        "COMPTE_CREATED",
-                                                                                                        "Creation of account: "
-                                                                                                                        + saved.getNo_compte()))
-                                                                                        .then(invalidateCache(
-                                                                                                        organization_id,
-                                                                                                        saved.getNo_compte()))
-                                                                                        .thenReturn(mapToDto(saved)));
+                                                                        .flatMap(saved -> ReactiveOrganizationContext
+                                                                                        .getCurrentUser()
+                                                                                        .defaultIfEmpty("system")
+                                                                                        .flatMap(user -> redis_template
+                                                                                                        .opsForValue()
+                                                                                                        .set(CACHE_PREFIX
+                                                                                                                        + organization_id
+                                                                                                                        + ":"
+                                                                                                                        + saved.getId(),
+                                                                                                                        saved.getSolde())
+                                                                                                        .then(logAudit(
+                                                                                                                        organization,
+                                                                                                                        user,
+                                                                                                                        "COMPTE_CREATED",
+                                                                                                                        "Creation of account: "
+                                                                                                                                        + saved.getNo_compte()))
+                                                                                                        .then(invalidateCache(
+                                                                                                                        organization_id,
+                                                                                                                        saved.getNo_compte()))
+                                                                                                        .thenReturn(mapToDto(
+                                                                                                                        saved))));
                                                 }));
         }
 
@@ -220,21 +226,26 @@ public class CompteService implements CompteUseCase {
 
                                         compte.setNotNew();
                                         return compte_repository.save(compte)
-                                                        .flatMap(updated -> redis_template.opsForValue()
-                                                                        .set(CACHE_PREFIX + organization_id + ":"
-                                                                                        + updated.getId(),
-                                                                                        updated.getSolde())
-                                                                        .then(ReactiveOrganizationContext
-                                                                                        .getCurrentOrganizationAsOrganization()
-                                                                                        .flatMap(organization -> logAudit(
-                                                                                                        organization,
-                                                                                                        "system",
-                                                                                                        "COMPTE_UPDATED",
-                                                                                                        "Update of account: "
-                                                                                                                        + updated.getNo_compte())))
-                                                                        .then(invalidateCache(organization_id,
-                                                                                        updated.getNo_compte()))
-                                                                        .thenReturn(mapToDto(updated)));
+                                                        .flatMap(updated -> ReactiveOrganizationContext
+                                                                        .getCurrentUser()
+                                                                        .defaultIfEmpty("system")
+                                                                        .flatMap(user -> redis_template.opsForValue()
+                                                                                        .set(CACHE_PREFIX + organization_id
+                                                                                                        + ":"
+                                                                                                        + updated.getId(),
+                                                                                                        updated.getSolde())
+                                                                                        .then(ReactiveOrganizationContext
+                                                                                                        .getCurrentOrganizationAsOrganization()
+                                                                                                        .flatMap(organization -> logAudit(
+                                                                                                                        organization,
+                                                                                                                        user,
+                                                                                                                        "COMPTE_UPDATED",
+                                                                                                                        "Update of account: "
+                                                                                                                                        + updated.getNo_compte())))
+                                                                                        .then(invalidateCache(
+                                                                                                        organization_id,
+                                                                                                        updated.getNo_compte()))
+                                                                                        .thenReturn(mapToDto(updated))));
                                 });
         }
 
@@ -245,14 +256,19 @@ public class CompteService implements CompteUseCase {
         public Mono<Void> deleteById(UUID organization_id, UUID id) {
                 return compte_repository.findByOrganization_IdAndId(organization_id, id)
                                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Account", id.toString())))
-                                .flatMap(compte -> compte_repository.delete(compte)
-                                                .then(ReactiveOrganizationContext.getCurrentOrganizationAsOrganization()
-                                                                .flatMap(organization -> logAudit(organization,
-                                                                                "system",
-                                                                                "COMPTE_DELETED",
-                                                                                "Deletion of account: " + compte
-                                                                                                .getNo_compte())))
-                                                .then(invalidateCache(organization_id, compte.getNo_compte()))
+                                .flatMap(compte -> ReactiveOrganizationContext.getCurrentUser()
+                                                .defaultIfEmpty("system")
+                                                .flatMap(user -> compte_repository.delete(compte)
+                                                                .then(ReactiveOrganizationContext
+                                                                                .getCurrentOrganizationAsOrganization()
+                                                                                .flatMap(organization -> logAudit(
+                                                                                                organization,
+                                                                                                user,
+                                                                                                "COMPTE_DELETED",
+                                                                                                "Deletion of account: "
+                                                                                                                + compte.getNo_compte())))
+                                                                .then(invalidateCache(organization_id,
+                                                                                compte.getNo_compte()))
                                                 .doOnSuccess(v -> log.info("Account deleted: {} for organization {}",
                                                                 compte.getNo_compte(),
                                                                 organization_id)));

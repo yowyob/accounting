@@ -58,6 +58,11 @@ public class JwtAuthenticationFilter implements WebFilter {
                             downstream = downstream.contextWrite(ctx ->
                                     ctx.put(ReactiveOrganizationContext.TENANT_ID_KEY, tenantId));
                         }
+                        String userId = authResponse.getUserId();
+                        if (userId != null && !userId.isBlank()) {
+                            downstream = downstream.contextWrite(ctx ->
+                                    ctx.put(ReactiveOrganizationContext.USER_ID_KEY, userId));
+                        }
                         return downstream;
                     })
                     .onErrorResume(error -> {
