@@ -16,7 +16,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -53,10 +55,12 @@ public class JournalAuditController {
     @Operation(summary = "Get audits by time period")
     public Mono<ResponseEntity<ApiResponseWrapper<List<JournalAuditDto>>>> getByPeriode(
             @PathVariable(name = "organizationId") UUID organization_id,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime debut,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fin) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate debut,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
 
-        return audit_service.getByPeriode(organization_id, debut, fin)
+        LocalDateTime start = debut.atStartOfDay();
+        LocalDateTime end = fin.atTime(LocalTime.MAX);
+        return audit_service.getByPeriode(organization_id, start, end)
                 .collectList()
                 .map(list -> ResponseEntity
                         .ok(ApiResponseWrapper.success(list, "Audit logs for period retrieved successfully")));
@@ -116,12 +120,14 @@ public class JournalAuditController {
             @RequestParam(name = "organizationId") UUID organization_id,
             @RequestParam(required = false) String utilisateur,
             @RequestParam(required = false) String action,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime debut,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fin) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate debut,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
 
         Mono<List<JournalAuditDto>> resultMono;
         if (debut != null && fin != null) {
-            resultMono = audit_service.getByPeriode(organization_id, debut, fin).collectList();
+            LocalDateTime start = debut.atStartOfDay();
+            LocalDateTime end = fin.atTime(LocalTime.MAX);
+            resultMono = audit_service.getByPeriode(organization_id, start, end).collectList();
         } else if (utilisateur != null && !utilisateur.isBlank()) {
             resultMono = audit_service.getByUtilisateur(organization_id, utilisateur).collectList();
         } else if (action != null && !action.isBlank()) {
