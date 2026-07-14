@@ -66,6 +66,9 @@ public class SecurityConfig {
                         // n'exige donc pas l'auth côté backend (et certains appels sont pré-login,
                         // ex. /api/auth/login). Doit précéder la règle "/api/**".
                         .pathMatchers("/api/kernel/**").permitAll()
+                        // Documents légaux (CGU, confidentialité, cookies) : textes publics relayés
+                        // depuis le kernel et mis en cache ; lecture sans authentification.
+                        .pathMatchers(HttpMethod.GET, "/api/legal-documents/**").permitAll()
                         .pathMatchers("/api/auth/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
