@@ -271,7 +271,7 @@ public class CompteService implements CompteUseCase {
                                                                                 compte.getNo_compte()))
                                                 .doOnSuccess(v -> log.info("Account deleted: {} for organization {}",
                                                                 compte.getNo_compte(),
-                                                                organization_id)));
+                                                                organization_id))));
         }
 
         /**
