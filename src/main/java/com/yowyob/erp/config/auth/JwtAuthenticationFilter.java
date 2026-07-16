@@ -100,8 +100,12 @@ public class JwtAuthenticationFilter implements WebFilter {
     }
 
     private UsernamePasswordAuthenticationToken createAuthentication(AuthValidationResponse authResponse) {
+        // Le claim `permissions` du Kernel mêle des noms de rôle nus (ex. RESPONSABLE_COMPTABLE)
+        // et des entrées déjà préfixées (ex. ROLE_OWNER, ROLE_ORGANIZATION_ADMIN). On ne préfixe
+        // `ROLE_` QUE si l'entrée ne l'est pas déjà — sinon `ROLE_OWNER` deviendrait `ROLE_ROLE_OWNER`
+        // et `hasRole('OWNER')` ne matcherait jamais.
         List<SimpleGrantedAuthority> authorities = Arrays.stream(authResponse.getRoles())
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                .map(role -> new SimpleGrantedAuthority(role.startsWith("ROLE_") ? role : "ROLE_" + role))
                 .collect(Collectors.toList());
 
         return new UsernamePasswordAuthenticationToken(authResponse.getUserId(), null, authorities);
