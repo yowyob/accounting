@@ -94,7 +94,7 @@ public class OrganizationWebFilter implements WebFilter {
             organizationId = parseUuid(defaultOrganizationId);
         }
 
-        log.debug("Context resolved: organizationId={} tenantId={}", organizationId, tenantId);
+        log.trace("Context resolved: organizationId={} tenantId={}", organizationId, tenantId);
         return writeContext(chain.filter(exchange), organizationId, tenantId);
     }
 

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Configuration de logging du backend accounting.
+  Objectif : plafonner la taille des logs (rotation) et garder une sortie console lisible.
+  Les niveaux par logger restent pilotes par application.properties (logging.level.*).
+  Cf. diagnostic ressources/logs : le spam Kafka est coupe via logging.level.org.apache.kafka=WARN.
+-->
+<configuration scan="false">
+
+    <!-- Repertoire des logs : surchargeable via la variable d'env LOG_DIR (defaut: logs/). -->
+    <property name="LOG_DIR" value="${LOG_DIR:-logs}"/>
+    <property name="CONSOLE_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss} - %msg%n"/>
+    <property name="FILE_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Fichier rollant : par jour ET par taille, avec plafond total. -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/erp-backend.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/erp-backend.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <!-- un fichier ne depasse pas 20 Mo -->
+            <maxFileSize>20MB</maxFileSize>
+            <!-- 7 jours d'historique conserves -->
+            <maxHistory>7</maxHistory>
+            <!-- plafond global de l'ensemble des logs archives -->
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Filet de securite : meme si un logger passe en DEBUG, on coupe le bruit reseau Kafka. -->
+    <logger name="org.apache.kafka" level="WARN"/>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </root>
+
+</configuration>

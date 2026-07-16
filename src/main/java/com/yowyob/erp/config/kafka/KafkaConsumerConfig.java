@@ -40,6 +40,12 @@ public class KafkaConsumerConfig {
     @Value("${spring.kafka.consumer.group-id:yowyob-erp-group}")
     private String group_id;
 
+    // Concurrence par listener. 1 par defaut : avec 7 @KafkaListener cela fait deja 7
+    // consommateurs dans le groupe. Une valeur plus haute multiplie les rejoins/heartbeats
+    // (thrash coordinateur) et la charge CPU. Surchargeable via KAFKA_LISTENER_CONCURRENCY.
+    @Value("${spring.kafka.listener.concurrency:1}")
+    private int listener_concurrency;
+
     // SASL optionnel : vide en local (Kafka en clair), renseigné en prod yowyob (SASL_PLAINTEXT/SCRAM).
     @Value("${spring.kafka.security.protocol:}")
     private String security_protocol;
@@ -118,7 +124,7 @@ public class KafkaConsumerConfig {
     public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
-        factory.setConcurrency(3);
+        factory.setConcurrency(listener_concurrency);
         factory.getContainerProperties().setPollTimeout(3000);
 
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL);
