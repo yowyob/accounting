@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <!--
+      Recherche texte rapide sans Elasticsearch.
+      La seule recherche « contient » (LIKE '%...%') du backend porte sur
+      details_ecritures.libelle (cf. DetailEcritureRepository#findCandidatesForPointage,
+      predicat LOWER(de.libelle) LIKE LOWER('%:libelle%')).
+      Un index GIN trigram sur l'expression lower(libelle) permet a PostgreSQL
+      d'utiliser un index pour ce motif (impossible avec un btree a cause du '%' initial).
+      Reserve a PostgreSQL (pg_trgm) ; ignore sur les autres bases (tests).
+    -->
+    <changeSet id="037-trigram-search-indexes" author="yowyob" dbms="postgresql">
+
+        <sql splitStatements="false"><![CDATA[
+            CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+            CREATE INDEX IF NOT EXISTS idx_details_ecritures_libelle_trgm
+                ON details_ecritures
+                USING gin (lower(libelle) gin_trgm_ops);
+        ]]></sql>
+
+        <rollback>
+            <sql>DROP INDEX IF EXISTS idx_details_ecritures_libelle_trgm;</sql>
+        </rollback>
+
+    </changeSet>
+</databaseChangeLog>
