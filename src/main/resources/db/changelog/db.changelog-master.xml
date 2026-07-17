@@ -49,5 +49,6 @@
     <include file="changeset-035-ecritures-comptables-idempotence.xml" relativeToChangelogFile="true"/>
     <include file="changeset-036-taxes-devises-updated-at.xml" relativeToChangelogFile="true"/>
     <include file="changeset-037-trigram-search-indexes.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-038-purge-corrupt-plan-comptable.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

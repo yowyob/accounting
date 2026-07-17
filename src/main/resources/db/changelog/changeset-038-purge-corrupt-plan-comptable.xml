@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <!--
+      Purge des comptes issus de l'ANCIEN plan comptable corrompu.
+      Le CSV de reference contenait 703 faux comptes (numeros commencant par 0, ex.
+      011000 "Compte OHADA 11" classe 6). Ils ont ete inseres dans le template et
+      provisionnes aux organisations. Aucun compte OHADA valide ne commence par 0,
+      donc `LIKE '0%'` ne cible que les faux.
+
+      1) plans_comptables_templates : aucune FK entrante -> suppression directe.
+      2) comptes (plan des organisations) : suppression GARDEE — on ne supprime que
+         les faux comptes qui ne sont references par AUCUNE donnee reelle (ecritures,
+         contreparties, operations, budgets, analytique). Les eventuels faux comptes
+         references restent en place (a traiter manuellement) plutot que d'echouer.
+      Reserve a PostgreSQL.
+    -->
+    <changeSet id="038-purge-corrupt-plan-comptable" author="yowyob" dbms="postgresql">
+
+        <sql splitStatements="true"><![CDATA[
+            DELETE FROM plans_comptables_templates WHERE numero LIKE '0%';
+
+            DELETE FROM comptes c
+            WHERE c.no_compte LIKE '0%'
+              AND NOT EXISTS (SELECT 1 FROM details_ecritures x   WHERE x.compte_id = c.id)
+              AND NOT EXISTS (SELECT 1 FROM contreparties x       WHERE x.compte_id = c.id)
+              AND NOT EXISTS (SELECT 1 FROM operation_comptable x WHERE x.compte_id = c.id)
+              AND NOT EXISTS (SELECT 1 FROM budgets x             WHERE x.compte_id = c.id)
+              AND NOT EXISTS (SELECT 1 FROM axe_analytique_comptes x WHERE x.compte_id = c.id)
+              AND NOT EXISTS (SELECT 1 FROM budget_lignes_comptes x  WHERE x.compte_id = c.id);
+        ]]></sql>
+
+        <rollback>
+            <!-- Suppression de donnees corrompues : pas de rollback (les faux comptes
+                 sont regeneres proprement au boot depuis plan_comptable_ohada_713.csv). -->
+        </rollback>
+
+    </changeSet>
+</databaseChangeLog>
