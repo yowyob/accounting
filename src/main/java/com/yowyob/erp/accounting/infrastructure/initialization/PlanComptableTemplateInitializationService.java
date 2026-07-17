@@ -61,13 +61,27 @@ public class PlanComptableTemplateInitializationService implements CommandLineRu
                 .concatMap(data -> {
                     String numero = data[0].trim();
                     String libelle = data[1].trim();
+                    // Garde-fou OHADA : un numéro de compte valide commence par un chiffre de
+                    // classe 1..9 (jamais 0), et sa classe EST ce premier chiffre. On rejette les
+                    // lignes corrompues (ex. anciens "011000 / Compte OHADA 11 / classe 6").
+                    if (numero.isEmpty() || numero.charAt(0) < '1' || numero.charAt(0) > '9') {
+                        log.warn("Skipping invalid OHADA account number (must start with class 1..9): {}", numero);
+                        return Mono.empty();
+                    }
+                    int classe_from_numero = numero.charAt(0) - '0';
                     try {
-                        Integer classe = Integer.parseInt(data[2].trim());
-                        return createAccountIfNotExists(numero, libelle, classe);
+                        int declared_classe = Integer.parseInt(data[2].trim());
+                        if (declared_classe != classe_from_numero) {
+                            log.warn("Skipping account {}: declared class {} != class from number {}",
+                                    numero, declared_classe, classe_from_numero);
+                            return Mono.empty();
+                        }
                     } catch (NumberFormatException e) {
                         log.warn("Invalid class number for account {}: {}", numero, data[2]);
                         return Mono.empty();
                     }
+                    // La classe persistée est toujours dérivée du numéro (source de vérité).
+                    return createAccountIfNotExists(numero, libelle, classe_from_numero);
                 })
                 .then()
                 .doOnSuccess(v -> log.info("Accounting plan template initialization completed."))

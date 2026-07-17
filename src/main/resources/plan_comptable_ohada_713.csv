@@ -1,714 +1,1290 @@
 numero;libelle;classe;sens;lettrable;collectif;niveau;compte_mere;actif
-1;CAPITAUX PROPRES ET RESSOURCES ASSIMILÉES;1;C;false;false;0;;true
-10;CAPITAL ET RÉSERVES;1;C;false;false;1;1;true
-101;Capital social ou personnel;1;C;false;false;2;10;true
-101000;Capital social;1;C;true;false;3;101;true
-102;Primes liées au capital;1;C;false;false;2;10;true
-102000;Primes d'émission, de fusion, d'apport;1;C;true;false;3;102;true
-108;Compte de l'exploitant;1;C;false;false;2;10;true
-108000;Compte de l'exploitant;1;C;true;false;3;108;true
-109;Actionnaires capital souscrit non appelé;1;C;false;false;2;10;true
-109000;Actionnaires capital souscrit non appelé;1;C;true;false;3;109;true
-011000;Compte OHADA 11;6;D;true;false;3;010000;true
-012000;Compte OHADA 12;6;D;true;false;3;011000;true
-013000;Compte OHADA 13;6;D;true;false;3;012000;true
-014000;Compte OHADA 14;6;D;true;false;3;013000;true
-015000;Compte OHADA 15;6;D;true;false;3;014000;true
-016000;Compte OHADA 16;6;D;true;false;3;015000;true
-017000;Compte OHADA 17;6;D;true;false;3;016000;true
-018000;Compte OHADA 18;6;D;true;false;3;017000;true
-019000;Compte OHADA 19;6;D;true;false;3;018000;true
-020000;Compte OHADA 20;6;D;true;false;3;019000;true
-021000;Compte OHADA 21;6;D;true;false;3;020000;true
-022000;Compte OHADA 22;6;D;true;false;3;021000;true
-023000;Compte OHADA 23;6;D;true;false;3;022000;true
-024000;Compte OHADA 24;6;D;true;false;3;023000;true
-025000;Compte OHADA 25;6;D;true;false;3;024000;true
-026000;Compte OHADA 26;6;D;true;false;3;025000;true
-027000;Compte OHADA 27;6;D;true;false;3;026000;true
-028000;Compte OHADA 28;6;D;true;false;3;027000;true
-029000;Compte OHADA 29;6;D;true;false;3;028000;true
-030000;Compte OHADA 30;6;D;true;false;3;029000;true
-031000;Compte OHADA 31;6;D;true;false;3;030000;true
-032000;Compte OHADA 32;6;D;true;false;3;031000;true
-033000;Compte OHADA 33;6;D;true;false;3;032000;true
-034000;Compte OHADA 34;6;D;true;false;3;033000;true
-035000;Compte OHADA 35;6;D;true;false;3;034000;true
-036000;Compte OHADA 36;6;D;true;false;3;035000;true
-037000;Compte OHADA 37;6;D;true;false;3;036000;true
-038000;Compte OHADA 38;6;D;true;false;3;037000;true
-039000;Compte OHADA 39;6;D;true;false;3;038000;true
-040000;Compte OHADA 40;6;D;true;false;3;039000;true
-041000;Compte OHADA 41;6;D;true;false;3;040000;true
-042000;Compte OHADA 42;6;D;true;false;3;041000;true
-043000;Compte OHADA 43;6;D;true;false;3;042000;true
-044000;Compte OHADA 44;6;D;true;false;3;043000;true
-045000;Compte OHADA 45;6;D;true;false;3;044000;true
-046000;Compte OHADA 46;6;D;true;false;3;045000;true
-047000;Compte OHADA 47;6;D;true;false;3;046000;true
-048000;Compte OHADA 48;6;D;true;false;3;047000;true
-049000;Compte OHADA 49;6;D;true;false;3;048000;true
-050000;Compte OHADA 50;6;D;true;false;3;049000;true
-051000;Compte OHADA 51;6;D;true;false;3;050000;true
-052000;Compte OHADA 52;6;D;true;false;3;051000;true
-053000;Compte OHADA 53;6;D;true;false;3;052000;true
-054000;Compte OHADA 54;6;D;true;false;3;053000;true
-055000;Compte OHADA 55;6;D;true;false;3;054000;true
-056000;Compte OHADA 56;6;D;true;false;3;055000;true
-057000;Compte OHADA 57;6;D;true;false;3;056000;true
-058000;Compte OHADA 58;6;D;true;false;3;057000;true
-059000;Compte OHADA 59;6;D;true;false;3;058000;true
-060000;Compte OHADA 60;6;D;true;false;3;059000;true
-061000;Compte OHADA 61;6;D;true;false;3;060000;true
-062000;Compte OHADA 62;6;D;true;false;3;061000;true
-063000;Compte OHADA 63;6;D;true;false;3;062000;true
-064000;Compte OHADA 64;6;D;true;false;3;063000;true
-065000;Compte OHADA 65;6;D;true;false;3;064000;true
-066000;Compte OHADA 66;6;D;true;false;3;065000;true
-067000;Compte OHADA 67;6;D;true;false;3;066000;true
-068000;Compte OHADA 68;6;D;true;false;3;067000;true
-069000;Compte OHADA 69;6;D;true;false;3;068000;true
-070000;Compte OHADA 70;6;D;true;false;3;069000;true
-071000;Compte OHADA 71;6;D;true;false;3;070000;true
-072000;Compte OHADA 72;6;D;true;false;3;071000;true
-073000;Compte OHADA 73;6;D;true;false;3;072000;true
-074000;Compte OHADA 74;6;D;true;false;3;073000;true
-075000;Compte OHADA 75;6;D;true;false;3;074000;true
-076000;Compte OHADA 76;6;D;true;false;3;075000;true
-077000;Compte OHADA 77;6;D;true;false;3;076000;true
-078000;Compte OHADA 78;6;D;true;false;3;077000;true
-079000;Compte OHADA 79;6;D;true;false;3;078000;true
-080000;Compte OHADA 80;6;D;true;false;3;079000;true
-081000;Compte OHADA 81;6;D;true;false;3;080000;true
-082000;Compte OHADA 82;6;D;true;false;3;081000;true
-083000;Compte OHADA 83;6;D;true;false;3;082000;true
-084000;Compte OHADA 84;6;D;true;false;3;083000;true
-085000;Compte OHADA 85;6;D;true;false;3;084000;true
-086000;Compte OHADA 86;6;D;true;false;3;085000;true
-087000;Compte OHADA 87;6;D;true;false;3;086000;true
-088000;Compte OHADA 88;6;D;true;false;3;087000;true
-089000;Compte OHADA 89;6;D;true;false;3;088000;true
-090000;Compte OHADA 90;6;D;true;false;3;089000;true
-091000;Compte OHADA 91;6;D;true;false;3;090000;true
-092000;Compte OHADA 92;6;D;true;false;3;091000;true
-093000;Compte OHADA 93;6;D;true;false;3;092000;true
-094000;Compte OHADA 94;6;D;true;false;3;093000;true
-095000;Compte OHADA 95;6;D;true;false;3;094000;true
-096000;Compte OHADA 96;6;D;true;false;3;095000;true
-097000;Compte OHADA 97;6;D;true;false;3;096000;true
-098000;Compte OHADA 98;6;D;true;false;3;097000;true
-099000;Compte OHADA 99;6;D;true;false;3;098000;true
-100000;Compte OHADA 100;6;D;true;false;3;099000;true
-101000;Compte OHADA 101;6;D;true;false;3;100000;true
-102000;Compte OHADA 102;6;D;true;false;3;101000;true
-103000;Compte OHADA 103;6;D;true;false;3;102000;true
-104000;Compte OHADA 104;6;D;true;false;3;103000;true
-105000;Compte OHADA 105;6;D;true;false;3;104000;true
-106000;Compte OHADA 106;6;D;true;false;3;105000;true
-107000;Compte OHADA 107;6;D;true;false;3;106000;true
-108000;Compte OHADA 108;6;D;true;false;3;107000;true
-109000;Compte OHADA 109;6;D;true;false;3;108000;true
-110000;Compte OHADA 110;6;D;true;false;3;109000;true
-111000;Compte OHADA 111;6;D;true;false;3;110000;true
-112000;Compte OHADA 112;6;D;true;false;3;111000;true
-113000;Compte OHADA 113;6;D;true;false;3;112000;true
-114000;Compte OHADA 114;6;D;true;false;3;113000;true
-115000;Compte OHADA 115;6;D;true;false;3;114000;true
-116000;Compte OHADA 116;6;D;true;false;3;115000;true
-117000;Compte OHADA 117;6;D;true;false;3;116000;true
-118000;Compte OHADA 118;6;D;true;false;3;117000;true
-119000;Compte OHADA 119;6;D;true;false;3;118000;true
-120000;Compte OHADA 120;6;D;true;false;3;119000;true
-121000;Compte OHADA 121;6;D;true;false;3;120000;true
-122000;Compte OHADA 122;6;D;true;false;3;121000;true
-123000;Compte OHADA 123;6;D;true;false;3;122000;true
-124000;Compte OHADA 124;6;D;true;false;3;123000;true
-125000;Compte OHADA 125;6;D;true;false;3;124000;true
-126000;Compte OHADA 126;6;D;true;false;3;125000;true
-127000;Compte OHADA 127;6;D;true;false;3;126000;true
-128000;Compte OHADA 128;6;D;true;false;3;127000;true
-129000;Compte OHADA 129;6;D;true;false;3;128000;true
-130000;Compte OHADA 130;6;D;true;false;3;129000;true
-131000;Compte OHADA 131;6;D;true;false;3;130000;true
-132000;Compte OHADA 132;6;D;true;false;3;131000;true
-133000;Compte OHADA 133;6;D;true;false;3;132000;true
-134000;Compte OHADA 134;6;D;true;false;3;133000;true
-135000;Compte OHADA 135;6;D;true;false;3;134000;true
-136000;Compte OHADA 136;6;D;true;false;3;135000;true
-137000;Compte OHADA 137;6;D;true;false;3;136000;true
-138000;Compte OHADA 138;6;D;true;false;3;137000;true
-139000;Compte OHADA 139;6;D;true;false;3;138000;true
-140000;Compte OHADA 140;6;D;true;false;3;139000;true
-141000;Compte OHADA 141;6;D;true;false;3;140000;true
-142000;Compte OHADA 142;6;D;true;false;3;141000;true
-143000;Compte OHADA 143;6;D;true;false;3;142000;true
-144000;Compte OHADA 144;6;D;true;false;3;143000;true
-145000;Compte OHADA 145;6;D;true;false;3;144000;true
-146000;Compte OHADA 146;6;D;true;false;3;145000;true
-147000;Compte OHADA 147;6;D;true;false;3;146000;true
-148000;Compte OHADA 148;6;D;true;false;3;147000;true
-149000;Compte OHADA 149;6;D;true;false;3;148000;true
-150000;Compte OHADA 150;6;D;true;false;3;149000;true
-151000;Compte OHADA 151;6;D;true;false;3;150000;true
-152000;Compte OHADA 152;6;D;true;false;3;151000;true
-153000;Compte OHADA 153;6;D;true;false;3;152000;true
-154000;Compte OHADA 154;6;D;true;false;3;153000;true
-155000;Compte OHADA 155;6;D;true;false;3;154000;true
-156000;Compte OHADA 156;6;D;true;false;3;155000;true
-157000;Compte OHADA 157;6;D;true;false;3;156000;true
-158000;Compte OHADA 158;6;D;true;false;3;157000;true
-159000;Compte OHADA 159;6;D;true;false;3;158000;true
-160000;Compte OHADA 160;6;D;true;false;3;159000;true
-161000;Compte OHADA 161;6;D;true;false;3;160000;true
-162000;Compte OHADA 162;6;D;true;false;3;161000;true
-163000;Compte OHADA 163;6;D;true;false;3;162000;true
-164000;Compte OHADA 164;6;D;true;false;3;163000;true
-165000;Compte OHADA 165;6;D;true;false;3;164000;true
-166000;Compte OHADA 166;6;D;true;false;3;165000;true
-167000;Compte OHADA 167;6;D;true;false;3;166000;true
-168000;Compte OHADA 168;6;D;true;false;3;167000;true
-169000;Compte OHADA 169;6;D;true;false;3;168000;true
-170000;Compte OHADA 170;6;D;true;false;3;169000;true
-171000;Compte OHADA 171;6;D;true;false;3;170000;true
-172000;Compte OHADA 172;6;D;true;false;3;171000;true
-173000;Compte OHADA 173;6;D;true;false;3;172000;true
-174000;Compte OHADA 174;6;D;true;false;3;173000;true
-175000;Compte OHADA 175;6;D;true;false;3;174000;true
-176000;Compte OHADA 176;6;D;true;false;3;175000;true
-177000;Compte OHADA 177;6;D;true;false;3;176000;true
-178000;Compte OHADA 178;6;D;true;false;3;177000;true
-179000;Compte OHADA 179;6;D;true;false;3;178000;true
-180000;Compte OHADA 180;6;D;true;false;3;179000;true
-181000;Compte OHADA 181;6;D;true;false;3;180000;true
-182000;Compte OHADA 182;6;D;true;false;3;181000;true
-183000;Compte OHADA 183;6;D;true;false;3;182000;true
-184000;Compte OHADA 184;6;D;true;false;3;183000;true
-185000;Compte OHADA 185;6;D;true;false;3;184000;true
-186000;Compte OHADA 186;6;D;true;false;3;185000;true
-187000;Compte OHADA 187;6;D;true;false;3;186000;true
-188000;Compte OHADA 188;6;D;true;false;3;187000;true
-189000;Compte OHADA 189;6;D;true;false;3;188000;true
-190000;Compte OHADA 190;6;D;true;false;3;189000;true
-191000;Compte OHADA 191;6;D;true;false;3;190000;true
-192000;Compte OHADA 192;6;D;true;false;3;191000;true
-193000;Compte OHADA 193;6;D;true;false;3;192000;true
-194000;Compte OHADA 194;6;D;true;false;3;193000;true
-195000;Compte OHADA 195;6;D;true;false;3;194000;true
-196000;Compte OHADA 196;6;D;true;false;3;195000;true
-197000;Compte OHADA 197;6;D;true;false;3;196000;true
-198000;Compte OHADA 198;6;D;true;false;3;197000;true
-199000;Compte OHADA 199;6;D;true;false;3;198000;true
-200000;Compte OHADA 200;6;D;true;false;3;199000;true
-201000;Compte OHADA 201;6;D;true;false;3;200000;true
-202000;Compte OHADA 202;6;D;true;false;3;201000;true
-203000;Compte OHADA 203;6;D;true;false;3;202000;true
-204000;Compte OHADA 204;6;D;true;false;3;203000;true
-205000;Compte OHADA 205;6;D;true;false;3;204000;true
-206000;Compte OHADA 206;6;D;true;false;3;205000;true
-207000;Compte OHADA 207;6;D;true;false;3;206000;true
-208000;Compte OHADA 208;6;D;true;false;3;207000;true
-209000;Compte OHADA 209;6;D;true;false;3;208000;true
-210000;Compte OHADA 210;6;D;true;false;3;209000;true
-211000;Compte OHADA 211;6;D;true;false;3;210000;true
-212000;Compte OHADA 212;6;D;true;false;3;211000;true
-213000;Compte OHADA 213;6;D;true;false;3;212000;true
-214000;Compte OHADA 214;6;D;true;false;3;213000;true
-215000;Compte OHADA 215;6;D;true;false;3;214000;true
-216000;Compte OHADA 216;6;D;true;false;3;215000;true
-217000;Compte OHADA 217;6;D;true;false;3;216000;true
-218000;Compte OHADA 218;6;D;true;false;3;217000;true
-219000;Compte OHADA 219;6;D;true;false;3;218000;true
-220000;Compte OHADA 220;6;D;true;false;3;219000;true
-221000;Compte OHADA 221;6;D;true;false;3;220000;true
-222000;Compte OHADA 222;6;D;true;false;3;221000;true
-223000;Compte OHADA 223;6;D;true;false;3;222000;true
-224000;Compte OHADA 224;6;D;true;false;3;223000;true
-225000;Compte OHADA 225;6;D;true;false;3;224000;true
-226000;Compte OHADA 226;6;D;true;false;3;225000;true
-227000;Compte OHADA 227;6;D;true;false;3;226000;true
-228000;Compte OHADA 228;6;D;true;false;3;227000;true
-229000;Compte OHADA 229;6;D;true;false;3;228000;true
-230000;Compte OHADA 230;6;D;true;false;3;229000;true
-231000;Compte OHADA 231;6;D;true;false;3;230000;true
-232000;Compte OHADA 232;6;D;true;false;3;231000;true
-233000;Compte OHADA 233;6;D;true;false;3;232000;true
-234000;Compte OHADA 234;6;D;true;false;3;233000;true
-235000;Compte OHADA 235;6;D;true;false;3;234000;true
-236000;Compte OHADA 236;6;D;true;false;3;235000;true
-237000;Compte OHADA 237;6;D;true;false;3;236000;true
-238000;Compte OHADA 238;6;D;true;false;3;237000;true
-239000;Compte OHADA 239;6;D;true;false;3;238000;true
-240000;Compte OHADA 240;6;D;true;false;3;239000;true
-241000;Compte OHADA 241;6;D;true;false;3;240000;true
-242000;Compte OHADA 242;6;D;true;false;3;241000;true
-243000;Compte OHADA 243;6;D;true;false;3;242000;true
-244000;Compte OHADA 244;6;D;true;false;3;243000;true
-245000;Compte OHADA 245;6;D;true;false;3;244000;true
-246000;Compte OHADA 246;6;D;true;false;3;245000;true
-247000;Compte OHADA 247;6;D;true;false;3;246000;true
-248000;Compte OHADA 248;6;D;true;false;3;247000;true
-249000;Compte OHADA 249;6;D;true;false;3;248000;true
-250000;Compte OHADA 250;6;D;true;false;3;249000;true
-251000;Compte OHADA 251;6;D;true;false;3;250000;true
-252000;Compte OHADA 252;6;D;true;false;3;251000;true
-253000;Compte OHADA 253;6;D;true;false;3;252000;true
-254000;Compte OHADA 254;6;D;true;false;3;253000;true
-255000;Compte OHADA 255;6;D;true;false;3;254000;true
-256000;Compte OHADA 256;6;D;true;false;3;255000;true
-257000;Compte OHADA 257;6;D;true;false;3;256000;true
-258000;Compte OHADA 258;6;D;true;false;3;257000;true
-259000;Compte OHADA 259;6;D;true;false;3;258000;true
-260000;Compte OHADA 260;6;D;true;false;3;259000;true
-261000;Compte OHADA 261;6;D;true;false;3;260000;true
-262000;Compte OHADA 262;6;D;true;false;3;261000;true
-263000;Compte OHADA 263;6;D;true;false;3;262000;true
-264000;Compte OHADA 264;6;D;true;false;3;263000;true
-265000;Compte OHADA 265;6;D;true;false;3;264000;true
-266000;Compte OHADA 266;6;D;true;false;3;265000;true
-267000;Compte OHADA 267;6;D;true;false;3;266000;true
-268000;Compte OHADA 268;6;D;true;false;3;267000;true
-269000;Compte OHADA 269;6;D;true;false;3;268000;true
-270000;Compte OHADA 270;6;D;true;false;3;269000;true
-271000;Compte OHADA 271;6;D;true;false;3;270000;true
-272000;Compte OHADA 272;6;D;true;false;3;271000;true
-273000;Compte OHADA 273;6;D;true;false;3;272000;true
-274000;Compte OHADA 274;6;D;true;false;3;273000;true
-275000;Compte OHADA 275;6;D;true;false;3;274000;true
-276000;Compte OHADA 276;6;D;true;false;3;275000;true
-277000;Compte OHADA 277;6;D;true;false;3;276000;true
-278000;Compte OHADA 278;6;D;true;false;3;277000;true
-279000;Compte OHADA 279;6;D;true;false;3;278000;true
-280000;Compte OHADA 280;6;D;true;false;3;279000;true
-281000;Compte OHADA 281;6;D;true;false;3;280000;true
-282000;Compte OHADA 282;6;D;true;false;3;281000;true
-283000;Compte OHADA 283;6;D;true;false;3;282000;true
-284000;Compte OHADA 284;6;D;true;false;3;283000;true
-285000;Compte OHADA 285;6;D;true;false;3;284000;true
-286000;Compte OHADA 286;6;D;true;false;3;285000;true
-287000;Compte OHADA 287;6;D;true;false;3;286000;true
-288000;Compte OHADA 288;6;D;true;false;3;287000;true
-289000;Compte OHADA 289;6;D;true;false;3;288000;true
-290000;Compte OHADA 290;6;D;true;false;3;289000;true
-291000;Compte OHADA 291;6;D;true;false;3;290000;true
-292000;Compte OHADA 292;6;D;true;false;3;291000;true
-293000;Compte OHADA 293;6;D;true;false;3;292000;true
-294000;Compte OHADA 294;6;D;true;false;3;293000;true
-295000;Compte OHADA 295;6;D;true;false;3;294000;true
-296000;Compte OHADA 296;6;D;true;false;3;295000;true
-297000;Compte OHADA 297;6;D;true;false;3;296000;true
-298000;Compte OHADA 298;6;D;true;false;3;297000;true
-299000;Compte OHADA 299;6;D;true;false;3;298000;true
-300000;Compte OHADA 300;6;D;true;false;3;299000;true
-301000;Compte OHADA 301;6;D;true;false;3;300000;true
-302000;Compte OHADA 302;6;D;true;false;3;301000;true
-303000;Compte OHADA 303;6;D;true;false;3;302000;true
-304000;Compte OHADA 304;6;D;true;false;3;303000;true
-305000;Compte OHADA 305;6;D;true;false;3;304000;true
-306000;Compte OHADA 306;6;D;true;false;3;305000;true
-307000;Compte OHADA 307;6;D;true;false;3;306000;true
-308000;Compte OHADA 308;6;D;true;false;3;307000;true
-309000;Compte OHADA 309;6;D;true;false;3;308000;true
-310000;Compte OHADA 310;6;D;true;false;3;309000;true
-311000;Compte OHADA 311;6;D;true;false;3;310000;true
-312000;Compte OHADA 312;6;D;true;false;3;311000;true
-313000;Compte OHADA 313;6;D;true;false;3;312000;true
-314000;Compte OHADA 314;6;D;true;false;3;313000;true
-315000;Compte OHADA 315;6;D;true;false;3;314000;true
-316000;Compte OHADA 316;6;D;true;false;3;315000;true
-317000;Compte OHADA 317;6;D;true;false;3;316000;true
-318000;Compte OHADA 318;6;D;true;false;3;317000;true
-319000;Compte OHADA 319;6;D;true;false;3;318000;true
-320000;Compte OHADA 320;6;D;true;false;3;319000;true
-321000;Compte OHADA 321;6;D;true;false;3;320000;true
-322000;Compte OHADA 322;6;D;true;false;3;321000;true
-323000;Compte OHADA 323;6;D;true;false;3;322000;true
-324000;Compte OHADA 324;6;D;true;false;3;323000;true
-325000;Compte OHADA 325;6;D;true;false;3;324000;true
-326000;Compte OHADA 326;6;D;true;false;3;325000;true
-327000;Compte OHADA 327;6;D;true;false;3;326000;true
-328000;Compte OHADA 328;6;D;true;false;3;327000;true
-329000;Compte OHADA 329;6;D;true;false;3;328000;true
-330000;Compte OHADA 330;6;D;true;false;3;329000;true
-331000;Compte OHADA 331;6;D;true;false;3;330000;true
-332000;Compte OHADA 332;6;D;true;false;3;331000;true
-333000;Compte OHADA 333;6;D;true;false;3;332000;true
-334000;Compte OHADA 334;6;D;true;false;3;333000;true
-335000;Compte OHADA 335;6;D;true;false;3;334000;true
-336000;Compte OHADA 336;6;D;true;false;3;335000;true
-337000;Compte OHADA 337;6;D;true;false;3;336000;true
-338000;Compte OHADA 338;6;D;true;false;3;337000;true
-339000;Compte OHADA 339;6;D;true;false;3;338000;true
-340000;Compte OHADA 340;6;D;true;false;3;339000;true
-341000;Compte OHADA 341;6;D;true;false;3;340000;true
-342000;Compte OHADA 342;6;D;true;false;3;341000;true
-343000;Compte OHADA 343;6;D;true;false;3;342000;true
-344000;Compte OHADA 344;6;D;true;false;3;343000;true
-345000;Compte OHADA 345;6;D;true;false;3;344000;true
-346000;Compte OHADA 346;6;D;true;false;3;345000;true
-347000;Compte OHADA 347;6;D;true;false;3;346000;true
-348000;Compte OHADA 348;6;D;true;false;3;347000;true
-349000;Compte OHADA 349;6;D;true;false;3;348000;true
-350000;Compte OHADA 350;6;D;true;false;3;349000;true
-351000;Compte OHADA 351;6;D;true;false;3;350000;true
-352000;Compte OHADA 352;6;D;true;false;3;351000;true
-353000;Compte OHADA 353;6;D;true;false;3;352000;true
-354000;Compte OHADA 354;6;D;true;false;3;353000;true
-355000;Compte OHADA 355;6;D;true;false;3;354000;true
-356000;Compte OHADA 356;6;D;true;false;3;355000;true
-357000;Compte OHADA 357;6;D;true;false;3;356000;true
-358000;Compte OHADA 358;6;D;true;false;3;357000;true
-359000;Compte OHADA 359;6;D;true;false;3;358000;true
-360000;Compte OHADA 360;6;D;true;false;3;359000;true
-361000;Compte OHADA 361;6;D;true;false;3;360000;true
-362000;Compte OHADA 362;6;D;true;false;3;361000;true
-363000;Compte OHADA 363;6;D;true;false;3;362000;true
-364000;Compte OHADA 364;6;D;true;false;3;363000;true
-365000;Compte OHADA 365;6;D;true;false;3;364000;true
-366000;Compte OHADA 366;6;D;true;false;3;365000;true
-367000;Compte OHADA 367;6;D;true;false;3;366000;true
-368000;Compte OHADA 368;6;D;true;false;3;367000;true
-369000;Compte OHADA 369;6;D;true;false;3;368000;true
-370000;Compte OHADA 370;6;D;true;false;3;369000;true
-371000;Compte OHADA 371;6;D;true;false;3;370000;true
-372000;Compte OHADA 372;6;D;true;false;3;371000;true
-373000;Compte OHADA 373;6;D;true;false;3;372000;true
-374000;Compte OHADA 374;6;D;true;false;3;373000;true
-375000;Compte OHADA 375;6;D;true;false;3;374000;true
-376000;Compte OHADA 376;6;D;true;false;3;375000;true
-377000;Compte OHADA 377;6;D;true;false;3;376000;true
-378000;Compte OHADA 378;6;D;true;false;3;377000;true
-379000;Compte OHADA 379;6;D;true;false;3;378000;true
-380000;Compte OHADA 380;6;D;true;false;3;379000;true
-381000;Compte OHADA 381;6;D;true;false;3;380000;true
-382000;Compte OHADA 382;6;D;true;false;3;381000;true
-383000;Compte OHADA 383;6;D;true;false;3;382000;true
-384000;Compte OHADA 384;6;D;true;false;3;383000;true
-385000;Compte OHADA 385;6;D;true;false;3;384000;true
-386000;Compte OHADA 386;6;D;true;false;3;385000;true
-387000;Compte OHADA 387;6;D;true;false;3;386000;true
-388000;Compte OHADA 388;6;D;true;false;3;387000;true
-389000;Compte OHADA 389;6;D;true;false;3;388000;true
-390000;Compte OHADA 390;6;D;true;false;3;389000;true
-391000;Compte OHADA 391;6;D;true;false;3;390000;true
-392000;Compte OHADA 392;6;D;true;false;3;391000;true
-393000;Compte OHADA 393;6;D;true;false;3;392000;true
-394000;Compte OHADA 394;6;D;true;false;3;393000;true
-395000;Compte OHADA 395;6;D;true;false;3;394000;true
-396000;Compte OHADA 396;6;D;true;false;3;395000;true
-397000;Compte OHADA 397;6;D;true;false;3;396000;true
-398000;Compte OHADA 398;6;D;true;false;3;397000;true
-399000;Compte OHADA 399;6;D;true;false;3;398000;true
-400000;Compte OHADA 400;6;D;true;false;3;399000;true
-401000;Compte OHADA 401;6;D;true;false;3;400000;true
-402000;Compte OHADA 402;6;D;true;false;3;401000;true
-403000;Compte OHADA 403;6;D;true;false;3;402000;true
-404000;Compte OHADA 404;6;D;true;false;3;403000;true
-405000;Compte OHADA 405;6;D;true;false;3;404000;true
-406000;Compte OHADA 406;6;D;true;false;3;405000;true
-407000;Compte OHADA 407;6;D;true;false;3;406000;true
-408000;Compte OHADA 408;6;D;true;false;3;407000;true
-409000;Compte OHADA 409;6;D;true;false;3;408000;true
-410000;Compte OHADA 410;6;D;true;false;3;409000;true
-411000;Compte OHADA 411;6;D;true;false;3;410000;true
-412000;Compte OHADA 412;6;D;true;false;3;411000;true
-413000;Compte OHADA 413;6;D;true;false;3;412000;true
-414000;Compte OHADA 414;6;D;true;false;3;413000;true
-415000;Compte OHADA 415;6;D;true;false;3;414000;true
-416000;Compte OHADA 416;6;D;true;false;3;415000;true
-417000;Compte OHADA 417;6;D;true;false;3;416000;true
-418000;Compte OHADA 418;6;D;true;false;3;417000;true
-419000;Compte OHADA 419;6;D;true;false;3;418000;true
-420000;Compte OHADA 420;6;D;true;false;3;419000;true
-421000;Compte OHADA 421;6;D;true;false;3;420000;true
-422000;Compte OHADA 422;6;D;true;false;3;421000;true
-423000;Compte OHADA 423;6;D;true;false;3;422000;true
-424000;Compte OHADA 424;6;D;true;false;3;423000;true
-425000;Compte OHADA 425;6;D;true;false;3;424000;true
-426000;Compte OHADA 426;6;D;true;false;3;425000;true
-427000;Compte OHADA 427;6;D;true;false;3;426000;true
-428000;Compte OHADA 428;6;D;true;false;3;427000;true
-429000;Compte OHADA 429;6;D;true;false;3;428000;true
-430000;Compte OHADA 430;6;D;true;false;3;429000;true
-431000;Compte OHADA 431;6;D;true;false;3;430000;true
-432000;Compte OHADA 432;6;D;true;false;3;431000;true
-433000;Compte OHADA 433;6;D;true;false;3;432000;true
-434000;Compte OHADA 434;6;D;true;false;3;433000;true
-435000;Compte OHADA 435;6;D;true;false;3;434000;true
-436000;Compte OHADA 436;6;D;true;false;3;435000;true
-437000;Compte OHADA 437;6;D;true;false;3;436000;true
-438000;Compte OHADA 438;6;D;true;false;3;437000;true
-439000;Compte OHADA 439;6;D;true;false;3;438000;true
-440000;Compte OHADA 440;6;D;true;false;3;439000;true
-441000;Compte OHADA 441;6;D;true;false;3;440000;true
-442000;Compte OHADA 442;6;D;true;false;3;441000;true
-443000;Compte OHADA 443;6;D;true;false;3;442000;true
-444000;Compte OHADA 444;6;D;true;false;3;443000;true
-445000;Compte OHADA 445;6;D;true;false;3;444000;true
-446000;Compte OHADA 446;6;D;true;false;3;445000;true
-447000;Compte OHADA 447;6;D;true;false;3;446000;true
-448000;Compte OHADA 448;6;D;true;false;3;447000;true
-449000;Compte OHADA 449;6;D;true;false;3;448000;true
-450000;Compte OHADA 450;6;D;true;false;3;449000;true
-451000;Compte OHADA 451;6;D;true;false;3;450000;true
-452000;Compte OHADA 452;6;D;true;false;3;451000;true
-453000;Compte OHADA 453;6;D;true;false;3;452000;true
-454000;Compte OHADA 454;6;D;true;false;3;453000;true
-455000;Compte OHADA 455;6;D;true;false;3;454000;true
-456000;Compte OHADA 456;6;D;true;false;3;455000;true
-457000;Compte OHADA 457;6;D;true;false;3;456000;true
-458000;Compte OHADA 458;6;D;true;false;3;457000;true
-459000;Compte OHADA 459;6;D;true;false;3;458000;true
-460000;Compte OHADA 460;6;D;true;false;3;459000;true
-461000;Compte OHADA 461;6;D;true;false;3;460000;true
-462000;Compte OHADA 462;6;D;true;false;3;461000;true
-463000;Compte OHADA 463;6;D;true;false;3;462000;true
-464000;Compte OHADA 464;6;D;true;false;3;463000;true
-465000;Compte OHADA 465;6;D;true;false;3;464000;true
-466000;Compte OHADA 466;6;D;true;false;3;465000;true
-467000;Compte OHADA 467;6;D;true;false;3;466000;true
-468000;Compte OHADA 468;6;D;true;false;3;467000;true
-469000;Compte OHADA 469;6;D;true;false;3;468000;true
-470000;Compte OHADA 470;6;D;true;false;3;469000;true
-471000;Compte OHADA 471;6;D;true;false;3;470000;true
-472000;Compte OHADA 472;6;D;true;false;3;471000;true
-473000;Compte OHADA 473;6;D;true;false;3;472000;true
-474000;Compte OHADA 474;6;D;true;false;3;473000;true
-475000;Compte OHADA 475;6;D;true;false;3;474000;true
-476000;Compte OHADA 476;6;D;true;false;3;475000;true
-477000;Compte OHADA 477;6;D;true;false;3;476000;true
-478000;Compte OHADA 478;6;D;true;false;3;477000;true
-479000;Compte OHADA 479;6;D;true;false;3;478000;true
-480000;Compte OHADA 480;6;D;true;false;3;479000;true
-481000;Compte OHADA 481;6;D;true;false;3;480000;true
-482000;Compte OHADA 482;6;D;true;false;3;481000;true
-483000;Compte OHADA 483;6;D;true;false;3;482000;true
-484000;Compte OHADA 484;6;D;true;false;3;483000;true
-485000;Compte OHADA 485;6;D;true;false;3;484000;true
-486000;Compte OHADA 486;6;D;true;false;3;485000;true
-487000;Compte OHADA 487;6;D;true;false;3;486000;true
-488000;Compte OHADA 488;6;D;true;false;3;487000;true
-489000;Compte OHADA 489;6;D;true;false;3;488000;true
-490000;Compte OHADA 490;6;D;true;false;3;489000;true
-491000;Compte OHADA 491;6;D;true;false;3;490000;true
-492000;Compte OHADA 492;6;D;true;false;3;491000;true
-493000;Compte OHADA 493;6;D;true;false;3;492000;true
-494000;Compte OHADA 494;6;D;true;false;3;493000;true
-495000;Compte OHADA 495;6;D;true;false;3;494000;true
-496000;Compte OHADA 496;6;D;true;false;3;495000;true
-497000;Compte OHADA 497;6;D;true;false;3;496000;true
-498000;Compte OHADA 498;6;D;true;false;3;497000;true
-499000;Compte OHADA 499;6;D;true;false;3;498000;true
-500000;Compte OHADA 500;6;D;true;false;3;499000;true
-501000;Compte OHADA 501;6;D;true;false;3;500000;true
-502000;Compte OHADA 502;6;D;true;false;3;501000;true
-503000;Compte OHADA 503;6;D;true;false;3;502000;true
-504000;Compte OHADA 504;6;D;true;false;3;503000;true
-505000;Compte OHADA 505;6;D;true;false;3;504000;true
-506000;Compte OHADA 506;6;D;true;false;3;505000;true
-507000;Compte OHADA 507;6;D;true;false;3;506000;true
-508000;Compte OHADA 508;6;D;true;false;3;507000;true
-509000;Compte OHADA 509;6;D;true;false;3;508000;true
-510000;Compte OHADA 510;6;D;true;false;3;509000;true
-511000;Compte OHADA 511;6;D;true;false;3;510000;true
-512000;Compte OHADA 512;6;D;true;false;3;511000;true
-513000;Compte OHADA 513;6;D;true;false;3;512000;true
-514000;Compte OHADA 514;6;D;true;false;3;513000;true
-515000;Compte OHADA 515;6;D;true;false;3;514000;true
-516000;Compte OHADA 516;6;D;true;false;3;515000;true
-517000;Compte OHADA 517;6;D;true;false;3;516000;true
-518000;Compte OHADA 518;6;D;true;false;3;517000;true
-519000;Compte OHADA 519;6;D;true;false;3;518000;true
-520000;Compte OHADA 520;6;D;true;false;3;519000;true
-521000;Compte OHADA 521;6;D;true;false;3;520000;true
-522000;Compte OHADA 522;6;D;true;false;3;521000;true
-523000;Compte OHADA 523;6;D;true;false;3;522000;true
-524000;Compte OHADA 524;6;D;true;false;3;523000;true
-525000;Compte OHADA 525;6;D;true;false;3;524000;true
-526000;Compte OHADA 526;6;D;true;false;3;525000;true
-527000;Compte OHADA 527;6;D;true;false;3;526000;true
-528000;Compte OHADA 528;6;D;true;false;3;527000;true
-529000;Compte OHADA 529;6;D;true;false;3;528000;true
-530000;Compte OHADA 530;6;D;true;false;3;529000;true
-531000;Compte OHADA 531;6;D;true;false;3;530000;true
-532000;Compte OHADA 532;6;D;true;false;3;531000;true
-533000;Compte OHADA 533;6;D;true;false;3;532000;true
-534000;Compte OHADA 534;6;D;true;false;3;533000;true
-535000;Compte OHADA 535;6;D;true;false;3;534000;true
-536000;Compte OHADA 536;6;D;true;false;3;535000;true
-537000;Compte OHADA 537;6;D;true;false;3;536000;true
-538000;Compte OHADA 538;6;D;true;false;3;537000;true
-539000;Compte OHADA 539;6;D;true;false;3;538000;true
-540000;Compte OHADA 540;6;D;true;false;3;539000;true
-541000;Compte OHADA 541;6;D;true;false;3;540000;true
-542000;Compte OHADA 542;6;D;true;false;3;541000;true
-543000;Compte OHADA 543;6;D;true;false;3;542000;true
-544000;Compte OHADA 544;6;D;true;false;3;543000;true
-545000;Compte OHADA 545;6;D;true;false;3;544000;true
-546000;Compte OHADA 546;6;D;true;false;3;545000;true
-547000;Compte OHADA 547;6;D;true;false;3;546000;true
-548000;Compte OHADA 548;6;D;true;false;3;547000;true
-549000;Compte OHADA 549;6;D;true;false;3;548000;true
-550000;Compte OHADA 550;6;D;true;false;3;549000;true
-551000;Compte OHADA 551;6;D;true;false;3;550000;true
-552000;Compte OHADA 552;6;D;true;false;3;551000;true
-553000;Compte OHADA 553;6;D;true;false;3;552000;true
-554000;Compte OHADA 554;6;D;true;false;3;553000;true
-555000;Compte OHADA 555;6;D;true;false;3;554000;true
-556000;Compte OHADA 556;6;D;true;false;3;555000;true
-557000;Compte OHADA 557;6;D;true;false;3;556000;true
-558000;Compte OHADA 558;6;D;true;false;3;557000;true
-559000;Compte OHADA 559;6;D;true;false;3;558000;true
-560000;Compte OHADA 560;6;D;true;false;3;559000;true
-561000;Compte OHADA 561;6;D;true;false;3;560000;true
-562000;Compte OHADA 562;6;D;true;false;3;561000;true
-563000;Compte OHADA 563;6;D;true;false;3;562000;true
-564000;Compte OHADA 564;6;D;true;false;3;563000;true
-565000;Compte OHADA 565;6;D;true;false;3;564000;true
-566000;Compte OHADA 566;6;D;true;false;3;565000;true
-567000;Compte OHADA 567;6;D;true;false;3;566000;true
-568000;Compte OHADA 568;6;D;true;false;3;567000;true
-569000;Compte OHADA 569;6;D;true;false;3;568000;true
-570000;Compte OHADA 570;6;D;true;false;3;569000;true
-571000;Compte OHADA 571;6;D;true;false;3;570000;true
-572000;Compte OHADA 572;6;D;true;false;3;571000;true
-573000;Compte OHADA 573;6;D;true;false;3;572000;true
-574000;Compte OHADA 574;6;D;true;false;3;573000;true
-575000;Compte OHADA 575;6;D;true;false;3;574000;true
-576000;Compte OHADA 576;6;D;true;false;3;575000;true
-577000;Compte OHADA 577;6;D;true;false;3;576000;true
-578000;Compte OHADA 578;6;D;true;false;3;577000;true
-579000;Compte OHADA 579;6;D;true;false;3;578000;true
-580000;Compte OHADA 580;6;D;true;false;3;579000;true
-581000;Compte OHADA 581;6;D;true;false;3;580000;true
-582000;Compte OHADA 582;6;D;true;false;3;581000;true
-583000;Compte OHADA 583;6;D;true;false;3;582000;true
-584000;Compte OHADA 584;6;D;true;false;3;583000;true
-585000;Compte OHADA 585;6;D;true;false;3;584000;true
-586000;Compte OHADA 586;6;D;true;false;3;585000;true
-587000;Compte OHADA 587;6;D;true;false;3;586000;true
-588000;Compte OHADA 588;6;D;true;false;3;587000;true
-589000;Compte OHADA 589;6;D;true;false;3;588000;true
-590000;Compte OHADA 590;6;D;true;false;3;589000;true
-591000;Compte OHADA 591;6;D;true;false;3;590000;true
-592000;Compte OHADA 592;6;D;true;false;3;591000;true
-593000;Compte OHADA 593;6;D;true;false;3;592000;true
-594000;Compte OHADA 594;6;D;true;false;3;593000;true
-595000;Compte OHADA 595;6;D;true;false;3;594000;true
-596000;Compte OHADA 596;6;D;true;false;3;595000;true
-597000;Compte OHADA 597;6;D;true;false;3;596000;true
-598000;Compte OHADA 598;6;D;true;false;3;597000;true
-599000;Compte OHADA 599;6;D;true;false;3;598000;true
-600000;Compte OHADA 600;6;D;true;false;3;599000;true
-601000;Compte OHADA 601;6;D;true;false;3;600000;true
-602000;Compte OHADA 602;6;D;true;false;3;601000;true
-603000;Compte OHADA 603;6;D;true;false;3;602000;true
-604000;Compte OHADA 604;6;D;true;false;3;603000;true
-605000;Compte OHADA 605;6;D;true;false;3;604000;true
-606000;Compte OHADA 606;6;D;true;false;3;605000;true
-607000;Compte OHADA 607;6;D;true;false;3;606000;true
-608000;Compte OHADA 608;6;D;true;false;3;607000;true
-609000;Compte OHADA 609;6;D;true;false;3;608000;true
-610000;Compte OHADA 610;6;D;true;false;3;609000;true
-611000;Compte OHADA 611;6;D;true;false;3;610000;true
-612000;Compte OHADA 612;6;D;true;false;3;611000;true
-613000;Compte OHADA 613;6;D;true;false;3;612000;true
-614000;Compte OHADA 614;6;D;true;false;3;613000;true
-615000;Compte OHADA 615;6;D;true;false;3;614000;true
-616000;Compte OHADA 616;6;D;true;false;3;615000;true
-617000;Compte OHADA 617;6;D;true;false;3;616000;true
-618000;Compte OHADA 618;6;D;true;false;3;617000;true
-619000;Compte OHADA 619;6;D;true;false;3;618000;true
-620000;Compte OHADA 620;6;D;true;false;3;619000;true
-621000;Compte OHADA 621;6;D;true;false;3;620000;true
-622000;Compte OHADA 622;6;D;true;false;3;621000;true
-623000;Compte OHADA 623;6;D;true;false;3;622000;true
-624000;Compte OHADA 624;6;D;true;false;3;623000;true
-625000;Compte OHADA 625;6;D;true;false;3;624000;true
-626000;Compte OHADA 626;6;D;true;false;3;625000;true
-627000;Compte OHADA 627;6;D;true;false;3;626000;true
-628000;Compte OHADA 628;6;D;true;false;3;627000;true
-629000;Compte OHADA 629;6;D;true;false;3;628000;true
-630000;Compte OHADA 630;6;D;true;false;3;629000;true
-631000;Compte OHADA 631;6;D;true;false;3;630000;true
-632000;Compte OHADA 632;6;D;true;false;3;631000;true
-633000;Compte OHADA 633;6;D;true;false;3;632000;true
-634000;Compte OHADA 634;6;D;true;false;3;633000;true
-635000;Compte OHADA 635;6;D;true;false;3;634000;true
-636000;Compte OHADA 636;6;D;true;false;3;635000;true
-637000;Compte OHADA 637;6;D;true;false;3;636000;true
-638000;Compte OHADA 638;6;D;true;false;3;637000;true
-639000;Compte OHADA 639;6;D;true;false;3;638000;true
-640000;Compte OHADA 640;6;D;true;false;3;639000;true
-641000;Compte OHADA 641;6;D;true;false;3;640000;true
-642000;Compte OHADA 642;6;D;true;false;3;641000;true
-643000;Compte OHADA 643;6;D;true;false;3;642000;true
-644000;Compte OHADA 644;6;D;true;false;3;643000;true
-645000;Compte OHADA 645;6;D;true;false;3;644000;true
-646000;Compte OHADA 646;6;D;true;false;3;645000;true
-647000;Compte OHADA 647;6;D;true;false;3;646000;true
-648000;Compte OHADA 648;6;D;true;false;3;647000;true
-649000;Compte OHADA 649;6;D;true;false;3;648000;true
-650000;Compte OHADA 650;6;D;true;false;3;649000;true
-651000;Compte OHADA 651;6;D;true;false;3;650000;true
-652000;Compte OHADA 652;6;D;true;false;3;651000;true
-653000;Compte OHADA 653;6;D;true;false;3;652000;true
-654000;Compte OHADA 654;6;D;true;false;3;653000;true
-655000;Compte OHADA 655;6;D;true;false;3;654000;true
-656000;Compte OHADA 656;6;D;true;false;3;655000;true
-657000;Compte OHADA 657;6;D;true;false;3;656000;true
-658000;Compte OHADA 658;6;D;true;false;3;657000;true
-659000;Compte OHADA 659;6;D;true;false;3;658000;true
-660000;Compte OHADA 660;6;D;true;false;3;659000;true
-661000;Compte OHADA 661;6;D;true;false;3;660000;true
-662000;Compte OHADA 662;6;D;true;false;3;661000;true
-663000;Compte OHADA 663;6;D;true;false;3;662000;true
-664000;Compte OHADA 664;6;D;true;false;3;663000;true
-665000;Compte OHADA 665;6;D;true;false;3;664000;true
-666000;Compte OHADA 666;6;D;true;false;3;665000;true
-667000;Compte OHADA 667;6;D;true;false;3;666000;true
-668000;Compte OHADA 668;6;D;true;false;3;667000;true
-669000;Compte OHADA 669;6;D;true;false;3;668000;true
-670000;Compte OHADA 670;6;D;true;false;3;669000;true
-671000;Compte OHADA 671;6;D;true;false;3;670000;true
-672000;Compte OHADA 672;6;D;true;false;3;671000;true
-673000;Compte OHADA 673;6;D;true;false;3;672000;true
-674000;Compte OHADA 674;6;D;true;false;3;673000;true
-675000;Compte OHADA 675;6;D;true;false;3;674000;true
-676000;Compte OHADA 676;6;D;true;false;3;675000;true
-677000;Compte OHADA 677;6;D;true;false;3;676000;true
-678000;Compte OHADA 678;6;D;true;false;3;677000;true
-679000;Compte OHADA 679;6;D;true;false;3;678000;true
-680000;Compte OHADA 680;6;D;true;false;3;679000;true
-681000;Compte OHADA 681;6;D;true;false;3;680000;true
-682000;Compte OHADA 682;6;D;true;false;3;681000;true
-683000;Compte OHADA 683;6;D;true;false;3;682000;true
-684000;Compte OHADA 684;6;D;true;false;3;683000;true
-685000;Compte OHADA 685;6;D;true;false;3;684000;true
-686000;Compte OHADA 686;6;D;true;false;3;685000;true
-687000;Compte OHADA 687;6;D;true;false;3;686000;true
-688000;Compte OHADA 688;6;D;true;false;3;687000;true
-689000;Compte OHADA 689;6;D;true;false;3;688000;true
-690000;Compte OHADA 690;6;D;true;false;3;689000;true
-691000;Compte OHADA 691;6;D;true;false;3;690000;true
-692000;Compte OHADA 692;6;D;true;false;3;691000;true
-693000;Compte OHADA 693;6;D;true;false;3;692000;true
-694000;Compte OHADA 694;6;D;true;false;3;693000;true
-695000;Compte OHADA 695;6;D;true;false;3;694000;true
-696000;Compte OHADA 696;6;D;true;false;3;695000;true
-697000;Compte OHADA 697;6;D;true;false;3;696000;true
-698000;Compte OHADA 698;6;D;true;false;3;697000;true
-699000;Compte OHADA 699;6;D;true;false;3;698000;true
-700000;Compte OHADA 700;6;D;true;false;3;699000;true
-701000;Compte OHADA 701;6;D;true;false;3;700000;true
-702000;Compte OHADA 702;6;D;true;false;3;701000;true
-703000;Compte OHADA 703;6;D;true;false;3;702000;true
-704000;Compte OHADA 704;6;D;true;false;3;703000;true
-705000;Compte OHADA 705;6;D;true;false;3;704000;true
-706000;Compte OHADA 706;6;D;true;false;3;705000;true
-707000;Compte OHADA 707;6;D;true;false;3;706000;true
-708000;Compte OHADA 708;6;D;true;false;3;707000;true
-709000;Compte OHADA 709;6;D;true;false;3;708000;true
-710000;Compte OHADA 710;6;D;true;false;3;709000;true
-711000;Compte OHADA 711;6;D;true;false;3;710000;true
-712000;Compte OHADA 712;6;D;true;false;3;711000;true
-713000;Compte OHADA 713;6;D;true;false;3;712000;true
+1;COMPTES DE RESSOURCES DURABLES;1;C;false;false;0;;true
+10;CAPITAL SOCIAL;1;C;false;false;1;1;true
+101;CAPITAL SOCIAL;1;C;false;false;2;10;true
+1011;Capital souscrit, non appelé;1;C;false;false;3;101;true
+1012;Capital souscrit, appelé, non versé;1;C;false;false;3;101;true
+1013;Capital souscrit, appelé, versé non amorti;1;C;false;false;3;101;true
+1014;Capital souscrit, appelé, versé, amorti;1;C;false;false;3;101;true
+1018;Capital souscrit soumis à des conditions particulières;1;C;false;false;3;101;true
+102;CAPITAL PAR DOTATION;1;C;false;false;2;10;true
+1021;Dotation initiale;1;C;false;false;3;102;true
+1022;Dotation complémentaire;1;C;false;false;3;102;true
+1028;Autres dotations;1;C;false;false;3;102;true
+103;CAPITAL PERSONNEL;1;C;false;false;2;10;true
+104;COMPTE DE L'EXPLOITANT;1;C;false;false;2;10;true
+1041;Apport temporaire;1;C;false;false;3;104;true
+1042;Opérations courantes. personnelles;1;C;false;false;3;104;true
+1047;Prélèvement d'autoconsommation;1;C;false;false;3;104;true
+1048;Autres prélèvement;1;C;false;false;3;104;true
+105;PRIMES LIEES AUX CAPITAUX PROPRES;1;C;false;false;2;10;true
+1051;Primes d'émission;1;C;false;false;3;105;true
+1052;Primes d'apport;1;C;false;false;3;105;true
+1053;Primes de fusion;1;C;false;false;3;105;true
+1054;Primes de conversion;1;C;false;false;3;105;true
+1058;Autres primes;1;C;false;false;3;105;true
+106;ECART DE REEVALUATION;1;C;false;false;2;10;true
+1061;Ecart de réévaluation légale;1;C;false;false;3;106;true
+1062;Ecart de réévaluation libre;1;C;false;false;3;106;true
+109;APPORTEUR, CAPITAL SOUSCRIT, NON APPELE;1;C;false;false;2;10;true
+11;RESERVES;1;C;false;false;1;1;true
+111;RESERVE LEGALE;1;C;false;false;2;11;true
+112;RESERVES STATUTAIRES OU CONTRACTUELLES;1;C;false;false;2;11;true
+113;RESERVES REGLEMENTEES;1;C;false;false;2;11;true
+1131;Réserves de plus-values nettes à long terme;1;C;false;false;3;113;true
+1132;Réserves d'attribution gratuite d'actions au personnel salarié et aux dirigeants;1;C;false;false;3;113;true
+1133;Réserve consécutive à l'octroi de subvention d'investissement;1;C;false;false;3;113;true
+1134;Réserve des valeurs mobilières donnant accès au capital;1;C;false;false;3;113;true
+1138;Autres réserves réglementées;1;C;false;false;3;113;true
+118;AUTRES RESERVES;1;C;false;false;2;11;true
+1181;Réserves facultatives;1;C;false;false;3;118;true
+1188;Réserves diverses;1;C;false;false;3;118;true
+12;REPORT A NOUVEAU;1;C;false;false;1;1;true
+121;REPORT A NOUVEAU CREDITEUR;1;C;false;false;2;12;true
+129;REPORT A NOUVEAU DEBITEUR;1;C;false;false;2;12;true
+1291;Perte nette à reporter;1;C;false;false;3;129;true
+1292;Perte - Amortissements réputés différés;1;C;false;false;3;129;true
+13;RESULTAT NET DE L'EXERCICE;1;C;false;false;1;1;true
+130;RESULTAT EN INSTANCE D'AFFECTATION;1;C;false;false;2;13;true
+1301;Résultat en instance d'affectation : Bénéfice;1;C;false;false;3;130;true
+1302;Résultat en instance d'affectation : Perte;1;C;false;false;3;130;true
+131;RESULTAT NET : BENEFICE;1;C;false;false;2;13;true
+132;MARGE COMMERCIALE (MC);1;C;false;false;2;13;true
+133;VALEUR AJOUTEE (V.A);1;C;false;false;2;13;true
+134;EXCEDENT BRUT D'EXPLOITATION (E.B.E);1;C;false;false;2;13;true
+135;RESULTAT D'EXPLOITATION (R.E);1;C;false;false;2;13;true
+136;RESULTAT FINANCIER (R.F);1;C;false;false;2;13;true
+137;RESULTAT DES ACTIVITES ORDINAIRES (R.A.O);1;C;false;false;2;13;true
+138;RESULTAT HORS ACTIVITES ORDINAIRES (R.H.A.O);1;C;false;false;2;13;true
+1381;Résultat de fusion;1;C;false;false;3;138;true
+1382;Résultat d'apport partiel d'actif;1;C;false;false;3;138;true
+1383;Résultat de scission;1;C;false;false;3;138;true
+1384;Résultat de liquidation;1;C;false;false;3;138;true
+139;RESULTAT NET : PERTE;1;C;false;false;2;13;true
+14;SUBVENTIONS D'INVESTISSEMENT;1;C;false;false;1;1;true
+141;SUBVENTIONS D'EQUIPEMENT;1;C;false;false;2;14;true
+1411;Etat;1;C;false;false;3;141;true
+1412;Régions;1;C;false;false;3;141;true
+1413;Départements;1;C;false;false;3;141;true
+1414;Communes et collectivités publiques décentralisées;1;C;false;false;3;141;true
+1415;Entités publiques ou mixtes;1;C;false;false;3;141;true
+1416;Entités et organismes privés;1;C;false;false;3;141;true
+1417;Organismes internationaux;1;C;false;false;3;141;true
+1418;Autres;1;C;false;false;3;141;true
+148;AUTRES SUBVENTIONS D'INVESTISSEMENT;1;C;false;false;2;14;true
+15;PROVISIONS REGLEMENTEES ET FONDS ASSIMILES;1;C;false;false;1;1;true
+151;AMORTISSEMENTS DEROGATOIRES;1;C;false;false;2;15;true
+152;FONDS REGLEMENTES;1;C;false;false;2;15;true
+1531;Fonds National;1;C;false;false;3;15;true
+1532;Prélèvement pour le Budget;1;C;false;false;3;15;true
+154;PROVISION SPECIALE DE REEVALUATION;1;C;false;false;2;15;true
+155;PROVISIONS REGLEMENTEES RELATIVES AUX IMMOBILISATIONS;1;C;false;false;2;15;true
+1551;Reconstitutions des gisements miniers et pétroliers;1;C;false;false;3;155;true
+156;PROVISION REGLEMENTEES RELATIVES AUX STOCKS;1;C;false;false;2;15;true
+1561;Hausse de prix;1;C;false;false;3;156;true
+1562;Fluctuations des cours;1;C;false;false;3;156;true
+157;PROVISION POUR INVESTISSEMENT;1;C;false;false;2;15;true
+158;AUTRES PROVISIONS ET FONDS REGLEMENTES;1;C;false;false;2;15;true
+16;EMPRUNTS ET DETTES ASSIMILEES;1;C;false;false;1;1;true
+161;EMPRUNTS OBLIGATAIRES;1;C;false;false;2;16;true
+1611;Emprunts obligataires ordinaire;1;C;false;false;3;161;true
+1612;Emprunts obligataire convertible en actions;1;C;false;false;3;161;true
+1613;Emprunts obligataire remboursable en actions;1;C;false;false;3;161;true
+1618;Autres emprunts obligataires;1;C;false;false;3;161;true
+162;EMPRUNTS ET DETTES AUPRES DES ETABLISSEMENTS DE CREDIT;1;C;false;false;2;16;true
+163;AVANCES RECUES DE L'ETAT;1;C;false;false;2;16;true
+164;AVANCES RECUES ET COMPTES COURANTS BLOQUES;1;C;false;false;2;16;true
+165;DEPÔTS ET CAUTIONNEMENT RECUS;1;C;false;false;2;16;true
+1651;Dépôts;1;C;false;false;3;165;true
+166;INTERETS COURUS;1;C;false;false;2;16;true
+1661;INTERETS COURUS - sur emprunts obligataires;1;C;false;false;3;166;true
+1662;Cautionnements;1;C;false;false;3;166;true
+1663;INTERETS COURUS - sur avances reçues de l'État;1;C;false;false;3;166;true
+1664;INTERETS COURUS - sur avances reçues et comptes courants bloqués;1;C;false;false;3;166;true
+1667;INTERETS COURUS - sur avances assorties de conditions particulières;1;C;false;false;3;166;true
+1668;INTERETS COURUS - sur autres emprunts et dettes;1;C;false;false;3;166;true
+167;AVANCES ASSORTIES DE CONDITIONS PARTICULIÈRES;1;C;false;false;2;16;true
+1671;Avances bloquées pour augmentation du capital;1;C;false;false;3;167;true
+1672;Avances conditionnées par l'État;1;C;false;false;3;167;true
+1673;Avances conditionnées par les autres organismes africains;1;C;false;false;3;167;true
+1674;Avances conditionnées par les organismes internationaux;1;C;false;false;3;167;true
+1676;Droits du concédant exigibles en nature;1;C;false;false;3;167;true
+168;AUTRES EMPRUNTS ET DETTES;1;C;false;false;2;16;true
+1681;Rentes viagères capitalisées;1;C;false;false;3;168;true
+1682;Billets de fonds;1;C;false;false;3;168;true
+1683;Dettes consécutives à des titres empruntés;1;C;false;false;3;168;true
+1684;Dettes du concédant exigibles en nature;1;C;false;false;3;168;true
+1685;Emprunts participatifs;1;C;false;false;3;168;true
+17;DETTES DE LOCATION ACQUISITION;1;C;false;false;1;1;true
+172;DETTES DE LOCATION ACQUISITION/CREDIT-BAIL IMMOBILIER;1;C;false;false;2;17;true
+173;DETTES DE LOCATION ACQUISITION/CREDIT-BAIL;1;C;false;false;2;17;true
+174;DETTES DE LOCATION ACQUISITION/LOCATION VENTE;1;C;false;false;2;17;true
+176;INTERETS COURUS;1;C;false;false;2;17;true
+1762;INTERETS COURUS - sur dettes de location acquisition/ crédit-bail immobilier;1;C;false;false;3;176;true
+1763;INTERETS COURUS - sur dettes de location acquisition/ crédit-bail mobilier;1;C;false;false;3;176;true
+1764;INTERETS COURUS - sur dettes de location acquisition/location vente;1;C;false;false;3;176;true
+1768;INTERETS COURUS - sur autres dettes de location acquisition;1;C;false;false;3;176;true
+178;AUTRES DETTES DE LOCATION ACQUISITION;1;C;false;false;2;17;true
+18;DETTES LIEES A DES PARTICIPATIONS ET COMPTES DE LIAISON DES ETABLISSEMENTS ET SOCIETES EN PARTICIPATIONS;1;C;false;false;1;1;true
+181;DETTES LIÉES À DES PARTICIPATIONS;1;C;false;false;2;18;true
+1811;Dettes liées à des participations (groupe);1;C;false;false;3;181;true
+1812;Dettes liées à des participations (hors groupe);1;C;false;false;3;181;true
+182;DETTES LIÉES À DES SOCIÉTÉS EN PARTICIPATION;1;C;false;false;2;18;true
+183;INTÉRÊTS COURUS SUR DETTES LIÉES À DES PARTICIPATIONS;1;C;false;false;2;18;true
+184;COMPTES PERMANENTS BLOQUÉS DES ÉTABLISSEMENTS ET SUCCURSALES;1;C;false;false;2;18;true
+185;COMPTES PERMANENTS NON BLOQUÉS DES ÉTABLISSEMENTS ET SUCCURSALES;1;C;false;false;2;18;true
+1851;Comptes permanents non bloqués succursales;1;C;false;false;3;185;true
+1852;Comptes permanents non bloqués siège;1;C;false;false;3;185;true
+186;COMPTES DE LIAISON CHARGES;1;C;false;false;2;18;true
+187;COMPTES DE LIAISON PRODUITS;1;C;false;false;2;18;true
+188;COMPTES DE LIAISON DES SOCIÉTÉS EN PARTICIPATION;1;C;false;false;2;18;true
+19;PROVISIONS FINANCIERES POUR RISQUES ET CHARGES;1;C;false;false;1;1;true
+191;PROVISIONS POUR LITIGES;1;C;false;false;2;19;true
+192;PROVISIONS POUR GARANTIES DONNÉES AUX CLIENTS;1;C;false;false;2;19;true
+193;PROVISIONS POUR PERTES SUR MARCHÉS À ACHÈVEMENT FUTUR;1;C;false;false;2;19;true
+194;PROVISIONS POUR PERTES DE CHANGE;1;C;false;false;2;19;true
+195;PROVISIONS POUR IMPÔTS;1;C;false;false;2;19;true
+196;PROVISIONS POUR PENSIONS ET OBLIGATIONS SIMILAIRES;1;C;false;false;2;19;true
+1961;Provisions pour pensions et obligations similaires;1;C;false;false;3;196;true
+1962;Actifs du régime de retraite;1;C;false;false;3;196;true
+197;PROVISION POUR RESTRUCTURATION;1;C;false;false;2;19;true
+198;AUTRES PROVISIONS FINANCIÈRES POUR RISQUES ET CHARGES;1;C;false;false;2;19;true
+1981;Provisions pour amendes et pénalités;1;C;false;false;3;198;true
+1983;Provisions de propre assureur;1;C;false;false;3;198;true
+1984;Provisions pour démantèlement et remise en état;1;C;false;false;3;198;true
+1985;Provisions de droits à déduction (Chèques cadeaux, cartes de fidélité);1;C;false;false;3;198;true
+2;COMPTES DES IMMOBILISATIONS;2;D;false;false;0;;true
+21;IMMOBILISATIONS INCORPORELLES;2;D;false;false;1;2;true
+211;FRAIS DE DÉVELOPPEMENT;2;D;false;false;2;21;true
+212;BREVETS, LICENCES, CONCESSIONS ET DROITS SIMILAIRES;2;D;false;false;2;21;true
+2121;Brevets;2;D;false;false;3;212;true
+2122;Licences;2;D;false;false;3;212;true
+2123;Concessions de service public;2;D;false;false;3;212;true
+2128;Autres concessions et droits similaires;2;D;false;false;3;212;true
+213;LOGICIELS ET SITES INTERNET;2;D;false;false;2;21;true
+2131;Logiciels;2;D;false;false;3;213;true
+2132;Sites internet;2;D;false;false;3;213;true
+214;MARQUES;2;D;false;false;2;21;true
+215;FONDS COMMERCIAL;2;D;false;false;2;21;true
+216;DROIT AU BAIL;2;D;false;false;2;21;true
+217;INVESTISSEMENTS DE CRÉATION;2;D;false;false;2;21;true
+218;AUTRES DROITS ET VALEURS INCORPORELS;2;D;false;false;2;21;true
+2181;Frais de prospection et d'évaluation de ressources minérales;2;D;false;false;3;218;true
+2182;Couts d'obtention du contrat;2;D;false;false;3;218;true
+2183;Fichiers clients, notices,titres de journaux et magazines;2;D;false;false;3;218;true
+2184;AUTRES DROITS ET VALEURS INCORPORELS - couts de franchise;2;D;false;false;3;218;true
+2188;Divers droits et valeurs incorporelles;2;D;false;false;3;218;true
+219;IMMOBILISATIONS INCORPORELLES EN COURS;2;D;false;false;2;21;true
+2191;Frais de développement;2;D;false;false;3;219;true
+2192;Matériel et outillage agricole;2;D;false;false;3;219;true
+2193;Logiciels et intérêt;2;D;false;false;3;219;true
+2198;Autres droits et valeurs incorporels;2;D;false;false;3;219;true
+22;TERRAINS;2;D;false;false;1;2;true
+221;TERRAINS AGRICOLES ET FORESTIERS;2;D;false;false;2;22;true
+2211;Terrains d'exploitation agricole;2;D;false;false;3;221;true
+2212;Terrains d'exploitation forestière;2;D;false;false;3;221;true
+2218;Autres terrains;2;D;false;false;3;221;true
+222;TERRAINS NUS;2;D;false;false;2;22;true
+2221;Terrains à bâtir;2;D;false;false;3;222;true
+2228;Autres terrains nus;2;D;false;false;3;222;true
+223;TERRAINS BATIS;2;D;false;false;2;22;true
+2231;TERRAINS BATIS - pour bâtiments industriels et agricoles;2;D;false;false;3;223;true
+2232;TERRAINS BATIS - pour bâtiments administratifs et commerciaux;2;D;false;false;3;223;true
+2234;TERRAINS BATIS - pour bâtiments affectés aux autres opérations professionnelles;2;D;false;false;3;223;true
+2235;TERRAINS BATIS - pour bâtiments affectés aux autres opérations non professionnelles;2;D;false;false;3;223;true
+224;TRAVAUX DE MISE EN VALEUR DES TERRAINS;2;D;false;false;2;22;true
+2241;Plantation d'arbres et d'arbustes;2;D;false;false;3;224;true
+2245;Améliorations du fonds;2;D;false;false;3;224;true
+2248;Autres travaux;2;D;false;false;3;224;true
+225;TERRAINS DE CARRIERES - TREFONDS;2;D;false;false;2;22;true
+2251;Carrières;2;D;false;false;3;225;true
+226;TERRAINS AMÉNAGÊS;2;D;false;false;2;22;true
+2261;Parkings;2;D;false;false;3;226;true
+227;TERRAINS MIS EN CONCESSION;2;D;false;false;2;22;true
+228;AUTRES TERRAINS;2;D;false;false;2;22;true
+2281;Terrains des immeubles de placement;2;D;false;false;3;228;true
+2285;Terrains des logements affectés au personnel;2;D;false;false;3;228;true
+2288;Autres;2;D;false;false;3;228;true
+229;AMÉNAGEMENT S DE TERRAINS EN COURS;2;D;false;false;2;22;true
+2291;Terrains agricoles et forestiers;2;D;false;false;3;229;true
+2292;Terrains nus;2;D;false;false;3;229;true
+2295;Terrains de carrièrres - tréfonds;2;D;false;false;3;229;true
+2298;Autres terrains;2;D;false;false;3;229;true
+23;BÂTIMENTS, INSTALLATIONS TECHNIQUES ET AGENCEMENTS;2;D;false;false;1;2;true
+231;BÂTIMENTS INDUSTRIELS, AGRICOLES, ADMINISTRATIFS ET COMMERCIAUX SUR SOL PROPRE;2;D;false;false;2;23;true
+2311;Bâtiments industriels;2;D;false;false;3;231;true
+2312;Bâtiments agricoles;2;D;false;false;3;231;true
+2313;Bâtiments administratifs et commerciaux;2;D;false;false;3;231;true
+2314;Bâtiments affectés au logement du personnel;2;D;false;false;3;231;true
+2315;BÂTIMENTS INDUSTRIELS, AGRICOLES, ADMINISTRATIFS ET COMMERCIAUX SUR SOL PROPRE - immeubles de placement;2;D;false;false;3;231;true
+232;BÂTIMENTS INDUSTRIELS.AGRICOLES, ADMINISTRATIFS ET COMMERCIAUX SUR SOL D'AUTRUI;2;D;false;false;2;23;true
+2321;Bâtiments industriels;2;D;false;false;3;232;true
+2322;Bâtiments agricoles;2;D;false;false;3;232;true
+2323;Bâtiments administratifs et commerciaux;2;D;false;false;3;232;true
+2324;Bâtiments affectés au logement du personnel;2;D;false;false;3;232;true
+2325;Immeubles de placements;2;D;false;false;3;232;true
+233;OUVRAGES D'INFRASTRUCTURE;2;D;false;false;2;23;true
+2331;Voies de terre;2;D;false;false;3;233;true
+2332;Voies de fer;2;D;false;false;3;233;true
+2333;Voies d'eau;2;D;false;false;3;233;true
+2334;Barrages, Digues;2;D;false;false;3;233;true
+2335;Pistes d'aérodrome;2;D;false;false;3;233;true
+2338;Autres;2;D;false;false;3;233;true
+234;AMENAGEMENTS, AGENCEMENTS ET INSTALLATIONS TECHNIQUES;2;D;false;false;2;23;true
+2341;Installations complexes spécialisées sur sol propre;2;D;false;false;3;234;true
+2342;Installations complexes spécialisées sur sol d'autrui;2;D;false;false;3;234;true
+2343;Installations complexes à caractère specifique sur sol propre;2;D;false;false;3;234;true
+2344;Installations complexes à caractère specifique sur sol d'autrui;2;D;false;false;3;234;true
+2345;Aménagements et agencements des bâtiments;2;D;false;false;3;234;true
+235;AMENAGEMENTS DE BUREAUX;2;D;false;false;2;23;true
+2351;Installations générales;2;D;false;false;3;235;true
+2358;Autres aménagements de bureaux;2;D;false;false;3;235;true
+237;BÂTIMENTS INDUSTRIELS, AGRICOLES ET COMMERCIAUX MIS EN CONCESSION;2;D;false;false;2;23;true
+238;AUTRES INSTALLATIONS ET AGENCEMENTS;2;D;false;false;2;23;true
+239;BATIMENTS AMENAGEMENTS. AGENCEMENTS ET INSTALLATIONS EN COURS;2;D;false;false;2;23;true
+2391;Bâtiments en cours;2;D;false;false;3;239;true
+2392;BATIMENTS AMENAGEMENTS. AGENCEMENTS ET INSTALLATIONS EN COURS - installations en cours;2;D;false;false;3;239;true
+2393;Aménagements et agencements en cours;2;D;false;false;3;239;true
+24;MATERIEL, MOBILIER ET ACTIFS BIOLOGIQUES;2;D;false;false;1;2;true
+241;MATÉRIEL ET OUTILLAGE industriel ET COMMERCIAL;2;D;false;false;2;24;true
+2411;Matériel industriel;2;D;false;false;3;241;true
+2412;Outillage industriel;2;D;false;false;3;241;true
+2413;Commercial;2;D;false;false;3;241;true
+2414;Outillage commercial;2;D;false;false;3;241;true
+242;MATÉRIEL ET OUTILLAGE AGRICOLE;2;D;false;false;2;24;true
+2421;Matériels agricoles;2;D;false;false;3;242;true
+2422;Outillage agricole;2;D;false;false;3;242;true
+243;D'EMBALLAGE RÉCUPERABLE ET IDENTIFIABLE;2;D;false;false;2;24;true
+244;MATÉRIEL ET MOBILIER;2;D;false;false;2;24;true
+2441;Matériel de bureau;2;D;false;false;3;244;true
+2442;Matériel informatique;2;D;false;false;3;244;true
+2443;Matériel de bureautique;2;D;false;false;3;244;true
+2444;Mobilier de bureau;2;D;false;false;3;244;true
+2446;Matériel et mobilier des immeubles de placement;2;D;false;false;3;244;true
+2447;Matériel et mobilier des logements du personnel;2;D;false;false;3;244;true
+245;MATÉRIEL DE TRANSPORT;2;D;false;false;2;24;true
+2451;Matériel automobile;2;D;false;false;3;245;true
+2452;Matériel ferroviaire;2;D;false;false;3;245;true
+2453;Matériel fluvial, lagunaire;2;D;false;false;3;245;true
+2454;Matériel naval;2;D;false;false;3;245;true
+2455;Matériel aérien;2;D;false;false;3;245;true
+2456;Matériel hippomobile;2;D;false;false;3;245;true
+2458;Autres (vélo, mobylette, moto);2;D;false;false;3;245;true
+246;ACTIFS BIOLOGIQUES;2;D;false;false;2;24;true
+2461;Cheptel, animaux de trait;2;D;false;false;3;246;true
+2462;Cheptel, animaux reproducteurs;2;D;false;false;3;246;true
+2463;Animaux de garde;2;D;false;false;3;246;true
+2465;Plantations agricoles;2;D;false;false;3;246;true
+2468;Autres actifs biologiques;2;D;false;false;3;246;true
+247;AGENCEMENTS, AMÉNAGEMENTS DU MATÉRIEL ET ACTIFS BIOLOGIQUES;2;D;false;false;2;24;true
+2471;Agencements et aménagements du matériel;2;D;false;false;3;247;true
+2472;Agencements et aménagements des actifs biologiques;2;D;false;false;3;247;true
+248;AUTRES MATÉRIELS ET MOBILIERS;2;D;false;false;2;24;true
+2481;Collections et œuvres d’art;2;D;false;false;3;248;true
+249;MATÉRIELS ET ACTIFS BIOLOGIQUES EN COURS;2;D;false;false;2;24;true
+2491;Matériel et outillage industriel et commercial;2;D;false;false;3;249;true
+2493;Matériel d'emballage récupérable et identifiable;2;D;false;false;3;249;true
+2494;Matériel et mobilier de bureau;2;D;false;false;3;249;true
+2495;Matériel de transport;2;D;false;false;3;249;true
+2496;Actifs biologiques;2;D;false;false;3;249;true
+2497;Agencements et aménagements du matériel et des actifs biologiques;2;D;false;false;3;249;true
+2498;Autres matériels;2;D;false;false;3;249;true
+25;AVANCES ET ACOMPTES VERSÉS SUR IMMOBILISATIONS;2;D;false;false;1;2;true
+251;AVANCES ET ACOMPTES VERSES SUR lMOBILISATIONS INCORPORELLES;2;D;false;false;2;25;true
+252;AVANCES ET ACOMPTES VERSÈS SUR IMMOBILISATIONS CORPORELLES;2;D;false;false;2;25;true
+26;TITRES DE PARTICIPATION;2;D;false;false;1;2;true
+261;TITRES DE PARTICIPATION DANS DES SOCIÉTES SOUS CONTRÔLE EXCLUSIF;2;D;false;false;2;26;true
+262;TITRES DE PARTICIPATION DANS DES SOCIÉTES SOUS CONTRÔLE CONJOINT;2;D;false;false;2;26;true
+263;TITRES DE PARTICIPATION DANS DES SOCIÉTES CONFERANT UNE INFLUENCE NOTABLE;2;D;false;false;2;26;true
+265;PARTICIPATIONS DANS DES ORGANISMES PROFESSIONNELLES;2;D;false;false;2;26;true
+266;PARTS DANS DES GROUPEMENTS D'INTÉRÊT ÉCONOMIQUE (G.I .E.);2;D;false;false;2;26;true
+268;AUTRES TITRES DE PARTICIPATION;2;D;false;false;2;26;true
+27;AUTRES IMMOBLISATIONS FINANCIÈRES;2;D;false;false;1;2;true
+271;PRETS ET CREANCES;2;D;false;false;2;27;true
+2711;Prêts participatifs;2;D;false;false;3;271;true
+2712;Prêts aux associés;2;D;false;false;3;271;true
+2713;Billets de fonds;2;D;false;false;3;271;true
+2714;Créances de location financement/ location-vente;2;D;false;false;3;271;true
+272;PRÊTS AU PERSONNEL;2;D;false;false;2;27;true
+2721;Prêts immobiliers;2;D;false;false;3;272;true
+2722;Prêts mobiliers et d'installation;2;D;false;false;3;272;true
+2728;Autres prêts (frais d'études…);2;D;false;false;3;272;true
+273;CRÉANCES SUR L'ÉTAT;2;D;false;false;2;27;true
+2731;Retenues de garantie;2;D;false;false;3;273;true
+2733;Fonds réglementé;2;D;false;false;3;273;true
+2734;Créances sur le concédant;2;D;false;false;3;273;true
+2738;Autres créances sur l'Etat;2;D;false;false;3;273;true
+274;TITRES IMMOBILISES;2;D;false;false;2;27;true
+2741;Titres immobilisés de l'activité de portefeuille (T.I.A.P);2;D;false;false;3;274;true
+2742;Titres participatifs;2;D;false;false;3;274;true
+2743;Certificats d'investissement;2;D;false;false;3;274;true
+2744;Parts de fonds commun de placement (F.C.P);2;D;false;false;3;274;true
+2745;Obligations;2;D;false;false;3;274;true
+2746;Actions ou parts propres;2;D;false;false;3;274;true
+2748;Autres titres immobilisés;2;D;false;false;3;274;true
+275;DÉPÔTS ET CAUTIONNEMENTS VERSÉS;2;D;false;false;2;27;true
+2751;Dépôts pour loyer d'avance;2;D;false;false;3;275;true
+2752;Dépôts pour l'électricité;2;D;false;false;3;275;true
+2753;Dépôts pour l'eau;2;D;false;false;3;275;true
+2754;Dépôts pour le gaz;2;D;false;false;3;275;true
+2755;Dépôts pour le téléphone, le telex, la télécopie;2;D;false;false;3;275;true
+2756;Cautionnements sur marchés public;2;D;false;false;3;275;true
+2757;Cautionnements sur autres opérations;2;D;false;false;3;275;true
+2758;Autres dépôts et cautionnements;2;D;false;false;3;275;true
+276;INTERETS COURUS;2;D;false;false;2;27;true
+2761;Prêts et créances non commerciales;2;D;false;false;3;276;true
+2762;Prêts au personnel;2;D;false;false;3;276;true
+2763;Créances sur l'Etat;2;D;false;false;3;276;true
+2764;Titres immobilisés de l'activité de portefeuille (T.I.A.P);2;D;false;false;3;276;true
+2765;Dépots et cautionnements versés;2;D;false;false;3;276;true
+2767;Créances rattachées à des participations;2;D;false;false;3;276;true
+2768;Immobilisations financières diverses;2;D;false;false;3;276;true
+277;CRÉANCES RAITTACHÉES À DES PARTICIPATIONS ET AVANCES À DES G.I.E;2;D;false;false;2;27;true
+2771;Créances rattachées à des participations (groupe);2;D;false;false;3;277;true
+2772;Créances rattachés à des participations (hors groupe);2;D;false;false;3;277;true
+2773;Créances rattachés à des sociétés en participation;2;D;false;false;3;277;true
+2774;Avances à des groupements d’intérêts économiques (G.I.E);2;D;false;false;3;277;true
+278;IMMOBILISATIONS FINANCIERES DIVERSES;2;D;false;false;2;27;true
+2781;Créances diverses groupe;2;D;false;false;3;278;true
+2782;Créances diverses hors groupe;2;D;false;false;3;278;true
+2784;Banque dépôts à terme;2;D;false;false;3;278;true
+2785;Or et métaux précieux;2;D;false;false;3;278;true
+28;AMORTISSEMENTS;2;D;false;false;1;2;true
+281;AMORTISSEMENTS DES IMMOBILISATIONS INCORPORELLES;2;D;false;false;2;28;true
+2811;Amortissements des frais de développement;2;D;false;false;3;281;true
+2812;Amortissements des brevets, licences, concessions et droits similaires;2;D;false;false;3;281;true
+2813;Amortissements des logiciels et sites internet;2;D;false;false;3;281;true
+2814;Amortissements des marques;2;D;false;false;3;281;true
+2815;Amortissements du fond commercial;2;D;false;false;3;281;true
+2816;Amortissements du droit au bail;2;D;false;false;3;281;true
+2817;Amortissements des investissements de création;2;D;false;false;3;281;true
+2818;Amortissements des autres droits et valeurs incorporels;2;D;false;false;3;281;true
+282;AMORTISSEMENTS DES TERRAINS;2;D;false;false;2;28;true
+2821;Amortissements des terrains agricoles et forestiers;2;D;false;false;3;282;true
+2824;Amortissements des travaux de mise en valeur des terrains;2;D;false;false;3;282;true
+2825;Amortissements des terrains de gisement;2;D;false;false;3;282;true
+283;AMORTISSEMENTS DES BATIMENTS, INSTALLATIONS TECHNIQUES ET AGENCEMENTS;2;D;false;false;2;28;true
+2831;Amortissements des bâtiments industriels, agricoles, administratifs et commerciaux sur sol propre;2;D;false;false;3;283;true
+2832;Amortissements des bâtiments industriels, agricoles, administratifs et commerciaux sur sol d'autrui;2;D;false;false;3;283;true
+2833;Amortissements des ouvrages d'infrastructures;2;D;false;false;3;283;true
+2834;Amortissements des aménagements, agencements et installations techniques;2;D;false;false;3;283;true
+2835;Amortissements des aménagements de bureaux;2;D;false;false;3;283;true
+2837;Amortissements des bâtiments industriels, agricoles, administratifs et commerciaux mis en concession;2;D;false;false;3;283;true
+2838;Amortissements des autres installations et agencements;2;D;false;false;3;283;true
+284;AMORTISSEMENTS DU MATÉRIEL;2;D;false;false;2;28;true
+2841;Amortissements du matériel et outillage industriel et commercial;2;D;false;false;3;284;true
+2842;Amortissements du matériel et outillage agricole;2;D;false;false;3;284;true
+2843;Amortissements du matériel d'emballage récuperable et identifiable;2;D;false;false;3;284;true
+2844;Amortissements du matériel et mobilier;2;D;false;false;3;284;true
+2845;Amortissements du matériel de transport;2;D;false;false;3;284;true
+2846;Amortissements des actifs biologiques;2;D;false;false;3;284;true
+2847;Amortissements des agencements et aménagements des matériels et des actifs biologiques;2;D;false;false;3;284;true
+2848;Amortissements des autres matériels;2;D;false;false;3;284;true
+29;DEPRECIATIONS;2;D;false;false;1;2;true
+291;DÉPRÉCIATIONS DES IMMOBILISATIONS INCORPORELLES;2;D;false;false;2;29;true
+2911;Dépréciation des frais de développement;2;D;false;false;3;291;true
+2912;Dépréciations des brevets, licences, concessions et droits similaires;2;D;false;false;3;291;true
+2913;Dépréciations des logiciels et sites internet;2;D;false;false;3;291;true
+2914;Dépréciations marques;2;D;false;false;3;291;true
+2915;Dépréciations du fond commercial;2;D;false;false;3;291;true
+2916;Dépréciations du droit du bail;2;D;false;false;3;291;true
+2917;Dépréciations des investissements de création;2;D;false;false;3;291;true
+2918;Dépréciations des autres droits et valeurs incorporels;2;D;false;false;3;291;true
+2919;Dépréciations des immobilisations incorporelles;2;D;false;false;3;291;true
+292;DÉPRÉCIATIONS DES TERRAINS;2;D;false;false;2;29;true
+2921;Dépréciations des terrains agricoles et forestiers;2;D;false;false;3;292;true
+2922;Dépréciations des terrains nus;2;D;false;false;3;292;true
+2923;Dépréciations des terrains bâtis;2;D;false;false;3;292;true
+2924;Dépréciations des travaux de mise en valeur des terrains;2;D;false;false;3;292;true
+2925;Dépréciations des terrains de gisement;2;D;false;false;3;292;true
+2926;Dépréciations des terrains aménagés;2;D;false;false;3;292;true
+2927;Dépréciations des terrains mis en concession;2;D;false;false;3;292;true
+2928;Dépréciations des autres terrains;2;D;false;false;3;292;true
+2929;Dépréciations des aménagentents de terrains en cours;2;D;false;false;3;292;true
+293;DEPRÉCIATIONS DES BÂTIMENTS, INSTALLATIONS TECHNIQUES ETAGENCEME NTS;2;D;false;false;2;29;true
+2931;Dépréciations des bâtiments industriels agricoles, administratifs et commerciaux sur sol propre;2;D;false;false;3;293;true
+2932;Dépréciations des bâtiments industriels agricoles, administratifs et commerciaux sur sol d'autrui;2;D;false;false;3;293;true
+2933;Dépréciations des ouvrages d'infrastructures;2;D;false;false;3;293;true
+2934;Dépréciations des aménagements, agencements et installations techniques;2;D;false;false;3;293;true
+2935;Dépréciations des aménagements de bureaux;2;D;false;false;3;293;true
+2937;Dépréciations des bâtiments industriels, agricoles et commerciaux mis en concession;2;D;false;false;3;293;true
+2938;Dépréciations des autres installations et agencements;2;D;false;false;3;293;true
+2939;Dépréciations des bâtiments et installations en cours;2;D;false;false;3;293;true
+294;DEPRECIATIONS DE MATÉRIEL, DU MOBILIER ET DE L'ACTIF BIOLOGIQUE;2;D;false;false;2;29;true
+2941;Dépréciations du matériel et outillage industriel et commercial;2;D;false;false;3;294;true
+2942;Dépréciations du matériel et outillage agricole;2;D;false;false;3;294;true
+2943;Dépréciations du matériel d'emballage récupérable et identifiable;2;D;false;false;3;294;true
+2944;Dépréciations du matériel et mobilier;2;D;false;false;3;294;true
+2945;Dépréciations du matériel de transport;2;D;false;false;3;294;true
+2946;Dépréciations des actifs biologiques;2;D;false;false;3;294;true
+2947;Dépréciations des agencements et aménagements du matériel et des actifs biologiques;2;D;false;false;3;294;true
+2948;Dépréciations des autres matériels;2;D;false;false;3;294;true
+2949;Dépréciations de matériel en cours;2;D;false;false;3;294;true
+295;DEPRECIATIONS DES AVANCES ET ACOMPTES VERSÉS SUR IMMOBILISATIONS;2;D;false;false;2;29;true
+2951;Dépréciations des avances et acomptes versés sur immobilisations incorporelles;2;D;false;false;3;295;true
+2952;Dépréciations des avances et acomptes versés sur immobilisations corporelles;2;D;false;false;3;295;true
+296;DEPRÉCIATIONS DES TITRES DE PARTICIPATION;2;D;false;false;2;29;true
+2961;Dépréciations des titres de participation dans des sociétés sous contrôle exclusif;2;D;false;false;3;296;true
+2962;Dépréciations des titres de participation dans les sociétés sous contrôle conjoint;2;D;false;false;3;296;true
+2963;Dépréciations des titres de participation dans les sociétés conférant une influence notable;2;D;false;false;3;296;true
+2965;Dépréciations des participations dans des organismes professionnels;2;D;false;false;3;296;true
+2966;Dépréciations des parts dans des GIE;2;D;false;false;3;296;true
+2968;Dépréciations des autres titres de participation;2;D;false;false;3;296;true
+297;DEPRECIATIONS DES AUTRES IMMOBILISATIONS FINANCIÈRES;2;D;false;false;2;29;true
+2971;Dépréciations des prêts et créances;2;D;false;false;3;297;true
+2972;Dépréciations des prêts au personnel;2;D;false;false;3;297;true
+2973;Dépréciations des créances sur l'Etat;2;D;false;false;3;297;true
+2974;Dépréciations des titres immobilisés;2;D;false;false;3;297;true
+2975;Dépréciations des dépôts et cautionnements versés;2;D;false;false;3;297;true
+2977;Dépréciations des créances rattachés à des participations et avances à des G.I.E;2;D;false;false;3;297;true
+2978;Dépréciations des créances financières diverses;2;D;false;false;3;297;true
+3;COMPTES DE STOCKS;3;D;false;false;0;;true
+31;MARCHANDISES;3;D;false;false;1;3;true
+311;MARCHANDISES A;3;D;false;false;2;31;true
+3111;Marchandises A1;3;D;false;false;3;311;true
+3112;Marchandises A2;3;D;false;false;3;311;true
+312;MARCHANDISES B;3;D;false;false;2;31;true
+3121;Marchandises B1;3;D;false;false;3;312;true
+3122;Marchandises B2;3;D;false;false;3;312;true
+318;MARCHANDISES HORS ACTIVITÉS ORDINAIRES (H.A.O.);3;D;false;false;2;31;true
+32;MATIÈRES PREMIÈRES ET FOURNITURES LIÉES;3;D;false;false;1;3;true
+321;MATIÈRES A;3;D;false;false;2;32;true
+322;MATIÈRES B;3;D;false;false;2;32;true
+323;FOURNITURES (A, B);3;D;false;false;2;32;true
+33;AUTRES APPROVISIONNEMENTS;3;D;false;false;1;3;true
+331;MATIÈRES CONSOMMABLES;3;D;false;false;2;33;true
+332;FOURNITURES D'ATELIER ET D'USINE;3;D;false;false;2;33;true
+333;FOURNITURES DE MAGASIN;3;D;false;false;2;33;true
+334;FOURNITURES DE BUREAU;3;D;false;false;2;33;true
+335;EMBALLAGES;3;D;false;false;2;33;true
+3351;Emballages perdus;3;D;false;false;3;335;true
+3352;Emballages récupérables non identifiables;3;D;false;false;3;335;true
+3353;Emballages à usage mixte;3;D;false;false;3;335;true
+3358;Autres emballages;3;D;false;false;3;335;true
+338;AUTRES MATIÈRES;3;D;false;false;2;33;true
+34;PRODUITS EN COURS;3;D;false;false;1;3;true
+341;PRODUITS EN COURS;3;D;false;false;2;34;true
+3411;Produits en cours P1;3;D;false;false;3;341;true
+3412;Produits en cours P2;3;D;false;false;3;341;true
+342;TRAVAUX EN COURS;3;D;false;false;2;34;true
+3421;Travaux en cours T1;3;D;false;false;3;342;true
+3422;Travaux en cours T2;3;D;false;false;3;342;true
+343;PRODUITS INTERMÉDIAIRES EN COURS;3;D;false;false;2;34;true
+3431;Produits intermédiaires A;3;D;false;false;3;343;true
+3432;Produits intermédiaires B;3;D;false;false;3;343;true
+344;PRODUITS RÉSIDUELS EN COURS;3;D;false;false;2;34;true
+3441;Produits résiduels A;3;D;false;false;3;344;true
+3442;Produits résiduels B;3;D;false;false;3;344;true
+35;SERVICES EN COURS;3;D;false;false;1;3;true
+351;ÉTUDES EN COURS;3;D;false;false;2;35;true
+3511;Études en cours E1;3;D;false;false;3;351;true
+3512;Études en cours E2;3;D;false;false;3;351;true
+352;PRESTATIONS DE SERVICES EN COURS;3;D;false;false;2;35;true
+3521;Prestations de services S1;3;D;false;false;3;352;true
+3522;Prestations de services S2;3;D;false;false;3;352;true
+36;PRODUITS FINIS;3;D;false;false;1;3;true
+361;PRODUITS FINIS A;3;D;false;false;2;36;true
+362;PRODUITS FINIS B;3;D;false;false;2;36;true
+37;PRODUITS INTERMÉDIAIRES ET RÉSIDUELS;3;D;false;false;1;3;true
+371;PRODUITS INTERMÉDIAIRES;3;D;false;false;2;37;true
+3711;Produits intermédiaires A;3;D;false;false;3;371;true
+3712;Produits intermédiaires B;3;D;false;false;3;371;true
+372;PRODUITS RÉSIDUELS;3;D;false;false;2;37;true
+3721;Déchets;3;D;false;false;3;372;true
+3722;Rebuts;3;D;false;false;3;372;true
+3723;Matières de Récupération;3;D;false;false;3;372;true
+38;STOCKS EN COURS DE ROUTE, EN CONSIGNATION OU EN DÉPÔT;3;D;false;false;1;3;true
+381;MARCHANDISES EN COURS DE ROUTE;3;D;false;false;2;38;true
+382;MATIÈRES PREMIÈRES ET FOURNITURES LIÉES EN COURS DE ROUTE;3;D;false;false;2;38;true
+383;AUTRES APPROVISIONNEMENTS EN COURS DE ROUTE;3;D;false;false;2;38;true
+386;PRODUITS FINIS EN COURS DE ROUTE;3;D;false;false;2;38;true
+387;STOCK EN CONSIGNATION OU EN DÉPÔT;3;D;false;false;2;38;true
+3871;Stock en consignation;3;D;false;false;3;387;true
+3872;Stock en dépôt;3;D;false;false;3;387;true
+388;STOCK PROVENANT D'IMMOBILISATIONS MISES HORS SERVICE OU AU REBUT;3;D;false;false;2;38;true
+39;DEPRÉCIATIONS DES STOCKS ET EN COURS DE PRODUCTION;3;D;false;false;1;3;true
+391;DÊPRÉCIATIONS DES STOCKS DE MARCHANDISES;3;D;false;false;2;39;true
+392;DEPRÉCIATIONS DES STOCKS DE MATIÈRES PREMIÈRES ET FOURNITURES LIEES;3;D;false;false;2;39;true
+393;DÉPRÉCIATIONS DES STOCKS D'AUTRES APPOVISIONNEMENT S;3;D;false;false;2;39;true
+394;DÉPRÉCIATIONS DES PRODUCTIONS EN COURS;3;D;false;false;2;39;true
+395;DÉPRÉCIATIONS DES SERVICES EN COURS;3;D;false;false;2;39;true
+396;DÉPRÉCIATIONS DES STOCKS DE PRODUITS FINIS;3;D;false;false;2;39;true
+397;DÉPRÉCIATIONS DES STOCKS DE PRODUITS INTERMÉDIAIRES ET RÉSIDUELS;3;D;false;false;2;39;true
+398;DÉPRÉCIATIONS DES STOCKS EN COURS DE ROUTE, EN CONSIGNATION OU EN DÉPÔT;3;D;false;false;2;39;true
+4;COMPTES DE TIERS;4;D/C;true;false;0;;true
+40;FOURNISSEURS ET COMPTES RATTACHÉS;4;D/C;true;false;1;4;true
+401;FOURNISSEURS, DETTES EN COMPTE;4;D/C;true;false;2;40;true
+4011;Fournisseurs;4;D/C;true;false;3;401;true
+4012;Fournisseurs Groupe;4;D/C;true;false;3;401;true
+4013;Fournisseurs sous-traitants;4;D/C;true;false;3;401;true
+4017;Fournisseur, retenues de garantie;4;D/C;true;false;3;401;true
+402;FOURNISSEURS, EFFETS À PAYER;4;D/C;true;false;2;40;true
+4021;Fournisseurs, Effets à payer;4;D/C;true;false;3;402;true
+4022;Fournisseurs - Groupe, Effets à payer;4;D/C;true;false;3;402;true
+4023;Fournisseurs sous-traitants, Effets à payer;4;D/C;true;false;3;402;true
+404;FOURNISSEURS D'ACQUISITION COURANTE D'IMMOBILISATION;4;D/C;true;false;2;40;true
+408;FOURNISSEURS, FACTURES NON PARVENUES;4;D/C;true;false;2;40;true
+4081;Fournisseurs;4;D/C;true;false;3;408;true
+4082;Fournisseurs - Groupe;4;D/C;true;false;3;408;true
+4083;Fournisseurs sous-traitants;4;D/C;true;false;3;408;true
+4086;Fournisseurs, intérêts courus;4;D/C;true;false;3;408;true
+409;FOURNISSEURS DÉBITEURS;4;D/C;true;false;2;40;true
+4091;Fournisseurs avances et acomptes versés;4;D/C;true;false;3;409;true
+4092;Fournisseurs - Groupe avances et acomptes versés;4;D/C;true;false;3;409;true
+4093;Fournisseurs sous-traitants avances et acomptes versés;4;D/C;true;false;3;409;true
+4094;Fournisseurs créances pour emballages et matériels à rendre;4;D/C;true;false;3;409;true
+4098;Rabais, Remises, Ristournes et autres avoirs à obtenir;4;D/C;true;false;3;409;true
+41;CLIENTS ET COMPTES RATTACHÉS;4;D/C;true;false;1;4;true
+411;CLIENTS;4;D/C;true;false;2;41;true
+4111;Clients;4;D/C;true;false;3;411;true
+4112;Clients - Groupe;4;D/C;true;false;3;411;true
+4114;Clients, État et Collectivités publiques;4;D/C;true;false;3;411;true
+4115;Clients, organismes internationaux;4;D/C;true;false;3;411;true
+4116;Clients ventes avec réserves de propriété;4;D/C;true;false;3;411;true
+4117;Client, retenues de garantie;4;D/C;true;false;3;411;true
+4118;Clients, dégrèvement de Taxes sur la Valeur Ajoutée (T.V.A.);4;D/C;true;false;3;411;true
+412;CLIENTS, ÉFFETS À RECEVOIR EN PORTEFEUILLE;4;D/C;true;false;2;41;true
+4121;Clients, Effets à recevoir;4;D/C;true;false;3;412;true
+4122;Clients - Groupe, Effets à recevoir;4;D/C;true;false;3;412;true
+4124;État et Collectivités publiques, Effets à recevoir;4;D/C;true;false;3;412;true
+4125;Organismes Internationaux, Effets à recevoir;4;D/C;true;false;3;412;true
+4126;Clients, vente avec réserve de propriété effets à recevoir;4;D/C;true;false;3;412;true
+413;CLI ENTS, CHEQUES, EFFETS ET AUTRES VALEURS IMPAYES;4;D/C;true;false;2;41;true
+4131;Chèques impayés;4;D/C;true;false;3;413;true
+4132;Effets impayés;4;D/C;true;false;3;413;true
+4133;Cartes de crédits impayés;4;D/C;true;false;3;413;true
+414;CRÉANCES SUR CESSIONS COURANTES D'IMMOBILISATIONS;4;D/C;true;false;2;41;true
+4141;Créances en compte;4;D/C;true;false;3;414;true
+4142;Effets à recevoir;4;D/C;true;false;3;414;true
+415;CLIENTS, ÉFFETS ESCOMPTÉS NON ÉCHUS;4;D/C;true;false;2;41;true
+416;CRÉANCES CLIENTS LITIGIEUSES OU DOUTEUSES;4;D/C;true;false;2;41;true
+4161;Créances litigieuses;4;D/C;true;false;3;416;true
+4162;Créances douteuses;4;D/C;true;false;3;416;true
+418;CLIENTS, PRODUITS À RECEVOIR;4;D/C;true;false;2;41;true
+4181;Clients, factures à établir;4;D/C;true;false;3;418;true
+4186;Clients, intérêts courus;4;D/C;true;false;3;418;true
+419;CLIENTS CRÉDITEURS;4;D/C;true;false;2;41;true
+4191;Clients, avances et acomptes reçus;4;D/C;true;false;3;419;true
+4192;Clients - Groupe, avances et acomptes reçus;4;D/C;true;false;3;419;true
+4194;Clients, dettes pour emballages et matériels consignés;4;D/C;true;false;3;419;true
+4198;Rabais, Remises, Ristournes et autres avoirs à accorder;4;D/C;true;false;3;419;true
+42;PERSONNEL;4;D/C;true;false;1;4;true
+421;PERSONNEL, AVANCES ET ACOMPTES;4;D/C;true;false;2;42;true
+4211;Personnel, avances;4;D/C;true;false;3;421;true
+4212;Personnel, acomptes;4;D/C;true;false;3;421;true
+4213;Frais avancés et fournitures au personnel;4;D/C;true;false;3;421;true
+422;PERSONNEL, RÉMUNÉRATIONS DUES;4;D/C;true;false;2;42;true
+423;PERSONNEL, OPPOSITIONS, SAISIES- ARRÊTS;4;D/C;true;false;2;42;true
+4231;Personnel, oppositions;4;D/C;true;false;3;423;true
+4232;Personnel, saisies arrêts;4;D/C;true;false;3;423;true
+4233;Personnel, avis à tiers détenteur;4;D/C;true;false;3;423;true
+424;PERSONNEL, OEUVRES SOCIALES INTERNES;4;D/C;true;false;2;42;true
+4241;Assistance médicale;4;D/C;true;false;3;424;true
+4242;Allocations familiales;4;D/C;true;false;3;424;true
+4245;Organismes sociaux rattachés à l'entreprise;4;D/C;true;false;3;424;true
+4248;Autres œuvres sociales internes;4;D/C;true;false;3;424;true
+425;REPRÉSENTANTS DU PERSONNEL;4;D/C;true;false;2;42;true
+4251;Délégués du personnel;4;D/C;true;false;3;425;true
+4252;Syndicats et Comités d'entreprises, d'Établissement;4;D/C;true;false;3;425;true
+4258;Autres représentants du personnel;4;D/C;true;false;3;425;true
+426;PERSONNEL, PARTICIPATION AU BENEFICES ET AU CAPITAL;4;D/C;true;false;2;42;true
+4261;Participation au bénéfice;4;D/C;true;false;3;426;true
+4264;Participation au capital;4;D/C;true;false;3;426;true
+427;PERSONNEL – DÉPÔTS;4;D/C;true;false;2;42;true
+428;PERSONNEL, CHARGES À PAYER ET PRODUITS À RECEVOIR;4;D/C;true;false;2;42;true
+4281;Dettes provisionnées pour congés à payer;4;D/C;true;false;3;428;true
+4286;Autres Charges à payer;4;D/C;true;false;3;428;true
+4287;Produits à recevoir;4;D/C;true;false;3;428;true
+43;ORGANISMES SOCIAUX;4;D/C;true;false;1;4;true
+431;SÉCURITÉ SOCIALE;4;D/C;true;false;2;43;true
+4311;Prestations familiales;4;D/C;true;false;3;431;true
+4312;Accidents de travail;4;D/C;true;false;3;431;true
+4313;Caisse de retraite obligatoire;4;D/C;true;false;3;431;true
+4314;Caisse de retraite facultative;4;D/C;true;false;3;431;true
+4318;Autres cotisations sociales;4;D/C;true;false;3;431;true
+432;CAISSES DE RETRAITE COMPLÉMENTAIRE;4;D/C;true;false;2;43;true
+433;AUTRES ORGANISMES SOCIAUX;4;D/C;true;false;2;43;true
+4331;Mutuelle;4;D/C;true;false;3;433;true
+4332;Assurances Retraite;4;D/C;true;false;3;433;true
+4333;Assurances et organisme de santé;4;D/C;true;false;3;433;true
+438;ORGANISMES SOCIAUX, CHARGES À PAYER ET PRODUITS À RECEVOIR;4;D/C;true;false;2;43;true
+4381;Charges sociales sur gratifications à payer;4;D/C;true;false;3;438;true
+4382;Charges sociales sur congés à payer;4;D/C;true;false;3;438;true
+4386;Autres charges à payer;4;D/C;true;false;3;438;true
+4387;Produits à recevoir;4;D/C;true;false;3;438;true
+44;ÉTAT ET COLLECTIVITÉS PUBLIQUES;4;D/C;true;false;1;4;true
+441;ÉTAT, IMPÔT SUR LES BÉNÉFICES;4;D/C;true;false;2;44;true
+442;ÉTAT, AUTRES IMPÔTS ET TAXES;4;D/C;true;false;2;44;true
+4421;Impôts et taxes d'Etat;4;D/C;true;false;3;442;true
+4422;Impôts et taxes pour les collectivités publiques;4;D/C;true;false;3;442;true
+4423;Impôts et taxes recouvrables sur des obligataires;4;D/C;true;false;3;442;true
+4424;Impôts et taxes recouvrables sur des associés;4;D/C;true;false;3;442;true
+4426;Droits de douane;4;D/C;true;false;3;442;true
+4428;Autres impôts et taxes;4;D/C;true;false;3;442;true
+443;ÉTAT, T.V.A. FACTURÉE;4;D/C;true;false;2;44;true
+4431;T.V.A. facturée sur ventes;4;D/C;true;false;3;443;true
+4432;T.V.A. facturée sur prestations de services;4;D/C;true;false;3;443;true
+4433;T.V.A. facturée sur travaux;4;D/C;true;false;3;443;true
+4434;T.V.A. facturée sur production livrée à soi-même;4;D/C;true;false;3;443;true
+4435;T.V.A. sur factures à établir;4;D/C;true;false;3;443;true
+444;ÉTAT, T.V.A. DUE OU CRÉDIT DE T.V.A;4;D/C;true;false;2;44;true
+4441;État, T.V.A. due;4;D/C;true;false;3;444;true
+4449;État, crédit de T.V.A. à reporter;4;D/C;true;false;3;444;true
+445;ÉTAT, T.V.A. RÉCUPÉRABLE;4;D/C;true;false;2;44;true
+4451;T.V.A. récupérable sur immobilisations;4;D/C;true;false;3;445;true
+4452;T.V.A. récupérable sur achats;4;D/C;true;false;3;445;true
+4453;T.V.A. récupérable sur transport;4;D/C;true;false;3;445;true
+4454;T.V.A. récupérable sur services extérieurs et autres charges;4;D/C;true;false;3;445;true
+4455;T.V.A. récupérable sur factures non parvenues;4;D/C;true;false;3;445;true
+4456;T.V.A. transférée par d'autres entreprises;4;D/C;true;false;3;445;true
+446;ÉTAT, AUTRES TAXES SUR LE CHIFFRE D'AFFAIRES;4;D/C;true;false;2;44;true
+447;ÉTAT, IMPÔTS RETENUS À LA SOURCE;4;D/C;true;false;2;44;true
+4471;Impôt Général sur le revenu;4;D/C;true;false;3;447;true
+4472;Impôts sur salaires;4;D/C;true;false;3;447;true
+4473;Contribution nationale;4;D/C;true;false;3;447;true
+4474;Contribution nationale de solidarité;4;D/C;true;false;3;447;true
+4478;Autres impôts et contributions;4;D/C;true;false;3;447;true
+448;ÉTAT, CHARGES À PAYER ET PRODUITS À RECEVOIR;4;D/C;true;false;2;44;true
+4486;Charges à payer;4;D/C;true;false;3;448;true
+4487;Produits à recevoir;4;D/C;true;false;3;448;true
+449;ÉTAT, CRÉANCES ET DETTES DIVERSES;4;D/C;true;false;2;44;true
+4491;État, obligations cautionnées;4;D/C;true;false;3;449;true
+4492;État, avances et acomptes versés sur impôts;4;D/C;true;false;3;449;true
+4493;État, fonds de dotation à recevoir;4;D/C;true;false;3;449;true
+4494;État, subventions d'équipement à recevoir;4;D/C;true;false;3;449;true
+4495;État, subventions d'exploitation à recevoir;4;D/C;true;false;3;449;true
+4496;État, subventions d'équilibre à recevoir;4;D/C;true;false;3;449;true
+4497;État avances sur subventions;4;D/C;true;false;3;449;true
+4499;État, fonds réglementé provisionné;4;D/C;true;false;3;449;true
+45;ORGANISMES INTERNATIONAUX;4;D/C;true;false;1;4;true
+451;OPÉRATIONS AVEC LES ORGANISMES AFRICAINS;4;D/C;true;false;2;45;true
+452;OPÉRATIONS AVEC LES AUTRES ORGANISMES INTERNATIONAUX;4;D/C;true;false;2;45;true
+458;ORGANISMES INTERNATIONAUX, FONDS DE DOTATION ET SUBVENTIONS À RECEVOIR;4;D/C;true;false;2;45;true
+4581;Organismes internationaux, fonds de dotation à recevoir;4;D/C;true;false;3;458;true
+4582;Organismes internationaux, subventions à recevoir;4;D/C;true;false;3;458;true
+46;APPORTEUR, ASSOCIÉS ET GROUPE;4;D/C;true;false;1;4;true
+461;APPORTEUR, OPÉRATIONS SUR LE CAPITAL;4;D/C;true;false;2;46;true
+4611;Apporteurs apports en nature;4;D/C;true;false;3;461;true
+4612;Apporteurs apports en numéraire;4;D/C;true;false;3;461;true
+4613;Apporteurs, capital souscrit appelé non versé;4;D/C;true;false;3;461;true
+4614;Apporteurs, capital appelé non versé;4;D/C;true;false;3;461;true
+4615;Apporteurs, versements reçus sur augmentation de capital;4;D/C;true;false;3;461;true
+4616;Apporteurs, versements anticipés;4;D/C;true;false;3;461;true
+4617;Apporteurs défaillants;4;D/C;true;false;3;461;true
+4618;Apporteurs, autres apports;4;D/C;true;false;3;461;true
+4619;Apporteurs, capital à rembourser;4;D/C;true;false;3;461;true
+462;ASSOCIÉS, COMPTES COURANTS;4;D/C;true;false;2;46;true
+4621;Principal;4;D/C;true;false;3;462;true
+4626;Intérêts courus;4;D/C;true;false;3;462;true
+463;ASSOCIÉS, OPÉRATIONS FAITES EN COMMUN;4;D/C;true;false;2;46;true
+4631;Associés, opérations faites en commun et GIE;4;D/C;true;false;3;463;true
+465;ASSOCIÉS, DIVIDENDES À PAYER;4;D/C;true;false;2;46;true
+466;GROUPE, COMPTES COURANTS;4;D/C;true;false;2;46;true
+467;ACTIONNAIRES, RESTANT DÛ SUR CAPITAL APPELÉ;4;D/C;true;false;2;46;true
+47;DÉBITEURS ET CRÉDITEURS DIVERS;4;D/C;true;false;1;4;true
+471;DEBITEURS ET CREDITEURS DIVERS;4;D/C;true;false;2;47;true
+4711;Débiteurs divers;4;D/C;true;false;3;471;true
+4712;Créditeurs divers;4;D/C;true;false;3;471;true
+4713;Obligataires;4;D/C;true;false;3;471;true
+4715;Rémunérations d'administrateurs;4;D/C;true;false;3;471;true
+4716;Compte du factor;4;D/C;true;false;3;471;true
+4717;Débiteurs divers - retenues de garantie;4;D/C;true;false;3;471;true
+4718;Apport, compte de restructuration;4;D/C;true;false;3;471;true
+4719;Bons de souscription d'actions et obligations;4;D/C;true;false;3;471;true
+472;VERSEMENTS RESTANT À EFFECTUER SUR TITRES DE PLACEMENT NON LIBÉRÉS;4;D/C;true;false;2;47;true
+473;INTERMEDIAIRE - OPERATIONS FAITES POUR LE COMPTE DE TIERS;4;D/C;true;false;2;47;true
+4731;Mandants;4;D/C;true;false;3;473;true
+4732;Mandataires;4;D/C;true;false;3;473;true
+4733;Commettants;4;D/C;true;false;3;473;true
+4734;Commissionnaires;4;D/C;true;false;3;473;true
+474;RÉPARTITION PÉRIODIQUE DES CHARGES ET DES PRODUITS;4;D/C;true;false;2;47;true
+4746;Chargés;4;D/C;true;false;3;474;true
+4747;Produits;4;D/C;true;false;3;474;true
+475;COMPTE TRANSITOIRE, AJUSTEMENT SPECIAL LIE A LA REVISION DU SYSCOHADA;4;D/C;true;false;2;47;true
+4751;Compte actif;4;D/C;true;false;3;475;true
+4752;Compte passif;4;D/C;true;false;3;475;true
+476;CHARGES CONSTATÉES D'AVANCE;4;D/C;true;false;2;47;true
+477;PRODUITS CONSTATÉS D'AVANCE;4;D/C;true;false;2;47;true
+478;ÉCARTS DE CONVERSION - ACTIF;4;D/C;true;false;2;47;true
+4781;Diminution des créances d'exploitation;4;D/C;true;false;3;478;true
+4782;Diminution des créances financières;4;D/C;true;false;3;478;true
+4783;Augmentation des dettes d'exploitation;4;D/C;true;false;3;478;true
+4784;Augmentation des dettes financières;4;D/C;true;false;3;478;true
+4786;Différences d'évaluation sur instruments de trésorerie- Actif;4;D/C;true;false;3;478;true
+4788;Différences compensées par couverture de change;4;D/C;true;false;3;478;true
+479;ÉCARTS DE CONVERSION - PASSIF;4;D/C;true;false;2;47;true
+4791;Augmentation des créances d'exploitation;4;D/C;true;false;3;479;true
+4792;Augmentation des créances financières;4;D/C;true;false;3;479;true
+4793;Diminution des dettes d'exploitation;4;D/C;true;false;3;479;true
+4794;Diminution des dettes financières;4;D/C;true;false;3;479;true
+4797;Différences d'évaluation sur instruments de trésorerie- Passif;4;D/C;true;false;3;479;true
+4798;Différences compensées par couverture de change;4;D/C;true;false;3;479;true
+48;CRÉANCES ET DETTES HORS ACTIVITÉS ORDINAIRES (HAO);4;D/C;true;false;1;4;true
+481;FOURNISSEURS D'INVESTISSEMENTS;4;D/C;true;false;2;48;true
+4811;Immobilisations incorporelles;4;D/C;true;false;3;481;true
+4812;Immobilisations corporelles;4;D/C;true;false;3;481;true
+4813;Versement restant à effectuer sur titres de participation et titres immobilisés non libérés;4;D/C;true;false;3;481;true
+4816;Réserves de propriété;4;D/C;true;false;3;481;true
+4817;Retenues de garantie;4;D/C;true;false;3;481;true
+4818;Factures non parvenues;4;D/C;true;false;3;481;true
+482;FOURNISSEURS D'INVESTISSEMENTS, EFFETS À PAYER;4;D/C;true;false;2;48;true
+484;AUTRES DETTES HORS ACTIVITES ORDINAIRES (H.A.O.);4;D/C;true;false;2;48;true
+485;CRÉANCES SUR CESSIONS D'IMMOBILISATIONS;4;D/C;true;false;2;48;true
+4851;En compte;4;D/C;true;false;3;485;true
+4852;Effets à recevoir;4;D/C;true;false;3;485;true
+4855;Effets escomptés non échus;4;D/C;true;false;3;485;true
+4856;Financières;4;D/C;true;false;3;485;true
+4857;Retenues de garantie;4;D/C;true;false;3;485;true
+4858;Factures à établir;4;D/C;true;false;3;485;true
+488;AUTRES CRÉANCES HORS ACTIVITÉS ORDINAIRES (H.A.O.);4;D/C;true;false;2;48;true
+49;DÉPRÉCIATIONS ET RISQUES PROVISIONNÉS (TIERS);4;D/C;true;false;1;4;true
+490;DÉPRÉCIATIONS DES COMPTES FOURNISSEURS;4;D/C;true;false;2;49;true
+491;DÉPRÉCIATIONS DES COMPTES CLIENTS;4;D/C;true;false;2;49;true
+4911;Créances litigieuses;4;D/C;true;false;3;491;true
+4912;Créances douteuses;4;D/C;true;false;3;491;true
+492;DÉPRÉCIATIONS DES COMPTES PERSONNEL;4;D/C;true;false;2;49;true
+493;DÉPRÉCIATIONS DES COMPTES ORGANISMES SOCIAUX;4;D/C;true;false;2;49;true
+494;DÉPRÉCIATIONS DES COMPTES ÉTAT ET COLLECTIVITÉS PUBLIQUES;4;D/C;true;false;2;49;true
+495;DÉPRÉCIATIONS DES COMPTES ORGANISMES INTERNATIONAUX;4;D/C;true;false;2;49;true
+496;DÉPRÉCIATIONS DES COMPTES ASSOCIÉS ET GROUPE;4;D/C;true;false;2;49;true
+4962;Associés, comptes courants;4;D/C;true;false;3;496;true
+4963;Associés, opérations faites en commun;4;D/C;true;false;3;496;true
+4966;Groupe, comptes courants;4;D/C;true;false;3;496;true
+497;DÉPRÉCIATIONS DES COMPTES DÉBITEURS DIVERS;4;D/C;true;false;2;49;true
+498;DÉPRÉCIATIONS DES COMPTES DE CRÉANCES H.A.O;4;D/C;true;false;2;49;true
+4981;Créances sur cessions d'immobilisations;4;D/C;true;false;3;498;true
+4982;Créances sur cessions de titres de placement;4;D/C;true;false;3;498;true
+4983;Autres créances H.A.O;4;D/C;true;false;3;498;true
+499;PROVISIONS POUR RISQUES A COURT TERME;4;D/C;true;false;2;49;true
+4991;Sur opérations d'exploitation;4;D/C;true;false;3;499;true
+4998;Sur opérations H.A.O;4;D/C;true;false;3;499;true
+5;COMPTES DE TRESORERIE;5;D;true;false;0;;true
+50;TITRES DE PLACEMENT;5;D;true;false;1;5;true
+501;TITRES DU TRÉSOR ET BONS DE CAISSE A COURT TERME;5;D;true;false;2;50;true
+5011;Titres du Trésor à court terme;5;D;true;false;3;501;true
+5012;Titres d'organismes financiers;5;D;true;false;3;501;true
+5013;Bons de caisse à court terme;5;D;true;false;3;501;true
+5016;TITRES DU TRÉSOR ET BONS DE CAISSE A COURT TERME - frais d'acquisition des titres de trésor et bons de caisse;5;D;true;false;3;501;true
+502;ACTIONS;5;D;true;false;2;50;true
+5021;Actions ou parts propres;5;D;true;false;3;502;true
+5022;Actions cotées;5;D;true;false;3;502;true
+5023;Actions non cotées;5;D;true;false;3;502;true
+5024;Actions démembrées (certificats d'investissements, droits de vote);5;D;true;false;3;502;true
+5025;Autres actions;5;D;true;false;3;502;true
+5026;Frais d’acquisition des actions;5;D;true;false;3;502;true
+503;OBLIGATIONS;5;D;true;false;2;50;true
+5031;Obligations émises par la société et rachetées par elle;5;D;true;false;3;503;true
+5032;Obligations cotées;5;D;true;false;3;503;true
+5033;Obligations non cotées;5;D;true;false;3;503;true
+5035;Autres obligations;5;D;true;false;3;503;true
+5036;Frais d'acquisition des obligations;5;D;true;false;3;503;true
+504;BONS DE SOUSCR IPTION;5;D;true;false;2;50;true
+5042;Bons de souscription d'actions;5;D;true;false;3;504;true
+5043;Bons de souscription d'obligations;5;D;true;false;3;504;true
+505;TITRES NEGOCIABLES HORS REGION;5;D;true;false;2;50;true
+506;INTERÊTS COURUS;5;D;true;false;2;50;true
+5061;Titres du trésor et bons de caisse à court terme;5;D;true;false;3;506;true
+5062;Actions;5;D;true;false;3;506;true
+5063;Obligations;5;D;true;false;3;506;true
+508;AUTRES VALEURS ASSIMILES;5;D;true;false;2;50;true
+51;VALEURS À ENCAI SSER;5;D;true;false;1;5;true
+511;EFFETS À ENCAISSER;5;D;true;false;2;51;true
+512;EFFETS A L'ENCAISSEMENT;5;D;true;false;2;51;true
+513;CHÈQUES À ENCAISSER;5;D;true;false;2;51;true
+514;CHÈQUES À L'ENCAISSEMENT;5;D;true;false;2;51;true
+515;CARTES DE CRÉDIT A ENCAISSER;5;D;true;false;2;51;true
+518;AUTRES VALEURS A L'ENCAISSEMENT;5;D;true;false;2;51;true
+5181;Warrants;5;D;true;false;3;518;true
+5182;Billets de fonds;5;D;true;false;3;518;true
+5185;Chèques de voyage;5;D;true;false;3;518;true
+5186;Coupons échus;5;D;true;false;3;518;true
+5187;Intérêts échus des obligations;5;D;true;false;3;518;true
+52;BANQUES;5;D;true;false;1;5;true
+521;BANQUES LOCALES;5;D;true;false;2;52;true
+5211;Banques X;5;D;true;false;3;521;true
+5212;Banques Y;5;D;true;false;3;521;true
+5215;Banques en devises;5;D;true;false;3;521;true
+522;Banques Autres Etats Région;5;D;true;false;2;52;true
+523;Banques Autres Etats Zone Monétaire;5;D;true;false;2;52;true
+524;Banques Hors Zone Monétaire;5;D;true;false;2;52;true
+525;Banques Depots A Terme;5;D;true;false;2;52;true
+526;Banques, Intérêts Courus;5;D;true;false;2;52;true
+53;ETABLJSSEMENTS FINANCIERS ET ASSIMILES;5;D;true;false;1;5;true
+531;CHEQUES POSTAUX;5;D;true;false;2;53;true
+532;TRESOR;5;D;true;false;2;53;true
+533;SOClETÊS DE GESTION ET D'INTERMÉDIATIDN (S.G.I.);5;D;true;false;2;53;true
+536;ETABLJSSEMENTS FINANCIERS, INTERETS COURUS;5;D;true;false;2;53;true
+54;INSTRUMENTS DE TRESORERIE;5;D;true;false;1;5;true
+541;Options De Taux D'intérêt;5;D;true;false;2;54;true
+542;Options De Taux De Change;5;D;true;false;2;54;true
+543;Options De Taux Boursiers;5;D;true;false;2;54;true
+544;Instruments De Marchés À Terme;5;D;true;false;2;54;true
+545;Avoirs D'or Et Autres Metaux Precieux (1);5;D;true;false;2;54;true
+55;INSTRUMENTS DE MONNAIE ELECTRONIQUE;5;D;true;false;1;5;true
+551;Monnaie Electronique-Carte Carburant;5;D;true;false;2;55;true
+552;Monnaie Electronique-Téléphone Portable;5;D;true;false;2;55;true
+553;Monnaie Electronique, Carte, Péage;5;D;true;false;2;55;true
+554;Porte -Monnaie Electronique;5;D;true;false;2;55;true
+558;AUTRES INSTRUMENTS MONNAIES ELECTRONIQUES;5;D;true;false;2;55;true
+56;BANQUES, CRÉDITS DE TRÉSORERIE ET D'ESCOMPTE;5;D;true;false;1;5;true
+561;CRÉDITS DE TRÉSORERIE;5;D;true;false;2;56;true
+564;ESCOMPTE DE CRÊDITS DE CAMPAGNE;5;D;true;false;2;56;true
+565;ESCOMPTE DE CRÉDITS ORDINAIRES;5;D;true;false;2;56;true
+566;BANQUES, CREDITS DE TRESORERIE, INTERETS COURUS;5;D;true;false;2;56;true
+57;CAISSE;5;D;true;false;1;5;true
+571;CAISSE SIEGE SOCIAL;5;D;true;false;2;57;true
+5711;CAISSE SIEGE SOCIAL - en unités monétaires légales;5;D;true;false;3;571;true
+5712;CAISSE SIEGE SOCIAL - en devises;5;D;true;false;3;571;true
+572;CAISSE SUCCURSALE A;5;D;true;false;2;57;true
+5721;CAISSE SUCCURSALE A - en unités monétaires légales;5;D;true;false;3;572;true
+5722;CAISSE SUCCURSALE A - en devises;5;D;true;false;3;572;true
+573;CAISSE SUCCURSALE B;5;D;true;false;2;57;true
+5731;CAISSE SUCCURSALE B - en unités monétaires légales;5;D;true;false;3;573;true
+5732;CAISSE SUCCURSALE B - en devises;5;D;true;false;3;573;true
+58;REGIES D'AVANCE, ACCREDITIFS ET VIREMENTS INTERNES;5;D;true;false;1;5;true
+581;RÉGIES D'AVANCE;5;D;true;false;2;58;true
+582;ACCRÉDITIFS;5;D;true;false;2;58;true
+585;VIREMENTS DE FONDS;5;D;true;false;2;58;true
+588;AUTRES VIREMENTS INTERNES;5;D;true;false;2;58;true
+59;DÉPRÉCIATIONS ET PROVISIONS POUR RISQUE A COURT TERME;5;D;true;false;1;5;true
+590;Dépréciations Des Titres De Placement;5;D;true;false;2;59;true
+591;Dépréciations Des Titres Et Valeurs A encaisser;5;D;true;false;2;59;true
+592;Dépréciations Des Comptes Banques;5;D;true;false;2;59;true
+593;Dépréciations Des Comptes Etablissements Financiers Et Assimiles;5;D;true;false;2;59;true
+594;Dépréciations Des Comptes D'instruments De Trésorerie;5;D;true;false;2;59;true
+599;Provisions Pour Risque A Court Terme A Caractère Financier ACTIVITES ORDINAIRES;5;D;true;false;2;59;true
+6;COMPTES DE CHARGES DES ACTIVITES ORDINAIRES;6;D;false;false;0;;true
+60;ACHAT ET VARIATION DE STOCK;6;D;false;false;1;6;true
+601;ACHATS DE MARCHANDISES;6;D;false;false;2;60;true
+6011;ACHATS DE MARCHANDISES - dans la Région (1);6;D;false;false;3;601;true
+6012;ACHATS DE MARCHANDISES - hors Région (1);6;D;false;false;3;601;true
+6013;ACHATS DE MARCHANDISES - aux entités du groupe dans la Région;6;D;false;false;3;601;true
+6014;ACHATS DE MARCHANDISES - aux entités du groupe hors Région;6;D;false;false;3;601;true
+6015;ACHATS DE MARCHANDISES - frais sur achats;6;D;false;false;3;601;true
+6019;Rabais, Remises et Ristournes obtenus (non ventilés);6;D;false;false;3;601;true
+602;ACHATS DE MATIÈRES PREMIÈRES ET FOURNITURES LIÉES;6;D;false;false;2;60;true
+6021;ACHATS DE MATIÈRES PREMIÈRES ET FOURNITURES LIÉES - dans la Région (1);6;D;false;false;3;602;true
+6022;ACHATS DE MATIÈRES PREMIÈRES ET FOURNITURES LIÉES - hors Région (1);6;D;false;false;3;602;true
+6023;ACHATS DE MATIÈRES PREMIÈRES ET FOURNITURES LIÉES - aux entités du groupe dans la Région;6;D;false;false;3;602;true
+6024;ACHATS DE MATIÈRES PREMIÈRES ET FOURNITURES LIÉES - aux entités du groupe hors Région;6;D;false;false;3;602;true
+6025;ACHATS DE MATIÈRES PREMIÈRES ET FOURNITURES LIÉES - frais sur achats;6;D;false;false;3;602;true
+6029;Rabais, Remises et Ristournes obtenus (non ventilés);6;D;false;false;3;602;true
+603;VARIATIONS DES STOCKS DE BIENS ACHETÉS;6;D;false;false;2;60;true
+6031;Variations des stocks de marchandises;6;D;false;false;3;603;true
+6032;Variations des stocks de matières premières et fournitures liées;6;D;false;false;3;603;true
+6033;Variations des stocks d'autres approvisionnements;6;D;false;false;3;603;true
+604;ACHATS STOCKÉS DE MATIÈRES ET FOURNITURES CONSOMMABLES;6;D;false;false;2;60;true
+6041;Matières consommables;6;D;false;false;3;604;true
+6042;Matières combustibles;6;D;false;false;3;604;true
+6043;Produits d'entretien;6;D;false;false;3;604;true
+6044;Fournitures d'atelier et d'usine;6;D;false;false;3;604;true
+6045;Frais sur achats;6;D;false;false;3;604;true
+6046;Fournitures de magasin;6;D;false;false;3;604;true
+6047;Fournitures de bureau;6;D;false;false;3;604;true
+6049;Rabais, Remises et Ristournes obtenus (non ventilés);6;D;false;false;3;604;true
+605;AUTRES ACHATS;6;D;false;false;2;60;true
+6051;Fournitures non stockables -Eau;6;D;false;false;3;605;true
+6052;Fournitures non stockables - Electricité;6;D;false;false;3;605;true
+6053;Fournitures non stockables – Autres énergies;6;D;false;false;3;605;true
+6054;Fournitures d'entretien non stockables;6;D;false;false;3;605;true
+6055;Fournitures de bureau non stockables;6;D;false;false;3;605;true
+6056;Achats de petit matériel et outillage;6;D;false;false;3;605;true
+6057;Achats d'études et prestations de services;6;D;false;false;3;605;true
+6058;Achats de travaux, matériels et équipements;6;D;false;false;3;605;true
+6059;Rabais, Remises et Ristournes obtenus (non ventilés);6;D;false;false;3;605;true
+608;ACHATS D'EMBALLAGES;6;D;false;false;2;60;true
+6081;Emballages perdus;6;D;false;false;3;608;true
+6082;Emballages récupérables non identifiables;6;D;false;false;3;608;true
+6083;Emballages à usage mixte;6;D;false;false;3;608;true
+6085;Frias sur achats;6;D;false;false;3;608;true
+6089;Rabais, Remises et Ristournes obtenus (non ventilés);6;D;false;false;3;608;true
+61;TRANSPORTS;6;D;false;false;1;6;true
+611;TRANSPORTS SUR ACHATS ();6;D;false;false;2;61;true
+612;TRANSPORTS SUR VENTES;6;D;false;false;2;61;true
+613;TRANSPORTS POUR LE COMPTE DE TIERS;6;D;false;false;2;61;true
+614;TRANSPORTS DU PERSONNEL;6;D;false;false;2;61;true
+616;TRANSPORTS DE PLIS;6;D;false;false;2;61;true
+618;AUTRES FRAIS DE TRANSPORT;6;D;false;false;2;61;true
+6181;Voyages et déplacements;6;D;false;false;3;618;true
+6182;Transports entre établissements ou chantiers;6;D;false;false;3;618;true
+6183;Transports administratifs;6;D;false;false;3;618;true
+62;SERVICES EXTÉRIEURS;6;D;false;false;1;6;true
+621;SOUS-TRAITANCE GÉNÉRALE;6;D;false;false;2;62;true
+622;LOCATIONS ET CHARGES LOCATIVES;6;D;false;false;2;62;true
+6221;Locations de terrains;6;D;false;false;3;622;true
+6222;Locations de bâtiments;6;D;false;false;3;622;true
+6223;Locations de matériels et outillages;6;D;false;false;3;622;true
+6224;Malis sur emballages;6;D;false;false;3;622;true
+6225;Locations d'emballages;6;D;false;false;3;622;true
+6226;Fermages et loyers du foncier;6;D;false;false;3;622;true
+6228;Locations et charges locatives diverses;6;D;false;false;3;622;true
+623;REDEVANCES DE LOCATION ACQUISITION;6;D;false;false;2;62;true
+6232;Crédit-bail immobilier;6;D;false;false;3;623;true
+6233;Crédit-bail mobilier;6;D;false;false;3;623;true
+6234;Location-vente;6;D;false;false;3;623;true
+6235;Autres contrats de location acquisition;6;D;false;false;3;623;true
+624;ENTRETIEN, RÉPARATIONS ET MAINTENANCE;6;D;false;false;2;62;true
+6241;Entretien et réparations des biens immobiliers;6;D;false;false;3;624;true
+6242;Entretien et réparations des biens mobiliers;6;D;false;false;3;624;true
+6243;Maintenance;6;D;false;false;3;624;true
+6244;Charges de démantèlement et remise en état;6;D;false;false;3;624;true
+6248;Autres entretiens et réparations;6;D;false;false;3;624;true
+625;PRIMES D'ASSURANCE;6;D;false;false;2;62;true
+6251;Assurances multirisques;6;D;false;false;3;625;true
+6252;Assurances matériel de transport;6;D;false;false;3;625;true
+6253;Assurances risques d'exploitation;6;D;false;false;3;625;true
+6254;Assurances responsabilité du producteur;6;D;false;false;3;625;true
+6255;Assurances insolvabilité clients;6;D;false;false;3;625;true
+6256;Assurances transport sur achats;6;D;false;false;3;625;true
+6257;Assurances transport sur ventes;6;D;false;false;3;625;true
+6258;Autres primes d'assurances;6;D;false;false;3;625;true
+626;ÉTUDES, RECHERCHES ET DOCUMENTATION;6;D;false;false;2;62;true
+6261;Études et recherches;6;D;false;false;3;626;true
+6265;Documentation générale;6;D;false;false;3;626;true
+6266;Documentation technique;6;D;false;false;3;626;true
+627;PUBLICITÉ, PUBLICATIONS, RELATIONS PUBLIQUES;6;D;false;false;2;62;true
+6271;Annonces, insertions;6;D;false;false;3;627;true
+6272;Catalogues, imprimés publicitaires;6;D;false;false;3;627;true
+628;FRAIS DE TÉLÉCOMMUNICATIONS;6;D;false;false;2;62;true
+6281;Frais de téléphone;6;D;false;false;3;628;true
+6282;Frais de télex;6;D;false;false;3;628;true
+6283;Frais de télécopie;6;D;false;false;3;628;true
+6288;Autres frais de télécommunications;6;D;false;false;3;628;true
+63;AUTRES SERVICES EXTÉRIEURS;6;D;false;false;1;6;true
+631;FRAIS BANCAIRES;6;D;false;false;2;63;true
+6311;Frais sur titres (vente, garde);6;D;false;false;3;631;true
+6312;Frais sur effets;6;D;false;false;3;631;true
+6313;Location de coffres;6;D;false;false;3;631;true
+6314;Commissions financement - affacturage;6;D;false;false;3;631;true
+6315;Commissions sur cartes de crédit;6;D;false;false;3;631;true
+6316;Frais d'émission d'emprunts;6;D;false;false;3;631;true
+6317;Frais sur instruments monnaie électronique;6;D;false;false;3;631;true
+6318;Autres frais bancaires;6;D;false;false;3;631;true
+632;RÉMUNÉRATIONS D'INTERMÉDIAIRES ET DE CONSEILS;6;D;false;false;2;63;true
+6321;Commissions et courtages sur achats;6;D;false;false;3;632;true
+6322;Commissions et courtages sur ventes;6;D;false;false;3;632;true
+6323;Rémunérations des transitaires;6;D;false;false;3;632;true
+6324;Honoraires des professions règlementées;6;D;false;false;3;632;true
+6325;Frais d'actes et de contentieux;6;D;false;false;3;632;true
+6326;Rémunérations du factor;6;D;false;false;3;632;true
+6327;Rémunérations des autres prestataires de services;6;D;false;false;3;632;true
+6328;Divers frais;6;D;false;false;3;632;true
+633;FRAIS DE FORMATION DU PERSONNEL;6;D;false;false;2;63;true
+634;REDEVANCES POUR BREVETS, LICENCES, LOGICIELS, CONCESSIONS ET DROITS SIMILAIRES;6;D;false;false;2;63;true
+6342;Redevances pour brevets, licences;6;D;false;false;3;634;true
+6343;Redevances pour logiciels;6;D;false;false;3;634;true
+6344;Redevances pour marques;6;D;false;false;3;634;true
+6345;Redevance pour sites internet;6;D;false;false;3;634;true
+6346;Redevance pour concessions, droits et valeurs similaires;6;D;false;false;3;634;true
+635;COTISATIONS;6;D;false;false;2;63;true
+6351;Cotisations;6;D;false;false;3;635;true
+6358;Concours divers;6;D;false;false;3;635;true
+637;RÉMUNÉRATIONS DE PERSONNEL EXTÉRIEUR À L'ENTITE;6;D;false;false;2;63;true
+6371;Personnel intérimaire;6;D;false;false;3;637;true
+6372;Personnel détaché ou prêté à l'entité;6;D;false;false;3;637;true
+638;AUTRES CHARGES EXTERNES;6;D;false;false;2;63;true
+6381;Frais de recrutement du personnel;6;D;false;false;3;638;true
+6382;Frais de déménagement;6;D;false;false;3;638;true
+6383;Réceptions;6;D;false;false;3;638;true
+6384;Missions;6;D;false;false;3;638;true
+64;IMPÔTS ET TAXES;6;D;false;false;1;6;true
+641;IMPÔTS ET TAXES DIRECTS;6;D;false;false;2;64;true
+6411;Impôts fonciers et taxes annexes;6;D;false;false;3;641;true
+6412;Patentes, licences et taxes annexes;6;D;false;false;3;641;true
+6413;Taxes sur appointements et salaires;6;D;false;false;3;641;true
+6414;Taxes d'apprentissage;6;D;false;false;3;641;true
+6415;Formation professionnelle continue;6;D;false;false;3;641;true
+6418;Autres impôts et taxes directs;6;D;false;false;3;641;true
+645;IMPÔTS ET TAXES INDIRECTS;6;D;false;false;2;64;true
+646;DROITS D'ENREGISTREMENT;6;D;false;false;2;64;true
+6461;Droits de mutation;6;D;false;false;3;646;true
+6462;Droit de timbre;6;D;false;false;3;646;true
+6463;Taxes sur les véhicules de société;6;D;false;false;3;646;true
+6464;Vignettes;6;D;false;false;3;646;true
+6468;Autres droits;6;D;false;false;3;646;true
+647;PÉNALITÉS ET AMENDES FISCALES;6;D;false;false;2;64;true
+6471;Pénalités d'assiette, impôts directs;6;D;false;false;3;647;true
+6472;Pénalités d'assiette, impôts indirects;6;D;false;false;3;647;true
+6473;Pénalités de recouvrement, impôts directs;6;D;false;false;3;647;true
+6474;Pénalités de recouvrement, impôts indirects;6;D;false;false;3;647;true
+6478;Autres amendes pénales et fiscales;6;D;false;false;3;647;true
+648;AUTRES IMPÔTS ET TAXES;6;D;false;false;2;64;true
+65;AUTRES CHARGES;6;D;false;false;1;6;true
+651;PERTES SUR CRÉANCES CLIENTS ET AUTRES DÉBITEURS;6;D;false;false;2;65;true
+6511;Clients;6;D;false;false;3;651;true
+6515;Autres débiteurs;6;D;false;false;3;651;true
+652;QUOTE-PART DE RÉSULTAT SUR OPÉRATIONS FAITES EN COMMUN;6;D;false;false;2;65;true
+6521;Quote-part transférée de bénéfices (comptabilité du gérant);6;D;false;false;3;652;true
+6525;Pertes imputées par transfert (comptabilité des associés non gérants);6;D;false;false;3;652;true
+654;VALEUR COMPTABLE DES CESSIONS COURANTES D'IMMOBILISATIONS;6;D;false;false;2;65;true
+656;PERTES DE CHANGE SUR CREANCES ET DETTES COMMERCIALES;6;D;false;false;2;65;true
+658;CHARGES DIVERSES;6;D;false;false;2;65;true
+6581;Indemnité de fonction et autres rémunérations d'administrateurs;6;D;false;false;3;658;true
+6583;Dons;6;D;false;false;3;658;true
+6588;Autres charges diverses CHARGES POUR DDEPRECIATIONS ET PROVISIONS POUR RISQUE A COURT TERME D'EXPLOITATION;6;D;false;false;3;658;true
+6591;AUTRES CHARGES - sur risques à court terme;6;D;false;false;3;65;true
+6593;AUTRES CHARGES - sur stocks;6;D;false;false;3;65;true
+6594;AUTRES CHARGES - sur créances;6;D;false;false;3;65;true
+6598;Autres charges pour dépréciations et provisions pour risques à court terme;6;D;false;false;3;65;true
+66;CHARGES DE PERSONNEL;6;D;false;false;1;6;true
+661;RÉMUNÉRATIONS DIRECTES VERSÉES AU PERSONNEL NATIONAL;6;D;false;false;2;66;true
+6611;Appointements salaires et commissions;6;D;false;false;3;661;true
+6612;Primes et gratifications;6;D;false;false;3;661;true
+6613;Congés payés;6;D;false;false;3;661;true
+6614;Indemnités de préavis, de licenciement et de recherche d'embauche;6;D;false;false;3;661;true
+6615;Indemnités de maladie versées aux travailleurs;6;D;false;false;3;661;true
+6616;Supplément familial;6;D;false;false;3;661;true
+6617;Avantages en nature;6;D;false;false;3;661;true
+6618;Autres rémunérations directes;6;D;false;false;3;661;true
+662;RÉMUNÉRATIONS DIRECTES VERSÉES AU PERSONNEL NON NATIONAL;6;D;false;false;2;66;true
+6621;Appointements salaires et commissions 6622 Primes et gratifications;6;D;false;false;3;662;true
+6622;Primes et gratifications;6;D;false;false;3;662;true
+6623;Congés payés;6;D;false;false;3;662;true
+6624;Indemnités de préavis, de licenciement et de recherche d'embauche;6;D;false;false;3;662;true
+6625;Indemnités de maladie versées aux travailleurs;6;D;false;false;3;662;true
+6626;Supplément familial;6;D;false;false;3;662;true
+6627;Avantages en nature;6;D;false;false;3;662;true
+6628;Autres rémunérations directes;6;D;false;false;3;662;true
+663;INDEMNITÉS FORFAITAIRES VERSÉES AU PERSONNEL;6;D;false;false;2;66;true
+6631;Indemnités de logement;6;D;false;false;3;663;true
+6632;Indemnités de représentation;6;D;false;false;3;663;true
+6633;Indemnités d'expatriation;6;D;false;false;3;663;true
+6638;Autres indemnités et avantages divers;6;D;false;false;3;663;true
+664;CHARGES SOCIALES;6;D;false;false;2;66;true
+6641;Charges sociales sur rémunération du personnel national;6;D;false;false;3;664;true
+6642;Charges sociales sur rémunération du personnel non national;6;D;false;false;3;664;true
+666;RÉMUNÉRATIONS ET CHARGES SOCIALES DE L'EXPLOITANT INDIVIDUEL;6;D;false;false;2;66;true
+6661;Rémunération du travail de l'exploitant;6;D;false;false;3;666;true
+6662;Charges sociales;6;D;false;false;3;666;true
+667;RÉMUNÉRATION TRANSFÉRÉE DE PERSONNEL EXTÉRIEUR;6;D;false;false;2;66;true
+6671;Personnel intérimaire;6;D;false;false;3;667;true
+6672;Personnel détaché ou prêté à l’entité;6;D;false;false;3;667;true
+668;AUTRES CHARGES SOCIALES;6;D;false;false;2;66;true
+6681;Versements aux Syndicats et Comités d'entreprise, d'établissement;6;D;false;false;3;668;true
+6682;Versements aux Comités d'hygiène et de sécurité;6;D;false;false;3;668;true
+6683;Versements aux autres oeuvres sociales;6;D;false;false;3;668;true
+6684;Médecine du travail et pharmacie;6;D;false;false;3;668;true
+6685;Assurances et organismes de santé;6;D;false;false;3;668;true
+6686;Assurances retrait et fond de pension;6;D;false;false;3;668;true
+67;FRAIS FINANCIERS ET CHARGES ASSIMILÉES;6;D;false;false;1;6;true
+671;INTÉRÊTS DES EMPRUNTS;6;D;false;false;2;67;true
+6711;Emprunts obligataires;6;D;false;false;3;671;true
+6712;Emprunts auprès des établissements de crédit;6;D;false;false;3;671;true
+6713;Dettes liées à des participations;6;D;false;false;3;671;true
+6714;Primes de rembourseement des obligations;6;D;false;false;3;671;true
+672;INTÉRÊTS DANS LOYERS DE LOCATION ACQUISITION;6;D;false;false;2;67;true
+6721;Intérêts dans loyers de location acquisition/crédit- bail immobilier;6;D;false;false;3;672;true
+6722;Intérêts dans loyers de location acquisition/crédit- bail mobilier;6;D;false;false;3;672;true
+6723;Intérêts dans loyers de location acquisition/location vente;6;D;false;false;3;672;true
+6724;Intérêt dans loyers des autres locations acquisition;6;D;false;false;3;672;true
+673;ESCOMPTES ACCORDÉS;6;D;false;false;2;67;true
+674;AUTRES INTÉRÊTS;6;D;false;false;2;67;true
+6741;Avances reçues et dépôts créditeurs;6;D;false;false;3;674;true
+6742;Comptes courants bloqués;6;D;false;false;3;674;true
+6743;Intérêts sur obligations cautionnées;6;D;false;false;3;674;true
+6744;Intérêts sur dettes commerciales;6;D;false;false;3;674;true
+6745;Intérêts bancaires et sur opérations de trésorerie et d’escompte;6;D;false;false;3;674;true
+6748;Intérêts sur dettes diverses;6;D;false;false;3;674;true
+675;ESCOMPTES DES EFFETS DE COMMERCE;6;D;false;false;2;67;true
+676;PERTES DE CHANGE;6;D;false;false;2;67;true
+677;PERTES SUR TITRES DE PLACEMENT;6;D;false;false;2;67;true
+6771;Pertes sur cessions de titres de placement;6;D;false;false;3;677;true
+6772;Malis provenant d'attribution gratuite d'actions au personnel salarié et aux dirigeants;6;D;false;false;3;677;true
+678;PERTES SUR RISQUES FINANCIERS;6;D;false;false;2;67;true
+6781;PERTES SUR RISQUES FINANCIERS - sur rentes viagères;6;D;false;false;3;678;true
+6782;PERTES SUR RISQUES FINANCIERS - sur opérations financières;6;D;false;false;3;678;true
+6784;PERTES SUR RISQUES FINANCIERS - sur instruments de trésorerie CHARGES POUR DEPRECIATIONS ET PROVISIONS POUR RISQUES A COURT TERME FINANCIÈRES;6;D;false;false;3;678;true
+6791;FRAIS FINANCIERS ET CHARGES ASSIMILÉES - sur risques financiers;6;D;false;false;3;67;true
+6795;FRAIS FINANCIERS ET CHARGES ASSIMILÉES - sur titres de placement;6;D;false;false;3;67;true
+6798;Autres charges pour dépréciation et provisions pour risque à courts terme financières;6;D;false;false;3;67;true
+68;DOTATIONS AUX AMORTISSEMENTS;6;D;false;false;1;6;true
+681;DOTATIONS AUX AMORTISSEMENTS D'EXPLOITATION;6;D;false;false;2;68;true
+6811;Dotations aux amortissements des charges immobilisées;6;D;false;false;3;681;true
+6812;Dotations aux amortissements des immobilisations incorporelles;6;D;false;false;3;681;true
+6813;Dotations aux amortissements des immobilisations corporelles;6;D;false;false;3;681;true
+687;DOTATIONS AUX AMORTISSEMENTS À CARACTÈRE FINANCIER;6;D;false;false;2;68;true
+69;DOTATIONS AUX PROVISIONS ET AUX DEPRECIATIONS;6;D;false;false;1;6;true
+691;DOTATIONS AUX PROVISIONS ET AUX DEPRECIATIONS D'EXPLOITATIONS;6;D;false;false;2;69;true
+6911;DOTATIONS AUX PROVISIONS ET AUX DEPRECIATIONS D'EXPLOITATIONS - pour risques et charges;6;D;false;false;3;691;true
+6913;DOTATIONS AUX PROVISIONS ET AUX DEPRECIATIONS D'EXPLOITATIONS - des immobilisations incorporelles;6;D;false;false;3;691;true
+6914;DOTATIONS AUX PROVISIONS ET AUX DEPRECIATIONS D'EXPLOITATIONS - immobilisations corporelles;6;D;false;false;3;691;true
+697;DOTATIONS AUX PROVISIONS ET AUX DEPRECIATION FINANCIÈRES;6;D;false;false;2;69;true
+6971;DOTATIONS AUX PROVISIONS ET AUX DEPRECIATION FINANCIÈRES - pour risques et charges;6;D;false;false;3;697;true
+6972;DOTATIONS AUX PROVISIONS ET AUX DEPRECIATION FINANCIÈRES - des immobilisations financières ACTIVITES ORDINAIRES;6;D;false;false;3;697;true
+7;COMPTES DES PRODUITS DES ACTIVITES ORDINAIRES;7;C;false;false;0;;true
+70;VENTES;7;C;false;false;1;7;true
+701;VENTES DE MARCHANDISES;7;C;false;false;2;70;true
+7011;VENTES DE MARCHANDISES - dans la Région ();7;C;false;false;3;701;true
+7012;VENTES DE MARCHANDISES - hors Région (1);7;C;false;false;3;701;true
+7013;VENTES DE MARCHANDISES - aux entités du groupe dans la Région;7;C;false;false;3;701;true
+7014;VENTES DE MARCHANDISES - aux entités du groupe hors Région;7;C;false;false;3;701;true
+7015;Sur internet;7;C;false;false;3;701;true
+702;VENTES DE PRODUITS FINIS;7;C;false;false;2;70;true
+7021;VENTES DE PRODUITS FINIS - dans la Région (1);7;C;false;false;3;702;true
+7022;VENTES DE PRODUITS FINIS - hors Région (1);7;C;false;false;3;702;true
+7023;VENTES DE PRODUITS FINIS - aux entités du groupe dans la Région;7;C;false;false;3;702;true
+7024;VENTES DE PRODUITS FINIS - aux entités du groupe hors Région;7;C;false;false;3;702;true
+7025;Sur internet;7;C;false;false;3;702;true
+703;VENTES DE PRODUITS INTERMÉDIAIRES;7;C;false;false;2;70;true
+7031;VENTES DE PRODUITS INTERMÉDIAIRES - dans la Région (1);7;C;false;false;3;703;true
+7032;VENTES DE PRODUITS INTERMÉDIAIRES - hors Région (1);7;C;false;false;3;703;true
+7033;VENTES DE PRODUITS INTERMÉDIAIRES - aux entités du groupe dans la Région;7;C;false;false;3;703;true
+7034;VENTES DE PRODUITS INTERMÉDIAIRES - aux entités du groupe hors Région;7;C;false;false;3;703;true
+7035;Sur internet;7;C;false;false;3;703;true
+704;VENTES DE PRODUITS RÉSIDUELS;7;C;false;false;2;70;true
+7041;VENTES DE PRODUITS RÉSIDUELS - dans la Région (1);7;C;false;false;3;704;true
+7042;VENTES DE PRODUITS RÉSIDUELS - hors Région (1);7;C;false;false;3;704;true
+7043;VENTES DE PRODUITS RÉSIDUELS - aux entités du groupe dans la Région;7;C;false;false;3;704;true
+7044;VENTES DE PRODUITS RÉSIDUELS - aux entités du groupe hors Région;7;C;false;false;3;704;true
+7045;Sur internet;7;C;false;false;3;704;true
+705;TRAVAUX FACTURÉS;7;C;false;false;2;70;true
+7051;TRAVAUX FACTURÉS - dans la Région (1);7;C;false;false;3;705;true
+7052;TRAVAUX FACTURÉS - hors Région (1);7;C;false;false;3;705;true
+7053;TRAVAUX FACTURÉS - aux entités du groupe dans la Région;7;C;false;false;3;705;true
+7054;TRAVAUX FACTURÉS - aux entités du groupe hors Région;7;C;false;false;3;705;true
+7055;Sur internet;7;C;false;false;3;705;true
+706;SERVICES VENDUS;7;C;false;false;2;70;true
+7061;SERVICES VENDUS - dans la Région (1);7;C;false;false;3;706;true
+7062;SERVICES VENDUS - hors Région (1);7;C;false;false;3;706;true
+7063;SERVICES VENDUS - aux entités du groupe dans la Région;7;C;false;false;3;706;true
+7064;SERVICES VENDUS - aux entités du groupe hors Région;7;C;false;false;3;706;true
+7065;Sur internet;7;C;false;false;3;706;true
+707;PRODUITS ACCESSOIRES;7;C;false;false;2;70;true
+7071;Ports, emballages perdus et autres frais facturés;7;C;false;false;3;707;true
+7072;Commissions et courtages ();7;C;false;false;3;707;true
+7073;Locations (2);7;C;false;false;3;707;true
+7074;Bonis sur reprises et cessions d'emballages;7;C;false;false;3;707;true
+7075;Mise à disposition de personnel (2);7;C;false;false;3;707;true
+7076;Redevances pour brevets, logiciels, marques et droits similaires (2);7;C;false;false;3;707;true
+7077;Services exploités dans l'intérêt du personnel;7;C;false;false;3;707;true
+7078;Autres produits accessoires;7;C;false;false;3;707;true
+71;SUBVENTIONS D'EXPLOITATION;7;C;false;false;1;7;true
+711;SUR PRODUITS À L'EXPORTATION;7;C;false;false;2;71;true
+712;SUR PRODUITS À L'IMPORTATION;7;C;false;false;2;71;true
+713;SUR PRODUITS DE PÉRÉQUATION;7;C;false;false;2;71;true
+718;AUTRES SUBVENTIONS D'EXPLOITATION;7;C;false;false;2;71;true
+7181;Versées par l'État et les collectivités publiques;7;C;false;false;3;718;true
+7182;Versées par les organismes internationaux;7;C;false;false;3;718;true
+7183;Versées par des tiers;7;C;false;false;3;718;true
+72;PRODUCTION IMMOBILISÉE;7;C;false;false;1;7;true
+721;IMMOBILISATIONS INCORPORELLES;7;C;false;false;2;72;true
+722;IMMOBILISATIONS CORPORELLES;7;C;false;false;2;72;true
+7221;IMMOBILISATIONS CORPORELLES - immobilisations corporelles (hors actifs biologiques);7;C;false;false;3;722;true
+7222;IMMOBILISATIONS CORPORELLES - immobilisations corporelles (actifs biologiques);7;C;false;false;3;722;true
+724;PRODUCTION AUTO-CONSOMMEE;7;C;false;false;2;72;true
+726;IMMOBILISATIONS FINANCIÈRES ();7;C;false;false;2;72;true
+73;VARIATIONS DES STOCKS DE BIENS ET DE SERVICES PRODUITS;7;C;false;false;1;7;true
+734;VARIATIONS DES STOCKS DE PRODUITS EN COURS;7;C;false;false;2;73;true
+7341;Produits en cours;7;C;false;false;3;734;true
+7342;Travaux en cours;7;C;false;false;3;734;true
+735;VARIATIONS DES EN-COURS DE SERVICES;7;C;false;false;2;73;true
+7351;Études en cours;7;C;false;false;3;735;true
+7352;Prestations de services en cours;7;C;false;false;3;735;true
+736;VARIATIONS DES STOCKS DE PRODUITS FINIS;7;C;false;false;2;73;true
+737;VARIATIONS DES STOCKS DE PRODUITS INTERMÉDIAIRES ET RÉSIDUELS;7;C;false;false;2;73;true
+7371;Produits intermédiaires;7;C;false;false;3;737;true
+7372;Produits résiduels;7;C;false;false;3;737;true
+75;AUTRES PRODUITS;7;C;false;false;1;7;true
+752;QUOTE-PART DE RÉSULTAT SUR OPÉRATIONS FAITES EN COMMUN;7;C;false;false;2;75;true
+7521;Quote-part transférée de pertes (comptabilité du gérant);7;C;false;false;3;752;true
+7525;Bénéfices attribués par transfert (comptabilité des associés non gérants);7;C;false;false;3;752;true
+754;PRODUITS DES CESSIONS COURANTES D'IMMOBILISATIONS;7;C;false;false;2;75;true
+756;GAINS DE CHANGE SUR CREANCES ET DETTES COMMERCIALES;7;C;false;false;2;75;true
+758;PRODUITS DIVERS;7;C;false;false;2;75;true
+7581;Indemnité de fonction et autres rémunérations d'administrateurs;7;C;false;false;3;758;true
+7582;Indemnités d’assurances reçues;7;C;false;false;3;758;true
+7588;Autres produits divers;7;C;false;false;3;758;true
+759;REPRISES DE CHARGES POUR DEPRECIATIONS ET PROVISIONS POUR RISQUE A COURT TERME D'EXPLOITATION;7;C;false;false;2;75;true
+7591;REPRISES DE CHARGES POUR DEPRECIATIONS ET PROVISIONS POUR RISQUE A COURT TERME D'EXPLOITATION - sur risques à court terme;7;C;false;false;3;759;true
+7593;REPRISES DE CHARGES POUR DEPRECIATIONS ET PROVISIONS POUR RISQUE A COURT TERME D'EXPLOITATION - sur stocks;7;C;false;false;3;759;true
+7594;REPRISES DE CHARGES POUR DEPRECIATIONS ET PROVISIONS POUR RISQUE A COURT TERME D'EXPLOITATION - sur créances;7;C;false;false;3;759;true
+7598;REPRISES DE CHARGES POUR DEPRECIATIONS ET PROVISIONS POUR RISQUE A COURT TERME D'EXPLOITATION - sur autres charges pour dépréciations et provision pour risques à court terme d'exploitation;7;C;false;false;3;759;true
+77;REVENUS FINANCIERS ET PRODUITS ASSIMILÉS;7;C;false;false;1;7;true
+771;INTÉRÊTS DE PRÊTS DE CREANCES DIVERSES;7;C;false;false;2;77;true
+7712;Intérêt de prêt;7;C;false;false;3;771;true
+7713;Intérêt sur créances diverses;7;C;false;false;3;771;true
+772;REVENUS DE PARTICIPATIONS ET AUTRES TITRES IMMOBILISES;7;C;false;false;2;77;true
+7721;Revenus des titres de participations;7;C;false;false;3;772;true
+7722;Revenus autres titres immobilisés;7;C;false;false;3;772;true
+773;ESCOMPTES OBTENUS;7;C;false;false;2;77;true
+774;REVENUS DE PLACEMENT;7;C;false;false;2;77;true
+7745;Revenus des obligattions;7;C;false;false;3;774;true
+7746;Revenus des titres de placement;7;C;false;false;3;774;true
+775;INTERET DANS LOYERS DE LOCATIONS ACQUISITION;7;C;false;false;2;77;true
+776;GAINS DE CHANGE;7;C;false;false;2;77;true
+777;GAINS SUR CESSIONS DE TITRES DE PLACEMENT;7;C;false;false;2;77;true
+778;GAINS SUR RISQUES FINANCIERS;7;C;false;false;2;77;true
+7781;GAINS SUR RISQUES FINANCIERS - sur rentes viagères;7;C;false;false;3;778;true
+7782;GAINS SUR RISQUES FINANCIERS - sur opérations financières;7;C;false;false;3;778;true
+7784;GAINS SUR RISQUES FINANCIERS - sur instruments de trésorerie;7;C;false;false;3;778;true
+779;REPRISES DE CHARGES POUR DEPRECIATIONS ET PROVISIONS A COURT TERME FINANCIÈRES;7;C;false;false;2;77;true
+7791;REPRISES DE CHARGES POUR DEPRECIATIONS ET PROVISIONS A COURT TERME FINANCIÈRES - sur risques financiers;7;C;false;false;3;779;true
+7795;REPRISES DE CHARGES POUR DEPRECIATIONS ET PROVISIONS A COURT TERME FINANCIÈRES - sur titres de placement;7;C;false;false;3;779;true
+7798;REPRISES DE CHARGES POUR DEPRECIATIONS ET PROVISIONS A COURT TERME FINANCIÈRES - sur autres charges pour dépréciations et provisions pour risques à court terme financière;7;C;false;false;3;779;true
+78;TRANSFERTS DE CHARGES;7;C;false;false;1;7;true
+781;TRANSFERTS DE CHARGES D'EXPLOITATION;7;C;false;false;2;78;true
+787;TRANSFERTS DE CHARGES FINANCIERES;7;C;false;false;2;78;true
+79;REPRISES DE PROVISIONS, DE DEPRECIATIONS ET AUTRES;7;C;false;false;1;7;true
+791;REPRISES DE PROVISIONS ET DEPRECIATION D'EXPLOITATION;7;C;false;false;2;79;true
+7911;REPRISES DE PROVISIONS ET DEPRECIATION D'EXPLOITATION - pour risques et charges;7;C;false;false;3;791;true
+7913;REPRISES DE PROVISIONS ET DEPRECIATION D'EXPLOITATION - des immobilisations incorporelles;7;C;false;false;3;791;true
+7914;REPRISES DE PROVISIONS ET DEPRECIATION D'EXPLOITATION - des immobilisations corporelles;7;C;false;false;3;791;true
+797;REPRISES DE PROVISIONS ET DEPRECIATIONS FINANCIÈRES;7;C;false;false;2;79;true
+7971;REPRISES DE PROVISIONS ET DEPRECIATIONS FINANCIÈRES - pour risques et charges;7;C;false;false;3;797;true
+7972;REPRISES DE PROVISIONS ET DEPRECIATIONS FINANCIÈRES - des immobilisations financières;7;C;false;false;3;797;true
+798;REPRISES D'AMORTISSEMENTS;7;C;false;false;2;79;true
+799;REPRISE DE SUBVENTIONS D'INVESTISSEMENT ET AUTRES PRODUITS;7;C;false;false;2;79;true
+8;COMPTES DES AUTRES CHARGES ET DES AUTRES PRODUITS;8;D/C;false;false;0;;true
+81;VALEURS COMPTABLES DES CESSIONS D'IMMOBILISATIONS;8;D/C;false;false;1;8;true
+811;IMMOBILISATIONS INCORPORELLES;8;D/C;false;false;2;81;true
+812;IMMOBILISATIONS CORPORELLES;8;D/C;false;false;2;81;true
+816;IMMOBILISATIONS FINANCIÈRES;8;D/C;false;false;2;81;true
+82;PRODUITS DES CESSIONS D'IMMOBILISATIONS;8;D/C;false;false;1;8;true
+821;IMMOBILISATIONS INCORPORELLES;8;D/C;false;false;2;82;true
+822;IMMOBILISATIONS CORPORELLES;8;D/C;false;false;2;82;true
+826;IMMOBILISATIONS FINANCIÈRES;8;D/C;false;false;2;82;true
+83;CHARGES HORS ACTIVITÉS ORDINAIRES;8;D/C;false;false;1;8;true
+831;CHARGES H.A.O. CONSTATÉES;8;D/C;false;false;2;83;true
+834;PERTES SUR CRÉANCES H.A.O;8;D/C;false;false;2;83;true
+835;DONS ET LIBÉRALITÉS ACCORDÉS;8;D/C;false;false;2;83;true
+836;ABANDONS DE CRÉANCES CONSENTIS;8;D/C;false;false;2;83;true
+837;CHARGES LIEES AUX OPERATIONS DE LIQUIDATION;8;D/C;false;false;2;83;true
+839;CHARGES POUR DEPRECIATION ET PROVISIONS POUR RISQUES A COURT TERME H.A.O;8;D/C;false;false;2;83;true
+84;PRODUITS HORS ACTIVITÉS ORDINAIRES;8;D/C;false;false;1;8;true
+841;PRODUITS H.A.O CONSTATÉS;8;D/C;false;false;2;84;true
+845;DONS ET LIBÉRALITÉS OBTENUS;8;D/C;false;false;2;84;true
+846;ABANDONS DE CRÉANCES OBTENUS;8;D/C;false;false;2;84;true
+847;PRODUITS LIES AUX OPERATIONS DE LIQUIDATION;8;D/C;false;false;2;84;true
+848;TRANSFERTS DE CHARGES H.A.O;8;D/C;false;false;2;84;true
+849;REPRISES DE CHARGES POUR DEPRECIATION ET PROVISIONS POUR RISQUE A COURT TERRME H.A.O;8;D/C;false;false;2;84;true
+85;DOTATIONS HORS ACTIVITÉS ORDINAIRES;8;D/C;false;false;1;8;true
+851;DOTATIONS AUX PROVISIONS RÉGLEMENTÉES;8;D/C;false;false;2;85;true
+852;DOTATIONS AUX AMORTISSEMENTS H.A.O;8;D/C;false;false;2;85;true
+853;DOTATIONS AUX DÉPRÉCIATIONS H.A.O;8;D/C;false;false;2;85;true
+854;DOTATIONS AUX PROVISIONS POUR RISQUES ET CHARGES H.A.O;8;D/C;false;false;2;85;true
+858;AUTRES DOTATIONS H.A.O;8;D/C;false;false;2;85;true
+86;REPRISES HORS ACTIVITÉS ORDINAIRES;8;D/C;false;false;1;8;true
+861;REPRISES DE PROVISIONS RÉGLEMENTÉES;8;D/C;false;false;2;86;true
+862;REPRISES D’AMORTISSEMENTS;8;D/C;false;false;2;86;true
+863;REPRISES DE DÉPRÉCIATIONS H.A.O;8;D/C;false;false;2;86;true
+864;REPRISES DE PROVISIONS POUR RISQUES ET CHARGES H.A.O;8;D/C;false;false;2;86;true
+868;AUTRES REPRISES H.A.O;8;D/C;false;false;2;86;true
+87;PARTICIPATION DES TRAVAILLEURS;8;D/C;false;false;1;8;true
+871;PARTICIPATION LÉGALE AUX BÉNÉFICES;8;D/C;false;false;2;87;true
+874;PARTICIPATION CONTRACTUELLE AUX BÉNÉFICES;8;D/C;false;false;2;87;true
+878;AUTRES PARTICIPATIONS;8;D/C;false;false;2;87;true
+88;SUBVENTIONS D'ÉQUILIBRE;8;D/C;false;false;1;8;true
+881;ÉTAT;8;D/C;false;false;2;88;true
+884;COLLECTIVITÉS PUBLIQUES;8;D/C;false;false;2;88;true
+886;GROUPE;8;D/C;false;false;2;88;true
+888;AUTRES;8;D/C;false;false;2;88;true
+89;IMPÔTS SUR LE RÉSULTAT;8;D/C;false;false;1;8;true
+891;IMPÔTS SUR LES BÉNÉFICES DE L'EXERCICE;8;D/C;false;false;2;89;true
+8911;Activités exercées dans l'État;8;D/C;false;false;3;891;true
+8912;Activités exercées dans les autres États de la Région;8;D/C;false;false;3;891;true
+8913;Activités exercées hors Région;8;D/C;false;false;3;891;true
+892;RAPPEL D'IMPÔTS SUR RÉSULTATS ANTÉRIEURS;8;D/C;false;false;2;89;true
+895;IMPÔT MINIMUM FORFAITAIRE (I.M.F.);8;D/C;false;false;2;89;true
+899;DÉGRÈVEMENTS ET ANNULATIONS D’IMPÔTS SUR RÉSULTATS ANTÉRIEURS;8;D/C;false;false;2;89;true
+8991;Dégrèvements;8;D/C;false;false;3;899;true
+8994;Annulations pour pertes rétroactives;8;D/C;false;false;3;899;true
