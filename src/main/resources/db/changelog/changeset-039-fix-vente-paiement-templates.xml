@@ -67,7 +67,7 @@
             INSERT INTO contreparties (id, organization_id, operation_comptable_id, journal_comptable_id,
                                        compte_id, est_compte_tiers, sens, type_montant,
                                        created_at, updated_at, created_by, updated_by)
-            SELECT uuid_generate_v4(), o.organization_id, o.operation_id, o.journal_comptable_id,
+            SELECT gen_random_uuid(), o.organization_id, o.operation_id, o.journal_comptable_id,
                    (SELECT c.id FROM comptes c
                     WHERE c.organization_id = o.organization_id AND c.no_compte = '445710' LIMIT 1),
                    false, 'CREDIT', 'TVA', now(), now(), 'system', 'migration-039'
