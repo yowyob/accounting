@@ -50,5 +50,6 @@
     <include file="changeset-036-taxes-devises-updated-at.xml" relativeToChangelogFile="true"/>
     <include file="changeset-037-trigram-search-indexes.xml" relativeToChangelogFile="true"/>
     <include file="changeset-038-purge-corrupt-plan-comptable.xml" relativeToChangelogFile="true"/>
+    <include file="changeset-039-fix-vente-paiement-templates.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

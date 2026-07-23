@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <!--
+      Correction des modeles d'operation seedes (created_by='system') pour les organisations
+      DEJA provisionnees. Le seeder (OperationComptableInitializationService) est idempotent et
+      ne met pas a jour les orgs existantes : cette migration corrige leurs modeles en base.
+
+      Deux corrections de justesse comptable (OHADA) :
+
+        VENTE/VIREMENT (INVOICE_POSTED, vente a credit) :
+          AVANT : D 411 Clients (TTC) / C 701 Ventes (TTC)  -> TVA non ventilee
+          APRES : D 411 Clients (TTC) / C 701 Ventes (HT) / C 445710 TVA collectee (TVA)
+
+        PAIEMENT/VIREMENT (INVOICE_SETTLEMENT_REGISTERED, encaissement CLIENT) :
+          AVANT : D 401 Fournisseurs (TTC) / C 521 Banque (TTC)  -> decaissement fournisseur (faux sens)
+          APRES : D 521 Banque (TTC) / C 411 Clients (TTC)
+
+      Prudence : on ne touche QUE les lignes created_by='system' qui correspondent EXACTEMENT a
+      l'ancienne structure erronee (compte + sens), pour ne jamais ecraser une personnalisation.
+      Reserve a PostgreSQL.
+    -->
+    <changeSet id="039-fix-vente-paiement-templates" author="yowyob" dbms="postgresql">
+
+        <sql splitStatements="true"><![CDATA[
+            -- ============================ VENTE / VIREMENT ============================
+
+            -- 2a. Compte principal : 701 CREDIT -> 411 DEBIT (la vente ouvre la creance client).
+            UPDATE operation_comptable o
+            SET compte_principal_id = (SELECT c.id FROM comptes c
+                                       WHERE c.organization_id = o.organization_id AND c.no_compte = '411000' LIMIT 1),
+                sens_principal = 'DEBIT',
+                updated_at = now(),
+                updated_by = 'migration-039'
+            WHERE o.type_operation = 'VENTE' AND o.mode_reglement = 'VIREMENT'
+              AND o.created_by = 'system'
+              AND o.sens_principal = 'CREDIT'
+              AND o.compte_principal_id = (SELECT c.id FROM comptes c
+                                           WHERE c.organization_id = o.organization_id AND c.no_compte = '701100' LIMIT 1)
+              AND EXISTS (SELECT 1 FROM comptes c
+                          WHERE c.organization_id = o.organization_id AND c.no_compte = '411000');
+
+            -- 2b. Contrepartie existante : 411 DEBIT (TTC) -> 701 CREDIT (HT).
+            UPDATE contreparties cp
+            SET compte_id = (SELECT c.id FROM comptes c
+                             WHERE c.organization_id = cp.organization_id AND c.no_compte = '701100' LIMIT 1),
+                sens = 'CREDIT',
+                type_montant = 'HT',
+                updated_at = now(),
+                updated_by = 'migration-039'
+            WHERE cp.created_by = 'system'
+              AND cp.sens = 'DEBIT'
+              AND cp.compte_id = (SELECT c.id FROM comptes c
+                                  WHERE c.organization_id = cp.organization_id AND c.no_compte = '411000' LIMIT 1)
+              AND EXISTS (SELECT 1 FROM comptes c
+                          WHERE c.organization_id = cp.organization_id AND c.no_compte = '701100')
+              AND EXISTS (SELECT 1 FROM operation_comptable o
+                          WHERE o.operation_id = cp.operation_comptable_id
+                            AND o.type_operation = 'VENTE' AND o.mode_reglement = 'VIREMENT'
+                            AND o.created_by = 'system');
+
+            -- 2c. Contrepartie TVA manquante : ajouter 445710 CREDIT (TVA), si absente.
+            INSERT INTO contreparties (id, organization_id, operation_comptable_id, journal_comptable_id,
+                                       compte_id, est_compte_tiers, sens, type_montant,
+                                       created_at, updated_at, created_by, updated_by)
+            SELECT uuid_generate_v4(), o.organization_id, o.operation_id, o.journal_comptable_id,
+                   (SELECT c.id FROM comptes c
+                    WHERE c.organization_id = o.organization_id AND c.no_compte = '445710' LIMIT 1),
+                   false, 'CREDIT', 'TVA', now(), now(), 'system', 'migration-039'
+            FROM operation_comptable o
+            WHERE o.type_operation = 'VENTE' AND o.mode_reglement = 'VIREMENT'
+              AND o.created_by = 'system'
+              AND EXISTS (SELECT 1 FROM comptes c
+                          WHERE c.organization_id = o.organization_id AND c.no_compte = '445710')
+              AND NOT EXISTS (
+                    SELECT 1 FROM contreparties cp
+                    WHERE cp.operation_comptable_id = o.operation_id
+                      AND cp.compte_id = (SELECT c.id FROM comptes c
+                                          WHERE c.organization_id = o.organization_id AND c.no_compte = '445710' LIMIT 1));
+
+            -- ============================ PAIEMENT / VIREMENT ========================
+
+            -- 1a. Compte principal : 521 CREDIT -> 521 DEBIT (la banque est debitee a l'encaissement).
+            UPDATE operation_comptable o
+            SET sens_principal = 'DEBIT',
+                updated_at = now(),
+                updated_by = 'migration-039'
+            WHERE o.type_operation = 'PAIEMENT' AND o.mode_reglement = 'VIREMENT'
+              AND o.created_by = 'system'
+              AND o.sens_principal = 'CREDIT'
+              AND o.compte_principal_id = (SELECT c.id FROM comptes c
+                                           WHERE c.organization_id = o.organization_id AND c.no_compte = '521000' LIMIT 1);
+
+            -- 1b. Contrepartie : 401 Fournisseurs DEBIT -> 411 Clients CREDIT.
+            UPDATE contreparties cp
+            SET compte_id = (SELECT c.id FROM comptes c
+                             WHERE c.organization_id = cp.organization_id AND c.no_compte = '411000' LIMIT 1),
+                sens = 'CREDIT',
+                updated_at = now(),
+                updated_by = 'migration-039'
+            WHERE cp.created_by = 'system'
+              AND cp.sens = 'DEBIT'
+              AND cp.compte_id = (SELECT c.id FROM comptes c
+                                  WHERE c.organization_id = cp.organization_id AND c.no_compte = '401000' LIMIT 1)
+              AND EXISTS (SELECT 1 FROM comptes c
+                          WHERE c.organization_id = cp.organization_id AND c.no_compte = '411000')
+              AND EXISTS (SELECT 1 FROM operation_comptable o
+                          WHERE o.operation_id = cp.operation_comptable_id
+                            AND o.type_operation = 'PAIEMENT' AND o.mode_reglement = 'VIREMENT'
+                            AND o.created_by = 'system');
+        ]]></sql>
+
+        <rollback>
+            <!-- Correction de donnees comptables : pas de rollback automatique (le seed corrige
+                 reflete la bonne structure ; un retour arriere reintroduirait les ecritures fausses). -->
+        </rollback>
+
+    </changeSet>
+</databaseChangeLog>

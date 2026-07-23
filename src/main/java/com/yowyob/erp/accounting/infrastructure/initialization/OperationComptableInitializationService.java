@@ -42,6 +42,16 @@ import java.util.UUID;
  *       the kernel consumer looks up ({@code findByTypeOperation("VENTE","VIREMENT")} /
  *       {@code ("PAIEMENT","VIREMENT")}). The previous VENTE/ESPECE template was never matched.</li>
  * </ul>
+ *
+ * <p>Correct double-entry schemas (OHADA), matching how the kernel consumer maps events:
+ * <ul>
+ *   <li><b>VENTE/VIREMENT</b> (INVOICE_POSTED, credit sale): D 411 Clients (TTC) /
+ *       C 701 Ventes (HT) / C 445710 TVA collectée (TVA). The TVA line is dropped when the
+ *       invoice carries no VAT.</li>
+ *   <li><b>PAIEMENT/VIREMENT</b> (INVOICE_SETTLEMENT_REGISTERED, customer receipt — the settlement
+ *       carries a customerThirdPartyId): D 521 Banque (TTC) / C 411 Clients (TTC). It previously
+ *       modelled a supplier disbursement (D 401 / C 521), which mis-booked customer receipts.</li>
+ * </ul>
  */
 @Service
 @Order(5)
@@ -122,11 +132,16 @@ public class OperationComptableInitializationService implements CommandLineRunne
                                         JournalComptable bankJournal = journals.getT3().orElse(null);
 
                                         return Flux.concat(
+                                                        // Vente à crédit avec ventilation TVA (OHADA) :
+                                                        //   D 411 Clients (TTC) / C 701 Ventes (HT) / C 445710 TVA (TVA).
+                                                        // La ligne TVA est omise à la génération si la facture est sans TVA.
                                                         createOperationWithContreparties(organization_id, "VENTE",
-                                                                        "VIREMENT", "701100", false, "CREDIT",
+                                                                        "VIREMENT", "411000", false, "DEBIT",
                                                                         saleJournal, "TTC",
                                                                         BigDecimal.valueOf(1_000_000.0),
-                                                                        List.of(new CPDef("411000", "DEBIT", "TTC",
+                                                                        List.of(new CPDef("701100", "CREDIT", "HT",
+                                                                                        false),
+                                                                                new CPDef("445710", "CREDIT", "TVA",
                                                                                         false))),
                                                         createOperationWithContreparties(organization_id, "ACHAT",
                                                                         "VIREMENT", "601100", false, "DEBIT",
@@ -134,11 +149,15 @@ public class OperationComptableInitializationService implements CommandLineRunne
                                                                         BigDecimal.valueOf(1_000_000.0),
                                                                         List.of(new CPDef("401000", "CREDIT", "TTC",
                                                                                         false))),
+                                                        // Encaissement d'une facture CLIENT par virement :
+                                                        //   D 521 Banque (TTC) / C 411 Clients (TTC).
+                                                        // (le consumer utilise ce modèle pour INVOICE_SETTLEMENT_REGISTERED,
+                                                        //  qui porte un customerThirdPartyId → créance client, argent qui rentre.)
                                                         createOperationWithContreparties(organization_id, "PAIEMENT",
-                                                                        "VIREMENT", "521000", false, "CREDIT",
+                                                                        "VIREMENT", "521000", false, "DEBIT",
                                                                         bankJournal, "TTC",
                                                                         BigDecimal.valueOf(5_000_000.0),
-                                                                        List.of(new CPDef("401000", "DEBIT", "TTC",
+                                                                        List.of(new CPDef("411000", "CREDIT", "TTC",
                                                                                         false))))
                                                         .then(redis_service.delete("operations:all:" + organization_id))
                                                         .then();
