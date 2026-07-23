@@ -28,7 +28,7 @@
             WHERE c.no_compte LIKE '0%'
               AND NOT EXISTS (SELECT 1 FROM details_ecritures x   WHERE x.compte_id = c.id)
               AND NOT EXISTS (SELECT 1 FROM contreparties x       WHERE x.compte_id = c.id)
-              AND NOT EXISTS (SELECT 1 FROM operation_comptable x WHERE x.compte_id = c.id)
+              AND NOT EXISTS (SELECT 1 FROM operation_comptable x WHERE x.compte_principal_id = c.id)
               AND NOT EXISTS (SELECT 1 FROM budgets x             WHERE x.compte_id = c.id)
               AND NOT EXISTS (SELECT 1 FROM axe_analytique_comptes x WHERE x.compte_id = c.id)
               AND NOT EXISTS (SELECT 1 FROM budget_lignes_comptes x  WHERE x.compte_id = c.id);
